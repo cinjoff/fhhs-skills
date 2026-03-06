@@ -1,16 +1,24 @@
 # fhhs-skills
 
-Composite workflow skills for Claude Code — a self-contained plugin providing unified project workflows with engineering discipline, design quality, and project tracking.
+All-in-one workflow plugin for Claude Code — engineering discipline (TDD, verification, code review), design quality (critique, polish, normalize), and project tracking (phases, milestones, roadmaps) in a single install.
 
-## Getting Started
+## Installation
 
-Install the plugin, then run:
+In Claude Code, run:
+
+```
+/install-plugin fhhs-skills from cinjoff/fhhs-skills
+```
+
+Then start a new conversation and run:
 
 ```
 /setup
 ```
 
 This gives you an overview of what's available. Then run `/new-project` to bootstrap a tracked project, or `/skills-guide` for a full command reference.
+
+> **Note:** fhhs-skills is fully self-contained. You do **not** need to install Superpowers, Impeccable, or GSD separately — they are all built in.
 
 ## Commands
 
@@ -40,6 +48,55 @@ This gives you an overview of what's available. Then run `/new-project` to boots
 | `/harden` | Error handling, i18n, edge cases |
 | `/animate` | Motion and micro-interactions |
 | `/teach-impeccable` | One-time design context setup producing DESIGN.md |
+| `/audit` | Comprehensive accessibility and performance audit |
+| `/bolder` | Amplify visual impact of safe designs |
+| `/quieter` | Tone down aggressive designs |
+| `/simplify` | Strip to essence |
+| `/clarify` | Improve UX copy and microcopy |
+| `/colorize` | Add strategic color |
+| `/delight` | Add moments of joy and personality |
+| `/adapt` | Responsive/cross-platform adaptation |
+| `/extract` | Extract reusable components into design system |
+| `/onboard` | Design onboarding flows and empty states |
+| `/optimize` | Interface performance optimization |
+
+### Project Management Commands
+
+| Command | Description |
+|---------|-------------|
+| `/add-phase` | Add phase to roadmap |
+| `/remove-phase` | Remove phase from roadmap |
+| `/insert-phase` | Insert urgent work between phases |
+| `/progress` | Check project progress and route to next action |
+| `/quick` | Quick task with project tracking guarantees |
+| `/debug` | Multi-session debugging with persistent state |
+| `/complete-milestone` | Archive milestone and prepare for next |
+| `/audit-milestone` | Verify milestone completion before archiving |
+| `/new-milestone` | Start a new milestone cycle |
+| `/health` | Diagnose and repair .planning/ directory |
+| `/update-upstream` | Check for upstream updates (Superpowers, Impeccable, GSD) |
+
+<details>
+<summary>More project commands</summary>
+
+| Command | Description |
+|---------|-------------|
+| `/add-todo` | Capture task from conversation |
+| `/check-todos` | List pending todos |
+| `/add-tests` | Generate tests for completed phase |
+| `/cleanup` | Archive phase directories from completed milestones |
+| `/discuss-phase` | Gather context through conversation before planning |
+| `/map-codebase` | Analyze codebase with parallel mapper agents |
+| `/pause-work` | Create context handoff when pausing mid-phase |
+| `/settings` | Configure workflow toggles |
+| `/set-profile` | Switch model profile |
+| `/validate-phase` | Audit validation gaps for completed phase |
+| `/plan-milestone-gaps` | Create phases to close gaps found by milestone audit |
+| `/list-phase-assumptions` | Surface assumptions before planning |
+| `/update-gsd` | Update GSD CLI to latest version |
+| `/help` | Show available commands |
+
+</details>
 
 ## Typical Workflows
 
