@@ -5,7 +5,7 @@
       "id": 1,
       "command": "build",
       "prompt": "ok i just finished planning phase 13 for my saas app. there's a PLAN.md at .planning/phases/13-auth/13-01-PLAN.md with 3 tasks — two backend (JWT auth + refresh tokens) and one frontend (login form). the backend tasks are independent but the frontend depends on both. execute it",
-      "expected_output": "Should detect GSD mode, find the plan, identify 2 waves (wave 1: 2 parallel backend tasks, wave 2: 1 frontend task), dispatch general-purpose subagents (not gsd-executor), include TDD directives for backend tasks and Impeccable frontend-design directives for the login form, run design gates after frontend task, generate SUMMARY.md, and update GSD state.",
+      "expected_output": "Should detect GSD mode, find the plan, identify 2 waves (wave 1: 2 parallel backend tasks, wave 2: 1 frontend task), dispatch general-purpose subagents (not gsd-executor), include TDD directives (from internal skills/test-driven-development/) for backend tasks and frontend-design directives (from internal skills/frontend-design/) for the login form, run design gates (/critique then /polish) after frontend task, generate SUMMARY.md, and update GSD state.",
       "files": []
     },
     {
@@ -54,7 +54,7 @@
       "id": 8,
       "command": "setup",
       "prompt": "just installed fhhs-skills, what do I need to do to get started",
-      "expected_output": "Should check for Superpowers and Impeccable in plugin cache, report which are installed vs missing, tell the user to TYPE the /install-plugin commands (not try to run them via bash), explain GSD is per-project, verify after installs, and suggest /new-project or /skills-guide as next steps.",
+      "expected_output": "Should welcome the user, explain that fhhs-skills is self-contained (engineering discipline, design quality, and project tracking are all built in), and suggest /new-project to bootstrap a project or /skills-guide for an overview. No dependency checks or plugin installs needed.",
       "files": []
     },
     {
@@ -69,6 +69,69 @@
       "command": "verify",
       "prompt": "verify phase 13",
       "expected_output": "Should load all PLAN.md files in .planning/phases/13-*, extract must_haves, run goal-backward verification (truth table + artifacts + key links via gsd-tools), run evidence-based verification (fresh test suite, build check, linter), detect anti-patterns, write VERIFICATION.md, and generate gap-closure plans if anything fails.",
+      "files": []
+    },
+    {
+      "id": 11,
+      "command": "new-project",
+      "prompt": "I want to build a recipe sharing app where home cooks can post recipes with photos and others can save favorites. should work on mobile. i'm thinking react",
+      "expected_output": "Should walk through vision questions one at a time (what/who/why/scope/constraints/success), present default stack (Next.js/TS/Tailwind/Shadcn/Vercel + Supabase since auth/DB needed), invoke /teach-impeccable for design context (output to .planning/DESIGN.md), generate CLAUDE.md under 40 lines, create .planning/ structure with PROJECT.md/REQUIREMENTS.md/ROADMAP.md/STATE.md, and suggest /plan as next step. No external dependency checks needed.",
+      "files": []
+    },
+    {
+      "id": 12,
+      "command": "build",
+      "prompt": "execute the plan at .planning/phases/05-onboarding/05-02-PLAN.md. the plan has a task with type checkpoint:human-verify for reviewing the welcome screen visually",
+      "expected_output": "Should find the plan, analyze waves, dispatch subagents for non-checkpoint tasks, and when reaching the checkpoint:human-verify task, the subagent should STOP and return structured state (what was built, verification steps, URLs/commands, expected behavior). Orchestrator should present this to user and WAIT before continuing. Should NOT auto-proceed past the checkpoint.",
+      "files": []
+    },
+    {
+      "id": 13,
+      "command": "plan",
+      "prompt": "plan adding real-time notifications. we already discussed this in phase 8 and there's a .planning/phases/08-notifications/08-CONTEXT.md with locked decisions about using SSE instead of websockets",
+      "expected_output": "Should detect existing CONTEXT.md, SKIP Step 3 (Discuss Implementation) since decisions are already locked, read the CONTEXT.md and honor the SSE decision in the plan, and NOT re-open the SSE vs websockets discussion. Plan should reference the locked SSE decision.",
+      "files": []
+    },
+    {
+      "id": 14,
+      "command": "fix",
+      "prompt": "users are reporting intermittent 502 errors on our API but I can't reproduce it locally. it happens maybe once every 50 requests and the logs show different errors each time — sometimes connection reset, sometimes timeout, sometimes a memory warning. no clear pattern",
+      "expected_output": "Should triage as COMPLEX (unclear cause, needs hypotheses, intermittent, no clear pattern), write triage findings to .planning/debug/YYYY-MM-DD-intermittent-502-errors.md with initial hypotheses, and recommend /debug for sustained investigation. Should NOT attempt a quick fix or triage as SIMPLE/MODERATE.",
+      "files": []
+    },
+    {
+      "id": 15,
+      "command": "build",
+      "prompt": "build the auth phase. there are 3 plans: 05-01 is done (has SUMMARY), 05-02 and 05-03 still need execution",
+      "expected_output": "Should detect resume scenario (multiple plans, some complete), report 'Found 3 plans, 1 already completed. Continuing from plan 05-02.' Should skip 05-01 entirely. Should check 05-01's SUMMARY for unresolved 'Issues Encountered' and ask user if any found. Should execute 05-02 first, then 05-03 sequentially.",
+      "files": []
+    },
+    {
+      "id": 16,
+      "command": "plan",
+      "prompt": "i want to add a feature for exporting reports as PDF. this doesn't match any phase in the roadmap",
+      "expected_output": "Should compare against ROADMAP.md phases, detect no match, ask user: 'This doesn't match any existing phase. Add as a new phase to the roadmap, or fold into the current phase?' Should wait for user choice before proceeding. If new phase chosen, should add phase to ROADMAP.md and create phase directory.",
+      "files": []
+    },
+    {
+      "id": 17,
+      "command": "update-upstream",
+      "prompt": "check if there's a new version of superpowers",
+      "expected_output": "Should read the current snapshot version from upstream/superpowers-4.3.4/ directory name, check the latest release of pcvelz/superpowers via gh api, diff if newer version available, cross-reference PATCHES.md for conflicts, and present a structured report. Should NOT auto-apply any changes.",
+      "files": []
+    },
+    {
+      "id": 18,
+      "command": "critique",
+      "prompt": "critique the dashboard page. it's at src/app/dashboard/page.tsx",
+      "expected_output": "Should read skills/frontend-design/SKILL.md for design principles and anti-patterns, then evaluate the dashboard page across all dimensions (AI slop detection, visual hierarchy, information architecture, emotional resonance, etc.). Should produce a structured critique report with Anti-Patterns Verdict, Overall Impression, What's Working, Priority Issues with severity, and specific fix commands (/polish, /simplify, etc.).",
+      "files": []
+    },
+    {
+      "id": 19,
+      "command": "teach-impeccable",
+      "prompt": "set up the design context for my project",
+      "expected_output": "Should explore the codebase first (README, package.json, existing components, brand assets), then ask UX-focused questions about what couldn't be inferred. Should write output to .planning/DESIGN.md (NOT CLAUDE.md) with YAML frontmatter (created date, type: design-context) and a Design Context section with Users, Brand Personality, Aesthetic Direction, and Design Principles.",
       "files": []
     }
   ]

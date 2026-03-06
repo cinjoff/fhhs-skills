@@ -8,7 +8,7 @@ The user wants to plan: $ARGUMENTS
 
 You are a **lean orchestrator**. Your job is to coordinate, not to do heavy work yourself. Delegate research and analysis to subagents to keep your context clean.
 
-> **Dependency check:** Read `references/dependency-check.md` from the fhhs-skills plugin directory. Verify Superpowers is available (required for brainstorming). GSD project is required — check below.
+> **Dependency check:** Read `references/dependency-check.md` from the fhhs-skills plugin directory. GSD project is required — check below.
 
 > **CRITICAL — GSD project required:**
 > Check if `.planning/PROJECT.md` exists.
@@ -44,13 +44,13 @@ Spawn a Task agent with:
 
 **If the feature uses well-known patterns**, skip this step and say so.
 
-If the user mentions wanting an isolated branch or worktree, invoke `superpowers:using-git-worktrees` before continuing.
+If the user mentions wanting an isolated branch or worktree, set up a git worktree before continuing.
 
 ---
 
 ## Step 2: Brainstorm
 
-Invoke `superpowers:brainstorming`. Follow it completely — it handles exploration, questions, design sections, and user approval.
+Invoke `skills/brainstorming/`. Follow it completely — it handles exploration, questions, design sections, and user approval.
 
 If research was done in Step 1, feed the findings into the brainstorming context.
 
@@ -166,7 +166,7 @@ requirements: []        # GSD only — requirement IDs from ROADMAP
 
 - Scope each plan to **2-3 tasks** (keeps execution context under 50%)
 - Each task has: files, action, verify, done
-- Mark tasks `tdd="true"` when they involve logic, state, or behavior — the executor will follow `superpowers:test-driven-development` for these
+- Mark tasks `tdd="true"` when they involve logic, state, or behavior — the executor will follow `skills/test-driven-development/` for these
 - Set `wave` numbers for parallelization (independent tasks = same wave)
 - If frontend: add `type="checkpoint:human-verify"` for key visual moments
 - Reference only the specific source files each task needs (not the whole codebase)

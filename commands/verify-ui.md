@@ -6,7 +6,7 @@ Visual verification of frontend work using Playwright browser capture and design
 
 Target to verify: $ARGUMENTS
 
-> **Dependency check:** Requires Impeccable for design critique (skip critique if missing, still capture screenshots). Requires Playwright with Chromium — if missing: `npm install -g playwright && npx playwright install chromium`.
+> **Dependency check:** Design critique commands are built into this plugin. Requires Playwright with Chromium — if missing: `npm install -g playwright && npx playwright install chromium`.
 
 ---
 
@@ -28,6 +28,8 @@ Run the browser capture script to get screenshots, console output, and accessibi
 ```bash
 node scripts/browser-capture.mjs [url] --wait=3000
 ```
+
+Note: `scripts/browser-capture.mjs` must exist in your project. If missing, create it or install Playwright directly. This script is project-specific, not bundled with the plugin.
 
 - Default URL is `http://localhost:3000` — pass a specific URL if verifying a specific page
 - For **authenticated pages**, add `--login` to auto-login with the test account before capture:

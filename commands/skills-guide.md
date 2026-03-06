@@ -1,5 +1,5 @@
 ---
-description: "Print the composite skills reference guide. Use when the user says 'help', 'what commands are available', 'how do composites work', 'skills guide', or needs an overview of all composite commands and how GSD/Superpowers/Impeccable fit together."
+description: "Print the composite skills reference guide. Use when the user says 'help', 'what commands are available', 'how do composites work', 'skills guide', or needs an overview of all composite commands and how they fit together."
 ---
 
 Print the composite skills guide below. Output ONLY the formatted content — no commentary before or after.
@@ -8,24 +8,24 @@ Print the composite skills guide below. Output ONLY the formatted content — no
 
 # Composite Skills Guide
 
-Eight skills that unify GSD state management, Superpowers engineering discipline, and Impeccable design quality into a single workflow interface.
+A unified workflow interface with composite commands, engineering discipline skills, and design quality commands — all built into one plugin.
 
-## The Skills
+## Composite Commands
 
-### `/setup` — Install dependencies
-Checks for Superpowers and Impeccable plugins, installs any that are missing. GSD installs per-project via `/new-project`. Run once after installing fhhs-skills.
+### `/setup` — Welcome and orientation
+Overview of what fhhs-skills provides. Run once after installing.
 
 ### `/new-project` — Bootstrap a tracked project
-GSD new-project questioning -> tech stack defaults (Next.js/TS/Tailwind/Shadcn/Vercel, optional Supabase) -> `impeccable:teach-impeccable` for DESIGN.md -> CLAUDE.md generation -> GSD requirements + roadmap. All `.planning/` files, no scaffolding.
+Vision questioning -> tech stack defaults (Next.js/TS/Tailwind/Shadcn/Vercel, optional Supabase) -> `/teach-impeccable` for DESIGN.md -> CLAUDE.md generation -> GSD requirements + roadmap. All `.planning/` files, no scaffolding.
 
 ### `/plan` — Design before building
-Requires GSD project. Research-first detection -> brainstorm (`superpowers:brainstorming`) -> discuss implementation (lock decisions in CONTEXT.md) -> derive must_haves -> PLAN.md -> plan-check -> execution handoff.
+Requires GSD project. Research-first detection -> brainstorm (`skills/brainstorming/`) -> discuss implementation (lock decisions in CONTEXT.md) -> derive must_haves -> PLAN.md -> plan-check -> execution handoff.
 
 ### `/build` — Execute a plan
-Find plan -> resume detection -> wave-based parallel subagents (TDD, YAGNI, deviation rules) -> auto-detect frontend files -> Impeccable design gates if frontend (`critique` -> `polish` -> `normalize`) -> SUMMARY.md -> phase completion detection -> dual verification -> two-stage review -> finish.
+Find plan -> resume detection -> wave-based parallel subagents (TDD, YAGNI, deviation rules) -> auto-detect frontend files -> design gates if frontend (`/critique` -> `/polish` -> `/normalize`) -> SUMMARY.md -> phase completion detection -> dual verification -> two-stage review -> finish.
 
 ### `/fix` — Auto-triage bug fix
-Triage depth (SIMPLE/MODERATE/PARALLEL/COMPLEX) -> appropriate debug path (COMPLEX seeds `.planning/debug/` for `/gsd:debug`) -> TDD fix -> design check (Impeccable anti-patterns) -> spec review -> verify.
+Triage depth (SIMPLE/MODERATE/PARALLEL/COMPLEX) -> appropriate debug path (COMPLEX seeds `.planning/debug/` for `/gsd:debug`) -> TDD fix -> design check (frontend anti-patterns) -> spec review -> verify.
 
 ### `/refactor` — Safe code restructuring
 Scope blast radius -> capture baseline (characterization tests if needed) -> atomic steps (revert-on-red iron law) -> two-stage review -> verify.
@@ -42,6 +42,19 @@ Dispatch subagent with Firecrawl + Context7. GSD-compatible frontmatter. Prescri
 ### `/verify-ui` — Visual verification
 Playwright screenshots at 3 breakpoints -> design critique against `.planning/DESIGN.md`. Severity-rated report.
 
+## Design Quality Commands
+
+These are available for frontend work. Used automatically by `/build` design gates, or invoke directly:
+
+| Command | Purpose |
+|---------|---------|
+| `/critique` | Evaluate design quality with severity ratings |
+| `/polish` | Final alignment, spacing, consistency pass |
+| `/normalize` | Ensure consistency with design system tokens |
+| `/harden` | Error handling, i18n, edge cases |
+| `/animate` | Motion and micro-interactions |
+| `/teach-impeccable` | One-time design context setup producing DESIGN.md |
+
 ## Typical Workflows
 
 ```
@@ -56,36 +69,17 @@ Verifying:   /verify (standalone, any time)
 
 ---
 
-## How the Frameworks Combine
+## How It Works
 
 **GSD is the state machine.** It owns project structure: phases, milestones, requirements, roadmaps, STATE.md. Always required.
 
-**Superpowers is the discipline engine.** It enforces: TDD, two-stage review, evidence-based verification, fresh subagents, YAGNI. Always required.
+**Engineering disciplines are built in.** TDD, two-stage review, evidence-based verification, fresh subagents, YAGNI — all provided by internal skills (`skills/test-driven-development/`, `skills/verification-before-completion/`, `skills/requesting-code-review/`, etc.).
 
-**Impeccable is the design gate.** It enforces: critique, polish, normalize, harden, animate. Required for frontend work, optional otherwise.
+**Design quality is built in.** Critique, polish, normalize, harden, animate — all provided by internal commands. The `skills/frontend-design/` skill provides anti-pattern reference and design guidance.
 
-**Composites are the unified interface.** They wire the three frameworks together so you never think about which to invoke. When Superpowers updates its TDD skill, `/fix` automatically gets better. When Impeccable updates its critique methodology, `/build`'s design gates automatically get better.
+**Composites are the unified interface.** They wire everything together so you never think about which skill or command to invoke. Just use the composite and it orchestrates the right ones.
 
-## Decision Matrix
-
-**Use GSD commands for project structure:**
-
-| Command | Purpose |
-|---------|---------|
-| `/gsd:new-project` | Initialize project with requirements, roadmap, milestones |
-| `/gsd:new-milestone` | Add milestone to existing project |
-| `/gsd:discuss-phase` | Gather context through conversation before planning |
-| `/gsd:progress` | Check position, metrics, route to next action |
-| `/gsd:debug` | Multi-session debugging with persistent state |
-| `/gsd:quick` | Quick ad-hoc task with GSD guarantees |
-| `/gsd:audit-milestone` | Verify milestone completion before archiving (no composite replacement — this is a structural GSD operation) |
-| `/gsd:complete-milestone` | Archive and prepare for next milestone |
-| `/gsd:add-phase`, `remove-phase`, `insert-phase` | Edit roadmap structure |
-| `/gsd:health` | Diagnose and repair `.planning/` directory integrity |
-| `/gsd:cleanup` | Archive phase directories from completed milestones |
-| `/gsd:reapply-patches` | Reapply local modifications after a GSD update |
-
-**Use composites for doing work:**
+## Command Reference
 
 | Command | Purpose | Replaces |
 |---------|---------|----------|
@@ -97,15 +91,38 @@ Verifying:   /verify (standalone, any time)
 | `/refactor` | Safe restructuring, behavior preservation | — |
 | `/verify` | Standalone dual verification | `/gsd:verify-work` |
 | `/resume` | Context restoration -> routing | `/gsd:resume-work` |
+| `/verify-ui` | Visual verification with Playwright | — |
+| `/critique` | Design quality evaluation | — |
+| `/polish` | Alignment and consistency pass | — |
+| `/normalize` | Design system token consistency | — |
+| `/harden` | Error handling, i18n, edge cases | — |
+| `/animate` | Motion and micro-interactions | — |
+| `/teach-impeccable` | One-time design context setup | — |
+
+**GSD structural commands** (for project management, not replaced by composites):
+
+| Command | Purpose |
+|---------|---------|
+| `/gsd:new-milestone` | Add milestone to existing project |
+| `/gsd:discuss-phase` | Gather context through conversation before planning |
+| `/gsd:progress` | Check position, metrics, route to next action |
+| `/gsd:debug` | Multi-session debugging with persistent state |
+| `/gsd:quick` | Quick ad-hoc task with GSD guarantees |
+| `/gsd:audit-milestone` | Verify milestone completion before archiving |
+| `/gsd:complete-milestone` | Archive and prepare for next milestone |
+| `/gsd:add-phase`, `remove-phase`, `insert-phase` | Edit roadmap structure |
+| `/gsd:health` | Diagnose and repair `.planning/` directory integrity |
+| `/gsd:cleanup` | Archive phase directories from completed milestones |
+| `/gsd:reapply-patches` | Reapply local modifications after a GSD update |
 
 ## Non-Negotiable Disciplines
 
-Every composite that executes code enforces these:
+Every composite that executes code enforces these (via built-in skills):
 
-1. **TDD** — no production code without a failing test first
-2. **Two-stage review** — spec compliance first, code quality second
-3. **Verification-before-completion** — no claims without fresh evidence
-4. **Fresh subagents** — no context pollution between tasks
+1. **TDD** (`skills/test-driven-development/`) — no production code without a failing test first
+2. **Two-stage review** (`skills/requesting-code-review/`) — spec compliance first, code quality second
+3. **Verification-before-completion** (`skills/verification-before-completion/`) — no claims without fresh evidence
+4. **Fresh subagents** (`skills/dispatching-parallel-agents/`) — no context pollution between tasks
 5. **YAGNI** — no features, abstractions, or error handling beyond what's specified
 
 ## GSD State Integration
@@ -125,8 +142,8 @@ All composites require a GSD project (`.planning/PROJECT.md`). Run `/new-project
 
 ## Design Principles
 
-1. **Delegate discipline, own workflow.** Composites define WHAT happens WHEN. They invoke source skills for HOW.
+1. **Delegate discipline, own workflow.** Composites define WHAT happens WHEN. They invoke internal skills for HOW.
 2. **Lean orchestrator.** The composite coordinates. Subagents do the work. Stay under 15% context.
 3. **Attribute, don't copy.** Subagent prompts include brief behavioral directives, not full skill recreations.
 4. **GSD as state backend.** All state writes use GSD file formats. If GSD updates formats, composites adapt.
-5. **Auto-improve through frameworks.** Composites get better when their dependencies update — no changes needed.
+5. **Self-contained.** All engineering disciplines and design quality tools are built into this plugin — no external dependencies.

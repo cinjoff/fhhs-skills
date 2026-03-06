@@ -59,4 +59,4 @@ If GSD project active, update STATE.md briefly.
 
 Output goes to `.planning/phases/XX-name/XX-RESEARCH.md` with full frontmatter. Updates STATE.md.
 
-`/research` replaces `/gsd:research-phase` as the canonical research command. It produces GSD-compatible output while being usable standalone.
+`/research` replaces `/gsd:research-phase` as the canonical research command.

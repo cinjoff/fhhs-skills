@@ -8,10 +8,10 @@ What to build or which plan to execute: $ARGUMENTS
 
 You are a **lean orchestrator**. Stay under 15% context usage. Delegate all heavy work to subagents.
 
-> **Dependency check:** Verify Superpowers is available (required). Verify `.planning/PROJECT.md` exists (required — if missing, tell user to run `/new-project` first). Check Impeccable availability if frontend files are involved (skip design gates if missing). See the `references/dependency-check.md` file in the same plugin directory as this command for detection details.
+> **Dependency check:** Verify `.planning/PROJECT.md` exists (required — if missing, tell user to run `/new-project` first). Engineering disciplines (TDD, verification, review) and design quality commands are built into this plugin. See the `references/dependency-check.md` file in the same plugin directory as this command for detection details.
 
-> **Execution pipeline — use superpowers, not GSD agents:**
-> Dispatch tasks using the **Task tool with `subagent_type: "general-purpose"`**. Do not use `gsd-executor`, `gsd-planner`, or other GSD agent types. The superpowers pipeline gives each task fresh context and enforces TDD, YAGNI, and verification disciplines that GSD agent types skip. The GSD pipeline is only for `/gsd:execute-phase`.
+> **Execution pipeline — use fresh subagents, not GSD agents:**
+> Dispatch tasks using the **Task tool with `subagent_type: "general-purpose"`**. Do not use `gsd-executor`, `gsd-planner`, or other GSD agent types. Fresh subagents give each task clean context and enforce TDD, YAGNI, and verification disciplines that GSD agent types skip. The GSD pipeline is only for `/gsd:execute-phase`.
 
 > **GSD project context:**
 > Read `.planning/PROJECT.md`, `STATE.md`, and `ROADMAP.md` for current position. All state updates, roadmap updates, and commit helpers use `gsd-tools.cjs`.
@@ -51,7 +51,7 @@ PLAN_START_EPOCH=$(date +%s)
 
 ## Step 3: Execute Waves
 
-For each wave, dispatch **one subagent per task** using the Task tool with **`subagent_type: "general-purpose"`** (follow `superpowers:dispatching-parallel-agents` for prompt quality when dispatching parallel tasks).
+For each wave, dispatch **one subagent per task** using the Task tool with **`subagent_type: "general-purpose"`** (follow `skills/dispatching-parallel-agents/` for prompt quality when dispatching parallel tasks).
 
 **Each subagent prompt must include:**
 1. The specific task (files, action, verify, done) — copy the full text, don't reference the plan file
@@ -62,9 +62,9 @@ For each wave, dispatch **one subagent per task** using the Task tool with **`su
 
 ### Subagent directives
 
-**TDD:** If task is marked `tdd="true"`: "Follow RED-GREEN-REFACTOR per `superpowers:test-driven-development` — failing test first, then minimal implementation"
+**TDD:** If task is marked `tdd="true"`: "Follow RED-GREEN-REFACTOR per `skills/test-driven-development/` — failing test first, then minimal implementation"
 
-**Frontend:** If frontend work (`.tsx`, `.css`, component files): "Read `.planning/DESIGN.md` and apply `impeccable:frontend-design` guidance. Add stable selectors for Playwright: `aria-label`, `id`, `role`, or `data-testid` on key interactive elements." Include `.planning/DESIGN.md` content in the prompt (it's small, ~30 lines).
+**Frontend:** If frontend work (`.tsx`, `.css`, component files): "Read `.planning/DESIGN.md` and apply `skills/frontend-design/` guidance. Add stable selectors for Playwright: `aria-label`, `id`, `role`, or `data-testid` on key interactive elements." Include `.planning/DESIGN.md` content in the prompt (it's small, ~30 lines).
 
 **Commits:** Make atomic commits per task. Format: `type(phase-plan): description` — e.g., `feat(13-01): audit transaction module`. If no GSD phase: `type(plan): description`. Stage files individually (never `git add .`).
 
@@ -138,7 +138,7 @@ Auth errors (401, 403, "Not authenticated", "Please run X login") are gates, not
 
 ---
 
-## Step 4: Impeccable Design Gates (frontend only)
+## Step 4: Design Gates (frontend only)
 
 **Skip if no tasks touched `.tsx`, `.css`, or component files.**
 
@@ -147,27 +147,27 @@ After all tasks complete and BEFORE self-check, run the design quality pipeline:
 **Context for all design gate subagents:** If `.planning/phases/{phase}/{phase}-CONTEXT.md` exists, include its "Design Decisions" section. These are locked design choices that critique/polish/normalize must respect.
 
 ### Critique
-Dispatch subagent to invoke `impeccable:critique` on modified frontend files.
-Input: file list + `.planning/DESIGN.md` + anti-pattern reference from `impeccable:frontend-design`.
+Dispatch subagent to invoke `/critique` on modified frontend files.
+Input: file list + `.planning/DESIGN.md` + anti-pattern reference from `skills/frontend-design/`.
 Fix Critical and High issues. Commit: `style({phase}-{plan}): address design critique`
 
 ### Polish
-Dispatch subagent to invoke `impeccable:polish` on modified files (excluding areas fixed by critique).
+Dispatch subagent to invoke `/polish` on modified files (excluding areas fixed by critique).
 Commit: `style({phase}-{plan}): polish pass`
 
 ### Normalize (if design system exists)
 If `.planning/DESIGN.md` defines design tokens or a component system:
-Dispatch subagent to invoke `impeccable:normalize` against the design system.
+Dispatch subagent to invoke `/normalize` against the design system.
 Commit: `style({phase}-{plan}): normalize to design system`
 Skip if no design system defined.
 
 ### Consider Harden and Animate (optional)
 Suggest (don't auto-run) based on the work:
-- `impeccable:harden` — if forms, user input, error states, or i18n concerns
-- `impeccable:animate` — if transitions, state changes, or interaction-heavy elements
+- `/harden` — if forms, user input, error states, or i18n concerns
+- `/animate` — if transitions, state changes, or interaction-heavy elements
 Ask user before proceeding.
 
-Uses Impeccable skills (`impeccable:critique`, `impeccable:polish`, `impeccable:normalize`, `impeccable:frontend-design`). If Impeccable is not installed, skip design gates and suggest manual design review.
+Uses design quality commands (`/critique`, `/polish`, `/normalize`) and `skills/frontend-design/` — all built into this plugin.
 
 ---
 
@@ -230,7 +230,7 @@ Then manually verify:
 1. For each `must_haves.truth` — find evidence (file exists, content matches, test passes)
 2. Requirements coverage — every requirement ID from ROADMAP appears in at least one SUMMARY's `requirements-completed`
 
-### Evidence-based verification (Superpowers)
+### Evidence-based verification
 
 - Run fresh test suites, check exit codes
 - Verify all expected artifacts exist
@@ -251,9 +251,9 @@ Write `{phase}-VERIFICATION.md` with truth table, artifacts, key links, requirem
 
 ## Step 8: Code Review
 
-After all tasks complete, invoke `superpowers:requesting-code-review` to dispatch reviewers.
+After all tasks complete, invoke `skills/requesting-code-review/` to dispatch reviewers.
 
-Use the two-stage pattern from `superpowers:subagent-driven-development`:
+Use the two-stage review pattern (spec compliance + code quality):
 1. **Spec compliance reviewer** — did we build what was planned? Check each task's `done` criteria against the diff.
 2. **Code quality reviewer** — is it well-built? Naming, structure, error handling, test quality, security.
 
@@ -263,7 +263,7 @@ Fix any Critical or Important issues from either review.
 
 ## Step 9: Verify
 
-Invoke `superpowers:verification-before-completion` — follow it completely. This means:
+Invoke `skills/verification-before-completion/` — follow it completely. This means:
 - Run all verification commands fresh (tests, types, linter)
 - Read full output, check exit codes
 - Only claim completion with evidence
@@ -274,7 +274,7 @@ If this was frontend work, suggest running `/verify-ui` for visual verification.
 
 ## Step 10: Complete
 
-Invoke `superpowers:finishing-a-development-branch` — it handles merge/PR/keep/discard options and worktree cleanup.
+Invoke `skills/finishing-a-development-branch/` — it handles merge/PR/keep/discard options and worktree cleanup.
 
 **GSD completion (if GSD active):**
 
@@ -298,7 +298,7 @@ If user prefers to skip the branch finishing (more work planned), report what wa
 - **Task subagents:** Fresh context each. Load only what that task needs.
 - **Review subagents:** Get the diff and objectives, not the full plan history.
 - **`.planning/DESIGN.md`** is small (~30 lines) — safe to include in every frontend subagent prompt.
-- **Don't load Impeccable reference files yourself.** The skills load them when invoked by subagents.
+- **Don't load design reference files yourself.** The skills load them when invoked by subagents.
 - **Codebase docs per task type:**
   - UI work -> CONVENTIONS.md + DESIGN.md
   - New files -> STRUCTURE.md

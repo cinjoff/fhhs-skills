@@ -6,7 +6,7 @@ Restructure existing code safely. Not a bug (use /fix). Not new functionality (u
 
 The refactoring goal: $ARGUMENTS
 
-> **Dependency check:** Verify Superpowers is available (required for verification and review). GSD project (`.planning/PROJECT.md`) is expected. See the `references/dependency-check.md` file in the same plugin directory as this command for detection details.
+> **Dependency check:** Verify `.planning/PROJECT.md` exists (required). Engineering disciplines (verification, review) are built into this plugin. See the `references/dependency-check.md` file in the same plugin directory as this command for detection details.
 
 This command runs in a single context by default. For large refactors (10+ files), write a PLAN.md and delegate to subagents.
 
@@ -74,7 +74,7 @@ Report progress after each commit.
 
 ## Step 5: Review
 
-Two-stage review via `superpowers:requesting-code-review`:
+Two-stage review via `skills/requesting-code-review/`:
 1. **Spec compliance:** "Is behavior unchanged?" — test suite is the evidence
 2. **Code quality:** "Is structure actually better?" — readability, cohesion, coupling
 
@@ -87,7 +87,7 @@ Fix issues. Tests must remain GREEN after fixes.
 
 ## Step 6: Verify
 
-Invoke `superpowers:verification-before-completion`:
+Invoke `skills/verification-before-completion/`:
 - Run FULL test suite (not just affected area) — check exit code
 - Verify no behavior changes escaped characterization tests
 - Only claim complete with evidence
@@ -96,7 +96,7 @@ Invoke `superpowers:verification-before-completion`:
 
 ## Step 7: Complete
 
-If on a feature branch, invoke `superpowers:finishing-a-development-branch`.
+If on a feature branch, invoke `skills/finishing-a-development-branch/`.
 
 Generate SUMMARY.md with refactoring steps, commit hashes, before/after metrics, test evidence.
 Update STATE.md: note refactoring completed, structural changes made.

@@ -6,7 +6,7 @@ Auto-triage and fix bugs with TDD discipline.
 
 The issue: $ARGUMENTS
 
-> **Dependency check:** Verify Superpowers is available (required for TDD and verification). Check Impeccable availability if frontend files are involved. GSD project (`.planning/PROJECT.md`) is expected. See the `references/dependency-check.md` file in the same plugin directory as this command for detection details.
+> **Dependency check:** Verify `.planning/PROJECT.md` exists (required). Engineering disciplines (TDD, verification) and design quality commands are built into this plugin. See the `references/dependency-check.md` file in the same plugin directory as this command for detection details.
 
 This command runs in a single context by default. Escalates to parallel agents or /gsd:debug when needed.
 
@@ -29,15 +29,15 @@ Quickly assess bug depth before choosing strategy. Spend <5% context.
 
 Execute the chosen path:
 - **SIMPLE:** Skip to Step 2 — cause is clear from triage.
-- **MODERATE:** Invoke `superpowers:systematic-debugging`. Follow completely. Then Step 2.
-- **PARALLEL:** Invoke `superpowers:dispatching-parallel-agents` — one agent per subsystem. Collect results. Then Step 2 for each fix.
+- **MODERATE:** Invoke `skills/systematic-debugging/`. Follow completely. Then Step 2.
+- **PARALLEL:** Invoke `skills/dispatching-parallel-agents/` — one agent per subsystem. Collect results. Then Step 2 for each fix.
 - **COMPLEX:** Write triage findings to `.planning/debug/{issue-slug}.md` with: error message, files investigated, hypotheses formed, test results observed. Slug convention: `YYYY-MM-DD-{first-3-words-kebab}` (e.g., `2026-03-06-payment-timeout-error`). If slug exists, append `-2`. Then hand off to `/gsd:debug {issue-slug}` — it auto-detects the existing session file. If user says try anyway → MODERATE path.
 
 ---
 
 ## Step 2: TDD Fix
 
-Invoke `superpowers:test-driven-development`. Follow completely:
+Invoke `skills/test-driven-development/`. Follow completely:
 - **RED:** Write failing test proving the bug
 - **GREEN:** Minimal fix
 - **REFACTOR:** Cleanup
@@ -53,12 +53,12 @@ Commit: `fix: [root cause and what was wrong]`
 If the fix touches `.tsx`, `.css`, components, or styles:
 - Read `.planning/DESIGN.md` for design context
 - Quick check: does the fix maintain visual consistency?
-- Check against `impeccable:frontend-design` anti-patterns — no generic cards, cyan-on-dark, purple gradients, or other AI slop introduced by the fix
+- Check against `skills/frontend-design/` anti-patterns — no generic cards, cyan-on-dark, purple gradients, or other AI slop introduced by the fix
 - If significant UI change, suggest `/verify-ui`
 
 ---
 
-## Step 3.5: Quick Spec Review
+## Step 4: Quick Spec Review
 
 Verify the fix addresses the right problem:
 
@@ -73,18 +73,18 @@ If any answer is "no" or "unsure", investigate before proceeding to verification
 
 ---
 
-## Step 4: Verify
+## Step 5: Verify
 
-Invoke `superpowers:verification-before-completion`. Follow completely:
+Invoke `skills/verification-before-completion/`. Follow completely:
 - Run all verification commands fresh
 - Read full output, check exit codes
 - Only claim fixed with evidence
 
 ---
 
-## Step 5: Complete
+## Step 6: Complete
 
-If on a feature branch and fix is standalone, invoke `superpowers:finishing-a-development-branch`.
+If on a feature branch and fix is standalone, invoke `skills/finishing-a-development-branch/`.
 
 Generate lightweight SUMMARY.md in the phase directory:
 

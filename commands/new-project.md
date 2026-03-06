@@ -8,7 +8,7 @@ $ARGUMENTS
 
 You are a **lean orchestrator**. Guide the user through setup, delegate heavy work to framework skills.
 
-> **Dependency check:** Read `references/dependency-check.md` from the fhhs-skills plugin directory. Verify Superpowers and GSD are available (both required). Impeccable is optional — if missing, skip Step 3 (Design Framework) and note it can be set up later.
+> **Dependency check:** Engineering disciplines and design quality commands are built into this plugin (no external dependency). GSD CLI (`gsd-tools.cjs`) will be initialized per-project in Step 5. No external plugins required.
 
 ---
 
@@ -47,7 +47,7 @@ Lock the final tech stack decisions. These go into PROJECT.md.
 
 ## Step 3: Design Framework
 
-Invoke `impeccable:teach-impeccable`.
+Invoke `/teach-impeccable`.
 
 This runs the one-time design context setup:
 - Aesthetic direction (tone, style, differentiation)
@@ -57,7 +57,7 @@ This runs the one-time design context setup:
 
 Output: `.planning/DESIGN.md` — referenced by all future `/build` and `/verify-ui` runs.
 
-If the user wants to skip this step and set up design later, allow it. They can always run `impeccable:teach-impeccable` manually.
+If the user wants to skip this step and set up design later, allow it. They can always run `/teach-impeccable` manually.
 
 ---
 

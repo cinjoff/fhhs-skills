@@ -2,11 +2,11 @@
 description: "Verify completed work with goal-backward truth tables and fresh evidence. Use when the user says 'verify', 'check if it works', 'did we miss anything', 'validate', or wants proof that a phase or branch is complete. Replaces /gsd:verify-work."
 ---
 
-Standalone verification of work. Combines GSD goal-backward verification with Superpowers evidence-based verification.
+Standalone verification of work. Combines GSD goal-backward verification with evidence-based verification.
 
 What to verify (phase number, branch name, or leave blank for current work): $ARGUMENTS
 
-> **Dependency check:** Verify Superpowers is available (required for evidence-based verification). GSD project (`.planning/PROJECT.md`) is expected — enables artifact and key-link verification via gsd-tools. See the `references/dependency-check.md` file in the same plugin directory as this command for detection details.
+> **Dependency check:** Verify `.planning/PROJECT.md` exists (required — enables artifact and key-link verification via gsd-tools). Evidence-based verification is built into this plugin. See the `references/dependency-check.md` file in the same plugin directory as this command for detection details.
 
 This command runs in a single context. No subagents — verification should be direct and observable.
 
@@ -56,7 +56,7 @@ This verifies that artifacts are wired together as specified in `must_haves.key_
 
 ## Step 3: Evidence-Based Verification
 
-**REQUIRED SUB-SKILL:** Follow `superpowers:verification-before-completion` completely.
+**REQUIRED SUB-SKILL:** Follow `skills/verification-before-completion/` completely.
 
 1. Run test suites relevant to scope — read full output, check exit codes
 2. Run build commands if applicable — verify clean build
@@ -116,7 +116,7 @@ Update STATE.md with verification result.
 
 ---
 
-## Step 5.5: Gap-Closure Plans (if FAILED)
+## Step 6: Gap-Closure Plans (if FAILED)
 
 For each FAILED truth in the truth table, auto-generate a lightweight gap-closure plan:
 
