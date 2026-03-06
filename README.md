@@ -7,7 +7,11 @@ All-in-one workflow plugin for Claude Code — engineering discipline (TDD, veri
 In Claude Code, run:
 
 ```
-/install-plugin fhhs-skills from cinjoff/fhhs-skills
+# Register marketplace
+/plugin marketplace add cinjoff/fhhs-skills
+
+# Install plugin
+/plugin install fhhs-skills@fhhs-skills-marketplace
 ```
 
 Then start a new conversation and run:
