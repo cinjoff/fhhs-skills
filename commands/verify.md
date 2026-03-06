@@ -6,7 +6,7 @@ Standalone verification of work. Combines GSD goal-backward verification with Su
 
 What to verify (phase number, branch name, or leave blank for current work): $ARGUMENTS
 
-> **Dependency check:** Read `references/dependency-check.md` from the fhhs-skills plugin directory. Verify Superpowers is available (required for evidence-based verification). GSD is optional but enhances verification with artifact and key-link checks.
+> **Dependency check:** Verify Superpowers is available (required for evidence-based verification). GSD project (`.planning/PROJECT.md`) is expected — enables artifact and key-link verification via gsd-tools. See the `references/dependency-check.md` file in the same plugin directory as this command for detection details.
 
 This command runs in a single context. No subagents — verification should be direct and observable.
 
@@ -34,24 +34,23 @@ For each `must_haves.truth` across all plans in scope:
 |---|-------|--------|----------|
 | 1 | {truth} | VERIFIED / FAILED | {file path, content snippet, test output} |
 
-**Artifacts (GSD mode — use gsd-tools):**
+**Artifacts:**
 
 ```bash
-# For each PLAN.md in scope:
 node ./.claude/get-shit-done/bin/gsd-tools.cjs verify artifacts "${PLAN_PATH}"
 ```
 
-This checks that all `must_haves.artifacts` exist on disk with expected content markers. If gsd-tools unavailable, manually check file existence and content markers.
+This checks that all `must_haves.artifacts` exist on disk with expected content markers.
 
-**Key links (GSD mode — use gsd-tools):**
+**Key links:**
 
 ```bash
 node ./.claude/get-shit-done/bin/gsd-tools.cjs verify key-links "${PLAN_PATH}"
 ```
 
-This verifies that artifacts are wired together as specified in `must_haves.key_links`. If gsd-tools unavailable, manually grep for cross-references and verify paths.
+This verifies that artifacts are wired together as specified in `must_haves.key_links`.
 
-**Requirements** (GSD only): Does every requirement ID from ROADMAP appear in at least one SUMMARY.md's `requirements-completed`?
+**Requirements coverage:** Does every requirement ID from ROADMAP appear in at least one SUMMARY.md's `requirements-completed`?
 
 ---
 
@@ -72,7 +71,7 @@ If any files in scope are `.tsx`, `.css`, or component files: "Frontend files in
 
 ## Step 4: Anti-Pattern Detection
 
-**GSD mode — use gsd-tools for structural checks:**
+Run gsd-tools structural checks:
 
 ```bash
 # Check all plans have summaries
@@ -92,7 +91,7 @@ Then manually check for:
 
 ## Step 5: Report
 
-**If GSD phase — scaffold with gsd-tools:**
+Scaffold with gsd-tools:
 
 ```bash
 node ./.claude/get-shit-done/bin/gsd-tools.cjs template fill verification \
@@ -100,18 +99,7 @@ node ./.claude/get-shit-done/bin/gsd-tools.cjs template fill verification \
   --fields '{"status":"passed|failed", "score":"N/M"}'
 ```
 
-Then fill in body tables: truth table, artifacts, key link verification, requirements coverage, anti-patterns.
-
-If gsd-tools unavailable, write `{phase}-VERIFICATION.md` manually:
-
-```yaml
----
-phase: {phase}
-verified: {ISO timestamp}
-status: passed|failed
-score: N/total must-haves verified
----
-```
+Fill in body tables: truth table, artifacts, key link verification, requirements coverage, anti-patterns.
 
 Update STATE.md with verification result.
 

@@ -8,16 +8,13 @@ What to build or which plan to execute: $ARGUMENTS
 
 You are a **lean orchestrator**. Stay under 15% context usage. Delegate all heavy work to subagents.
 
-> **Dependency check:** Read `references/dependency-check.md` from the fhhs-skills plugin directory. Verify Superpowers is available (required). Check Impeccable availability if frontend files are involved (skip design gates if missing). Check GSD availability based on `.planning/PROJECT.md`.
+> **Dependency check:** Verify Superpowers is available (required). Verify `.planning/PROJECT.md` exists (required — if missing, tell user to run `/new-project` first). Check Impeccable availability if frontend files are involved (skip design gates if missing). See the `references/dependency-check.md` file in the same plugin directory as this command for detection details.
 
-> **CRITICAL — Execution pipeline:**
-> This skill uses its OWN execution pipeline. You MUST dispatch tasks using the **Task tool with `subagent_type: "general-purpose"`**.
-> **DO NOT** use `gsd-executor`, `gsd-planner`, or any other GSD agent types. Even if a GSD project is active, `/build` runs the superpowers pipeline — not the GSD pipeline. The GSD pipeline is only used by `/gsd:execute-phase`.
+> **Execution pipeline — use superpowers, not GSD agents:**
+> Dispatch tasks using the **Task tool with `subagent_type: "general-purpose"`**. Do not use `gsd-executor`, `gsd-planner`, or other GSD agent types. The superpowers pipeline gives each task fresh context and enforces TDD, YAGNI, and verification disciplines that GSD agent types skip. The GSD pipeline is only for `/gsd:execute-phase`.
 
-> **GSD detection (do this FIRST):**
-> Check if `.planning/PROJECT.md` exists → **GSD mode active**.
-> If active: all state updates, roadmap updates, and commit helpers use `gsd-tools.cjs`.
-> Hold this decision — it affects Steps 3 through 6.
+> **GSD project context:**
+> Read `.planning/PROJECT.md`, `STATE.md`, and `ROADMAP.md` for current position. All state updates, roadmap updates, and commit helpers use `gsd-tools.cjs`.
 
 ---
 
@@ -54,14 +51,14 @@ PLAN_START_EPOCH=$(date +%s)
 
 ## Step 3: Execute Waves
 
-For each wave, dispatch **one subagent per task** using the Task tool with **`subagent_type: "general-purpose"`** (follow `superpowers:dispatching-parallel-agents` for prompt quality when dispatching parallel tasks). Never use `gsd-executor` or other GSD agent types.
+For each wave, dispatch **one subagent per task** using the Task tool with **`subagent_type: "general-purpose"`** (follow `superpowers:dispatching-parallel-agents` for prompt quality when dispatching parallel tasks).
 
 **Each subagent prompt must include:**
 1. The specific task (files, action, verify, done) — copy the full text, don't reference the plan file
 2. Only the source files that task needs (from the plan's file list)
 3. Minimal project context: relevant sections from CLAUDE.md
-4. These behavioral directives:
-5. **Implementation decisions** (if `.planning/phases/{phase}/{phase}-CONTEXT.md` exists): Include the "Design Decisions" section. These are locked — subagents must not contradict them.
+4. **Implementation decisions** (if `.planning/phases/{phase}/{phase}-CONTEXT.md` exists): Include the "Design Decisions" section. These are locked — subagents must not contradict them.
+5. The behavioral directives below (TDD, Frontend, Commits, Verification, YAGNI)
 
 ### Subagent directives
 
@@ -137,11 +134,11 @@ Auth errors (401, 403, "Not authenticated", "Please run X login") are gates, not
 2. **Done criteria check:** compare each task's `done` criteria against subagent output — flag mismatches
 3. **Report** results to user before starting next wave
 
-(GSD state updates happen once in Step 3.6, not per-wave. Don't edit STATE.md during execution.)
+(GSD state updates happen once in Step 6, not per-wave. Don't edit STATE.md during execution.)
 
 ---
 
-## Step 3.45: Impeccable Design Gates (frontend only)
+## Step 4: Impeccable Design Gates (frontend only)
 
 **Skip if no tasks touched `.tsx`, `.css`, or component files.**
 
@@ -174,7 +171,7 @@ Uses Impeccable skills (`impeccable:critique`, `impeccable:polish`, `impeccable:
 
 ---
 
-## Step 3.5: Self-Check + Generate SUMMARY.md
+## Step 5: Self-Check + Generate SUMMARY.md
 
 ### Self-check
 
@@ -200,7 +197,7 @@ Read `references/summary-template.md` from the fhhs-skills plugin directory for 
 
 ---
 
-## Step 3.6: GSD State Updates
+## Step 6: GSD State Updates
 
 **Skip this step if not in GSD mode.**
 
@@ -208,7 +205,7 @@ After SUMMARY.md is committed, read `references/gsd-state-updates.md` from the f
 
 ---
 
-## Step 3.7: Phase Completion Detection + Dual Verification
+## Step 7: Phase Completion Detection + Dual Verification
 
 **GSD mode — use gsd-tools for completeness check:**
 
@@ -216,9 +213,7 @@ After SUMMARY.md is committed, read `references/gsd-state-updates.md` from the f
 node ./.claude/get-shit-done/bin/gsd-tools.cjs verify phase-completeness "${PHASE_NUM}"
 ```
 
-**Non-GSD:** Manually check if every PLAN.md has a matching SUMMARY.md.
-
-**If NOT all plans complete:** Report "Plan X of Y complete, Z remaining." Continue to Step 4.
+**If NOT all plans complete:** Report "Plan X of Y complete, Z remaining." Continue to Step 8.
 
 **If ALL plans complete (phase done):** Run dual verification before proceeding.
 
@@ -254,7 +249,7 @@ Write `{phase}-VERIFICATION.md` with truth table, artifacts, key links, requirem
 
 ---
 
-## Step 4: Code Review
+## Step 8: Code Review
 
 After all tasks complete, invoke `superpowers:requesting-code-review` to dispatch reviewers.
 
@@ -266,7 +261,7 @@ Fix any Critical or Important issues from either review.
 
 ---
 
-## Step 5: Verify
+## Step 9: Verify
 
 Invoke `superpowers:verification-before-completion` — follow it completely. This means:
 - Run all verification commands fresh (tests, types, linter)
@@ -277,7 +272,7 @@ If this was frontend work, suggest running `/verify-ui` for visual verification.
 
 ---
 
-## Step 6: Complete
+## Step 10: Complete
 
 Invoke `superpowers:finishing-a-development-branch` — it handles merge/PR/keep/discard options and worktree cleanup.
 

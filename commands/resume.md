@@ -65,7 +65,7 @@ Based on detected state, recommend next action:
 | Research done, no plans | "Research complete. Ready to `/plan`." |
 | Plans ready, none executed | "Plans ready. Execute with `/build`." |
 | Phase complete, unverified | "All plans done. Verify with `/verify {phase}`." |
-| All phases done | "Milestone complete. Run `/gsd:audit-milestone`." |
+| All phases done | "Milestone complete. Run `/gsd:audit-milestone` to verify and archive." (This is a GSD structural command — no composite replacement exists.) |
 | Uncommitted changes | "Uncommitted work in N files. Review before continuing?" |
 | No `.planning/PROJECT.md` | "No project found. Run `/new-project` to set up tracking." |
 | No clear state | "No active work detected. What would you like to work on?" |

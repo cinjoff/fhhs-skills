@@ -4,9 +4,9 @@ Use this template when generating SUMMARY.md after plan execution.
 
 ## Location
 
-- GSD project: `{phase}-{plan}-SUMMARY.md` in the same directory as PLAN.md
+`{phase}-{plan}-SUMMARY.md` in the same directory as PLAN.md.
 
-## GSD Mode — Scaffold with gsd-tools (preferred)
+## Scaffold with gsd-tools
 
 ```bash
 node ./.claude/get-shit-done/bin/gsd-tools.cjs template fill summary \
@@ -17,9 +17,9 @@ node ./.claude/get-shit-done/bin/gsd-tools.cjs template fill summary \
 
 This creates a pre-filled SUMMARY.md with correct frontmatter schema. Then fill in the body sections with execution-specific data.
 
-## Non-GSD or gsd-tools unavailable
+## Manual fallback (if gsd-tools unavailable)
 
-Construct manually with this YAML frontmatter:
+Construct with this YAML frontmatter:
 
 ```yaml
 ---

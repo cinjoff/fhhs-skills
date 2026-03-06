@@ -6,7 +6,7 @@ Auto-triage and fix bugs with TDD discipline.
 
 The issue: $ARGUMENTS
 
-> **Dependency check:** Read `references/dependency-check.md` from the fhhs-skills plugin directory. Verify Superpowers is available (required for TDD and verification). GSD and Impeccable are optional — check as needed.
+> **Dependency check:** Verify Superpowers is available (required for TDD and verification). Check Impeccable availability if frontend files are involved. GSD project (`.planning/PROJECT.md`) is expected. See the `references/dependency-check.md` file in the same plugin directory as this command for detection details.
 
 This command runs in a single context by default. Escalates to parallel agents or /gsd:debug when needed.
 
@@ -85,8 +85,6 @@ Invoke `superpowers:verification-before-completion`. Follow completely:
 ## Step 5: Complete
 
 If on a feature branch and fix is standalone, invoke `superpowers:finishing-a-development-branch`.
-
-**If GSD project active:**
 
 Generate lightweight SUMMARY.md in the phase directory:
 

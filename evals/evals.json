@@ -1,0 +1,75 @@
+{
+  "skill_name": "fhhs-skills",
+  "evals": [
+    {
+      "id": 1,
+      "command": "build",
+      "prompt": "ok i just finished planning phase 13 for my saas app. there's a PLAN.md at .planning/phases/13-auth/13-01-PLAN.md with 3 tasks — two backend (JWT auth + refresh tokens) and one frontend (login form). the backend tasks are independent but the frontend depends on both. execute it",
+      "expected_output": "Should detect GSD mode, find the plan, identify 2 waves (wave 1: 2 parallel backend tasks, wave 2: 1 frontend task), dispatch general-purpose subagents (not gsd-executor), include TDD directives for backend tasks and Impeccable frontend-design directives for the login form, run design gates after frontend task, generate SUMMARY.md, and update GSD state.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "command": "build",
+      "prompt": "build the plan. there's no .planning directory, I just have a plan.md in the root of my project with 2 tasks",
+      "expected_output": "Should detect that GSD project is missing (.planning/PROJECT.md absent), stop, and tell the user to run /new-project first. Should NOT proceed with execution.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "command": "plan",
+      "prompt": "I need to add stripe subscription billing to my app. users should be able to pick a plan, enter payment, and see their current subscription in settings. I've never used the stripe API before",
+      "expected_output": "Should detect research-first need (unfamiliar API: Stripe), run research step BEFORE brainstorming (not after), delegate research to subagent with Firecrawl/Context7, then brainstorm with findings, discuss implementation gray areas, derive must_haves with user-facing truths, create PLAN.md with proper frontmatter, and run plan-check verification loop.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "command": "plan",
+      "prompt": "plan adding a dark mode toggle to the settings page. we already use tailwind's dark: prefix and have a ThemeProvider component",
+      "expected_output": "Should detect well-known pattern (no research needed), skip research step, proceed directly to brainstorming, note frontend work and read DESIGN.md, produce a small plan (2-3 tasks, 5-8 files), include checkpoint:human-verify for visual verification.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "command": "fix",
+      "prompt": "the login page is showing a blank white screen. no errors in the terminal but the browser console says 'Cannot read properties of undefined (reading map)' in AuthProvider.tsx line 42",
+      "expected_output": "Should triage as SIMPLE (single file, cause visible from error message), skip systematic debugging, go straight to TDD fix (write failing test reproducing the undefined.map error, fix it, refactor), do frontend check since it's a .tsx file, run verification.",
+      "files": []
+    },
+    {
+      "id": 6,
+      "command": "fix",
+      "prompt": "everything is broken after the last deploy. the API returns 500s on /api/users and /api/billing, the dashboard shows stale data, and there's a new TypeScript error in three different service files. I think it might be related to the prisma schema migration I ran yesterday",
+      "expected_output": "Should triage as PARALLEL (3+ independent failures across subsystems), dispatch parallel agents per subsystem (API users, API billing, dashboard), collect results, TDD fix for each, verify all together.",
+      "files": []
+    },
+    {
+      "id": 7,
+      "command": "resume",
+      "prompt": "hey, picking this back up. where was I?",
+      "expected_output": "Should read STATE.md, ROADMAP.md, CONCERNS.md, scan for incomplete plans (PLAN without SUMMARY), check git state, present a concise briefing with project name/branch/position/status/last activity/blockers, then route to the right next action.",
+      "files": []
+    },
+    {
+      "id": 8,
+      "command": "setup",
+      "prompt": "just installed fhhs-skills, what do I need to do to get started",
+      "expected_output": "Should check for Superpowers and Impeccable in plugin cache, report which are installed vs missing, tell the user to TYPE the /install-plugin commands (not try to run them via bash), explain GSD is per-project, verify after installs, and suggest /new-project or /skills-guide as next steps.",
+      "files": []
+    },
+    {
+      "id": 9,
+      "command": "refactor",
+      "prompt": "i want to extract all the inline SQL queries from our route handlers into a separate data access layer. there are about 15 route files that do direct prisma calls",
+      "expected_output": "Should identify blast radius (15 files, multiple subsystems), suggest writing a PLAN.md via /plan since it's 10+ files, capture baseline tests first, plan atomic steps, and enforce the iron law (tests never go red).",
+      "files": []
+    },
+    {
+      "id": 10,
+      "command": "verify",
+      "prompt": "verify phase 13",
+      "expected_output": "Should load all PLAN.md files in .planning/phases/13-*, extract must_haves, run goal-backward verification (truth table + artifacts + key links via gsd-tools), run evidence-based verification (fresh test suite, build check, linter), detect anti-patterns, write VERIFICATION.md, and generate gap-closure plans if anything fails.",
+      "files": []
+    }
+  ]
+}

@@ -63,14 +63,16 @@ If the user wants to skip this step and set up design later, allow it. They can 
 
 ## Step 4: CLAUDE.md Generation
 
-Create a lean but effective `CLAUDE.md` at the project root. Include:
+Create a lean but effective `CLAUDE.md` at the project root. Adapt content to the stack chosen in Step 2 — do not hardcode framework-specific conventions that don't match.
+
+Include:
 
 - **Project name** and one-line description (from Step 1)
-- **Tech stack** (from Step 2)
-- **Project structure** — where src, components, pages, API routes, and tests live (use Next.js App Router conventions unless overridden)
+- **Tech stack** (from Step 2 — list exactly what was chosen)
+- **Project structure** — where src, components, pages, API routes, and tests live (adapt to the chosen framework's conventions)
 - **Planning state** — "Project state is tracked in `.planning/`. Use `/resume` to check current status."
-- **Design conventions** — "See `.planning/DESIGN.md` for design tokens and aesthetic direction."
-- **Testing conventions** — "Use Vitest for unit tests. Tests live next to source files as `*.test.ts`."
+- **Design conventions** — "See `.planning/DESIGN.md` for design tokens and aesthetic direction." (only if Step 3 was completed)
+- **Testing conventions** — adapt to the chosen stack (e.g., Vitest for Vite-based, Jest for CRA, pytest for Python). Include test file location conventions.
 - **Commit conventions** — "Use conventional commits: `feat:`, `fix:`, `docs:`, `refactor:`, `test:`. Stage files individually, never `git add .`."
 
 Keep it under 40 lines. This file helps Claude navigate the project in all future sessions.

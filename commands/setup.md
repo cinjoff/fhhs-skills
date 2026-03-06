@@ -45,19 +45,21 @@ Dependency Status:
 
 ## Step 2: Install Missing Plugins
 
-For each missing plugin, run the install command. These are Claude Code plugin installs — they run in the CLI.
+For each missing plugin, tell the user to run the install command. These are Claude Code slash commands — they must be typed by the user in the CLI, not executed via bash.
 
 **Superpowers** (if missing):
+Tell the user: "Please type this command and press enter:"
 ```
 /install-plugin superpowers-extended-cc from pcvelz/superpowers
 ```
 
 **Impeccable** (if missing):
+Tell the user: "Please type this command and press enter:"
 ```
 /install-plugin impeccable from pbakaus/impeccable
 ```
 
-Run each install and wait for confirmation before proceeding to the next.
+Wait for the user to confirm each install succeeded before proceeding to the next.
 
 ---
 

@@ -31,21 +31,28 @@ Once the target phase is determined, hold it — it determines the output path f
 
 ---
 
-## Step 0.5: Workspace Setup (optional)
+## Step 1: Research (if needed)
 
-Ask the user: "Want an isolated branch for this work, or work on the current branch?"
+Check whether the user's request involves unfamiliar APIs, external services, library selection, or technical feasibility questions. If so, research before designing — it prevents brainstorming in a vacuum.
 
-If isolated branch requested, invoke `superpowers:using-git-worktrees`.
+**If research needed:** Announce "This needs technical research before design — researching first." Delegate to a subagent:
+
+Spawn a Task agent with:
+- The specific research questions implied by the user's request
+- Instruction to use Firecrawl for web search and Context7 for library documentation
+- Instruction to write findings to `.planning/research/` with prescriptive recommendations, stack decisions, pitfalls, and code examples
+
+**If the feature uses well-known patterns**, skip this step and say so.
+
+If the user mentions wanting an isolated branch or worktree, invoke `superpowers:using-git-worktrees` before continuing.
 
 ---
 
-## Step 1: Brainstorm
+## Step 2: Brainstorm
 
 Invoke `superpowers:brainstorming`. Follow it completely — it handles exploration, questions, design sections, and user approval.
 
-**Research-first detection:** If the user's request involves unfamiliar APIs, external services, library selection, or technical feasibility questions, run Step 1.5 (Research) FIRST, then return here for brainstorming with research findings in hand. Announce: "This needs technical research before design — researching first."
-
-If the feature uses well-known patterns or the user has already specified the approach, proceed directly to brainstorming.
+If research was done in Step 1, feed the findings into the brainstorming context.
 
 If this involves frontend/UI work, read `.planning/DESIGN.md` and incorporate the project's Design Context.
 
@@ -55,20 +62,7 @@ Save approved design to `.planning/designs/YYYY-MM-DD-<topic>.md`.
 
 ---
 
-## Step 1.5: Research (if needed)
-
-If the feature involves unfamiliar APIs, libraries, patterns, or external services, **delegate research to a subagent**:
-
-Spawn a Task agent with:
-- The specific research questions from the brainstorming output
-- Instruction to use Firecrawl for web search and Context7 for library documentation
-- Instruction to write findings to `.planning/research/` with prescriptive recommendations, stack decisions, pitfalls, and code examples
-
-If the feature uses well-known patterns, skip this step and say so.
-
----
-
-## Step 2: Discuss Implementation
+## Step 3: Discuss Implementation
 
 **Skip if:** A CONTEXT.md already exists for this phase (decisions already locked from a previous `/gsd:discuss-phase` run).
 
@@ -84,7 +78,7 @@ These locked decisions are fed to subagents during `/build` execution — they p
 
 ---
 
-## Step 2.5: Derive must_haves
+## Step 4: Derive must_haves
 
 From the approved design, extract the **must_haves** — these drive the plan and verify it when done.
 
@@ -108,11 +102,11 @@ Identify how artifacts connect to each other:
 - `to`: target artifact path
 - `via`: the mechanism (import, route registration, config reference, etc.)
 
-Hold these must_haves — they feed directly into the PLAN.md frontmatter and the plan-check in Step 3.5.
+Hold these must_haves — they feed directly into the PLAN.md frontmatter and the plan-check in Step 6.
 
 ---
 
-## Step 3: Create Plan
+## Step 5: Create Plan
 
 Write plans to `.planning/phases/XX-name/XX-NN-PLAN.md` using the target phase from Step 0.
 - Include full frontmatter (`phase`, `plan`, `requirements`)
@@ -187,7 +181,7 @@ requirements: []        # GSD only — requirement IDs from ROADMAP
 
 ---
 
-## Step 3.5: Plan-check (inline verification loop)
+## Step 6: Plan-check (inline verification loop)
 
 Before presenting the plan to the user, run this verification checklist. If any check fails, revise and recheck (max 3 iterations, then ask the user for guidance).
 
@@ -215,7 +209,7 @@ If a check fails, state which check failed, revise the plan, and recheck. After 
 
 ---
 
-## Step 4: Handoff
+## Step 7: Handoff
 
 After plan approval:
 

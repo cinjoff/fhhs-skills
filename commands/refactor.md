@@ -6,7 +6,7 @@ Restructure existing code safely. Not a bug (use /fix). Not new functionality (u
 
 The refactoring goal: $ARGUMENTS
 
-> **Dependency check:** Read `references/dependency-check.md` from the fhhs-skills plugin directory. Verify Superpowers is available (required for verification and review). GSD and Impeccable are optional.
+> **Dependency check:** Verify Superpowers is available (required for verification and review). GSD project (`.planning/PROJECT.md`) is expected. See the `references/dependency-check.md` file in the same plugin directory as this command for detection details.
 
 This command runs in a single context by default. For large refactors (10+ files), write a PLAN.md and delegate to subagents.
 
@@ -98,8 +98,7 @@ Invoke `superpowers:verification-before-completion`:
 
 If on a feature branch, invoke `superpowers:finishing-a-development-branch`.
 
-If GSD project active:
-- Generate SUMMARY.md with refactoring steps, commit hashes, before/after metrics, test evidence
-- Update STATE.md: note refactoring completed, structural changes made
+Generate SUMMARY.md with refactoring steps, commit hashes, before/after metrics, test evidence.
+Update STATE.md: note refactoring completed, structural changes made.
 
 Report: what was restructured, why it's better, test evidence confirming behavior preserved.

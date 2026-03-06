@@ -58,11 +58,11 @@ Verifying:   /verify (standalone, any time)
 
 ## How the Frameworks Combine
 
-**GSD is the state machine.** It owns project structure: phases, milestones, requirements, roadmaps, STATE.md.
+**GSD is the state machine.** It owns project structure: phases, milestones, requirements, roadmaps, STATE.md. Always required.
 
-**Superpowers is the discipline engine.** It enforces: TDD, two-stage review, evidence-based verification, fresh subagents, YAGNI.
+**Superpowers is the discipline engine.** It enforces: TDD, two-stage review, evidence-based verification, fresh subagents, YAGNI. Always required.
 
-**Impeccable is the design gate.** It enforces: critique, polish, normalize, harden, animate.
+**Impeccable is the design gate.** It enforces: critique, polish, normalize, harden, animate. Required for frontend work, optional otherwise.
 
 **Composites are the unified interface.** They wire the three frameworks together so you never think about which to invoke. When Superpowers updates its TDD skill, `/fix` automatically gets better. When Impeccable updates its critique methodology, `/build`'s design gates automatically get better.
 
@@ -78,7 +78,7 @@ Verifying:   /verify (standalone, any time)
 | `/gsd:progress` | Check position, metrics, route to next action |
 | `/gsd:debug` | Multi-session debugging with persistent state |
 | `/gsd:quick` | Quick ad-hoc task with GSD guarantees |
-| `/gsd:audit-milestone` | Verify milestone completion before archiving |
+| `/gsd:audit-milestone` | Verify milestone completion before archiving (no composite replacement — this is a structural GSD operation) |
 | `/gsd:complete-milestone` | Archive and prepare for next milestone |
 | `/gsd:add-phase`, `remove-phase`, `insert-phase` | Edit roadmap structure |
 | `/gsd:health` | Diagnose and repair `.planning/` directory integrity |
@@ -110,7 +110,7 @@ Every composite that executes code enforces these:
 
 ## GSD State Integration
 
-Composites auto-detect GSD projects (`.planning/PROJECT.md` exists):
+All composites require a GSD project (`.planning/PROJECT.md`). Run `/new-project` first.
 
 | Composite | GSD files written |
 |-----------|-------------------|
