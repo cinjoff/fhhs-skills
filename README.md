@@ -4,6 +4,49 @@ A workflow plugin for Claude Code that helps you plan, build, and ship software 
 
 It brings together engineering practices (test-first development, code review, verification), design quality tools (critique, polish, accessibility), and project tracking (phases, milestones, roadmaps) into one install.
 
+## Getting Started
+
+### Prerequisites
+
+This plugin uses [GSD](https://github.com/gsd-build/get-shit-done) for project state management (tracking phases, milestones, and progress). Install it first:
+
+```bash
+npm install -g get-shit-done
+```
+
+### Install the plugin
+
+In Claude Code:
+
+```
+/plugin marketplace add cinjoff/fhhs-skills
+/plugin install fh@fhhs-skills-marketplace
+```
+
+### Start your first project
+
+```
+/fh:new-project
+```
+
+This walks you through setting up your project vision, tech stack, design language, and roadmap. Then:
+
+```
+/fh:plan       — design your first feature
+/fh:build      — execute the plan
+/fh:verify     — confirm everything works
+```
+
+### Resuming work
+
+When you start a new session on an existing project:
+
+```
+/fh:resume
+```
+
+It reads your project state, shows where you left off, and suggests what to do next.
+
 ## What You Get
 
 **Core workflow** — the commands you'll use most:
@@ -97,49 +140,6 @@ When you run `/fh:build`, here's what happens behind the scenes:
 5. **Verification requires proof** — no "it should work," only "here's the test output showing it works"
 
 The other commands follow similar patterns: systematic investigation for `/fh:fix`, safe atomic steps for `/fh:refactor`, research-then-design for `/fh:plan`.
-
-## Getting Started
-
-### Prerequisites
-
-This plugin uses [GSD](https://github.com/gsd-build/get-shit-done) for project state management (tracking phases, milestones, and progress). Install it first:
-
-```bash
-npm install -g get-shit-done
-```
-
-### Install the plugin
-
-In Claude Code:
-
-```
-/plugin marketplace add cinjoff/fhhs-skills
-/plugin install fh@fhhs-skills-marketplace
-```
-
-### Start your first project
-
-```
-/fh:new-project
-```
-
-This walks you through setting up your project vision, tech stack, design language, and roadmap. Then:
-
-```
-/fh:plan       — design your first feature
-/fh:build      — execute the plan
-/fh:verify     — confirm everything works
-```
-
-### Resuming work
-
-When you start a new session on an existing project:
-
-```
-/fh:resume
-```
-
-It reads your project state, shows where you left off, and suggests what to do next.
 
 ## Typical Workflows
 
