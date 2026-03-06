@@ -1,0 +1,10 @@
+{
+  "name": "fhhs-skills",
+  "description": "Composite workflow skills that unify GSD, Superpowers, and Impeccable into a single interface. Requires: superpowers-extended-cc, impeccable, and get-shit-done.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Konstantin"
+  },
+  "repository": "https://github.com/cinjoff/fhhs-skills",
+  "license": "MIT"
+}

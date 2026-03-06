@@ -1,0 +1,71 @@
+---
+description: "Context restoration and routing. Reads project state, presents a briefing, routes to the right composite."
+---
+
+Context restoration and routing. Reads project state, presents a briefing, routes to the right composite.
+
+$ARGUMENTS
+
+---
+
+## Step 1: Read State
+
+Gather project context from all available sources.
+
+### GSD State (if .planning/PROJECT.md exists)
+- Read `.planning/STATE.md` — current position, last activity, decisions, blockers
+- Read `.planning/ROADMAP.md` — phase list, progress table
+- Read `.planning/CONCERNS.md` — known issues (if exists)
+
+### Incomplete Work Detection
+
+Scan `.planning/phases/` for:
+
+| Pattern | Meaning |
+|---------|---------|
+| PLAN.md without SUMMARY.md | Interrupted execution |
+| All SUMMARY.md present, no VERIFICATION.md | Phase complete but unverified |
+| RESEARCH.md without PLAN.md | Research done, planning needed |
+| Phase in ROADMAP but no files | Phase not yet planned |
+
+### Git State
+- Current branch name
+- Uncommitted changes (`git status`)
+- Unpushed commits (branch tracking status)
+- Last commit message and timestamp
+
+---
+
+## Step 2: Present Briefing
+
+Summarize concisely:
+
+```
+**Project:** {name from PROJECT.md or "No GSD project"}
+**Branch:** {branch} ({N unpushed commits | up to date | no upstream})
+**Position:** Phase {N} ({name}), plan {X} of {Y}
+**Status:** {Plans 01-02 complete. Plan 03 not started.}
+**Last activity:** {date} — {what was done}
+**Blockers:** {None | list from CONCERNS.md}
+```
+
+If uncommitted changes exist, flag them.
+
+---
+
+## Step 3: Route
+
+Based on detected state, recommend next action:
+
+| State | Recommendation |
+|-------|---------------|
+| Interrupted build (PLAN without SUMMARY) | "Continue with `/build`? Picks up from plan {X}." |
+| Research done, no plans | "Research complete. Ready to `/plan`." |
+| Plans ready, none executed | "Plans ready. Execute with `/build`." |
+| Phase complete, unverified | "All plans done. Verify with `/verify {phase}`." |
+| All phases done | "Milestone complete. Run `/gsd:audit-milestone`." |
+| Uncommitted changes | "Uncommitted work in N files. Review before continuing?" |
+| No `.planning/PROJECT.md` | "No project found. Run `/new-project` to set up tracking." |
+| No clear state | "No active work detected. What would you like to work on?" |
+
+Present the recommendation. Wait for user to choose. Hand off to the chosen composite.
