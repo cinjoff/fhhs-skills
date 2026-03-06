@@ -104,7 +104,19 @@ Commit: `docs: initialize project planning with GSD structure`
 
 ---
 
-## Step 6: Handoff
+## Step 6: Configure Workflow
+
+Invoke `/settings` to let the user configure their workflow preferences:
+- Model profile (quality/balanced/budget) — controls which models agents use
+- Agent toggles (researcher, plan checker, verifier, Nyquist validation)
+- Auto-advance (chain stages automatically or manual control)
+- Git branching strategy (none, per-phase, per-milestone)
+
+If the user wants to skip configuration, the defaults in `config.json` are sensible (balanced profile, all agents on, manual advance, no branching).
+
+---
+
+## Step 7: Handoff
 
 Report to the user:
 
@@ -115,6 +127,7 @@ Project initialized:
 - .planning/REQUIREMENTS.md — work items
 - .planning/ROADMAP.md    — phased plan
 - .planning/STATE.md      — tracking state
+- .planning/config.json   — workflow settings
 - CLAUDE.md               — project conventions
 
 Next: run /plan to plan your first phase (scaffolding and core setup).
