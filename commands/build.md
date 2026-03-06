@@ -1,5 +1,5 @@
 ---
-description: "Execute an existing plan. Delegates task execution to subagents for optimal context usage."
+description: "Execute an existing plan with fresh subagents, TDD, design gates, and verification. Use when the user says 'build', 'execute the plan', 'run the plan', 'implement this', or has a PLAN.md ready to execute. Always use this instead of /gsd:execute-phase."
 ---
 
 Execute an existing plan. Delegates task execution to subagents for optimal context usage.
@@ -7,6 +7,8 @@ Execute an existing plan. Delegates task execution to subagents for optimal cont
 What to build or which plan to execute: $ARGUMENTS
 
 You are a **lean orchestrator**. Stay under 15% context usage. Delegate all heavy work to subagents.
+
+> **Dependency check:** Read `references/dependency-check.md` from the fhhs-skills plugin directory. Verify Superpowers is available (required). Check Impeccable availability if frontend files are involved (skip design gates if missing). Check GSD availability based on `.planning/PROJECT.md`.
 
 > **CRITICAL — Execution pipeline:**
 > This skill uses its OWN execution pipeline. You MUST dispatch tasks using the **Task tool with `subagent_type: "general-purpose"`**.
@@ -192,64 +194,7 @@ If any checks fail, flag in SUMMARY under "Issues Encountered".
 
 ### Generate SUMMARY.md
 
-**Location:**
-- GSD project: `{phase}-{plan}-SUMMARY.md` in the same directory as PLAN.md
-
-**GSD mode — scaffold with gsd-tools (preferred):**
-
-```bash
-node ./.claude/get-shit-done/bin/gsd-tools.cjs template fill summary \
-  --phase "${PHASE_NUM}" --plan "${PLAN_NUM}" \
-  --name "${PLAN_DESCRIPTION}" \
-  --fields '{"subsystem":"...", "duration":"...", "requirements-completed": [...]}'
-```
-
-This creates a pre-filled SUMMARY.md with correct frontmatter schema. Then fill in the body sections with execution-specific data.
-
-**Non-GSD or if gsd-tools unavailable**, construct manually with this YAML frontmatter:
-
-```yaml
----
-phase: {from PLAN.md}
-plan: {from PLAN.md}
-subsystem: {inferred: auth, payments, ui, etc.}
-tags: []
-requires:
-  - phase: {dep phase}
-    provides: "what it provided"
-provides:
-  - "what this plan delivered"
-affects: [downstream IDs]
-tech-stack:
-  added: []
-  patterns: []
-key-files:
-  created: []
-  modified: []
-key-decisions:
-  - "decision and why"
-requirements-completed: [copy requirements array from PLAN.md verbatim]
-duration: {elapsed}
-completed: {ISO timestamp}
----
-```
-
-**Body sections (both modes):**
-
-| Section | Content |
-|---------|---------|
-| Performance Metrics | Build time, test count, coverage delta |
-| Task Commits | Table: Task \| Name \| Commit \| Key Files |
-| What Was Done | Bullet summary of deliverables |
-| Decisions Made | Table: Decision \| Rationale \| Alternatives Considered |
-| Deviations from Plan | All deviation entries with rule number, description, fix, commit |
-| Issues Encountered | Problems hit and how resolved (or "None") |
-| Self-Check | PASSED or FAILED with details |
-| Next Phase Readiness | What downstream plans can now proceed |
-
-**If design gates ran (frontend):** Also capture critique fixes, polish commit, normalize commit in Task Commits table and design deviations in Deviations section.
-
-**One-liner must be substantive:** "JWT auth with refresh rotation using jose library" not "Authentication implemented"
+Read `references/summary-template.md` from the fhhs-skills plugin directory for the full template (frontmatter schema, gsd-tools scaffold command, body sections).
 
 **Commit:** `docs({phase}-{plan}): complete {description}`
 
@@ -259,36 +204,7 @@ completed: {ISO timestamp}
 
 **Skip this step if not in GSD mode.**
 
-After SUMMARY.md is committed, update GSD state:
-
-```bash
-# Advance plan counter
-node ./.claude/get-shit-done/bin/gsd-tools.cjs state advance-plan
-
-# Recalculate progress bar from disk state
-node ./.claude/get-shit-done/bin/gsd-tools.cjs state update-progress
-
-# Record execution metrics
-node ./.claude/get-shit-done/bin/gsd-tools.cjs state record-metric \
-  --phase "${PHASE}" --plan "${PLAN}" --duration "${DURATION}" \
-  --tasks "${TASK_COUNT}" --files "${FILE_COUNT}"
-
-# Add decisions from SUMMARY key-decisions
-node ./.claude/get-shit-done/bin/gsd-tools.cjs state add-decision \
-  --phase "${PHASE}" --summary "${DECISION_TEXT}"
-
-# Update session info
-node ./.claude/get-shit-done/bin/gsd-tools.cjs state record-session \
-  --stopped-at "Completed ${PHASE}-${PLAN}-PLAN.md"
-
-# Update ROADMAP progress
-node ./.claude/get-shit-done/bin/gsd-tools.cjs roadmap update-plan-progress "${PHASE}"
-```
-
-Commit state updates:
-```bash
-node ./.claude/get-shit-done/bin/gsd-tools.cjs commit "docs(${PHASE}-${PLAN}): update state and roadmap" --files .planning/STATE.md .planning/ROADMAP.md
-```
+After SUMMARY.md is committed, read `references/gsd-state-updates.md` from the fhhs-skills plugin directory and run all state update commands. This covers: advance-plan, update-progress, record-metric, add-decision, record-session, and roadmap update.
 
 ---
 
@@ -300,8 +216,6 @@ node ./.claude/get-shit-done/bin/gsd-tools.cjs commit "docs(${PHASE}-${PLAN}): u
 node ./.claude/get-shit-done/bin/gsd-tools.cjs verify phase-completeness "${PHASE_NUM}"
 ```
 
-This checks that every PLAN.md in the phase directory has a matching SUMMARY.md and reports status.
-
 **Non-GSD:** Manually check if every PLAN.md has a matching SUMMARY.md.
 
 **If NOT all plans complete:** Report "Plan X of Y complete, Z remaining." Continue to Step 4.
@@ -310,72 +224,33 @@ This checks that every PLAN.md in the phase directory has a matching SUMMARY.md 
 
 ### Goal-backward verification
 
-**GSD mode — use gsd-tools verification suite for artifact and link checks:**
+**GSD mode — use gsd-tools verification suite:**
 
 ```bash
-# For each PLAN.md in the phase:
 node ./.claude/get-shit-done/bin/gsd-tools.cjs verify artifacts "${PLAN_PATH}"
 node ./.claude/get-shit-done/bin/gsd-tools.cjs verify key-links "${PLAN_PATH}"
 ```
 
-Then manually verify the remaining checks:
+Then manually verify:
 1. For each `must_haves.truth` — find evidence (file exists, content matches, test passes)
 2. Requirements coverage — every requirement ID from ROADMAP appears in at least one SUMMARY's `requirements-completed`
 
 ### Evidence-based verification (Superpowers)
 
 - Run fresh test suites, check exit codes
-- Verify all expected artifacts exist (gsd-tools `verify artifacts` handles this in GSD mode)
+- Verify all expected artifacts exist
 - Build check if applicable
 - No claims without proof
 
 ### Output
 
-**GSD mode — scaffold with gsd-tools:**
-
-```bash
-node ./.claude/get-shit-done/bin/gsd-tools.cjs template fill verification \
-  --phase "${PHASE_NUM}" \
-  --fields '{"status":"passed|failed", "score":"N/M"}'
-```
-
-Then fill in the body tables. If gsd-tools unavailable, write `{phase}-VERIFICATION.md` manually with:
-
-```yaml
----
-phase: {phase}
-verified: {ISO timestamp}
-status: passed|failed
-score: N/total must-haves verified
----
-```
-
-**Body tables:**
-
-| Section | Format |
-|---------|--------|
-| Truth table | # \| Truth \| Status \| Evidence |
-| Artifacts | File \| Expected \| Found |
-| Key link verification | Source \| Target \| Status |
-| Requirements coverage | Req ID \| Plan \| Status |
-| Anti-patterns | Pattern \| Location \| Severity |
+Write `{phase}-VERIFICATION.md` with truth table, artifacts, key links, requirements coverage, and anti-patterns. Use `gsd-tools.cjs template fill verification` if available.
 
 ### Phase completion (GSD mode)
 
-**If PASSED**, mark the phase complete using gsd-tools:
+**If PASSED:** `gsd-tools.cjs phase complete "${PHASE_NUM}"` — atomically updates STATE.md and ROADMAP.md. "Phase verified. Ready for next phase."
 
-```bash
-node ./.claude/get-shit-done/bin/gsd-tools.cjs phase complete "${PHASE_NUM}"
-```
-
-This atomically updates STATE.md and ROADMAP.md progress table. Then commit:
-
-```bash
-node ./.claude/get-shit-done/bin/gsd-tools.cjs commit "docs(${PHASE}): phase verified and complete" --files .planning/STATE.md .planning/ROADMAP.md
-```
-
-- **PASSED:** "Phase verified. Ready for next phase."
-- **FAILED:** Report gaps. Suggest `/plan` for closure or `/fix` for bugs.
+**If FAILED:** Report gaps. Suggest `/plan` for closure or `/fix` for bugs.
 
 ---
 

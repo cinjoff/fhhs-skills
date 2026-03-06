@@ -1,10 +1,12 @@
 ---
-description: "Standalone verification of work. Combines GSD goal-backward verification with Superpowers evidence-based verification."
+description: "Verify completed work with goal-backward truth tables and fresh evidence. Use when the user says 'verify', 'check if it works', 'did we miss anything', 'validate', or wants proof that a phase or branch is complete. Replaces /gsd:verify-work."
 ---
 
 Standalone verification of work. Combines GSD goal-backward verification with Superpowers evidence-based verification.
 
 What to verify (phase number, branch name, or leave blank for current work): $ARGUMENTS
+
+> **Dependency check:** Read `references/dependency-check.md` from the fhhs-skills plugin directory. Verify Superpowers is available (required for evidence-based verification). GSD is optional but enhances verification with artifact and key-link checks.
 
 This command runs in a single context. No subagents — verification should be direct and observable.
 

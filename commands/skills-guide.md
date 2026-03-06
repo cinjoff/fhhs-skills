@@ -1,5 +1,5 @@
 ---
-description: "Print the composite skills guide below. Output ONLY the formatted content — no commentary before or after."
+description: "Print the composite skills reference guide. Use when the user says 'help', 'what commands are available', 'how do composites work', 'skills guide', or needs an overview of all composite commands and how GSD/Superpowers/Impeccable fit together."
 ---
 
 Print the composite skills guide below. Output ONLY the formatted content — no commentary before or after.
@@ -11,6 +11,9 @@ Print the composite skills guide below. Output ONLY the formatted content — no
 Eight skills that unify GSD state management, Superpowers engineering discipline, and Impeccable design quality into a single workflow interface.
 
 ## The Skills
+
+### `/setup` — Install dependencies
+Checks for Superpowers and Impeccable plugins, installs any that are missing. GSD installs per-project via `/new-project`. Run once after installing fhhs-skills.
 
 ### `/new-project` — Bootstrap a tracked project
 GSD new-project questioning -> tech stack defaults (Next.js/TS/Tailwind/Shadcn/Vercel, optional Supabase) -> `impeccable:teach-impeccable` for DESIGN.md -> CLAUDE.md generation -> GSD requirements + roadmap. All `.planning/` files, no scaffolding.
@@ -42,6 +45,7 @@ Playwright screenshots at 3 breakpoints -> design critique against `.planning/DE
 ## Typical Workflows
 
 ```
+First time:   /setup -> /new-project -> /plan -> /build -> /verify
 New project:  /new-project -> /plan -> /build -> /verify
 Feature:     /plan -> /build -> /verify -> /verify-ui
 Bug fix:     /fix

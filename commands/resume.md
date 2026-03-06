@@ -1,10 +1,12 @@
 ---
-description: "Context restoration and routing. Reads project state, presents a briefing, routes to the right composite."
+description: "Restore context and route to the right next action. Use when the user says 'resume', 'where was I', 'what's next', 'continue', 'pick up where I left off', or starts a new session on an existing project. Replaces /gsd:resume-work."
 ---
 
 Context restoration and routing. Reads project state, presents a briefing, routes to the right composite.
 
 $ARGUMENTS
+
+> **Dependency check:** This command works with or without all dependencies. It reads state and routes — if a dependency is missing, it notes this in the briefing so the user knows before proceeding.
 
 ---
 

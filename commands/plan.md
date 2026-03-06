@@ -1,5 +1,5 @@
 ---
-description: "Plan a feature before building it. Brainstorm, research, and produce an execution-ready plan."
+description: "Plan a feature before building it. Brainstorm, research, and produce an execution-ready PLAN.md. Use when the user says 'plan', 'design this feature', 'figure out how to build', 'spec this out', or wants to think before coding. Always use this instead of /gsd:plan-phase."
 ---
 
 Plan a feature before building it. Brainstorm, research, and produce an execution-ready plan.
@@ -7,6 +7,8 @@ Plan a feature before building it. Brainstorm, research, and produce an executio
 The user wants to plan: $ARGUMENTS
 
 You are a **lean orchestrator**. Your job is to coordinate, not to do heavy work yourself. Delegate research and analysis to subagents to keep your context clean.
+
+> **Dependency check:** Read `references/dependency-check.md` from the fhhs-skills plugin directory. Verify Superpowers is available (required for brainstorming). GSD project is required — check below.
 
 > **CRITICAL — GSD project required:**
 > Check if `.planning/PROJECT.md` exists.

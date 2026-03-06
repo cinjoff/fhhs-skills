@@ -1,5 +1,5 @@
 ---
-description: "Bootstrap a new project with opinionated defaults, design framework, and full GSD tracking."
+description: "Bootstrap a new tracked project with design framework, conventions, and GSD roadmap. Use when the user says 'new project', 'start a project', 'bootstrap', 'set up a new app', or 'initialize'. Creates .planning/ structure and CLAUDE.md."
 ---
 
 Bootstrap a new project with opinionated defaults, design framework, and full GSD tracking.
@@ -7,6 +7,8 @@ Bootstrap a new project with opinionated defaults, design framework, and full GS
 $ARGUMENTS
 
 You are a **lean orchestrator**. Guide the user through setup, delegate heavy work to framework skills.
+
+> **Dependency check:** Read `references/dependency-check.md` from the fhhs-skills plugin directory. Verify Superpowers and GSD are available (both required). Impeccable is optional — if missing, skip Step 3 (Design Framework) and note it can be set up later.
 
 ---
 

@@ -1,10 +1,12 @@
 ---
-description: "Visual verification of frontend work using Playwright browser capture and design critique."
+description: "Visual verification of frontend work using Playwright screenshots and design critique. Use when the user says 'check the UI', 'does it look right', 'visual check', 'screenshot', 'verify the design', or after /build completes frontend work. Requires Playwright and a running dev server."
 ---
 
 Visual verification of frontend work using Playwright browser capture and design critique.
 
 Target to verify: $ARGUMENTS
+
+> **Dependency check:** Requires Impeccable for design critique (skip critique if missing, still capture screenshots). Requires Playwright with Chromium — if missing: `npm install -g playwright && npx playwright install chromium`.
 
 ---
 

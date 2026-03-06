@@ -1,10 +1,12 @@
 ---
-description: "Restructure existing code safely. Not a bug (use /fix). Not new functionality (use /build). Behavior preservation is the iron law."
+description: "Safe code restructuring with behavior preservation. Use when the user says 'refactor', 'restructure', 'reorganize', 'clean up this code', 'extract', 'rename', or 'move'. Not for bugs (/fix) or new features (/build). Tests must stay green at every step."
 ---
 
 Restructure existing code safely. Not a bug (use /fix). Not new functionality (use /build). Behavior preservation is the iron law.
 
 The refactoring goal: $ARGUMENTS
+
+> **Dependency check:** Read `references/dependency-check.md` from the fhhs-skills plugin directory. Verify Superpowers is available (required for verification and review). GSD and Impeccable are optional.
 
 This command runs in a single context by default. For large refactors (10+ files), write a PLAN.md and delegate to subagents.
 

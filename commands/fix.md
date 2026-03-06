@@ -1,10 +1,12 @@
 ---
-description: "Lightweight bug fix pipeline. Auto-triages depth, then debug, TDD fix, verify."
+description: "Auto-triage and fix bugs with TDD discipline. Use when the user reports a bug, error, test failure, broken behavior, or says 'fix', 'debug', 'something is wrong', 'this broke', or 'not working'. Handles simple single-file fixes through complex multi-subsystem failures."
 ---
 
-Lightweight bug fix pipeline. Auto-triages depth, then debug, TDD fix, verify.
+Auto-triage and fix bugs with TDD discipline.
 
 The issue: $ARGUMENTS
+
+> **Dependency check:** Read `references/dependency-check.md` from the fhhs-skills plugin directory. Verify Superpowers is available (required for TDD and verification). GSD and Impeccable are optional — check as needed.
 
 This command runs in a single context by default. Escalates to parallel agents or /gsd:debug when needed.
 
@@ -53,8 +55,6 @@ If the fix touches `.tsx`, `.css`, components, or styles:
 - Quick check: does the fix maintain visual consistency?
 - Check against `impeccable:frontend-design` anti-patterns — no generic cards, cyan-on-dark, purple gradients, or other AI slop introduced by the fix
 - If significant UI change, suggest `/verify-ui`
-
----
 
 ---
 

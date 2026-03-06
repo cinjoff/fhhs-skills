@@ -1,5 +1,5 @@
 ---
-description: "Research a topic using Firecrawl and Context7. Outputs in GSD-compatible format for seamless planning."
+description: "Investigate a topic with web search and docs, producing GSD-compatible research output. Use when the user says 'research', 'investigate', 'look into', 'what are the options for', 'how does X work', or needs technical feasibility analysis before planning. Replaces /gsd:research-phase."
 ---
 
 Research a topic using Firecrawl and Context7. Outputs in GSD-compatible format for seamless planning.
@@ -7,6 +7,8 @@ Research a topic using Firecrawl and Context7. Outputs in GSD-compatible format 
 Research topic: $ARGUMENTS
 
 You are a **lean orchestrator**. Delegate the actual research to a subagent to keep your context clean.
+
+> **Dependency check:** GSD project required (`.planning/PROJECT.md` must exist). Firecrawl skill is needed for web search — if unavailable, the subagent falls back to WebSearch/WebFetch.
 
 ---
 
