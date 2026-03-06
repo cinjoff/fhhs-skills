@@ -3,7 +3,7 @@
 Modifications applied to forked upstream skills. When updating upstream,
 review each patch and reapply if still relevant.
 
-## Superpowers (forked from v4.3.4)
+## Superpowers (forked from v4.3.5)
 
 ### brainstorming
 | # | Change | Rationale |
@@ -33,29 +33,35 @@ review each patch and reapply if still relevant.
 No changes.
 
 ### dispatching-parallel-agents
-No changes.
+No changes. (Upstream additions from v4.3.5 merged cleanly.)
+
+### executing-plans
+No changes. (Upstream additions from v4.3.5 merged cleanly.)
+
+### subagent-driven-development
+No changes. (Upstream additions from v4.3.5 merged cleanly.)
 
 ### finishing-a-development-branch
 No changes.
 
-## Impeccable (forked from v1.0.0)
+## Impeccable (forked from v1.2.0)
 
 ### teach-impeccable
 | # | Change | Rationale |
 |---|--------|-----------|
 | 1 | Output: `{{config_file}}` → `.planning/DESIGN.md` | GSD convention — design context lives in .planning/ |
-| 2 | Removed `{{config_file}}` and `{{ask_instruction}}` template variables | Direct paths, no template engine needed |
-| 3 | Added YAML frontmatter to output format | GSD file format consistency |
+| 2 | Added YAML frontmatter to output format | GSD file format consistency |
 
 ### critique
-| # | Change | Rationale |
-|---|--------|-----------|
-| 1 | Reference: `impeccable:frontend-design` → `skills/frontend-design/` | Internal skill path |
+No changes. (Upstream v1.2.0 references now use `{{available_commands}}` and generic skill names — compatible with our setup.)
 
 ### animate
+No changes. (Upstream v1.2.0 uses `{{ask_instruction}}` and generic skill references — compatible with our setup.)
+
+### distill (was simplify)
 | # | Change | Rationale |
 |---|--------|-----------|
-| 1 | Reference: `impeccable:frontend-design` → `skills/frontend-design/` | Internal skill path |
+| 1 | Renamed `simplify` → `distill` | Matches upstream rename |
 
 ### polish
 No changes.
@@ -70,6 +76,9 @@ No changes.
 | # | Change | Rationale |
 |---|--------|-----------|
 | 1 | Reference paths updated to internal `skills/frontend-design/reference/` | Self-contained plugin |
+
+### adapt, bolder, quieter, extract, colorize, audit, clarify, onboard, optimize, delight
+No changes. (Template variables adopted from upstream v1.2.0.)
 
 ## GSD (forked from v1.22.4)
 

@@ -1,6 +1,7 @@
 ---
 name: teach-impeccable
 description: One-time setup that gathers design context for your project and saves it to .planning/DESIGN.md. Run once to establish persistent design guidelines.
+user-invokable: true
 ---
 
 Gather design context for this project, then persist it for all future sessions.
@@ -20,7 +21,7 @@ Note what you've learned and what remains unclear.
 
 ## Step 2: Ask UX-Focused Questions
 
-STOP and ask the user to clarify. Focus only on what you couldn't infer from the codebase:
+{{ask_instruction}} Focus only on what you couldn't infer from the codebase:
 
 ### Users & Purpose
 - Who uses this? What's their context when using it?

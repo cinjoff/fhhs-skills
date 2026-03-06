@@ -1,6 +1,7 @@
 ---
 name: audit
 description: Perform comprehensive audit of interface quality across accessibility, performance, theming, and responsive design. Generates detailed report of issues with severity ratings and recommendations.
+user-invokable: true
 args:
   - name: area
     description: The feature or area to audit (optional)
@@ -9,7 +10,7 @@ args:
 
 Run systematic quality checks and generate a comprehensive audit report with prioritized issues and actionable recommendations. Don't fix issues - document them for other commands to address.
 
-**First**: Use the `skills/frontend-design/` skill for design principles and anti-patterns.
+**First**: Use the frontend-design skill for design principles and anti-patterns.
 
 ## Diagnostic Scan
 
@@ -43,7 +44,7 @@ Run comprehensive checks across multiple dimensions:
    - **Text scaling**: Layouts that break when text size increases
    - **Missing breakpoints**: No mobile/tablet variants
 
-5. **Anti-Patterns (CRITICAL)** - Check against ALL the **DON'T** guidelines in the `skills/frontend-design/` skill. Look for AI slop tells (AI color palette, gradient text, glassmorphism, hero metrics, card grids, generic fonts) and general design anti-patterns (gray on color, nested cards, bounce easing, redundant copy).
+5. **Anti-Patterns (CRITICAL)** - Check against ALL the **DON'T** guidelines in the frontend-design skill. Look for AI slop tells (AI color palette, gradient text, glassmorphism, hero metrics, card grids, generic fonts) and general design anti-patterns (gray on color, nested cards, bounce easing, redundant copy).
 
 **CRITICAL**: This is an audit, not a fix. Document issues thoroughly with clear explanations of impact. Use other commands (normalize, optimize, harden, etc.) to fix issues after audit.
 
@@ -111,6 +112,8 @@ Map issues to appropriate commands:
 - "Use `/normalize` to align components with design system (addresses 23 theming issues)"
 - "Use `/optimize` to improve performance (addresses 12 performance issues)"
 - "Use `/harden` to improve i18n and text handling (addresses 8 edge cases)"
+
+Prefer suggesting commands from {{available_commands}}, or other installed skills you're sure exist.
 
 **IMPORTANT**: Be thorough but actionable. Too many low-priority issues creates noise. Focus on what actually matters.
 

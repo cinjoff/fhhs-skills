@@ -118,7 +118,7 @@ It reads your project state, shows where you left off, and suggests what to do n
 | `/fh:audit` | Full accessibility and performance audit |
 | `/fh:bolder` | Make a safe design more visually interesting |
 | `/fh:quieter` | Tone down an overly aggressive design |
-| `/fh:simplify` | Strip away unnecessary complexity |
+| `/fh:distill` | Strip away unnecessary complexity |
 | `/fh:clarify` | Improve confusing labels and error messages |
 | `/fh:colorize` | Add strategic color to monochromatic interfaces |
 | `/fh:delight` | Add personality and moments of joy |

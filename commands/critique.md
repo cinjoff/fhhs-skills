@@ -1,6 +1,7 @@
 ---
 name: critique
 description: Evaluate design effectiveness from a UX perspective. Assesses visual hierarchy, information architecture, emotional resonance, and overall design quality with actionable feedback.
+user-invokable: true
 args:
   - name: area
     description: The feature or area to critique (optional)
@@ -9,7 +10,7 @@ args:
 
 Conduct a holistic design critique, evaluating whether the interface actually works---not just technically, but as a designed experience. Think like a design director giving feedback.
 
-**First**: Read `skills/frontend-design/SKILL.md` for design principles and anti-patterns.
+**First**: Use the frontend-design skill for design principles and anti-patterns.
 
 ## Design Critique
 
@@ -19,7 +20,7 @@ Evaluate the interface across these dimensions:
 
 **This is the most important check.** Does this look like every other AI-generated interface from 2024-2025?
 
-Review the design against ALL the **DON'T** guidelines in the `skills/frontend-design/` skill---they are the fingerprints of AI-generated work. Check for the AI color palette, gradient text, dark mode with glowing accents, glassmorphism, hero metric layouts, identical card grids, generic fonts, and all other tells.
+Review the design against ALL the **DON'T** guidelines in the frontend-design skill—they are the fingerprints of AI-generated work. Check for the AI color palette, gradient text, dark mode with glowing accents, glassmorphism, hero metric layouts, identical card grids, generic fonts, and all other tells.
 
 **The test**: If you showed this to someone and said "AI made this," would they believe you immediately? If yes, that's the problem.
 
@@ -82,7 +83,7 @@ Review the design against ALL the **DON'T** guidelines in the `skills/frontend-d
 Structure your feedback as a design director would:
 
 ### Anti-Patterns Verdict
-**Start here.** Pass/fail: Does this look AI-generated? List specific tells from the `skills/frontend-design/` skill's Anti-Patterns section. Be brutally honest.
+**Start here.** Pass/fail: Does this look AI-generated? List specific tells from the skill's Anti-Patterns section. Be brutally honest.
 
 ### Overall Impression
 A brief gut reaction---what works, what doesn't, and the single biggest opportunity.
@@ -97,7 +98,7 @@ For each issue:
 - **What**: Name the problem clearly
 - **Why it matters**: How this hurts users or undermines goals
 - **Fix**: What to do about it (be concrete)
-- **Command**: Which command to use (`/polish`, `/simplify`, `/bolder`, `/quieter`, etc.)
+- **Command**: Which command to use (prefer: {{available_commands}} — or other installed skills you're sure exist)
 
 ### Minor Observations
 Quick notes on smaller issues worth addressing.
