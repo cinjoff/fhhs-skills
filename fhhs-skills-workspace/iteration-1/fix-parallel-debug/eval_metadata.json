@@ -1,0 +1,12 @@
+{
+  "eval_id": 2,
+  "eval_name": "fix-parallel-debug",
+  "prompt": "3 independent test failures across auth, billing, and notifications subsystems. Dry run /fix.",
+  "assertions": [
+    {"text": "Triages as PARALLEL", "type": "contains_concept"},
+    {"text": "Dispatches gsd-debugger agents", "type": "contains_concept"},
+    {"text": "Mentions deferred items tracking", "type": "contains_concept"},
+    {"text": "Plans TDD fix per subsystem", "type": "contains_concept"},
+    {"text": "Plans verification-before-completion", "type": "contains_concept"}
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "eval_id": 3,
+  "eval_name": "refactor-code-reviewer",
+  "prompt": "Extract shared validation logic into reusable middleware. Dry run /refactor.",
+  "assertions": [
+    {"text": "Scopes blast radius", "type": "contains_concept"},
+    {"text": "Captures baseline tests", "type": "contains_concept"},
+    {"text": "Plans atomic steps", "type": "contains_concept"},
+    {"text": "Uses code-reviewer agent for review", "type": "contains_concept"},
+    {"text": "Mentions iron law revert-on-red", "type": "contains_concept"},
+    {"text": "Plans verification-before-completion", "type": "contains_concept"}
+  ]
+}
