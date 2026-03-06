@@ -10,8 +10,13 @@ You are a **lean orchestrator**. Stay under 15% context usage. Delegate all heav
 
 > **Dependency check:** Verify `.planning/PROJECT.md` exists (required — if missing, tell user to run `/new-project` first). Engineering disciplines (TDD, verification, review) and design quality commands are built into this plugin. See the `references/dependency-check.md` file in the same plugin directory as this command for detection details.
 
-> **Execution pipeline — use fresh subagents, not GSD agents:**
-> Dispatch tasks using the **Task tool with `subagent_type: "general-purpose"`**. Do not use `gsd-executor`, `gsd-planner`, or other GSD agent types. Fresh subagents give each task clean context and enforce TDD, YAGNI, and verification disciplines that GSD agent types skip. The GSD pipeline is only for `/gsd:execute-phase`.
+> **Execution pipeline — fresh subagents for tasks, specialized agents for review:**
+> Task execution: **`general-purpose`** subagents with structured prompt from `references/implementer-prompt.md`. Fresh context per task, no GSD state overhead.
+> Spec gates: **`code-reviewer`** agent after each wave — adversarial spec verification using `references/spec-gate-prompt.md`.
+> Quality review: **`code-reviewer`** agent at end — code quality, security, architecture.
+> Integration check: **`gsd-integration-checker`** background agent for multi-phase wiring.
+> Phase verification: **`gsd-verifier`** agent for goal-backward verification.
+> Do not use `gsd-executor` or `gsd-planner` — their state management conflicts with this orchestrator.
 
 > **GSD project context:**
 > Read `.planning/PROJECT.md`, `STATE.md`, and `ROADMAP.md` for current position. All state updates, roadmap updates, and commit helpers use `gsd-tools.cjs`.
@@ -42,9 +47,11 @@ Group tasks by their `wave` number (or dependency order if no waves specified):
 
 Report the execution plan to the user: "N tasks in M waves. Wave 1 has X parallel tasks."
 
-Record start time for duration tracking:
+Record start time and check auto-mode:
 ```bash
 PLAN_START_EPOCH=$(date +%s)
+WAVE_START_SHA=$(git rev-parse HEAD)
+AUTO_MODE=$(node ./.claude/get-shit-done/bin/gsd-tools.cjs config-get workflow.auto_advance 2>/dev/null || echo "false")
 ```
 
 ---
@@ -53,39 +60,18 @@ PLAN_START_EPOCH=$(date +%s)
 
 For each wave, dispatch **one subagent per task** using the Task tool with **`subagent_type: "general-purpose"`** (follow `skills/dispatching-parallel-agents/` for prompt quality when dispatching parallel tasks).
 
-**Each subagent prompt must include:**
-1. The specific task (files, action, verify, done) — copy the full text, don't reference the plan file
-2. Only the source files that task needs (from the plan's file list)
-3. Minimal project context: relevant sections from CLAUDE.md
-4. **Implementation decisions** (if `.planning/phases/{phase}/{phase}-CONTEXT.md` exists): Include the "Design Decisions" section. These are locked — subagents must not contradict them.
-5. The behavioral directives below (TDD, Frontend, Commits, Verification, YAGNI)
+### Subagent prompt
 
-### Subagent directives
+Use the structured template at `references/implementer-prompt.md`. Fill its placeholders:
 
-**TDD:** If task is marked `tdd="true"`: "Follow RED-GREEN-REFACTOR per `skills/test-driven-development/` — failing test first, then minimal implementation"
+- `{TASK_TEXT}` — Full task content (files, action, verify, done). Copy the text, don't reference the plan file.
+- `{CLAUDE_MD_SECTIONS}` — Relevant sections from CLAUDE.md for this task type (UI work → CONVENTIONS.md + DESIGN.md; new files → STRUCTURE.md; API work → ARCHITECTURE.md; tests → TESTING.md).
+- `{DESIGN_DECISIONS}` — If `.planning/phases/{phase}/{phase}-CONTEXT.md` exists, include the "Design Decisions" section. These are locked — subagents must not contradict them.
+- `{DESIGN_MD_CONTENT}` — For frontend tasks only: include `.planning/DESIGN.md` content (small, ~30 lines).
+- `{PHASE_DIR}` — Path to `.planning/phases/{phase}/` for deferred items logging.
+- `{TASK_NAME}` — Task identifier for deferred items format.
 
-**Frontend:** If frontend work (`.tsx`, `.css`, component files): "Read `.planning/DESIGN.md` and apply `skills/frontend-design/` guidance. Add stable selectors for Playwright: `aria-label`, `id`, `role`, or `data-testid` on key interactive elements." Include `.planning/DESIGN.md` content in the prompt (it's small, ~30 lines).
-
-**Commits:** Make atomic commits per task. Format: `type(phase-plan): description` — e.g., `feat(13-01): audit transaction module`. If no GSD phase: `type(plan): description`. Stage files individually (never `git add .`).
-
-**Verification:** Run the verify step and report actual output (not claims).
-
-**YAGNI:** Do not add features, abstractions, or error handling beyond what the task specifies. If in doubt, leave it out.
-
-### Deviation rules
-
-| Rule | Trigger | Action | Permission |
-|------|---------|--------|------------|
-| 1 | Bug: broken behavior, errors, wrong queries, type errors, security vulns | Auto-fix → test → verify → track `[Rule 1 - Bug]` | Auto |
-| 2 | Missing critical: error handling, validation, auth, CSRF, rate limiting | Auto-fix → test → verify → track `[Rule 2 - Missing Critical]` | Auto |
-| 3 | Blocking: missing deps, wrong types, broken imports, missing config | Auto-fix → verify → track `[Rule 3 - Blocking]` | Auto |
-| 4 | Architectural: new DB table, schema change, new service, switching libs | **STOP** → report to orchestrator with: what found, proposed change, why needed, impact, alternatives | Ask user |
-
-Rules 1-3: include fix in task commit. Rule 4: orchestrator asks user.
-
-**Scope boundary:** Only auto-fix issues DIRECTLY caused by the current task's changes. Pre-existing warnings, linting errors, or failures in unrelated files are out of scope. Log out-of-scope discoveries as deviations but do NOT fix them.
-
-**Fix attempt limit:** After 3 auto-fix attempts on a single issue, STOP fixing — document remaining issues and continue to the next task. Do NOT loop.
+The template includes all behavioral directives (TDD, frontend, commits, YAGNI), deviation rules 1-4, guardrails (analysis paralysis, scope boundary, deferred items), self-review checklist, and structured report format.
 
 ### Checkpoint protocol
 
@@ -111,10 +97,15 @@ Checkpoint Details: [type-specific content]
 Awaiting: [what user needs to do]
 ```
 
-Orchestrator presents checkpoint to user, waits for response, then dispatches a **new subagent** for the next task (or remaining tasks in the wave). The continuation prompt must include:
+**Auto-mode** (when `AUTO_MODE` is `"true"`):
+- `checkpoint:human-verify` → Auto-approve. Log `Auto-approved: [description]`. Continue.
+- `checkpoint:decision` → Auto-select first option (planners front-load recommended). Log `Auto-selected: [option]`. Continue.
+- `checkpoint:human-action` → Stop normally. Auth gates cannot be automated.
+
+**Standard mode:** Present checkpoint to user, wait for response, then dispatch a **new subagent** for the next task. The continuation prompt must include:
 - Completed tasks summary: task names + commit hashes (so it doesn't redo work)
 - The user's checkpoint response (approval, decision choice, or confirmation of manual action)
-- The next task's full content (files, action, verify, done) — same format as original dispatch
+- The next task's full content — same template format as original dispatch
 - For `checkpoint:decision`: which option the user selected and why
 
 ### Authentication gates
@@ -132,17 +123,64 @@ Auth errors (401, 403, "Not authenticated", "Please run X login") are gates, not
 
 1. **Spot-check:** verify key files from subagent reports exist on disk (`[ -f path ]`), check `git log` for expected commits
 2. **Done criteria check:** compare each task's `done` criteria against subagent output — flag mismatches
-3. **Report** results to user before starting next wave
+3. **Record wave SHA:** `WAVE_END_SHA=$(git rev-parse HEAD)` — needed for spec gate
+4. **Report** results to user before spec gate
 
 (GSD state updates happen once in Step 6, not per-wave. Don't edit STATE.md during execution.)
 
 ---
 
-## Step 4: Design Gates (frontend only)
+## Step 3b: Per-Wave Spec Gate
+
+**After each wave completes and passes spot-check, run a spec gate before starting the next wave.**
+
+This catches spec deviations before dependent waves build on wrong foundations. Skip this step for the final wave (Step 8's quality review covers it).
+
+### Dispatch spec reviewer
+
+Use the template at `references/spec-gate-prompt.md` with **`subagent_type: "code-reviewer"`** (specialized agent). Fill placeholders:
+
+- `{WAVE_NUMBER}` — Current wave number
+- `{TASK_SPECS}` — Done criteria and key requirements for each task in the wave
+- `{SUBAGENT_REPORTS}` — What each task subagent reported (from their structured reports)
+- `{WAVE_START_SHA}` — SHA before wave started
+- Wave diff: `git diff {WAVE_START_SHA}..{WAVE_END_SHA}`
+
+**If wave had multiple tasks:** dispatch one spec reviewer for the entire wave (reviews the combined diff). This is faster than per-task reviewers and catches cross-task issues within the wave.
+
+### Handle results
+
+**PASS:** Update `WAVE_START_SHA=$WAVE_END_SHA`. Continue to next wave.
+
+**BLOCKING:** For each blocking issue:
+1. Dispatch a fix agent (`general-purpose`) with: the spec reviewer's finding + original task spec + current code
+2. Fix agents for independent issues run in parallel
+3. After fixes: quick re-verify (file exists, test passes, `git diff` shows the fix)
+4. Do NOT re-run the full spec gate — the fix is targeted
+5. Update `WAVE_START_SHA=$(git rev-parse HEAD)`. Continue to next wave.
+
+**Report** spec gate result to user: "Wave N spec gate: PASS" or "Wave N spec gate: N issues fixed"
+
+---
+
+## Step 4: Design Gates + Background Integration Check
+
+### Background integration check (multi-phase projects)
+
+**If previous phases exist** (completed phases in `.planning/phases/`), dispatch `gsd-integration-checker` as a **background agent** before starting design gates:
+
+- **Agent type:** `gsd-integration-checker` (specialized), `run_in_background: true`
+- **Prompt:** "Check cross-phase wiring between completed phases and the current phase. Focus on: exports used, APIs called, auth protection, data flows. Provide structured report."
+- **Input:** Phase SUMMARYs from completed phases + current wave commits
+- Results collected after design gates complete (Step 4b)
+
+**Skip if:** This is the first phase, or no previous phases have SUMMARYs.
+
+### Design gates (frontend only)
 
 **Skip if no tasks touched `.tsx`, `.css`, or component files.**
 
-After all tasks complete and BEFORE self-check, run the design quality pipeline:
+After all waves complete (including spec gates) and BEFORE self-check, run the design quality pipeline:
 
 **Context for all design gate subagents:** If `.planning/phases/{phase}/{phase}-CONTEXT.md` exists, include its "Design Decisions" section. These are locked design choices that critique/polish/normalize must respect.
 
@@ -168,6 +206,10 @@ Suggest (don't auto-run) based on the work:
 Ask user before proceeding.
 
 Uses design quality commands (`/critique`, `/polish`, `/normalize`) and `skills/frontend-design/` — all built into this plugin.
+
+### Step 4b: Collect integration check results
+
+**If a background integration check was dispatched:** collect its results now. Integration findings feed into Step 8 (quality review). If critical wiring issues found (orphaned exports, broken data flows), flag to user before proceeding.
 
 ---
 
@@ -249,15 +291,28 @@ Write `{phase}-VERIFICATION.md` with truth table, artifacts, key links, requirem
 
 ---
 
-## Step 8: Code Review
+## Step 8: Quality Review
 
-After all tasks complete, invoke `skills/requesting-code-review/` to dispatch reviewers.
+After all tasks complete, dispatch a quality review. Spec compliance was already verified per-wave (Step 3b), so this review focuses on code quality and cross-task consistency.
 
-Use the two-stage review pattern (spec compliance + code quality):
-1. **Spec compliance reviewer** — did we build what was planned? Check each task's `done` criteria against the diff.
-2. **Code quality reviewer** — is it well-built? Naming, structure, error handling, test quality, security.
+### Dispatch quality reviewer
 
-Fix any Critical or Important issues from either review.
+Use `skills/requesting-code-review/` with **`subagent_type: "code-reviewer"`** (specialized agent).
+
+**Scope:** Full implementation diff from plan start to now.
+**Skip:** Spec compliance checks (already done per-wave in spec gates).
+**Focus areas:**
+- Code quality: naming, structure, error handling, DRY
+- Security: injection, auth bypass, data exposure
+- Architecture: separation of concerns, scalability
+- Test quality: tests verify behavior not mocks, edge cases covered
+- Cross-task consistency: shared patterns, naming conventions, type alignment
+
+**Integration findings:** If Step 4b produced integration check results, include them in the reviewer prompt. The quality reviewer should verify that flagged wiring issues were addressed or explain why they're acceptable.
+
+### Handle results
+
+Fix any Critical or Important issues from the review. Minor issues are noted but don't block.
 
 ---
 
@@ -295,8 +350,10 @@ If user prefers to skip the branch finishing (more work planned), report what wa
 ## Context Budget Rules
 
 - **Orchestrator (you):** Stay lean. Don't read source files. Don't load more than 2 `.planning/` files at a time. Delegate all file reading to subagents.
-- **Task subagents:** Fresh context each. Load only what that task needs.
-- **Review subagents:** Get the diff and objectives, not the full plan history.
+- **Task subagents:** Fresh context each. Load only what that task needs. Use `references/implementer-prompt.md` template.
+- **Spec gate agents:** Get the wave diff and task specs only. Don't load full plan history.
+- **Quality review agent:** Get the full implementation diff and objectives. Include integration findings if available.
+- **Integration checker:** Runs in background. Gets phase SUMMARYs and source directory structure.
 - **`.planning/DESIGN.md`** is small (~30 lines) — safe to include in every frontend subagent prompt.
 - **Don't load design reference files yourself.** The skills load them when invoked by subagents.
 - **Codebase docs per task type:**

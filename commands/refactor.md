@@ -74,11 +74,13 @@ Report progress after each commit.
 
 ## Step 5: Review
 
-Two-stage review via `skills/requesting-code-review/`:
-1. **Spec compliance:** "Is behavior unchanged?" — test suite is the evidence
-2. **Code quality:** "Is structure actually better?" — readability, cohesion, coupling
+Dispatch review via `skills/requesting-code-review/` with **`subagent_type: "code-reviewer"`** (specialized agent).
 
-If refactoring touches frontend files (`.tsx`, `.css`, component files), add a third review pass:
+Two review focuses:
+1. **Behavior preservation:** "Is behavior unchanged?" — test suite is the evidence. All tests that passed before must still pass.
+2. **Structural quality:** "Is the code actually better?" — readability, cohesion, coupling, naming clarity.
+
+If refactoring touches frontend files (`.tsx`, `.css`, component files), add a third focus:
 3. **Design consistency:** "Does the restructured code maintain design consistency per `.planning/DESIGN.md`?"
 
 Fix issues. Tests must remain GREEN after fixes.

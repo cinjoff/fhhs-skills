@@ -22,7 +22,7 @@ Vision questioning -> tech stack defaults (Next.js/TS/Tailwind/Shadcn/Vercel, op
 Requires GSD project. Research-first detection -> brainstorm (`skills/brainstorming/`) -> discuss implementation (lock decisions in CONTEXT.md) -> derive must_haves -> PLAN.md -> plan-check -> execution handoff.
 
 ### `/build` — Execute a plan
-Find plan -> resume detection -> wave-based parallel subagents (TDD, YAGNI, deviation rules) -> auto-detect frontend files -> design gates if frontend (`/critique` -> `/polish` -> `/normalize`) -> SUMMARY.md -> phase completion detection -> dual verification -> two-stage review -> finish.
+Find plan -> wave-based parallel subagents (structured implementer prompt with TDD, YAGNI, self-review, analysis paralysis guard) -> per-wave spec gate (`code-reviewer` agent, adversarial) -> design gates if frontend (`/critique` -> `/polish` -> `/normalize`) + background integration check (`gsd-integration-checker`) -> SUMMARY.md -> phase completion detection -> dual verification (`gsd-verifier`) -> quality review (`code-reviewer` agent) -> finish.
 
 ### `/fix` — Auto-triage bug fix
 Triage depth (SIMPLE/MODERATE/PARALLEL/COMPLEX) -> appropriate debug path (COMPLEX seeds `.planning/debug/` for `/gsd:debug`) -> TDD fix -> design check (frontend anti-patterns) -> spec review -> verify.
@@ -120,10 +120,11 @@ Verifying:   /verify (standalone, any time)
 Every composite that executes code enforces these (via built-in skills):
 
 1. **TDD** (`skills/test-driven-development/`) — no production code without a failing test first
-2. **Two-stage review** (`skills/requesting-code-review/`) — spec compliance first, code quality second
-3. **Verification-before-completion** (`skills/verification-before-completion/`) — no claims without fresh evidence
-4. **Fresh subagents** (`skills/dispatching-parallel-agents/`) — no context pollution between tasks
-5. **YAGNI** — no features, abstractions, or error handling beyond what's specified
+2. **Per-wave spec gates** (`references/spec-gate-prompt.md` + `code-reviewer` agent) — adversarial spec verification after each wave, before dependent work starts
+3. **Quality review** (`skills/requesting-code-review/` + `code-reviewer` agent) — code quality, security, architecture at end of build
+4. **Verification-before-completion** (`skills/verification-before-completion/`) — no claims without fresh evidence
+5. **Fresh subagents** (`skills/dispatching-parallel-agents/` + `references/implementer-prompt.md`) — structured prompts with self-review, analysis paralysis guard, deferred items
+6. **YAGNI** — no features, abstractions, or error handling beyond what's specified
 
 ## GSD State Integration
 

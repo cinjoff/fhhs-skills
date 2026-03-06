@@ -24,13 +24,13 @@ Quickly assess bug depth before choosing strategy. Spend <5% context.
 |--------|-------|------|-------------|
 | 1 file, cause visible | **SIMPLE** | TDD fix directly | "Single-file fix, straightforward." |
 | 2-4 files, one subsystem | **MODERATE** | Full debug → TDD | "Multi-file issue in [subsystem]. Full investigation." |
-| 3+ independent failures | **PARALLEL** | Agent per subsystem | "Multiple independent failures. Dispatching parallel agents." |
+| 3+ independent failures | **PARALLEL** | Debugger agent per subsystem | "Multiple independent failures. Dispatching parallel debug agents." |
 | Unclear cause, needs hypotheses | **COMPLEX** | Recommend /gsd:debug | "Sustained investigation needed. Recommend `/gsd:debug`." |
 
 Execute the chosen path:
 - **SIMPLE:** Skip to Step 2 — cause is clear from triage.
 - **MODERATE:** Invoke `skills/systematic-debugging/`. Follow completely. Then Step 2.
-- **PARALLEL:** Invoke `skills/dispatching-parallel-agents/` — one agent per subsystem. Collect results. Then Step 2 for each fix.
+- **PARALLEL:** Dispatch one **`gsd-debugger`** agent per subsystem (specialized — scientific debugging with hypothesis tracking). Each agent gets: the specific failure, relevant files, and instruction to produce root cause + proposed fix. Collect results. Then Step 2 for each fix.
 - **COMPLEX:** Write triage findings to `.planning/debug/{issue-slug}.md` with: error message, files investigated, hypotheses formed, test results observed. Slug convention: `YYYY-MM-DD-{first-3-words-kebab}` (e.g., `2026-03-06-payment-timeout-error`). If slug exists, append `-2`. Then hand off to `/gsd:debug {issue-slug}` — it auto-detects the existing session file. If user says try anyway → MODERATE path.
 
 ---
@@ -43,6 +43,11 @@ Invoke `skills/test-driven-development/`. Follow completely:
 - **REFACTOR:** Cleanup
 
 For SIMPLE triage: the failing test captures the bug directly (cause already known).
+
+**Deferred items:** During investigation and fixing, you will often discover adjacent issues (pre-existing warnings, unrelated bugs, improvement opportunities). Do NOT fix them — log to `{phase_dir}/deferred-items.md`:
+```
+- [fix-{YYYYMMDD}] {description} (found in {file}:{line})
+```
 
 Commit: `fix: [root cause and what was wrong]`
 
