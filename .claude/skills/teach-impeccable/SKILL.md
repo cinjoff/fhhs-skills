@@ -1,5 +1,5 @@
 ---
-name: teach-impeccable
+name: ui:teach-impeccable
 description: One-time setup that gathers design context for your project and saves it to .planning/DESIGN.md. Run once to establish persistent design guidelines.
 user-invokable: true
 ---

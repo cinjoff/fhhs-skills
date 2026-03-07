@@ -1,5 +1,5 @@
 ---
-name: bolder
+name: ui:bolder
 description: Amplify safe or boring designs to make them more visually interesting and stimulating. Increases impact while maintaining usability.
 user-invokable: true
 ---

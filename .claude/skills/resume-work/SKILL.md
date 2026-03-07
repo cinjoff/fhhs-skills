@@ -1,5 +1,5 @@
 ---
-name: resume
+name: resume-work
 description: Restore context and route to the right next action. Use when the user says 'resume', 'where was I', 'what's next', 'continue', 'pick up where I left off', or starts a new session on an existing project.
 user-invokable: true
 ---
@@ -63,10 +63,10 @@ Based on detected state, recommend next action:
 
 | State | Recommendation |
 |-------|---------------|
-| Interrupted build (PLAN without SUMMARY) | "Continue with `/fh:build`? Picks up from plan {X}." |
-| Research done, no plans | "Research complete. Ready to `/fh:plan`." |
-| Plans ready, none executed | "Plans ready. Execute with `/fh:build`." |
-| Phase complete, unverified | "All plans done. Verify with `/fh:verify {phase}`." |
+| Interrupted build (PLAN without SUMMARY) | "Continue with `/build`? Picks up from plan {X}." |
+| Research done, no plans | "Research complete. Ready to `/plan-work`." |
+| Plans ready, none executed | "Plans ready. Execute with `/build`." |
+| Phase complete, unverified | "All plans done. Verify with `/verify {phase}`." |
 | All phases done | "Milestone complete." Run milestone audit inline: aggregate phase verifications, check cross-phase integration, assess requirements coverage, then archive via `gsd-tools.cjs milestone complete`. |
 | Uncommitted changes | "Uncommitted work in N files. Review before continuing?" |
 | No `.planning/PROJECT.md` | "No project found. Run `/fh:new-project` to set up tracking." |

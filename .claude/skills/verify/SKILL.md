@@ -67,7 +67,7 @@ This verifies that artifacts are wired together as specified in `must_haves.key_
 
 **No claims without fresh proof.** Every "VERIFIED" in the truth table must have a command run or file read backing it.
 
-If any files in scope are `.tsx`, `.css`, or component files: "Frontend files in scope — consider running `/fh:verify-ui` for visual verification."
+If any files in scope are `.tsx`, `.css`, or component files: "Frontend files in scope — consider running `/verify-ui` for visual verification."
 
 ---
 
@@ -111,9 +111,9 @@ Update STATE.md with verification result.
 
 | Gap type | Suggestion |
 |----------|-----------|
-| Bug / test failure | `/fh:fix` |
-| Missing functionality | `/fh:plan` |
-| Structural issue | `/fh:refactor` |
+| Bug / test failure | `/fix` |
+| Missing functionality | `/plan-work` |
+| Structural issue | `/refactor` |
 | Minor gap | Describe what's needed |
 
 ---
@@ -124,7 +124,7 @@ For each FAILED truth in the truth table, auto-generate a lightweight gap-closur
 
 1. Write to `.planning/phases/{phase}/XX-NN-gap-PLAN.md` with `gap_closure: true` in frontmatter
 2. Each plan has 1 task: the specific fix needed, with the failed truth as the `done` criterion
-3. These are intentionally single-task — an exception to /fh:plan's 2-3 task scope guideline
-4. `/fh:build` processes them like normal plans (they match `*-PLAN.md` and lack a SUMMARY.md)
+3. These are intentionally single-task — an exception to /plan-work's 2-3 task scope guideline
+4. `/build` processes them like normal plans (they match `*-PLAN.md` and lack a SUMMARY.md)
 
-Report: "Created N gap-closure plans. Run `/fh:build` or `/fh:fix` to address."
+Report: "Created N gap-closure plans. Run `/build` or `/fix` to address."

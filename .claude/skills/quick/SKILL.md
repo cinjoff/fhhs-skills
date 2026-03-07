@@ -1,6 +1,6 @@
 ---
 name: quick
-description: Execute small ad-hoc tasks with GSD guarantees. Use when the user says 'quick', 'quick task', or has a small task that doesn't warrant full /fh:plan + /fh:build ceremony. Supports --discuss and --full flags.
+description: Execute small ad-hoc tasks with GSD guarantees. Use when the user says 'quick', 'quick task', or has a small task that doesn't warrant full /plan-work + /build ceremony. Supports --discuss and --full flags.
 user-invokable: true
 ---
 

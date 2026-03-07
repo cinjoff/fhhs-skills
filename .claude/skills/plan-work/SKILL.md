@@ -1,5 +1,5 @@
 ---
-name: plan
+name: plan-work
 description: Plan a feature before building it. Brainstorm, research, and produce an execution-ready PLAN.md. Use when the user says 'plan', 'design this feature', 'figure out how to build', 'spec this out', or wants to think before coding.
 user-invokable: true
 ---
@@ -79,7 +79,7 @@ Resolve implementation gray areas before planning:
 4. **Deep-dive** selected areas — present options with trade-offs, get user decisions
 5. **Lock decisions** in `.planning/phases/{phase}/{phase}-CONTEXT.md` with "Design Decisions" section
 
-These locked decisions are fed to subagents during `/fh:build` execution — they prevent re-deciding things downstream.
+These locked decisions are fed to subagents during `/build` execution — they prevent re-deciding things downstream.
 
 ---
 
@@ -218,7 +218,7 @@ If a check fails, state which check failed, revise the plan, and recheck. After 
 
 After plan approval:
 
-1. **`/fh:build`** — Execute now. Fresh subagent per task, clean context, design gates auto-detected.
+1. **`/build`** — Execute now. Fresh subagent per task, clean context, design gates auto-detected.
 2. **Continue planning** — Plan more phases before building. Useful for planning ahead across multiple phases before executing any.
 
 Default to option 1 unless the user indicates they want to keep planning.

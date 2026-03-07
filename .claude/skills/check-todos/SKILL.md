@@ -120,7 +120,7 @@ Use AskUserQuestion:
 - question: "What would you like to do with this todo?"
 - options:
   - "Work on it now" — move to done, start working
-  - "Create a phase" — /fh:plan with this scope
+  - "Create a phase" — /plan-work with this scope
   - "Brainstorm approach" — think through before deciding
   - "Put it back" — return to list
 </step>
@@ -136,7 +136,7 @@ Update STATE.md todo count. Present problem/solution context. Begin work or ask 
 Note todo reference in phase planning notes. Keep in pending. Return to list or exit.
 
 **Create a phase:**
-Display: `/fh:plan [description from todo]`
+Display: `/plan-work [description from todo]`
 Keep in pending. User runs command in fresh context.
 
 **Brainstorm approach:**

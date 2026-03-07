@@ -1,5 +1,5 @@
 ---
-name: audit
+name: ui:audit
 description: Perform comprehensive audit of interface quality across accessibility, performance, theming, and responsive design. Generates detailed report of issues with severity ratings and recommendations.
 user-invokable: true
 ---
@@ -67,7 +67,7 @@ For each issue, document:
 - **Impact**: How it affects users
 - **WCAG/Standard**: Which standard it violates (if applicable)
 - **Recommendation**: How to fix it
-- **Suggested command**: Which command to use (e.g., `/fh:normalize`, `/fh:optimize`, `/fh:harden`)
+- **Suggested command**: Which command to use (e.g., `/normalize`, `/optimize`, `/harden`)
 
 #### Critical Issues
 [Issues that block core functionality or violate WCAG A]
@@ -105,9 +105,9 @@ Create actionable plan:
 ### Suggested Commands for Fixes
 
 Map issues to appropriate commands:
-- "Use `/fh:normalize` to align components with design system (addresses 23 theming issues)"
-- "Use `/fh:optimize` to improve performance (addresses 12 performance issues)"
-- "Use `/fh:harden` to improve i18n and text handling (addresses 8 edge cases)"
+- "Use `/normalize` to align components with design system (addresses 23 theming issues)"
+- "Use `/optimize` to improve performance (addresses 12 performance issues)"
+- "Use `/harden` to improve i18n and text handling (addresses 8 edge cases)"
 
 Prefer suggesting commands from {{available_commands}}, or other installed skills you're sure exist.
 

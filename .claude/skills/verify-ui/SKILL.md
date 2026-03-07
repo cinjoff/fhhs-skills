@@ -1,6 +1,6 @@
 ---
 name: verify-ui
-description: Visual verification of frontend work using browser screenshots and design critique. Use when the user says 'check the UI', 'does it look right', 'visual check', 'screenshot', 'verify the design', or after /fh:build completes frontend work.
+description: Visual verification of frontend work using browser screenshots and design critique. Use when the user says 'check the UI', 'does it look right', 'visual check', 'screenshot', 'verify the design', or after /build completes frontend work.
 user-invokable: true
 ---
 

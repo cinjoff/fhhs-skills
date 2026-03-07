@@ -1,5 +1,5 @@
 ---
-name: animate
+name: ui:animate
 description: Review a feature and enhance it with purposeful animations, micro-interactions, and motion effects that improve usability and delight.
 user-invokable: true
 ---
