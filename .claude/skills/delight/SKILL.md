@@ -1,5 +1,5 @@
 ---
-name: ui:delight
+name: delight
 description: Add moments of joy, personality, and unexpected touches that make interfaces memorable and enjoyable to use. Elevates functional to delightful.
 user-invokable: true
 ---

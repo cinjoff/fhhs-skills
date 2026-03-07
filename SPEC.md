@@ -58,7 +58,7 @@ fhhs-skills/
 │   ├── help.md                  # Command reference listing
 │   └── revise-claude-md.md      # Capture session learnings into CLAUDE.md
 │
-├── .claude/skills/              # User-facing skills (invoked as /name or /ui:name)
+├── .claude/skills/              # User-facing skills (invoked as /fh:name)
 │   ├── build/                   # Orchestrate plan execution
 │   ├── plan-work/               # Brainstorm → research → plan
 │   ├── fix/                     # Triage → debug → TDD fix
@@ -72,24 +72,24 @@ fhhs-skills/
 │   ├── map-codebase/            # Parallel codebase analysis
 │   ├── add-todo/                # Task capture
 │   ├── check-todos/             # Task review
-│   ├── verify-ui/               # Playwright screenshots + visual check
-│   ├── ui:critique/             # Design evaluation
-│   ├── ui:polish/               # Alignment and spacing pass
-│   ├── ui:normalize/            # Design system consistency
-│   ├── ui:harden/               # Error/i18n/edge cases
-│   ├── ui:animate/              # Motion design
-│   ├── ui:teach-impeccable/     # One-time DESIGN.md setup
-│   ├── ui:distill/              # Remove complexity
-│   ├── ui:adapt/                # Responsive design
-│   ├── ui:bolder/               # Amplify visual impact
-│   ├── ui:quieter/              # Reduce visual intensity
-│   ├── ui:extract/              # Design system extraction
-│   ├── ui:colorize/             # Add strategic color
-│   ├── ui:audit/                # Accessibility/perf audit
-│   ├── ui:clarify/              # UX copy improvement
-│   ├── ui:onboard/              # First-time UX
-│   ├── ui:optimize/             # Performance
-│   └── ui:delight/              # Personality/joy
+│   ├── verify-ui/               # agent-browser screenshots + visual check
+│   ├── critique/                # Design evaluation
+│   ├── polish/                  # Alignment and spacing pass
+│   ├── normalize/               # Design system consistency
+│   ├── harden/                  # Error/i18n/edge cases
+│   ├── animate/                 # Motion design
+│   ├── teach-impeccable/        # One-time DESIGN.md setup
+│   ├── distill/                 # Remove complexity
+│   ├── adapt/                   # Responsive design
+│   ├── bolder/                  # Amplify visual impact
+│   ├── quieter/                 # Reduce visual intensity
+│   ├── extract/                 # Design system extraction
+│   ├── colorize/                # Add strategic color
+│   ├── audit/                   # Accessibility/perf audit
+│   ├── clarify/                 # UX copy improvement
+│   ├── onboard/                 # First-time UX
+│   ├── optimize/                # Performance
+│   └── delight/                 # Personality/joy
 │
 ├── skills/                      # Internal skills (composites invoke these)
 │   ├── brainstorming/           # Superpowers: collaborative design

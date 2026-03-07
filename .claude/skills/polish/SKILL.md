@@ -1,5 +1,5 @@
 ---
-name: ui:polish
+name: polish
 description: Final quality pass before shipping. Fixes alignment, spacing, consistency, and detail issues that separate good from great.
 user-invokable: true
 ---

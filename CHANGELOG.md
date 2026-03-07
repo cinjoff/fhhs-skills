@@ -9,7 +9,7 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 - **Prefix-free command invocation** — workflow skills now invokable without the `fh:` prefix: `/build`, `/fix`, `/verify`, `/quick`, `/refactor`, `/simplify`, `/research`, `/progress`, `/map-codebase`, `/add-todo`, `/check-todos`, `/verify-ui`
-- **Design skills use `ui:` prefix** — 17 impeccable-derived design commands now invoked as `/ui:polish`, `/ui:critique`, `/ui:audit`, `/ui:animate`, `/ui:bolder`, etc.
+- **Design skills lose separate prefix** — 17 impeccable-derived design skills now invoked as `/fh:polish`, `/fh:critique`, `/fh:audit`, `/fh:animate`, `/fh:bolder`, etc. (same `fh:` prefix as all other plugin skills)
 - **Setup/maintenance commands keep `fh:` prefix** — `/fh:setup`, `/fh:update`, `/fh:settings`, `/fh:new-project`, `/fh:health`, `/fh:help`, `/fh:revise-claude-md` unchanged
 - **`/plan` renamed to `/plan-work`** — avoids conflict with Claude Code's native `/plan` command
 - **`/resume` renamed to `/resume-work`** — avoids conflict with Claude Code's native `/resume` command

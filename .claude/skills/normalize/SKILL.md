@@ -1,5 +1,5 @@
 ---
-name: ui:normalize
+name: normalize
 description: Normalize design to match your design system and ensure consistency
 user-invokable: true
 ---
