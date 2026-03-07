@@ -164,14 +164,14 @@ node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" commit "docs(roadmap): add 
 
 **Plan first gap closure phase**
 
-`/gsd:plan-phase {N}`
+`/plan {N}`
 
 <sub>`/clear` first → fresh context window</sub>
 
 ---
 
 **Also available:**
-- `/gsd:execute-phase {N}` — if plans already exist
+- `/build` — if plans already exist
 - `cat .planning/ROADMAP.md` — see updated roadmap
 
 ---
@@ -270,5 +270,5 @@ becomes:
 - [ ] Coverage count updated in REQUIREMENTS.md
 - [ ] Phase directories created
 - [ ] Changes committed (includes REQUIREMENTS.md)
-- [ ] User knows to run `/gsd:plan-phase` next
+- [ ] User knows to run `/plan` next
 </success_criteria>

@@ -60,6 +60,17 @@ git diff {BASE_SHA}..{HEAD_SHA}
 - Documentation complete?
 - No obvious bugs?
 
+## Confidence Scoring
+
+Rate each potential issue 0-100:
+
+- **0-25**: Likely false positive, stylistic preference, or pre-existing issue
+- **25-50**: Real issue but minor or unlikely to be hit in practice
+- **50-75**: Verified issue, will affect functionality or violates project conventions
+- **75-100**: Confirmed issue, will be hit frequently, directly impacts correctness or security
+
+**Only report issues with confidence >= 75.** Quality over quantity — fewer high-signal issues beat a long list of maybes.
+
 ## Output Format
 
 ### Strengths
@@ -77,6 +88,7 @@ git diff {BASE_SHA}..{HEAD_SHA}
 [Code style, optimization opportunities, documentation improvements]
 
 **For each issue:**
+- Confidence score (75-100)
 - File:line reference
 - What's wrong
 - Why it matters

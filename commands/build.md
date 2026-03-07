@@ -340,7 +340,7 @@ Route based on phase status:
 | Condition | Action |
 |-----------|--------|
 | More plans in phase | "Plan X of Y complete." Suggest `/build` for next plan. |
-| Phase complete, more phases | "Phase complete." Suggest `/gsd:plan-phase {next}` or `/gsd:verify-work`. |
+| Phase complete, more phases | "Phase complete." Suggest `/plan {next}` or `/verify`. |
 | Last phase in milestone | "Milestone complete." Suggest `/gsd:complete-milestone`. |
 
 If user prefers to skip the branch finishing (more work planned), report what was built with links to key files.

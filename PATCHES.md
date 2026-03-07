@@ -12,6 +12,8 @@ review each patch and reapply if still relevant.
 | 2 | Removed terminal state (invoke writing-plans) | /plan owns the flow after brainstorming — it continues to Step 3 |
 | 3 | Removed design doc git commit | Composite handles commits to avoid double-commits |
 | 4 | Removed writing-plans references throughout | Not used in composite workflow |
+| 5 | Added deep codebase exploration with `code-explorer` agents | Inspired by feature-dev plugin — parallel explorer agents surface essential files before design |
+| 6 | Added parallel `code-architect` agents for complex features | Inspired by feature-dev plugin — independent architect agents with different lenses (minimal/clean/pragmatic) |
 
 ### test-driven-development
 | # | Change | Rationale |
@@ -28,6 +30,21 @@ review each patch and reapply if still relevant.
 | # | Change | Rationale |
 |---|--------|-----------|
 | 1 | Subagent type: `superpowers-extended-cc:code-reviewer` → internal reference | No external plugin dependency |
+
+### code-reviewer (agent)
+| # | Change | Rationale |
+|---|--------|-----------|
+| 1 | Added confidence scoring (0-100) with threshold >= 75 | Inspired by feature-dev plugin — reduces false positives, focuses on high-signal issues |
+
+### code-explorer (agent) — NEW
+| # | Change | Rationale |
+|---|--------|-----------|
+| 1 | New agent adapted from feature-dev plugin | Reusable explorer agent for tracing code flows and surfacing essential files |
+
+### code-architect (agent) — NEW
+| # | Change | Rationale |
+|---|--------|-----------|
+| 1 | New agent adapted from feature-dev plugin | Reusable architect agent for designing implementation blueprints |
 
 ### verification-before-completion
 No changes.
@@ -81,6 +98,12 @@ No changes.
 No changes. (Template variables adopted from upstream v1.2.0.)
 
 ## GSD (forked from v1.22.4)
+
+### new-project (workflow)
+| # | Change | Rationale |
+|---|--------|-----------|
+| 1 | Step 9 handoff: `/gsd:discuss-phase 1` → `/plan 1` | Composite `/plan` replaces raw GSD commands in user-facing output |
+| 2 | Removed "Also available: /gsd:plan-phase" from interactive output | `/plan` handles both discussion and planning |
 
 ### Commands (workflows)
 | # | Change | Rationale |
