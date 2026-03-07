@@ -10,7 +10,7 @@ A workflow plugin for [Claude Code](https://claude.com/claude-code) that brings 
 /plugin marketplace add cinjoff/fhhs-skills
 /plugin install fh@fhhs-skills
 /reload-plugins
-/fh:setup
+/setup
 ```
 
 Run `/reload-plugins` after installing so the new commands are available in your current session.
@@ -20,17 +20,17 @@ Setup detects your platform (macOS, Linux, Windows) and walks you through instal
 ## Quick Start
 
 ```
-/fh:new-project    set up a project with structure and tracking
-/fh:plan           design a feature before building it
-/fh:build          execute the plan with parallel workers and quality gates
-/fh:verify         confirm everything works with real evidence
+/new-project    set up a project with structure and tracking
+/plan           design a feature before building it
+/build          execute the plan with parallel workers and quality gates
+/verify         confirm everything works with real evidence
 ```
 
 When you come back to an existing project:
 
 ```
-/fh:resume         restore context and pick up where you left off
-/fh:progress       see where you are and what's next
+/resume         restore context and pick up where you left off
+/progress       see where you are and what's next
 ```
 
 ## Commands
@@ -39,55 +39,55 @@ When you come back to an existing project:
 
 | Command | What it does |
 |---------|-------------|
-| `/fh:new-project` | Set up a project with vision, tech stack, design language, and roadmap |
-| `/fh:plan` | Brainstorm, research, and produce an execution-ready plan |
-| `/fh:build` | Execute a plan with parallel subagents, TDD, design gates, and verification |
-| `/fh:verify` | Goal-backward verification with truth tables and fresh evidence |
-| `/fh:verify-ui` | Visual verification with browser screenshots |
+| `/new-project` | Set up a project with vision, tech stack, design language, and roadmap |
+| `/plan` | Brainstorm, research, and produce an execution-ready plan |
+| `/build` | Execute a plan with parallel subagents, TDD, design gates, and verification |
+| `/verify` | Goal-backward verification with truth tables and fresh evidence |
+| `/verify-ui` | Visual verification with browser screenshots |
 
 ### Engineering
 
 | Command | What it does |
 |---------|-------------|
-| `/fh:fix` | Auto-triage and fix bugs with systematic debugging |
-| `/fh:refactor` | Restructure code safely, tests green at every step |
-| `/fh:simplify` | Review code for reuse, quality, and efficiency |
-| `/fh:research` | Investigate a topic before planning |
+| `/fix` | Auto-triage and fix bugs with systematic debugging |
+| `/refactor` | Restructure code safely, tests green at every step |
+| `/simplify` | Review code for reuse, quality, and efficiency |
+| `/research` | Investigate a topic before planning |
 
 ### Navigation
 
 | Command | What it does |
 |---------|-------------|
-| `/fh:resume` | Restore context and route to the right next action |
-| `/fh:progress` | See where you are and what's next |
+| `/resume` | Restore context and route to the right next action |
+| `/progress` | See where you are and what's next |
 
 ### Design Quality
 
 | Command | What it does |
 |---------|-------------|
-| `/fh:critique` | Evaluate visual hierarchy, information architecture, and design quality |
-| `/fh:polish` | Fix alignment, spacing, consistency, and detail issues |
-| `/fh:normalize` | Match your design system and ensure consistency |
-| `/fh:harden` | Error handling, i18n, text overflow, edge cases |
-| `/fh:animate` | Purposeful motion and micro-interactions |
-| `/fh:audit` | Full accessibility, performance, theming, and responsive audit |
-| `/fh:teach-impeccable` | One-time setup for your project's design language |
+| `/critique` | Evaluate visual hierarchy, information architecture, and design quality |
+| `/polish` | Fix alignment, spacing, consistency, and detail issues |
+| `/normalize` | Match your design system and ensure consistency |
+| `/harden` | Error handling, i18n, text overflow, edge cases |
+| `/animate` | Purposeful motion and micro-interactions |
+| `/audit` | Full accessibility, performance, theming, and responsive audit |
+| `/teach-impeccable` | One-time setup for your project's design language |
 
 <details>
 <summary>More design commands</summary>
 
 | Command | What it does |
 |---------|-------------|
-| `/fh:adapt` | Make designs work across screen sizes and platforms |
-| `/fh:bolder` | Amplify safe designs to be more visually interesting |
-| `/fh:quieter` | Tone down overly aggressive designs |
-| `/fh:distill` | Strip away unnecessary complexity |
-| `/fh:clarify` | Improve confusing labels, errors, and microcopy |
-| `/fh:colorize` | Add strategic color to monochromatic interfaces |
-| `/fh:delight` | Add personality and moments of joy |
-| `/fh:extract` | Pull reusable components into your design system |
-| `/fh:onboard` | Design first-time user experiences and empty states |
-| `/fh:optimize` | Improve loading speed, rendering, and bundle size |
+| `/adapt` | Make designs work across screen sizes and platforms |
+| `/bolder` | Amplify safe designs to be more visually interesting |
+| `/quieter` | Tone down overly aggressive designs |
+| `/distill` | Strip away unnecessary complexity |
+| `/clarify` | Improve confusing labels, errors, and microcopy |
+| `/colorize` | Add strategic color to monochromatic interfaces |
+| `/delight` | Add personality and moments of joy |
+| `/extract` | Pull reusable components into your design system |
+| `/onboard` | Design first-time user experiences and empty states |
+| `/optimize` | Improve loading speed, rendering, and bundle size |
 
 </details>
 
@@ -95,23 +95,23 @@ When you come back to an existing project:
 
 | Command | What it does |
 |---------|-------------|
-| `/fh:quick` | Do a small task with tracking guarantees |
-| `/fh:add-todo` | Capture an idea or task for later |
-| `/fh:check-todos` | See pending todos and pick one |
+| `/quick` | Do a small task with tracking guarantees |
+| `/add-todo` | Capture an idea or task for later |
+| `/check-todos` | See pending todos and pick one |
 
-Phase management, milestone lifecycle, and test generation are handled automatically by `/fh:plan`, `/fh:build`, and `/fh:verify`.
+Phase management, milestone lifecycle, and test generation are handled automatically by `/plan`, `/build`, and `/verify`.
 
 ### Setup & Maintenance
 
 | Command | What it does |
 |---------|-------------|
-| `/fh:setup` | One-time setup after installing |
-| `/fh:settings` | Configure workflow preferences |
-| `/fh:health` | Check if your project files are in good shape |
-| `/fh:map-codebase` | Analyze your codebase structure |
-| `/fh:revise-claude-md` | Update CLAUDE.md with learnings from the session |
-| `/fh:update` | Check for updates and install the latest version |
-| `/fh:help` | Command reference and architecture guide |
+| `/setup` | One-time setup after installing |
+| `/settings` | Configure workflow preferences |
+| `/health` | Check if your project files are in good shape |
+| `/map-codebase` | Analyze your codebase structure |
+| `/revise-claude-md` | Update CLAUDE.md with learnings from the session |
+| `/update` | Check for updates and install the latest version |
+| `/help` | Command reference and architecture guide |
 
 ## What's Under the Hood
 
@@ -146,28 +146,28 @@ All upstreams are forked and bundled. See [PATCHES.md](PATCHES.md) for modificat
 
 **Building a feature:**
 ```
-/fh:plan  ->  /fh:build  ->  /fh:verify  ->  /fh:verify-ui
+/plan  ->  /build  ->  /verify  ->  /verify-ui
 ```
 
 **Fixing a bug:**
 ```
-/fh:fix
+/fix
 ```
 
 **Refactoring:**
 ```
-/fh:refactor  ->  /fh:simplify
+/refactor  ->  /simplify
 ```
 
 **Starting a new session:**
 ```
-/fh:resume
+/resume
 ```
 
 ## Updating
 
 ```
-/fh:update
+/update
 ```
 
 ## License

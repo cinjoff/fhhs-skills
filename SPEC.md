@@ -268,7 +268,7 @@ No auto-apply — the user decides what to merge.
 /plugin install fh@fhhs-skills
 
 # Run setup
-/fh:setup
+/setup
 ```
 
 ### Setup Flow (`/setup`)

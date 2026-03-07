@@ -161,5 +161,5 @@ RELEASE_EOF
 - Git tag: vA.B.C
 - GitHub release: created
 
-Users can update with `/fh:update`.
+Users can update with `/update`.
 ```
