@@ -45,7 +45,7 @@ Refresh the marketplace and fetch the changelog from GitHub:
 
 ```bash
 # Refresh marketplace to get latest metadata
-claude plugin marketplace refresh fhhs-skills 2>/dev/null
+claude plugin marketplace update fhhs-skills 2>/dev/null
 
 # Get latest version from refreshed marketplace
 python3 -c "
@@ -128,6 +128,8 @@ AskUserQuestion:
 **If "Yes, update now":**
 
 ```bash
+# Refresh marketplace to ensure update pulls the latest version
+claude plugin marketplace update fhhs-skills 2>/dev/null
 claude plugin update fh@fhhs-skills
 ```
 
