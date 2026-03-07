@@ -5,6 +5,13 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0] - 2026-03-07
+
+### Added
+- **Project Tracker** — local web dashboard that visualizes GSD project progress with real-time updates via SSE. Launch with `/tracker`
+- **`/tracker` skill** — scaffolds `.project-tracker/` into your project (gitignored) and starts the dashboard server
+- **`/new-project` integration** — automatically sets up the project tracker during project initialization
+
 ## [1.7.1] - 2026-03-07
 
 ### Fixed
