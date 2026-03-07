@@ -2,7 +2,7 @@
 
 A workflow plugin for [Claude Code](https://claude.com/claude-code) that brings together engineering discipline, design quality, and project tracking into one install.
 
-38 commands. 29 internal skills. No other plugins required.
+39 commands. 29 internal skills. No other plugins required.
 
 ## Install
 
@@ -97,6 +97,7 @@ Phase management (adding, removing, reordering phases), milestone lifecycle (com
 | `/fh:revise-claude-md` | Update CLAUDE.md with learnings from the session |
 | `/fh:update` | Check for updates and install the latest version |
 | `/fh:skills-guide` | Show all commands and how they fit together |
+| `/fh:help` | Quick command reference |
 
 ## What's Under the Hood
 
