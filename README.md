@@ -2,7 +2,7 @@
 
 A workflow plugin for [Claude Code](https://claude.com/claude-code) that brings together engineering discipline, design quality, and project tracking into one install.
 
-39 commands. 29 internal skills. No other plugins required.
+38 commands. 29 internal skills. No other plugins required.
 
 ## Install
 
@@ -26,25 +26,37 @@ Setup detects your platform (macOS, Linux, Windows) and walks you through instal
 When you come back to an existing project:
 
 ```
-/fh:resume
+/fh:resume         restore context and pick up where you left off
+/fh:progress       see where you are and what's next
 ```
 
 ## Commands
 
-### Core Workflow
+### Build Pipeline
 
 | Command | What it does |
 |---------|-------------|
 | `/fh:new-project` | Set up a project with vision, tech stack, design language, and roadmap |
 | `/fh:plan` | Brainstorm, research, and produce an execution-ready plan |
 | `/fh:build` | Execute a plan with parallel subagents, TDD, design gates, and verification |
+| `/fh:verify` | Goal-backward verification with truth tables and fresh evidence |
+| `/fh:verify-ui` | Visual verification with browser screenshots |
+
+### Engineering
+
+| Command | What it does |
+|---------|-------------|
 | `/fh:fix` | Auto-triage and fix bugs with systematic debugging |
 | `/fh:refactor` | Restructure code safely, tests green at every step |
 | `/fh:simplify` | Review code for reuse, quality, and efficiency |
-| `/fh:verify` | Goal-backward verification with truth tables and fresh evidence |
-| `/fh:verify-ui` | Visual verification with browser screenshots |
 | `/fh:research` | Investigate a topic before planning |
+
+### Navigation
+
+| Command | What it does |
+|---------|-------------|
 | `/fh:resume` | Restore context and route to the right next action |
+| `/fh:progress` | See where you are and what's next |
 
 ### Design Quality
 
@@ -76,28 +88,27 @@ When you come back to an existing project:
 
 </details>
 
-### Project Tracking
+### Task Management
 
 | Command | What it does |
 |---------|-------------|
-| `/fh:progress` | See where you are and what's next |
 | `/fh:quick` | Do a small task with tracking guarantees |
-| `/fh:health` | Check if your project files are in good shape |
 | `/fh:add-todo` | Capture an idea or task for later |
 | `/fh:check-todos` | See pending todos and pick one |
-| `/fh:map-codebase` | Analyze your codebase structure |
-| `/fh:settings` | Configure workflow preferences |
 
-Phase management (adding, removing, reordering phases), milestone lifecycle (completion, auditing, archiving), and test generation are handled automatically by `/fh:plan`, `/fh:build`, and `/fh:verify`.
+Phase management, milestone lifecycle, and test generation are handled automatically by `/fh:plan`, `/fh:build`, and `/fh:verify`.
 
-### Utilities
+### Setup & Maintenance
 
 | Command | What it does |
 |---------|-------------|
+| `/fh:setup` | One-time setup after installing |
+| `/fh:settings` | Configure workflow preferences |
+| `/fh:health` | Check if your project files are in good shape |
+| `/fh:map-codebase` | Analyze your codebase structure |
 | `/fh:revise-claude-md` | Update CLAUDE.md with learnings from the session |
 | `/fh:update` | Check for updates and install the latest version |
-| `/fh:skills-guide` | Show all commands and how they fit together |
-| `/fh:help` | Quick command reference |
+| `/fh:help` | Command reference and architecture guide |
 
 ## What's Under the Hood
 

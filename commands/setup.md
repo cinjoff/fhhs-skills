@@ -226,5 +226,5 @@ GSD CLI:           {version or NOT CONFIGURED}
 Then:
 
 - Run `/new-project` to bootstrap a new tracked project with design framework and GSD structure
-- Run `/skills-guide` for a full overview of all commands and how they work together
+- Run `/help` for a full overview of all commands and how they work together
 - Run `/resume` if you have an existing project with a `.planning/` directory
