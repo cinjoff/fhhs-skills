@@ -15,18 +15,24 @@ Display the welcome banner with the fire horse mark:
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-          /\
-         /  \          · ·
-        / ◇◆ \══════════════─ ·       FIRE HORSE HACKER SYNDICATE
-       / ◆ ● ◆ \══════════─           fhhs-skills
-      /   ◇◆    \════════─ ·
-     /    /  \    \═════─              Unified workflow for
-    /____/    \____\══─               software development
+          /           /
+         /' .,,,,  ./══════─ ·    FIRE HORSE HACKER SYNDICATE
+        /';'     ,/═══════─ ·     fhhs-skills
+       / /   ,,//,/'`════─ ·
+      ( ,, '_,  ,/,' ``           Unified workflow for
+      |  <═◆●◆═>/,,, ;" `         software development
+     /    .   ,''/' `,``
+    /   .     ./, `,, ` ;
+ ,./  .   ,-,',` ,,/''\,'
+|   /; ./,,'`,,'' |   |
+|     /   ','    /    |
+ \___/'   '     |     |
+  `,,'   |      /     `\
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-The mark elements: angular horse head profile, green diamond glasses (◇◆), terminal-green eye (●), fire/data traces trailing right (═══─ ·).
+The mark elements: horse head in profile (classic ASCII art style), wide hacker goggles with frame bars (<═◆●◆═>) and diagonal arm (/) going up toward the ear, fire/data traces trailing from the mane (═══─ ·).
 
 ---
 
@@ -184,15 +190,18 @@ typescript-language-server --version && echo "✓ Language server ready"
 
 ### 3b: Install the Claude Code LSP plugin
 
+Use `node` (not python3) to check the plugin state, since node is guaranteed available by this step:
+
 ```bash
-python3 -c "
-import json, pathlib
-data = json.loads(pathlib.Path(pathlib.Path.home() / '.claude/plugins/installed_plugins.json').read_text())
-if 'typescript-lsp@claude-plugins-official' in data.get('plugins', {}):
-    print('INSTALLED')
-else:
-    print('NOT_INSTALLED')
-" 2>/dev/null || echo "NOT_INSTALLED"
+node -e "
+  var fs = require('fs'), path = require('path');
+  var p = path.join(require('os').homedir(), '.claude/plugins/installed_plugins.json');
+  try {
+    var data = JSON.parse(fs.readFileSync(p, 'utf8'));
+    var plugins = data.plugins || {};
+    console.log(plugins['typescript-lsp@claude-plugins-official'] ? 'INSTALLED' : 'NOT_INSTALLED');
+  } catch(e) { console.log('NOT_INSTALLED'); }
+"
 ```
 
 If `NOT_INSTALLED`:
@@ -223,7 +232,7 @@ The LSP plugin needs to be installed from the terminal:
 
 ---
 
-## Step 4: GSD Binary and Hooks Setup
+## Step 4: CLI Tools and Hooks Setup
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -231,58 +240,70 @@ The LSP plugin needs to be installed from the terminal:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-### 4a: CLI tools
+The project CLI (`gsd-tools.cjs`) is bundled with this plugin. Set up symlinks so all commands can find it.
 
-The project CLI (`gsd-tools.cjs`) is bundled with this plugin. Set up the symlink so all commands can find it.
+**Important:** Run the entire detection, bin linking, and hooks linking in a **single Bash call** so `PLUGIN_ROOT` persists across all steps. The variable does not survive across separate Bash tool calls.
+
+### Check current state
 
 ```bash
-if [ -f "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" ]; then
-  echo "✓ ALREADY_CONFIGURED: $(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" --version 2>/dev/null || echo 'symlink exists but broken')"
+if [ -L "$HOME/.claude/get-shit-done/bin" ] && [ -f "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" ]; then
+  echo "✓ ALREADY_CONFIGURED"
 else
   echo "✗ NOT_CONFIGURED"
 fi
 ```
 
-If `NOT_CONFIGURED` or broken:
+### If NOT_CONFIGURED (or to re-link)
 
-```
-◆ Linking CLI tools...
-```
+Run this entire block as a **single** Bash command:
 
 ```bash
-# Find the plugin root — check installed plugin cache first, then dev checkout
-PLUGIN_ROOT="$(find ~/.claude/plugins/cache -path '*/fhhs-skills/*/bin/gsd-tools.cjs' -exec dirname {} \; 2>/dev/null | head -1 | xargs dirname 2>/dev/null)"
+PLUGIN_ROOT=""
 
-# Fallback: dev checkout (current directory or parent)
-if [ -z "$PLUGIN_ROOT" ]; then
-  PLUGIN_ROOT="$(find "$(pwd)" -maxdepth 3 -name 'gsd-tools.cjs' -path '*/bin/*' -exec dirname {} \; 2>/dev/null | head -1 | xargs dirname 2>/dev/null)"
+# 1. Dev checkout — prefer if running inside the fhhs-skills repo
+if [ -f "$(pwd)/bin/gsd-tools.cjs" ] && [ -f "$(pwd)/plugin.json" ]; then
+  PLUGIN_ROOT="$(pwd)"
+  echo "◆ Using dev checkout"
 fi
 
+# 2. Latest version from plugin cache (sort picks newest)
+if [ -z "$PLUGIN_ROOT" ]; then
+  LATEST="$(ls -d "$HOME/.claude/plugins/cache/fhhs-skills/fh"/*/ 2>/dev/null | sort | tail -1)"
+  LATEST="${LATEST%/}"
+  if [ -n "$LATEST" ] && [ -f "$LATEST/bin/gsd-tools.cjs" ]; then
+    PLUGIN_ROOT="$LATEST"
+    echo "◆ Using cached plugin: $(basename "$PLUGIN_ROOT")"
+  fi
+fi
+
+# 3. Fallback: search current directory tree
+if [ -z "$PLUGIN_ROOT" ]; then
+  FOUND="$(find "$(pwd)" -maxdepth 3 -name 'gsd-tools.cjs' -path '*/bin/*' -exec dirname {} \; 2>/dev/null | head -1)"
+  if [ -n "$FOUND" ]; then
+    PLUGIN_ROOT="$(dirname "$FOUND")"
+    echo "◆ Using local checkout"
+  fi
+fi
+
+# Link bin + hooks
 if [ -n "$PLUGIN_ROOT" ] && [ -d "$PLUGIN_ROOT/bin" ]; then
   mkdir -p "$HOME/.claude/get-shit-done"
   ln -sfn "$PLUGIN_ROOT/bin" "$HOME/.claude/get-shit-done/bin"
-  echo "✓ CLI tools linked"
-  node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" --version 2>/dev/null && echo "✓ CLI ready" || echo "⚠ Symlink created but gsd-tools.cjs failed to run"
+  [ -f "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" ] && echo "✓ CLI tools linked" || echo "⚠ Symlink created but target not found"
+
+  if [ -d "$PLUGIN_ROOT/hooks" ]; then
+    ln -sfn "$PLUGIN_ROOT/hooks" "$HOME/.claude/get-shit-done/hooks"
+    echo "✓ Hooks linked"
+  else
+    echo "⚠ Hooks directory not found — statusline and update check will not be configured"
+  fi
 else
-  PLUGIN_ROOT=""
-  echo "ERROR: Could not find plugin root"
+  echo "ERROR: Could not find fhhs-skills plugin root"
 fi
 ```
 
-### 4b: Hooks symlink
-
-Link the hooks directory so settings.json can reference stable paths.
-
-```bash
-if [ -n "$PLUGIN_ROOT" ] && [ -d "$PLUGIN_ROOT/hooks" ]; then
-  ln -sfn "$PLUGIN_ROOT/hooks" "$HOME/.claude/get-shit-done/hooks"
-  echo "✓ Hooks linked"
-else
-  echo "⚠ Hooks directory not found — statusline and update check will not be configured"
-fi
-```
-
-If the binary can't be found:
+If the plugin root can't be found:
 
 ```
 ╔══════════════════════════════════════════════════════════════╗
@@ -314,18 +335,11 @@ fhhs-skills includes three hooks:
 
 ### 5a: Read current settings
 
-```bash
-SETTINGS_FILE="$HOME/.claude/settings.json"
-if [ -f "$SETTINGS_FILE" ]; then
-  echo "SETTINGS_EXISTS"
-else
-  echo "NO_SETTINGS"
-fi
-```
+Read `~/.claude/settings.json` using the **Read tool** (not cat/bash). If the file does not exist, note that it needs to be created.
 
 ### 5b: Configure settings.json
 
-Read the current `~/.claude/settings.json` (or create it if it doesn't exist). Apply these changes using a JSON-aware approach (read the file, modify in-memory, write back):
+Use the **Read tool** to load `~/.claude/settings.json`, then apply changes with the **Edit tool** (or **Write tool** if creating from scratch). This avoids shell escaping issues with `node -e` where characters like `!` get mangled by bash.
 
 **Statusline** — set `statusLine` to run the statusline hook:
 
@@ -389,7 +403,9 @@ Check if `settings.hooks.PostToolUse` already contains a hook with command inclu
 }
 ```
 
-**Important:** Merge into existing settings — do NOT overwrite existing hooks arrays. Append to them. Use `node -e` or `python3 -c` to do the JSON manipulation safely (not sed/jq).
+**Important:** Merge into existing settings — do NOT overwrite existing hooks arrays. Append to them.
+
+**Also remove any old GSD hooks** if present (commands referencing `gsd-check-update` or `gsd-statusline` or `gsd-context-monitor` in settings.json). fhhs-skills hooks replace the GSD equivalents.
 
 After writing settings.json:
 
@@ -399,27 +415,19 @@ After writing settings.json:
 ✓ Context monitor hook configured (PostToolUse)
 ```
 
-**Also remove any old GSD hooks** if present (commands referencing `gsd-check-update` or `gsd-statusline` or `gsd-context-monitor` in settings.json). fhhs-skills hooks replace the GSD equivalents.
-
 ---
 
 ## Step 6: Summary
 
-Present the final status report using status symbols from the checks above:
+Display the colored summary banner by running:
+
+```bash
+node "$HOME/.claude/get-shit-done/bin/fhhs-banner.js" --summary
+```
+
+Then present the status table and next steps as regular markdown text:
 
 ```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- FHHS ► SETUP COMPLETE ✓
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-          /\
-         /  \          · ·
-        / ◇◆ \══════════════─ ·
-       / ◆ ● ◆ \══════════─          Ready to ride.
-      /   ◇◆    \════════─ ·
-     /    /  \    \═════─
-    /____/    \____\══─
-
 | Component                  | Status                   |
 |----------------------------|--------------------------|
 | Platform                   | {macos/linux/windows}    |
@@ -430,7 +438,7 @@ Present the final status report using status symbols from the checks above:
 | Vercel CLI                 | ✓ {version} / ○ optional |
 | TypeScript LSP             | ✓ {version}              |
 | LSP Plugin                 | ✓ installed              |
-| CLI Tools                  | ✓ {version}              |
+| CLI Tools                  | ✓ linked                 |
 | Hooks                      | ✓ statusline + update check + context monitor |
 
 ───────────────────────────────────────────────────────────────

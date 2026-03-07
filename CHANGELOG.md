@@ -5,6 +5,22 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-03-07
+
+### Added
+- **Colored ASCII banner script** — `bin/fhhs-banner.js` outputs the fire horse mark with ANSI colors (red horse, green goggles, yellow fire traces); supports `--summary` mode
+- **New horse head ASCII art** — classic style horse profile with wide hacker goggles (`<═◆●◆═>`), diagonal frame arm toward ear, and full head/neck (no longer cut off)
+
+### Fixed
+- **CLI tools version check** — no longer falsely reports "broken" (removed nonexistent `--version` flag)
+- **Plugin root picks latest version** — sort + tail instead of arbitrary `head -1`; prefers dev checkout over stale cache
+- **Variable persistence across steps** — bin + hooks linking runs in a single Bash call
+- **LSP plugin check uses node** — replaced `python3` dependency with `node` (guaranteed available)
+- **Settings.json update** — uses Read/Edit tools instead of `node -e` to avoid shell escaping issues with `!`
+
+### Changed
+- **Setup art** — replaced abstract geometric pyramid with recognizable horse head profile from classic ASCII art
+
 ## [1.4.0] - 2026-03-07
 
 ### Added
