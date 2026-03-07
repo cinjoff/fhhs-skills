@@ -163,7 +163,7 @@ function parseSummaryFile(filePath) {
 
   // Extract "What Was Done" section
   let whatWasDone = '';
-  const sectionMatch = content.match(/##\s*What Was Done\s*\n([\s\S]*?)(?=\n##|\n---|\Z)/i);
+  const sectionMatch = content.match(/##\s*What Was Done\s*\n([\s\S]*?)(?=\n##|\n---|$)/i);
   if (sectionMatch) {
     whatWasDone = sectionMatch[1].trim();
   }
@@ -195,6 +195,7 @@ function parsePhases(planningDir, roadmapPhases, state) {
 
   // Build a map from phase number/name to tasks
   const phaseTaskMap = {};
+  const completionEvents = [];
 
   for (const dir of phaseDirs) {
     const phaseNum = parseInt(dir.split('-')[0], 10);
@@ -254,19 +255,29 @@ function parsePhases(planningDir, roadmapPhases, state) {
           status: completedPlans.has(planNum) ? 'done' : (isCurrentPhase && isCurrentPlan ? 'in_progress' : 'pending'),
         })),
       });
+
+      // Collect completion events from summaries for recentActivity
+      if (completedPlans.has(planNum) && summaries[planNum] && summaries[planNum].completedAt) {
+        completionEvents.push({
+          time: summaries[planNum].completedAt,
+          text: `Completed "${taskName}"`,
+        });
+      }
     }
 
     phaseTaskMap[phaseNum] = tasks;
   }
 
   // Merge tasks into roadmap phases
-  return roadmapPhases.map(phase => {
+  const enrichedPhases = roadmapPhases.map(phase => {
     const tasks = phaseTaskMap[phase.number];
     if (tasks && tasks.length > 0) {
       return { ...phase, tasks };
     }
     return phase;
   });
+
+  return { phases: enrichedPhases, completionEvents };
 }
 
 /**
@@ -319,13 +330,14 @@ function parsePlanning(planningDir) {
   const state = parseState(planningDir);
 
   // Enrich phases with task data from phase directories
-  const stages = parsePhases(planningDir, roadmapPhases, state);
+  const { phases: stages, completionEvents } = parsePhases(planningDir, roadmapPhases, state);
 
-  // Gather recent activity from retros and summaries
-  const recentActivity = parseRetros(planningDir);
+  // Gather recent activity from retros and summary completion events
+  const recentActivity = parseRetros(planningDir).concat(completionEvents);
 
-  // Sort recent activity by time descending
+  // Sort recent activity by time descending and keep latest 10
   recentActivity.sort((a, b) => (b.time || '').localeCompare(a.time || ''));
+  recentActivity.splice(10);
 
   return {
     project,

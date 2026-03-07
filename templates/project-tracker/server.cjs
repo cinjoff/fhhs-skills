@@ -78,6 +78,8 @@ function serveEvents(req, res) {
 
   let debounceTimer = null;
 
+  // NOTE: { recursive: true } only works on macOS and Windows.
+  // On Linux, only top-level .planning/ changes will trigger updates.
   const watcher = fs.watch(planningDir, { recursive: true }, () => {
     // Debounce rapid file changes
     if (debounceTimer) clearTimeout(debounceTimer);
