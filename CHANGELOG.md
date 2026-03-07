@@ -5,6 +5,12 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.2] - 2026-03-07
+
+### Fixed
+- **Update indicator** — `/fh:update` now clears the statusline cache after updating, so the `⬆ /fh:update` indicator disappears
+- **Setup banner** — summary horse art displays as direct text instead of via Bash, which Claude Code auto-collapses
+
 ## [1.5.1] - 2026-03-07
 
 ### Fixed

@@ -67,6 +67,13 @@ Couldn't check for updates (offline or GitHub unavailable).
 Exit.
 
 **If installed == latest:**
+
+Clear any stale update indicator:
+
+```bash
+rm -f "$HOME/.claude/cache/fhhs-update-check.json"
+```
+
 ```
 ## fhhs-skills
 
@@ -131,6 +138,12 @@ AskUserQuestion:
 # Refresh marketplace to ensure update pulls the latest version
 claude plugin marketplace update fhhs-skills 2>/dev/null
 claude plugin update fh@fhhs-skills
+```
+
+Clear the update indicator from the statusline:
+
+```bash
+rm -f "$HOME/.claude/cache/fhhs-update-check.json"
 ```
 
 **After update:**

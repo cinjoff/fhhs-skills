@@ -411,10 +411,26 @@ After writing settings.json:
 
 ## Step 6: Summary
 
-Display the colored summary banner by running:
+Display the summary banner as **direct text output** (not via Bash — Bash output gets collapsed by Claude Code and users won't see it). Output this exactly:
 
-```bash
-node "$HOME/.claude/get-shit-done/bin/fhhs-banner.js" --summary
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ FHHS ► SETUP COMPLETE ✓
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+          /           /
+         /' .,,,,  ./══════─ ·
+        /';'     ,/═══════─ ·     Ready to ride.
+       / /   ,,//,/'`════─ ·
+      ( ,, '_,  ,/,' ``
+      |  <═◆●◆═>/,,, ;" `
+     /    .   ,''/' `,``
+    /   .     ./, `,, ` ;
+ ,./  .   ,-,',` ,,/''\,'
+|   /; ./,,'`,,'' |   |
+|     /   ','    /    |
+ \___/'   '     |     |
+  `,,'   |      /     `\
 ```
 
 Then present the status table and next steps as regular markdown text:
