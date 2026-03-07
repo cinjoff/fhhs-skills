@@ -8,7 +8,7 @@ What to build or which plan to execute: $ARGUMENTS
 
 You are a **lean orchestrator**. Stay under 15% context usage. Delegate all heavy work to subagents.
 
-> **Dependency check:** Verify `.planning/PROJECT.md` exists (required — if missing, tell user to run `/new-project` first). Engineering disciplines (TDD, verification, review) and design quality commands are built into this plugin. See the `references/dependency-check.md` file in the same plugin directory as this command for detection details.
+> **Dependency check:** Verify `.planning/PROJECT.md` exists (required — if missing, tell user to run `/fh:new-project` first). Engineering disciplines (TDD, verification, review) and design quality commands are built into this plugin. See the `references/dependency-check.md` file in the same plugin directory as this command for detection details.
 
 > **Execution pipeline — fresh subagents for tasks, specialized agents for review:**
 > Task execution: **`general-purpose`** subagents with structured prompt from `references/implementer-prompt.md`. Fresh context per task, no GSD state overhead.
@@ -30,7 +30,7 @@ Locate the plan to execute:
 - If the user specified a plan path, use that
 - If a GSD project is active, check `.planning/phases/` for incomplete plans (PLAN without matching SUMMARY)
 - If plans exist in `.planning/plans/`, use the most recent
-- If no plan exists, tell the user to run `/plan` first
+- If no plan exists, tell the user to run `/fh:plan` first
 
 Read only the plan frontmatter and task list — don't load all context files yet.
 
@@ -82,6 +82,28 @@ If a task has `type="checkpoint:*"`, read `references/checkpoint-protocol.md` fr
 **For sequential waves:** wait for all tasks in current wave before starting next.
 
 ### After each wave completes
+
+First, triage subagent outcomes before doing anything else:
+
+**BLOCKED report:** Surface immediately to the user:
+```
+⚠ Task "{task}" is BLOCKED: {blocker}
+What's needed: {what the subagent reported}
+Options:
+  A) Fix the blocker (describe how) and retry this task
+  B) Skip this task and note it as deferred
+  C) Adjust the plan — this changes the approach
+```
+Do not proceed to the next wave until blocked tasks are resolved or explicitly skipped.
+
+**"interrupted — what should I do next" (or similar stuck state):** The subagent paused waiting for input it can't receive. Read its last output to understand what confused it. Options:
+- Re-dispatch with a revised prompt that removes the ambiguity or provides the missing context
+- If the task spec itself is ambiguous, clarify with the user and re-dispatch
+- Never treat an interrupted agent as "done" — it produced no output
+
+**Silent failure (no commit, no files changed):** Spot-check found nothing. Treat as BLOCKED — report to user and do not continue.
+
+Once all tasks are accounted for (completed, or explicitly skipped with user sign-off):
 
 1. **Spot-check:** verify key files from subagent reports exist on disk (`[ -f path ]`), check `git log` for expected commits
 2. **Done criteria check:** compare each task's `done` criteria against subagent output — flag mismatches
@@ -147,27 +169,27 @@ After all waves complete (including spec gates) and BEFORE self-check, run the d
 **Context for all design gate subagents:** If `.planning/phases/{phase}/{phase}-CONTEXT.md` exists, include its "Design Decisions" section. These are locked design choices that critique/polish/normalize must respect.
 
 ### Critique
-Dispatch subagent to invoke `/critique` on modified frontend files.
+Dispatch subagent to invoke `/fh:critique` on modified frontend files.
 Input: file list + `.planning/DESIGN.md` + anti-pattern reference from `skills/frontend-design/`.
 Fix Critical and High issues. Commit: `style({phase}-{plan}): address design critique`
 
 ### Polish
-Dispatch subagent to invoke `/polish` on modified files (excluding areas fixed by critique).
+Dispatch subagent to invoke `/fh:polish` on modified files (excluding areas fixed by critique).
 Commit: `style({phase}-{plan}): polish pass`
 
 ### Normalize (if design system exists)
 If `.planning/DESIGN.md` defines design tokens or a component system:
-Dispatch subagent to invoke `/normalize` against the design system.
+Dispatch subagent to invoke `/fh:normalize` against the design system.
 Commit: `style({phase}-{plan}): normalize to design system`
 Skip if no design system defined.
 
 ### Consider Harden and Animate (optional)
 Suggest (don't auto-run) based on the work:
-- `/harden` — if forms, user input, error states, or i18n concerns
-- `/animate` — if transitions, state changes, or interaction-heavy elements
+- `/fh:harden` — if forms, user input, error states, or i18n concerns
+- `/fh:animate` — if transitions, state changes, or interaction-heavy elements
 Ask user before proceeding.
 
-Uses design quality commands (`/critique`, `/polish`, `/normalize`) and `skills/frontend-design/` — all built into this plugin.
+Uses design quality commands (`/fh:critique`, `/fh:polish`, `/fh:normalize`) and `skills/frontend-design/` — all built into this plugin.
 
 ### Step 4b: Collect integration check results
 
@@ -249,7 +271,7 @@ Write `{phase}-VERIFICATION.md` with truth table, artifacts, key links, requirem
 
 **If PASSED:** `gsd-tools.cjs phase complete "${PHASE_NUM}"` — atomically updates STATE.md and ROADMAP.md. "Phase verified. Ready for next phase."
 
-**If FAILED:** Report gaps. Suggest `/plan` for closure or `/fix` for bugs.
+**If FAILED:** Report gaps. Suggest `/fh:plan` for closure or `/fh:fix` for bugs.
 
 ---
 
@@ -298,7 +320,7 @@ Invoke `skills/verification-before-completion/` — follow it completely. This m
 - Read full output, check exit codes
 - Only claim completion with evidence
 
-If this was frontend work, suggest running `/verify-ui` for visual verification.
+If this was frontend work, suggest running `/fh:verify-ui` for visual verification.
 
 ---
 
@@ -314,9 +336,9 @@ Route based on phase status:
 
 | Condition | Action |
 |-----------|--------|
-| More plans in phase | "Plan X of Y complete." Suggest `/build` for next plan. |
-| Phase complete, more phases | "Phase complete." Suggest `/plan {next}` or `/verify`. Also suggest `/revise-claude-md` to capture learnings from this phase. |
-| Last phase in milestone | "Milestone complete." Run milestone completion: archive phase directories, update STATE.md and ROADMAP.md via `gsd-tools.cjs milestone complete`, and suggest `/revise-claude-md` — milestone boundaries are natural points to update project conventions. |
+| More plans in phase | "Plan X of Y complete." Suggest `/fh:build` for next plan. |
+| Phase complete, more phases | "Phase complete." Suggest `/fh:plan {next}` or `/fh:verify`. Also suggest `/fh:revise-claude-md` to capture learnings from this phase. |
+| Last phase in milestone | "Milestone complete." Run milestone completion: archive phase directories, update STATE.md and ROADMAP.md via `gsd-tools.cjs milestone complete`, and suggest `/fh:revise-claude-md` — milestone boundaries are natural points to update project conventions. |
 
 If user prefers to skip the branch finishing (more work planned), report what was built with links to key files.
 

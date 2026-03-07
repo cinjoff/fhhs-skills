@@ -284,7 +284,7 @@ Created .planning/codebase/:
 
 **Initialize project** — use codebase context for planning
 
-`/new-project`
+`/fh:new-project`
 
 <sub>`/clear` first → fresh context window</sub>
 

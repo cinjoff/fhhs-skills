@@ -65,7 +65,7 @@ Errors: N | Warnings: N | Info: N
   Fix: Run health --repair to reset to defaults
 
 - [E002] PROJECT.md not found
-  Fix: Run /new-project to create
+  Fix: Run /fh:new-project to create
 ```
 
 **If warnings exist:**

@@ -23,8 +23,19 @@ SKILL.md index, follow rules relevant to your task.
 
 ## Before You Begin
 
-If ANYTHING is unclear — requirements, approach, dependencies, assumptions — ASK before
-starting. Do not guess. Do not assume. Raise concerns now.
+You are running as a subagent — you cannot interactively ask questions. Make reasonable
+assumptions and document them in your report.
+
+**If something is BLOCKING** (missing file that should exist, missing critical dependency,
+incompatible API contract, unclear requirement where all interpretations lead to wrong
+behavior) — STOP immediately. Return a report with:
+- Status: BLOCKED
+- Task: which task you were on
+- Blocker: the specific issue (file path, API name, requirement text)
+- What you need: exactly what information or action would unblock you
+
+Do NOT pause to ask questions. Do NOT guess on blocking issues. Either proceed with
+documented assumptions, or return BLOCKED.
 
 **Use LSP for code navigation:** `goToDefinition` to follow imports, `findReferences` to check
 usage before modifying, `hover` for type info, `documentSymbol` to scan file structure. Faster

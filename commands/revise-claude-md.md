@@ -1,5 +1,5 @@
 ---
-description: "Update CLAUDE.md with learnings from this session. Use when the user says 'update claude md', 'save learnings', 'improve claude md', 'audit claude md', or after significant implementation work. Also triggered automatically by /build at the end of phase completion."
+description: "Update CLAUDE.md with learnings from this session. Use when the user says 'update claude md', 'save learnings', 'improve claude md', 'audit claude md', or after significant implementation work. Also triggered automatically by /fh:build at the end of phase completion."
 allowed-tools: Read, Edit, Glob, Grep, Bash
 ---
 
@@ -15,7 +15,7 @@ $ARGUMENTS
 |----------|------|--------|
 | No argument | **Session learnings** | Reflect on this session, propose targeted additions |
 | `audit` | **Full audit** | Run `skills/claude-md-improver/` — full quality assessment with scoring |
-| `init` | **Initial creation** | Generate CLAUDE.md from project context (used by `/new-project`) |
+| `init` | **Initial creation** | Generate CLAUDE.md from project context (used by `/fh:new-project`) |
 
 ---
 
@@ -86,7 +86,7 @@ Invoke `skills/claude-md-improver/`. Follow it completely — it handles discove
 
 ## Step 2 (Initial Creation): Generate from Context
 
-Read project context gathered by `/new-project`:
+Read project context gathered by `/fh:new-project`:
 - Project name and description (from Step 1 vision)
 - Tech stack (from Step 2)
 - Design system (from Step 3, if done)
@@ -100,7 +100,7 @@ Fill in:
 - **Architecture** — where src, components, pages, API routes, tests live (adapt to framework)
 - **Code Style** — project-specific conventions, plus `Conventional commits` and `Stage files individually`
 - **Testing** — adapt to chosen stack (Vitest, Jest, pytest, etc.)
-- **Planning** — always include: `Project state tracked in .planning/. Run /resume to check status.` Plus design reference if `.planning/DESIGN.md` was created.
+- **Planning** — always include: `Project state tracked in .planning/. Run /fh:resume to check status.` Plus design reference if `.planning/DESIGN.md` was created.
 - **Gotchas** — leave empty or add framework-specific ones (e.g., "NEXT_PUBLIC_ vars must be set at build time")
 
 Keep under 40 lines. This file helps Claude navigate the project in all future sessions.

@@ -1,5 +1,5 @@
 ---
-description: "Execute small ad-hoc tasks with GSD guarantees. Use when the user says 'quick', 'quick task', or has a small task that doesn't warrant full /plan + /build ceremony. Supports --discuss and --full flags."
+description: "Execute small ad-hoc tasks with GSD guarantees. Use when the user says 'quick', 'quick task', or has a small task that doesn't warrant full /fh:plan + /fh:build ceremony. Supports --discuss and --full flags."
 ---
 
 Quick mode spawns gsd-planner + gsd-executor(s), tracks tasks in `.planning/quick/`, and updates STATE.md.
@@ -74,7 +74,7 @@ if [[ "$INIT" == @file:* ]]; then INIT=$(cat "${INIT#@file:}"); fi
 
 Parse JSON for: `planner_model`, `executor_model`, `checker_model`, `verifier_model`, `commit_docs`, `next_num`, `slug`, `date`, `timestamp`, `quick_dir`, `task_dir`, `roadmap_exists`, `planning_exists`.
 
-**If `roadmap_exists` is false:** Error — Quick mode requires an active project with ROADMAP.md. Run `/new-project` first.
+**If `roadmap_exists` is false:** Error — Quick mode requires an active project with ROADMAP.md. Run `/fh:new-project` first.
 
 Quick tasks can run mid-phase - validation only checks ROADMAP.md exists, not phase status.
 

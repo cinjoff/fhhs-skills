@@ -11,81 +11,81 @@ Output ONLY the reference content below. Do NOT add project-specific analysis, g
 
 | Command | What it does |
 |---------|-------------|
-| `/new-project` | Set up a project with vision, tech stack, design language, and roadmap |
-| `/plan` | Brainstorm, research, and produce an execution-ready plan. Handles phase creation and placement automatically |
-| `/build` | Execute a plan with parallel subagents, TDD, design gates, and verification. Handles milestone completion automatically |
-| `/verify` | Goal-backward verification with truth tables and fresh evidence |
-| `/verify-ui` | Visual verification with browser screenshots |
+| `/fh:new-project` | Set up a project with vision, tech stack, design language, and roadmap |
+| `/fh:plan` | Brainstorm, research, and produce an execution-ready plan. Handles phase creation and placement automatically |
+| `/fh:build` | Execute a plan with parallel subagents, TDD, design gates, and verification. Handles milestone completion automatically |
+| `/fh:verify` | Goal-backward verification with truth tables and fresh evidence |
+| `/fh:verify-ui` | Visual verification with browser screenshots |
 
 ## Engineering
 
 | Command | What it does |
 |---------|-------------|
-| `/fix` | Auto-triage and fix bugs with systematic debugging |
-| `/refactor` | Restructure code safely, tests green at every step |
-| `/simplify` | Review code for reuse, quality, and efficiency |
-| `/research` | Investigate a topic before planning |
+| `/fh:fix` | Auto-triage and fix bugs with systematic debugging |
+| `/fh:refactor` | Restructure code safely, tests green at every step |
+| `/fh:simplify` | Review code for reuse, quality, and efficiency |
+| `/fh:research` | Investigate a topic before planning |
 
 ## Navigation
 
 | Command | What it does |
 |---------|-------------|
-| `/resume` | Restore context and route to the right next action |
-| `/progress` | See where you are and what's next |
+| `/fh:resume` | Restore context and route to the right next action |
+| `/fh:progress` | See where you are and what's next |
 
 ## Design Quality
 
 | Command | What it does |
 |---------|-------------|
-| `/critique` | Evaluate visual hierarchy, information architecture, and design quality |
-| `/polish` | Fix alignment, spacing, consistency, and detail issues |
-| `/normalize` | Match your design system and ensure consistency |
-| `/harden` | Error handling, i18n, text overflow, edge cases |
-| `/animate` | Purposeful motion and micro-interactions |
-| `/audit` | Full accessibility, performance, theming, and responsive audit |
-| `/teach-impeccable` | One-time setup for your project's design language |
-| `/adapt` | Make designs work across screen sizes and platforms |
-| `/bolder` | Amplify safe designs to be more visually interesting |
-| `/quieter` | Tone down overly aggressive designs |
-| `/distill` | Strip away unnecessary complexity |
-| `/clarify` | Improve confusing labels, errors, and microcopy |
-| `/colorize` | Add strategic color to monochromatic interfaces |
-| `/delight` | Add personality and moments of joy |
-| `/extract` | Pull reusable components into your design system |
-| `/onboard` | Design first-time user experiences and empty states |
-| `/optimize` | Improve loading speed, rendering, and bundle size |
+| `/fh:critique` | Evaluate visual hierarchy, information architecture, and design quality |
+| `/fh:polish` | Fix alignment, spacing, consistency, and detail issues |
+| `/fh:normalize` | Match your design system and ensure consistency |
+| `/fh:harden` | Error handling, i18n, text overflow, edge cases |
+| `/fh:animate` | Purposeful motion and micro-interactions |
+| `/fh:audit` | Full accessibility, performance, theming, and responsive audit |
+| `/fh:teach-impeccable` | One-time setup for your project's design language |
+| `/fh:adapt` | Make designs work across screen sizes and platforms |
+| `/fh:bolder` | Amplify safe designs to be more visually interesting |
+| `/fh:quieter` | Tone down overly aggressive designs |
+| `/fh:distill` | Strip away unnecessary complexity |
+| `/fh:clarify` | Improve confusing labels, errors, and microcopy |
+| `/fh:colorize` | Add strategic color to monochromatic interfaces |
+| `/fh:delight` | Add personality and moments of joy |
+| `/fh:extract` | Pull reusable components into your design system |
+| `/fh:onboard` | Design first-time user experiences and empty states |
+| `/fh:optimize` | Improve loading speed, rendering, and bundle size |
 
 ## Task Management
 
 | Command | What it does |
 |---------|-------------|
-| `/quick` | Do a small task with tracking guarantees |
-| `/add-todo` | Capture an idea or task for later |
-| `/check-todos` | See pending todos and pick one |
+| `/fh:quick` | Do a small task with tracking guarantees |
+| `/fh:add-todo` | Capture an idea or task for later |
+| `/fh:check-todos` | See pending todos and pick one |
 
-Phase management, milestone lifecycle, and test generation are handled automatically by `/plan`, `/build`, and `/verify`.
+Phase management, milestone lifecycle, and test generation are handled automatically by `/fh:plan`, `/fh:build`, and `/fh:verify`.
 
 ## Setup & Maintenance
 
 | Command | What it does |
 |---------|-------------|
-| `/setup` | One-time setup after installing |
-| `/settings` | Configure workflow preferences |
-| `/health` | Check if your project files are in good shape |
-| `/map-codebase` | Analyze your codebase structure |
-| `/revise-claude-md` | Update CLAUDE.md with learnings from the session |
-| `/update` | Check for updates and install the latest version |
+| `/fh:setup` | One-time setup after installing |
+| `/fh:settings` | Configure workflow preferences |
+| `/fh:health` | Check if your project files are in good shape |
+| `/fh:map-codebase` | Analyze your codebase structure |
+| `/fh:revise-claude-md` | Update CLAUDE.md with learnings from the session |
+| `/fh:update` | Check for updates and install the latest version |
 
 ## Common Workflows
 
 ```
-First time:   /setup → /new-project → /plan → /build → /verify
-Feature:      /plan → /build → /verify → /verify-ui
-Bug fix:      /fix
-Refactoring:  /refactor (includes /simplify automatically)
-Code cleanup: /simplify (standalone, on any recent changes)
-Resuming:     /resume → (routes to next action)
-CLAUDE.md:    /revise-claude-md (after sessions or /revise-claude-md audit)
+First time:   /fh:setup → /fh:new-project → /fh:plan → /fh:build → /fh:verify
+Feature:      /fh:plan → /fh:build → /fh:verify → /fh:verify-ui
+Bug fix:      /fh:fix
+Refactoring:  /fh:refactor (includes /fh:simplify automatically)
+Code cleanup: /fh:simplify (standalone, on any recent changes)
+Resuming:     /fh:resume → (routes to next action)
+CLAUDE.md:    /fh:revise-claude-md (after sessions or /fh:revise-claude-md audit)
 ```
 
 ## Files & Structure
@@ -95,18 +95,18 @@ CLAUDE.md:    /revise-claude-md (after sessions or /revise-claude-md audit)
 ├── PROJECT.md            # Project vision
 ├── ROADMAP.md            # Current phase breakdown
 ├── STATE.md              # Project memory & context
-├── DESIGN.md             # Design language (from /teach-impeccable)
+├── DESIGN.md             # Design language (from /fh:teach-impeccable)
 ├── config.json           # Workflow mode & gates
 ├── todos/                # Captured ideas and tasks
 ├── debug/                # Active debug sessions
 ├── milestones/           # Archived milestone data
-├── codebase/             # Codebase analysis (from /map-codebase)
+├── codebase/             # Codebase analysis (from /fh:map-codebase)
 └── phases/               # Phase plans, summaries, and verifications
 ```
 
 ## Architecture
 
-**GSD is the state machine.** It owns project structure: phases, milestones, requirements, roadmaps, STATE.md. Always required — run `/new-project` first.
+**GSD is the state machine.** It owns project structure: phases, milestones, requirements, roadmaps, STATE.md. Always required — run `/fh:new-project` first.
 
 **Composites are the interface.** They wire engineering disciplines, design quality tools, and GSD together so you never think about which skill to invoke. Subagents do the heavy work — composites stay under 15% context.
 
@@ -126,5 +126,5 @@ Every composite that executes code enforces these via built-in skills:
 
 ## Code Intelligence
 
-**TypeScript LSP** (installed via `/setup`) provides precise code navigation used across composites: `workspaceSymbol` and `documentSymbol` for architecture analysis, `findReferences` for blast radius mapping, `goToDefinition` and call hierarchy for data flow tracing, `hover` for type information.
+**TypeScript LSP** (installed via `/fh:setup`) provides precise code navigation used across composites: `workspaceSymbol` and `documentSymbol` for architecture analysis, `findReferences` for blast radius mapping, `goToDefinition` and call hierarchy for data flow tracing, `hover` for type information.
 </reference>

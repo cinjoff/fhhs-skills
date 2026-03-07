@@ -16,7 +16,7 @@ You are a **lean orchestrator**. Delegate the actual research to a subagent to k
 
 ### 0. Verify GSD Project
 
-Check `.planning/PROJECT.md` exists. If missing, stop: "No project found. Run `/new-project` first." Do not proceed.
+Check `.planning/PROJECT.md` exists. If missing, stop: "No project found. Run `/fh:new-project` first." Do not proceed.
 
 ### 1. Determine Scope
 

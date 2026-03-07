@@ -47,7 +47,7 @@ Lock the final tech stack decisions. These go into PROJECT.md.
 
 ## Step 3: Design Framework
 
-Invoke `/teach-impeccable`.
+Invoke `/fh:teach-impeccable`.
 
 This runs the one-time design context setup:
 - Aesthetic direction (tone, style, differentiation)
@@ -55,15 +55,15 @@ This runs the one-time design context setup:
 - Typography and color decisions
 - Component patterns
 
-Output: `.planning/DESIGN.md` — referenced by all future `/build` and `/verify-ui` runs.
+Output: `.planning/DESIGN.md` — referenced by all future `/fh:build` and `/fh:verify-ui` runs.
 
-If the user wants to skip this step and set up design later, allow it. They can always run `/teach-impeccable` manually.
+If the user wants to skip this step and set up design later, allow it. They can always run `/fh:teach-impeccable` manually.
 
 ---
 
 ## Step 4: CLAUDE.md Generation
 
-Invoke `/revise-claude-md init` — this uses the `skills/claude-md-improver/references/templates.md` fhhs-skills project template to generate a high-quality CLAUDE.md from the context gathered in Steps 1-3.
+Invoke `/fh:revise-claude-md init` — this uses the `skills/claude-md-improver/references/templates.md` fhhs-skills project template to generate a high-quality CLAUDE.md from the context gathered in Steps 1-3.
 
 Pass it:
 - Project name and description (from Step 1)
@@ -98,25 +98,125 @@ ln -sfn "$HOME/.claude/get-shit-done/bin" .claude/get-shit-done/bin
 node ./.claude/get-shit-done/bin/gsd-tools.cjs init new-project
 ```
 
-If the global symlink is missing (user hasn't run `/setup`), create it first — see `/setup` Step 3.
+If the global symlink is missing (user hasn't run `/fh:setup`), create it first — see `/fh:setup` Step 3.
 
 Commit: `docs: initialize project planning with GSD structure`
 
 ---
 
-## Step 6: Handoff
+## Step 6: Infrastructure Setup
+
+Set up GitHub and Vercel so the project is ready for deployment from day one.
+
+### 6a: Initialize git and commit planning files
+
+```bash
+git rev-parse --is-inside-work-tree 2>/dev/null && echo "GIT_OK" || echo "GIT_MISSING"
+```
+
+If not a git repo, initialize it:
+
+```bash
+git init
+```
+
+Stage and commit all planning files created so far:
+
+```bash
+git add -A
+git commit -m "chore: initialize project with planning structure"
+```
+
+If files are already committed (git was pre-existing), skip the commit.
+
+### 6b: Create GitHub repository
+
+Check `gh` availability:
+
+```bash
+command -v gh >/dev/null 2>&1 && echo "OK" || echo "MISSING"
+```
+
+If `gh` is MISSING: show a warning and skip to 6c. The user can run `brew install gh && gh auth login` to enable this later.
+
+Check if a remote already exists:
+
+```bash
+git remote get-url origin 2>/dev/null && echo "REMOTE_EXISTS" || echo "NO_REMOTE"
+```
+
+If no remote exists, create the GitHub repo using the current folder name:
+
+```bash
+REPO_NAME="$(basename "$(pwd)")"
+gh repo create "$REPO_NAME" --private --source=. --push
+```
+
+This creates a private repo, sets `origin`, and pushes the initial commit. Report the repo URL from the output.
+
+If a remote already exists, skip creation but show the existing remote URL.
+
+### 6c: Create and link Vercel project
+
+Check `vercel` availability:
+
+```bash
+command -v vercel >/dev/null 2>&1 && echo "OK" || echo "MISSING"
+```
+
+If `vercel` is MISSING: show a warning and skip to Step 7. The user can run `npm install -g vercel && vercel login` to enable this later.
+
+Link the project to Vercel (creates a new project if one doesn't exist):
+
+```bash
+vercel link --yes --project "$(basename "$(pwd)")"
+```
+
+This writes `.vercel/project.json` with the project and org IDs.
+
+### 6d: Connect GitHub to Vercel for auto-deployments
+
+Connect the GitHub repo to the Vercel project:
+
+```bash
+vercel git connect
+```
+
+If this succeeds, every push to `main` will trigger a Vercel deployment automatically.
+
+If `vercel git connect` fails or is unavailable, tell the user:
+
+```
+╔══════════════════════════════════════════════════════════════╗
+║  CHECKPOINT: One-time Vercel action needed                   ║
+╚══════════════════════════════════════════════════════════════╝
+
+To enable automatic GitHub → Vercel deployments:
+
+  1. Go to your Vercel project dashboard
+  2. Settings → Git → Connect Git Repository
+  3. Select: <repo-name>
+
+This only needs to be done once.
+```
+
+---
+
+## Step 7: Handoff
 
 Report to the user:
 
 ```
 Project initialized:
-- .planning/PROJECT.md    — vision and scope
-- .planning/DESIGN.md     — design framework (if set up)
+- .planning/PROJECT.md      — vision and scope
+- .planning/DESIGN.md       — design framework (if set up)
 - .planning/REQUIREMENTS.md — work items
-- .planning/ROADMAP.md    — phased plan
-- .planning/STATE.md      — tracking state
-- .planning/config.json   — workflow settings
-- CLAUDE.md               — project conventions
+- .planning/ROADMAP.md      — phased plan
+- .planning/STATE.md        — tracking state
+- .planning/config.json     — workflow settings
+- CLAUDE.md                 — project conventions
+- GitHub repo               — <repo-url> (private)
+- Vercel project            — linked (auto-deploys on push to main)
 
-Next: run /plan to plan your first phase (scaffolding and core setup).
+Next: run /fh:plan to plan your first phase (scaffolding and core setup).
 ```

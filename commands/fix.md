@@ -59,7 +59,7 @@ If the fix touches `.tsx`, `.css`, components, or styles:
 - Read `.planning/DESIGN.md` for design context
 - Quick check: does the fix maintain visual consistency?
 - Check against `skills/frontend-design/` anti-patterns — no generic cards, cyan-on-dark, purple gradients, or other AI slop introduced by the fix
-- If significant UI change, suggest `/verify-ui`
+- If significant UI change, suggest `/fh:verify-ui`
 
 ---
 

@@ -56,6 +56,28 @@ esac
 echo "PLATFORM: $PLATFORM"
 ```
 
+### Install Homebrew if missing (macOS / Linux only)
+
+On macOS and Linux, check for `brew` first — it is needed to install any missing tools:
+
+```bash
+command -v brew >/dev/null 2>&1 && echo "OK brew $(brew --version 2>/dev/null | head -1)" || echo "MISSING brew"
+```
+
+If `brew` is **MISSING** and the platform is `macos` or `linux`, install it now:
+
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
+
+After Homebrew installs, it prints shell config instructions. Follow what it says (typically adding `brew` to `PATH`). Then verify:
+
+```bash
+brew --version
+```
+
+If the platform is `windows`, skip the Homebrew step — Windows uses its own installers handled below.
+
 Check all tools:
 
 ```bash
@@ -88,19 +110,7 @@ If everything is `✓`, skip to Step 3.
 
 **macOS / Linux — use Homebrew:**
 
-If `brew` is MISSING:
-
-```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-```
-
-After Homebrew installs, it prints shell config instructions. Run what it says (typically adding brew to PATH). Then verify:
-
-```bash
-brew --version
-```
-
-Once `brew` is available, install any MISSING tools:
+`brew` was already checked and installed in Step 2 if needed. Install any MISSING tools:
 
 ```bash
 # Install only what's missing — skip any that are already OK
@@ -126,7 +136,7 @@ Windows detected. Install these tools using their official installers:
   4. Git (if missing):      winget install Git.Git
 
 ──────────────────────────────────────────────────────────────
-→ Restart your terminal and run /setup again after installing
+→ Restart your terminal and run /fh:setup again after installing
 ──────────────────────────────────────────────────────────────
 ```
 
@@ -455,15 +465,15 @@ Then present the status table and next steps as regular markdown text:
 
 **Start a project** — set up vision, tech stack, design language, and roadmap
 
-`/new-project`
+`/fh:new-project`
 
 <sub>`/clear` first → fresh context window</sub>
 
 ───────────────────────────────────────────────────────────────
 
 **Also available:**
-- `/help` — full command reference and architecture guide
-- `/resume` — pick up an existing project with `.planning/`
+- `/fh:help` — full command reference and architecture guide
+- `/fh:resume` — pick up an existing project with `.planning/`
 
 ───────────────────────────────────────────────────────────────
 ```

@@ -1,8 +1,8 @@
 ---
-description: "Safe code restructuring with behavior preservation. Use when the user says 'refactor', 'restructure', 'reorganize', 'clean up this code', 'extract', 'rename', or 'move'. Not for bugs (/fix) or new features (/build). Tests must stay green at every step."
+description: "Safe code restructuring with behavior preservation. Use when the user says 'refactor', 'restructure', 'reorganize', 'clean up this code', 'extract', 'rename', or 'move'. Not for bugs (/fh:fix) or new features (/fh:build). Tests must stay green at every step."
 ---
 
-Restructure existing code safely. Not a bug (use /fix). Not new functionality (use /build). Behavior preservation is the iron law.
+Restructure existing code safely. Not a bug (use /fh:fix). Not new functionality (use /fh:build). Behavior preservation is the iron law.
 
 The refactoring goal: $ARGUMENTS
 
@@ -27,7 +27,7 @@ Identify the blast radius:
 
 Report: "This refactoring touches N files across M subsystems. Blast radius: [description]."
 
-If large (10+ files or 3+ subsystems), suggest writing a PLAN.md via `/plan` first.
+If large (10+ files or 3+ subsystems), suggest writing a PLAN.md via `/fh:plan` first.
 
 ---
 

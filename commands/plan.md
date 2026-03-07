@@ -13,8 +13,8 @@ You are a **lean orchestrator**. Your job is to coordinate, not to do heavy work
 > **CRITICAL — GSD project required:**
 > Check if `.planning/PROJECT.md` exists.
 > - **If YES → proceed.** Read STATE.md for current phase/plan. Read ROADMAP.md for phase goals. Read phase-specific CONTEXT.md for locked decisions.
->   - **If ROADMAP.md is missing:** "Project exists but has no roadmap. Run `/new-project` to regenerate, or proceed without phase tracking?" If proceeding without, skip Step 0 and treat as a standalone plan.
-> - **If NO → stop.** Tell the user: "No project found. Run `/new-project` first to set up project tracking." Do not proceed.
+>   - **If ROADMAP.md is missing:** "Project exists but has no roadmap. Run `/fh:new-project` to regenerate, or proceed without phase tracking?" If proceeding without, skip Step 0 and treat as a standalone plan.
+> - **If NO → stop.** Tell the user: "No project found. Run `/fh:new-project` first to set up project tracking." Do not proceed.
 
 ---
 
@@ -77,7 +77,7 @@ Resolve implementation gray areas before planning:
 4. **Deep-dive** selected areas — present options with trade-offs, get user decisions
 5. **Lock decisions** in `.planning/phases/{phase}/{phase}-CONTEXT.md` with "Design Decisions" section
 
-These locked decisions are fed to subagents during `/build` execution — they prevent re-deciding things downstream.
+These locked decisions are fed to subagents during `/fh:build` execution — they prevent re-deciding things downstream.
 
 ---
 
@@ -216,7 +216,7 @@ If a check fails, state which check failed, revise the plan, and recheck. After 
 
 After plan approval:
 
-1. **`/build`** — Execute now. Fresh subagent per task, clean context, design gates auto-detected.
+1. **`/fh:build`** — Execute now. Fresh subagent per task, clean context, design gates auto-detected.
 2. **Continue planning** — Plan more phases before building. Useful for planning ahead across multiple phases before executing any.
 
 Default to option 1 unless the user indicates they want to keep planning.
