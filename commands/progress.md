@@ -1,6 +1,6 @@
-<purpose>
-Check project progress, summarize recent work and what's ahead, then intelligently route to the next action — either executing an existing plan or creating the next one. Provides situational awareness before continuing work.
-</purpose>
+---
+description: "Check project progress, summarize recent work, and route to the next action. Use when the user says 'progress', 'where am I', 'what is next', 'status', or needs situational awareness before continuing work."
+---
 
 <required_reading>
 Read all files referenced by the invoking prompt's execution_context before starting.
@@ -23,25 +23,24 @@ If `project_exists` is false (no `.planning/` directory):
 ```
 No planning structure found.
 
-Run new-project to start a new project.
+Run /new-project to start a new project.
 ```
 
 Exit.
 
-If missing STATE.md: suggest `new-project`.
+If missing STATE.md: suggest `/new-project`.
 
 **If ROADMAP.md missing but PROJECT.md exists:**
 
 This means a milestone was completed and archived. Go to **Route F** (between milestones).
 
-If missing both ROADMAP.md and PROJECT.md: suggest `new-project`.
+If missing both ROADMAP.md and PROJECT.md: suggest `/new-project`.
 </step>
 
 <step name="load">
 **Use structured extraction from gsd-tools:**
 
 Instead of reading full files, use targeted tools to get only the data needed for the report:
-- `ROADMAP=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" roadmap analyze)`
 - `STATE=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" state-snapshot)`
 
 This minimizes orchestrator context usage.
@@ -292,14 +291,13 @@ Read ROADMAP.md to get the next phase's name and goal.
 
 **Phase {Z+1}: {Name}** — {Goal from ROADMAP.md}
 
-`discuss-phase {Z+1}` — gather context and clarify approach
+`/plan {Z+1}` — plan next phase (includes discussion and context gathering)
 
 <sub>`/clear` first → fresh context window</sub>
 
 ---
 
 **Also available:**
-- `/plan {Z+1}` — plan next phase directly
 - `/verify {Z}` — verify before continuing
 
 ---

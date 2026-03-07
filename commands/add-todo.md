@@ -1,6 +1,6 @@
-<purpose>
-Capture an idea, task, or issue that surfaces during a GSD session as a structured todo for later work. Enables "thought → capture → continue" flow without losing context.
-</purpose>
+---
+description: "Capture ideas, tasks, or issues as structured todos for later work. Use when the user says 'add todo', 'remember this', 'note this for later', 'add a task', or wants to capture something without losing current context."
+---
 
 <required_reading>
 Read all files referenced by the invoking prompt's execution_context before starting.

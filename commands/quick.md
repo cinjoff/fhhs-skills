@@ -1,12 +1,12 @@
-<purpose>
-Execute small, ad-hoc tasks with GSD guarantees (atomic commits, STATE.md tracking). Quick mode spawns gsd-planner (quick mode) + gsd-executor(s), tracks tasks in `.planning/quick/`, and updates STATE.md's "Quick Tasks Completed" table.
+---
+description: "Execute small ad-hoc tasks with GSD guarantees. Use when the user says 'quick', 'quick task', or has a small task that doesn't warrant full /plan + /build ceremony. Supports --discuss and --full flags."
+---
 
-With `--discuss` flag: lightweight discussion phase before planning. Surfaces assumptions, clarifies gray areas, captures decisions in CONTEXT.md so the planner treats them as locked.
+Quick mode spawns gsd-planner + gsd-executor(s), tracks tasks in `.planning/quick/`, and updates STATE.md.
 
-With `--full` flag: enables plan-checking (max 2 iterations) and post-execution verification for quality guarantees without full milestone ceremony.
-
-Flags are composable: `--discuss --full` gives discussion + plan-checking + verification.
-</purpose>
+- `--discuss`: lightweight discussion phase before planning — surfaces assumptions, clarifies gray areas, captures decisions in CONTEXT.md
+- `--full`: enables plan-checking (max 2 iterations) and post-execution verification
+- Flags are composable: `--discuss --full` gives discussion + plan-checking + verification
 
 <required_reading>
 Read all files referenced by the invoking prompt's execution_context before starting.
@@ -74,7 +74,7 @@ if [[ "$INIT" == @file:* ]]; then INIT=$(cat "${INIT#@file:}"); fi
 
 Parse JSON for: `planner_model`, `executor_model`, `checker_model`, `verifier_model`, `commit_docs`, `next_num`, `slug`, `date`, `timestamp`, `quick_dir`, `task_dir`, `roadmap_exists`, `planning_exists`.
 
-**If `roadmap_exists` is false:** Error — Quick mode requires an active project with ROADMAP.md. Run `new-project` first.
+**If `roadmap_exists` is false:** Error — Quick mode requires an active project with ROADMAP.md. Run `/new-project` first.
 
 Quick tasks can run mid-phase - validation only checks ROADMAP.md exists, not phase status.
 

@@ -12,7 +12,8 @@ You are a **lean orchestrator**. Your job is to coordinate, not to do heavy work
 
 > **CRITICAL — GSD project required:**
 > Check if `.planning/PROJECT.md` exists.
-> - **If YES → proceed.** Read STATE.md for current phase/plan. Read ROADMAP.md for phase goals. Read CONTEXT.md for locked decisions.
+> - **If YES → proceed.** Read STATE.md for current phase/plan. Read ROADMAP.md for phase goals. Read phase-specific CONTEXT.md for locked decisions.
+>   - **If ROADMAP.md is missing:** "Project exists but has no roadmap. Run `/new-project` to regenerate, or proceed without phase tracking?" If proceeding without, skip Step 0 and treat as a standalone plan.
 > - **If NO → stop.** Tell the user: "No project found. Run `/new-project` first to set up project tracking." Do not proceed.
 
 ---
@@ -49,6 +50,8 @@ If the user mentions wanting an isolated branch or worktree, set up a git worktr
 ---
 
 ## Step 2: Brainstorm
+
+**Skip if:** A phase-specific CONTEXT.md already exists AND a design doc for this topic already exists in `.planning/designs/`. The design was already approved — proceed to Step 3.
 
 Invoke `skills/brainstorming/`. Follow it completely — it handles exploration, questions, design sections, and user approval.
 
@@ -217,3 +220,4 @@ After plan approval:
 2. **Continue planning** — Plan more phases before building. Useful for planning ahead across multiple phases before executing any.
 
 Default to option 1 unless the user indicates they want to keep planning.
+

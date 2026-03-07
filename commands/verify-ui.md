@@ -82,7 +82,7 @@ Flag anything concerning.
 
 ## Step 4: Design Critique
 
-Read the screenshots and the project's `.planning/DESIGN.md` for design context. Evaluate:
+Read the screenshots and the project's `.planning/DESIGN.md` for design context (if no DESIGN.md exists, evaluate against general web design principles). Evaluate:
 
 1. **Visual hierarchy** — most important content most prominent?
 2. **Typography** — correct fonts, scale, spacing per design system?

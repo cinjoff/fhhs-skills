@@ -1,6 +1,6 @@
-<purpose>
-Validate `.planning/` directory integrity and report actionable issues. Checks for missing files, invalid configurations, inconsistent state, and orphaned plans. Optionally repairs auto-fixable issues.
-</purpose>
+---
+description: "Validate .planning/ directory integrity and diagnose issues. Use when the user says 'health', 'health check', 'check planning', 'is my project ok', or suspects corrupted planning state. Supports --repair flag."
+---
 
 <required_reading>
 Read all files referenced by the invoking prompt's execution_context before starting.
@@ -65,7 +65,7 @@ Errors: N | Warnings: N | Info: N
   Fix: Run health --repair to reset to defaults
 
 - [E002] PROJECT.md not found
-  Fix: Run new-project to create
+  Fix: Run /new-project to create
 ```
 
 **If warnings exist:**

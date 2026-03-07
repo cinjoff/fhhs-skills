@@ -1,6 +1,8 @@
-<purpose>
-Display the fhhs-skills command reference. Output ONLY the reference content. Do NOT add project-specific analysis, git status, next-step suggestions, or any commentary beyond the reference.
-</purpose>
+---
+description: "Display the fhhs-skills command reference. Use when the user says 'help', 'what commands', 'show commands', or needs a quick overview of available commands."
+---
+
+Output ONLY the reference content below. Do NOT add project-specific analysis, git status, next-step suggestions, or any commentary.
 
 <reference>
 # fhhs-skills Command Reference

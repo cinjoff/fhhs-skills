@@ -14,6 +14,10 @@ You are a **lean orchestrator**. Delegate the actual research to a subagent to k
 
 ## Process
 
+### 0. Verify GSD Project
+
+Check `.planning/PROJECT.md` exists. If missing, stop: "No project found. Run `/new-project` first." Do not proceed.
+
 ### 1. Determine Scope
 
 Based on the topic, identify:
@@ -55,8 +59,4 @@ If GSD project active, update STATE.md briefly.
 
 ## GSD Integration
 
-`/research` requires a GSD project (`.planning/PROJECT.md` must exist). If no project found, tell the user to run `/new-project` first.
-
 Output goes to `.planning/phases/XX-name/XX-RESEARCH.md` with full frontmatter. Updates STATE.md.
-
-`/research` is the canonical research command.

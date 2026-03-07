@@ -76,46 +76,7 @@ The template includes all behavioral directives (TDD, frontend, commits, YAGNI),
 
 ### Checkpoint protocol
 
-If a task has `type="checkpoint:*"`, the subagent must STOP and return structured state:
-
-**checkpoint:human-verify (90%)** — Visual/functional verification needed.
-Return: what was built, verification steps (URLs, commands, expected behavior).
-
-**checkpoint:decision (9%)** — Implementation choice needed.
-Return: decision context, options with pros/cons.
-
-**checkpoint:human-action (1%)** — Unavoidable manual step (auth, 2FA, email link).
-Return: what was automated, single manual step needed, verification command.
-
-Subagent return format for checkpoints:
-```
-CHECKPOINT REACHED
-Type: [human-verify | decision | human-action]
-Progress: {completed}/{total} tasks
-Completed Tasks: [task | commit hash | key files] per task
-Current Task: [name, status, blocker]
-Checkpoint Details: [type-specific content]
-Awaiting: [what user needs to do]
-```
-
-**Auto-mode** (when `AUTO_MODE` is `"true"`):
-- `checkpoint:human-verify` → Auto-approve. Log `Auto-approved: [description]`. Continue.
-- `checkpoint:decision` → Auto-select first option (planners front-load recommended). Log `Auto-selected: [option]`. Continue.
-- `checkpoint:human-action` → Stop normally. Auth gates cannot be automated.
-
-**Standard mode:** Present checkpoint to user, wait for response, then dispatch a **new subagent** for the next task. The continuation prompt must include:
-- Completed tasks summary: task names + commit hashes (so it doesn't redo work)
-- The user's checkpoint response (approval, decision choice, or confirmation of manual action)
-- The next task's full content — same template format as original dispatch
-- For `checkpoint:decision`: which option the user selected and why
-
-### Authentication gates
-
-Auth errors (401, 403, "Not authenticated", "Please run X login") are gates, not failures. Subagent must:
-1. Recognize it's an auth gate
-2. STOP and return as `checkpoint:human-action`
-3. Provide exact auth steps (CLI commands, where to get keys)
-4. Specify verification command
+If a task has `type="checkpoint:*"`, read `references/checkpoint-protocol.md` from the fhhs-skills plugin directory for the full protocol. It covers checkpoint types (human-verify, decision, human-action), return format, auto-mode behavior, standard mode continuation, and authentication gate handling.
 
 **For independent tasks in the same wave:** dispatch subagents in parallel.
 **For sequential waves:** wait for all tasks in current wave before starting next.
@@ -135,7 +96,7 @@ Auth errors (401, 403, "Not authenticated", "Please run X login") are gates, not
 
 **After each wave completes and passes spot-check, run a spec gate before starting the next wave.**
 
-This catches spec deviations before dependent waves build on wrong foundations. Skip this step for the final wave (Step 8's quality review covers it).
+This catches spec deviations before dependent waves build on wrong foundations. Run for ALL waves including the final wave — the quality review in Step 8 focuses on code quality, not spec compliance.
 
 ### Dispatch spec reviewer
 
@@ -294,14 +255,13 @@ Write `{phase}-VERIFICATION.md` with truth table, artifacts, key links, requirem
 
 ## Step 8: Quality Review
 
-After all tasks complete, dispatch a quality review. Spec compliance was already verified per-wave (Step 3b), so this review focuses on code quality and cross-task consistency.
+After all tasks complete, dispatch a quality review. Spec compliance was verified per-wave in Step 3b — this review focuses on code quality and cross-task consistency.
 
 ### Dispatch quality reviewer
 
 Use `skills/requesting-code-review/` with **`subagent_type: "code-reviewer"`** (specialized agent).
 
 **Scope:** Full implementation diff from plan start to now.
-**Skip:** Spec compliance checks (already done per-wave in spec gates).
 **Focus areas:**
 - Code quality: naming, structure, error handling, DRY
 - Security: injection, auth bypass, data exposure

@@ -1,10 +1,8 @@
-<purpose>
-Orchestrate parallel codebase mapper agents to analyze codebase and produce structured documents in .planning/codebase/
+---
+description: "Analyze codebase structure with parallel agents, producing structured documents in .planning/codebase/. Use when the user says 'map codebase', 'analyze codebase', 'understand the code', or needs architecture documentation."
+---
 
-Each agent has fresh context, explores a specific focus area, and **writes documents directly**. The orchestrator only receives confirmation + line counts, then writes a summary.
-
-Output: .planning/codebase/ folder with 7 structured documents about the codebase state.
-</purpose>
+Each agent has fresh context, explores a specific focus area, and **writes documents directly**. The orchestrator only receives confirmation + line counts, then writes a summary. Output: .planning/codebase/ folder with 7 structured documents.
 
 <philosophy>
 **Why dedicated mapper agents:**
@@ -286,7 +284,7 @@ Created .planning/codebase/:
 
 **Initialize project** — use codebase context for planning
 
-`new-project`
+`/new-project`
 
 <sub>`/clear` first → fresh context window</sub>
 

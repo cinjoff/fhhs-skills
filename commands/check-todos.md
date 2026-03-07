@@ -1,6 +1,6 @@
-<purpose>
-List all pending todos, allow selection, load full context for the selected todo, and route to appropriate action.
-</purpose>
+---
+description: "Review and act on pending todos. Use when the user says 'check todos', 'what todos do I have', 'show tasks', 'pending items', or wants to work on previously captured ideas."
+---
 
 <required_reading>
 Read all files referenced by the invoking prompt's execution_context before starting.
