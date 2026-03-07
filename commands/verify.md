@@ -1,5 +1,5 @@
 ---
-description: "Verify completed work with goal-backward truth tables and fresh evidence. Use when the user says 'verify', 'check if it works', 'did we miss anything', 'validate', or wants proof that a phase or branch is complete. Replaces /gsd:verify-work."
+description: "Verify completed work with goal-backward truth tables and fresh evidence. Use when the user says 'verify', 'check if it works', 'did we miss anything', 'validate', or wants proof that a phase or branch is complete."
 ---
 
 Standalone verification of work. Combines GSD goal-backward verification with evidence-based verification.

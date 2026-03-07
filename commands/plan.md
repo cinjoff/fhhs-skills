@@ -1,5 +1,5 @@
 ---
-description: "Plan a feature before building it. Brainstorm, research, and produce an execution-ready PLAN.md. Use when the user says 'plan', 'design this feature', 'figure out how to build', 'spec this out', or wants to think before coding. Always use this instead of /gsd:plan-phase."
+description: "Plan a feature before building it. Brainstorm, research, and produce an execution-ready PLAN.md. Use when the user says 'plan', 'design this feature', 'figure out how to build', 'spec this out', or wants to think before coding."
 ---
 
 Plan a feature before building it. Brainstorm, research, and produce an execution-ready plan.
@@ -64,7 +64,7 @@ Save approved design to `.planning/designs/YYYY-MM-DD-<topic>.md`.
 
 ## Step 3: Discuss Implementation
 
-**Skip if:** A CONTEXT.md already exists for this phase (decisions already locked from a previous `/gsd:discuss-phase` run).
+**Skip if:** A CONTEXT.md already exists for this phase (decisions already locked from a previous planning session).
 
 Resolve implementation gray areas before planning:
 

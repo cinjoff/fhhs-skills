@@ -2,7 +2,7 @@
 
 A workflow plugin for [Claude Code](https://claude.com/claude-code) that brings together engineering discipline, design quality, and project tracking into one install.
 
-53 commands. 29 internal skills. No other plugins required.
+38 commands. 29 internal skills. No other plugins required.
 
 ## Install
 
@@ -76,39 +76,19 @@ When you come back to an existing project:
 
 </details>
 
-### Project Management
+### Project Tracking
 
 | Command | What it does |
 |---------|-------------|
 | `/fh:progress` | See where you are and what's next |
-| `/fh:add-phase` | Add a new phase to your roadmap |
 | `/fh:quick` | Do a small task with tracking guarantees |
-| `/fh:complete-milestone` | Wrap up a milestone and archive it |
 | `/fh:health` | Check if your project files are in good shape |
-
-<details>
-<summary>More project commands</summary>
-
-| Command | What it does |
-|---------|-------------|
-| `/fh:remove-phase` | Remove a phase from the roadmap |
-| `/fh:insert-phase` | Insert urgent work between existing phases |
-| `/fh:add-todo` | Capture an idea or task |
+| `/fh:add-todo` | Capture an idea or task for later |
 | `/fh:check-todos` | See pending todos and pick one |
-| `/fh:add-tests` | Generate tests for completed work |
-| `/fh:cleanup` | Archive old phase directories |
-| `/fh:discuss-phase` | Talk through a phase before planning |
 | `/fh:map-codebase` | Analyze your codebase structure |
-| `/fh:pause-work` | Save context when stopping mid-task |
 | `/fh:settings` | Configure workflow preferences |
-| `/fh:set-profile` | Switch between quality/balanced/budget modes |
-| `/fh:validate-phase` | Audit test coverage for a phase |
-| `/fh:plan-milestone-gaps` | Find and plan missing work |
-| `/fh:list-phase-assumptions` | Surface assumptions before planning |
-| `/fh:audit-milestone` | Verify milestone completion |
-| `/fh:new-milestone` | Start a new milestone cycle |
 
-</details>
+Phase management (adding, removing, reordering phases), milestone lifecycle (completion, auditing, archiving), and test generation are handled automatically by `/fh:plan`, `/fh:build`, and `/fh:verify`.
 
 ### Utilities
 
@@ -117,7 +97,6 @@ When you come back to an existing project:
 | `/fh:revise-claude-md` | Update CLAUDE.md with learnings from the session |
 | `/fh:update` | Check for updates and install the latest version |
 | `/fh:skills-guide` | Show all commands and how they fit together |
-| `/fh:help` | Quick reference |
 
 ## What's Under the Hood
 

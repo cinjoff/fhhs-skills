@@ -8,7 +8,7 @@ The issue: $ARGUMENTS
 
 > **Dependency check:** Verify `.planning/PROJECT.md` exists (required). Engineering disciplines (TDD, verification) and design quality commands are built into this plugin. See the `references/dependency-check.md` file in the same plugin directory as this command for detection details.
 
-This command runs in a single context by default. Escalates to parallel agents or /gsd:debug when needed.
+This command runs in a single context by default. Escalates to parallel agents when needed.
 
 ---
 
@@ -25,13 +25,13 @@ Quickly assess bug depth before choosing strategy. Spend <5% context.
 | 1 file, cause visible | **SIMPLE** | TDD fix directly | "Single-file fix, straightforward." |
 | 2-4 files, one subsystem | **MODERATE** | Full debug → TDD | "Multi-file issue in [subsystem]. Full investigation." |
 | 3+ independent failures | **PARALLEL** | Debugger agent per subsystem | "Multiple independent failures. Dispatching parallel debug agents." |
-| Unclear cause, needs hypotheses | **COMPLEX** | Recommend /gsd:debug | "Sustained investigation needed. Recommend `/gsd:debug`." |
+| Unclear cause, needs hypotheses | **COMPLEX** | Persistent debug session | "Sustained investigation needed. Starting persistent debug session." |
 
 Execute the chosen path:
 - **SIMPLE:** Skip to Step 2 — cause is clear from triage.
 - **MODERATE:** Invoke `skills/systematic-debugging/`. Follow completely. Then Step 2.
 - **PARALLEL:** Dispatch one **`gsd-debugger`** agent per subsystem (specialized — scientific debugging with hypothesis tracking). Each agent gets: the specific failure, relevant files, and instruction to produce root cause + proposed fix. Collect results. Then Step 2 for each fix.
-- **COMPLEX:** Write triage findings to `.planning/debug/{issue-slug}.md` with: error message, files investigated, hypotheses formed, test results observed. Slug convention: `YYYY-MM-DD-{first-3-words-kebab}` (e.g., `2026-03-06-payment-timeout-error`). If slug exists, append `-2`. Then hand off to `/gsd:debug {issue-slug}` — it auto-detects the existing session file. If user says try anyway → MODERATE path.
+- **COMPLEX:** Write triage findings to `.planning/debug/{issue-slug}.md` with: error message, files investigated, hypotheses formed, test results observed. Slug convention: `YYYY-MM-DD-{first-3-words-kebab}` (e.g., `2026-03-06-payment-timeout-error`). If slug exists, append `-2`. Then dispatch a `gsd-debugger` agent with the session file for sustained scientific investigation. If user says try anyway → MODERATE path.
 
 ---
 

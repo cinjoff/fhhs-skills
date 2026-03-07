@@ -1,5 +1,5 @@
 ---
-description: "Investigate a topic with web search and docs, producing GSD-compatible research output. Use when the user says 'research', 'investigate', 'look into', 'what are the options for', 'how does X work', or needs technical feasibility analysis before planning. Replaces /gsd:research-phase."
+description: "Investigate a topic with web search and docs, producing GSD-compatible research output. Use when the user says 'research', 'investigate', 'look into', 'what are the options for', 'how does X work', or needs technical feasibility analysis before planning."
 ---
 
 Research a topic using Firecrawl and Context7. Outputs in GSD-compatible format for seamless planning.
@@ -59,4 +59,4 @@ If GSD project active, update STATE.md briefly.
 
 Output goes to `.planning/phases/XX-name/XX-RESEARCH.md` with full frontmatter. Updates STATE.md.
 
-`/research` replaces `/gsd:research-phase` as the canonical research command.
+`/research` is the canonical research command.

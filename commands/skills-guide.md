@@ -25,7 +25,7 @@ Requires GSD project. Research-first detection -> brainstorm (`skills/brainstorm
 Find plan -> wave-based parallel subagents (structured implementer prompt with TDD, YAGNI, self-review, analysis paralysis guard) -> per-wave spec gate (`code-reviewer` agent, adversarial) -> design gates if frontend (`/critique` -> `/polish` -> `/normalize`) + background integration check (`gsd-integration-checker`) -> SUMMARY.md -> phase completion detection -> dual verification (`gsd-verifier`) -> quality review (`code-reviewer` agent) -> `/simplify` pass (reuse, efficiency, code hygiene) -> verify -> finish.
 
 ### `/fix` — Auto-triage bug fix
-Triage depth (SIMPLE/MODERATE/PARALLEL/COMPLEX) -> appropriate debug path (COMPLEX seeds `.planning/debug/` for `/gsd:debug`) -> TDD fix -> design check (frontend anti-patterns) -> spec review -> `/simplify` pass (MODERATE+ only) -> verify.
+Triage depth (SIMPLE/MODERATE/PARALLEL/COMPLEX) -> appropriate debug path (COMPLEX uses persistent debug session) -> TDD fix -> design check (frontend anti-patterns) -> spec review -> `/simplify` pass (MODERATE+ only) -> verify.
 
 ### `/refactor` — Safe code restructuring
 Scope blast radius -> capture baseline (characterization tests if needed) -> atomic steps (revert-on-red iron law) -> two-stage review -> `/simplify` pass -> verify.
@@ -93,40 +93,38 @@ CLAUDE.md:   /revise-claude-md (after sessions or /revise-claude-md audit)
 
 ## Command Reference
 
-| Command | Purpose | Replaces |
-|---------|---------|----------|
-| `/plan` | Brainstorm -> research -> PLAN.md -> plan-check | `/gsd:plan-phase` |
-| `/build` | Execute plans with discipline + auto design gates | `/gsd:execute-phase` |
-| `/new-project` | Bootstrap project with design + tracking | `/gsd:new-project` |
-| `/research` | Investigate topic with GSD-compatible output | `/gsd:research-phase` |
-| `/fix` | Auto-triage -> debug -> TDD fix -> verify | — |
-| `/simplify` | Code reuse, efficiency, and hygiene review | — |
-| `/refactor` | Safe restructuring, behavior preservation | — |
-| `/verify` | Standalone dual verification | `/gsd:verify-work` |
-| `/resume` | Context restoration -> routing | `/gsd:resume-work` |
-| `/verify-ui` | Visual verification with Playwright | — |
-| `/critique` | Design quality evaluation | — |
-| `/polish` | Alignment and consistency pass | — |
-| `/normalize` | Design system token consistency | — |
-| `/harden` | Error handling, i18n, edge cases | — |
-| `/animate` | Motion and micro-interactions | — |
-| `/teach-impeccable` | One-time design context setup | — |
+| Command | Purpose |
+|---------|---------|
+| `/plan` | Brainstorm -> research -> PLAN.md -> plan-check. Handles phase creation automatically |
+| `/build` | Execute plans with discipline + auto design gates. Handles milestone completion |
+| `/new-project` | Bootstrap project with design + tracking |
+| `/research` | Investigate topic with GSD-compatible output |
+| `/fix` | Auto-triage -> debug -> TDD fix -> verify |
+| `/simplify` | Code reuse, efficiency, and hygiene review |
+| `/refactor` | Safe restructuring, behavior preservation |
+| `/verify` | Standalone dual verification |
+| `/resume` | Context restoration -> routing |
+| `/verify-ui` | Visual verification with Playwright |
+| `/critique` | Design quality evaluation |
+| `/polish` | Alignment and consistency pass |
+| `/normalize` | Design system token consistency |
+| `/harden` | Error handling, i18n, edge cases |
+| `/animate` | Motion and micro-interactions |
+| `/teach-impeccable` | One-time design context setup |
 
-**GSD structural commands** (for project management, not replaced by composites):
+**Project tracking** (user-facing):
 
 | Command | Purpose |
 |---------|---------|
-| `/gsd:new-milestone` | Add milestone to existing project |
-| `/gsd:discuss-phase` | Gather context through conversation before planning |
-| `/gsd:progress` | Check position, metrics, route to next action |
-| `/gsd:debug` | Multi-session debugging with persistent state |
-| `/gsd:quick` | Quick ad-hoc task with GSD guarantees |
-| `/gsd:audit-milestone` | Verify milestone completion before archiving |
-| `/gsd:complete-milestone` | Archive and prepare for next milestone |
-| `/gsd:add-phase`, `remove-phase`, `insert-phase` | Edit roadmap structure |
-| `/gsd:health` | Diagnose and repair `.planning/` directory integrity |
-| `/gsd:cleanup` | Archive phase directories from completed milestones |
-| `/update-upstream` | Check for upstream updates and generate diff report |
+| `/progress` | Check position, metrics, route to next action |
+| `/quick` | Quick ad-hoc task with GSD guarantees |
+| `/health` | Diagnose and repair `.planning/` directory integrity |
+| `/add-todo` | Capture ideas or tasks for later |
+| `/check-todos` | Review and work on pending todos |
+| `/map-codebase` | Analyze codebase structure |
+| `/settings` | Configure workflow preferences |
+
+Phase management (adding, removing, reordering), milestone lifecycle (completion, auditing, archiving), and test generation are handled automatically by `/plan`, `/build`, and `/verify`.
 
 ## Non-Negotiable Disciplines
 

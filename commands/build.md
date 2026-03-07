@@ -1,5 +1,5 @@
 ---
-description: "Execute an existing plan with fresh subagents, TDD, design gates, and verification. Use when the user says 'build', 'execute the plan', 'run the plan', 'implement this', or has a PLAN.md ready to execute. Always use this instead of /gsd:execute-phase."
+description: "Execute an existing plan with fresh subagents, TDD, design gates, and verification. Use when the user says 'build', 'execute the plan', 'run the plan', 'implement this', or has a PLAN.md ready to execute."
 ---
 
 Execute an existing plan. Delegates task execution to subagents for optimal context usage.
@@ -356,7 +356,7 @@ Route based on phase status:
 |-----------|--------|
 | More plans in phase | "Plan X of Y complete." Suggest `/build` for next plan. |
 | Phase complete, more phases | "Phase complete." Suggest `/plan {next}` or `/verify`. Also suggest `/revise-claude-md` to capture learnings from this phase. |
-| Last phase in milestone | "Milestone complete." Suggest `/gsd:complete-milestone`. Also suggest `/revise-claude-md` — milestone boundaries are natural points to update project conventions. |
+| Last phase in milestone | "Milestone complete." Run milestone completion: archive phase directories, update STATE.md and ROADMAP.md via `gsd-tools.cjs milestone complete`, and suggest `/revise-claude-md` — milestone boundaries are natural points to update project conventions. |
 
 If user prefers to skip the branch finishing (more work planned), report what was built with links to key files.
 

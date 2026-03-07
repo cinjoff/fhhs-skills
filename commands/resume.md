@@ -1,5 +1,5 @@
 ---
-description: "Restore context and route to the right next action. Use when the user says 'resume', 'where was I', 'what's next', 'continue', 'pick up where I left off', or starts a new session on an existing project. Replaces /gsd:resume-work."
+description: "Restore context and route to the right next action. Use when the user says 'resume', 'where was I', 'what's next', 'continue', 'pick up where I left off', or starts a new session on an existing project."
 ---
 
 Context restoration and routing. Reads project state, presents a briefing, routes to the right composite.
@@ -65,7 +65,7 @@ Based on detected state, recommend next action:
 | Research done, no plans | "Research complete. Ready to `/plan`." |
 | Plans ready, none executed | "Plans ready. Execute with `/build`." |
 | Phase complete, unverified | "All plans done. Verify with `/verify {phase}`." |
-| All phases done | "Milestone complete. Run `/gsd:audit-milestone` to verify and archive." (This is a GSD structural command — no composite replacement exists.) |
+| All phases done | "Milestone complete." Run milestone audit inline: aggregate phase verifications, check cross-phase integration, assess requirements coverage, then archive via `gsd-tools.cjs milestone complete`. |
 | Uncommitted changes | "Uncommitted work in N files. Review before continuing?" |
 | No `.planning/PROJECT.md` | "No project found. Run `/new-project` to set up tracking." |
 | No clear state | "No active work detected. What would you like to work on?" |

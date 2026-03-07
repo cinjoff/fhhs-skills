@@ -180,7 +180,7 @@ Read its `<objective>` section.
 
 **{phase}-{plan}: [Plan Name]** — [objective summary from PLAN.md]
 
-`execute-phase {phase}`
+`/build`
 
 <sub>`/clear` first → fresh context window</sub>
 
@@ -203,7 +203,7 @@ Check if `{phase_num}-CONTEXT.md` exists in phase directory.
 **Phase {N}: {Name}** — {Goal from ROADMAP.md}
 <sub>✓ Context gathered, ready to plan</sub>
 
-`plan-phase {phase-number}`
+`/plan`
 
 <sub>`/clear` first → fresh context window</sub>
 
@@ -219,15 +219,15 @@ Check if `{phase_num}-CONTEXT.md` exists in phase directory.
 
 **Phase {N}: {Name}** — {Goal from ROADMAP.md}
 
-`discuss-phase {phase}` — gather context and clarify approach
+`/plan {phase}` — plan this phase (includes discussion and context gathering)
 
 <sub>`/clear` first → fresh context window</sub>
 
 ---
 
 **Also available:**
-- `plan-phase {phase}` — skip discussion, plan directly
-- `list-phase-assumptions {phase}` — see Claude's assumptions
+- `/plan {phase}` — plan directly
+- `/plan {phase}` — start planning (surfaces assumptions during brainstorm)
 
 ---
 ```
@@ -245,15 +245,15 @@ UAT.md exists with gaps (diagnosed issues). User needs to plan fixes.
 
 **{phase_num}-UAT.md** has {N} gaps requiring fixes.
 
-`plan-phase {phase} --gaps`
+`/plan` — plan fixes for the gaps
 
 <sub>`/clear` first → fresh context window</sub>
 
 ---
 
 **Also available:**
-- `execute-phase {phase}` — execute phase plans
-- `verify-work {phase}` — run more UAT testing
+- `/build` — execute phase plans
+- `/verify` — run verification
 
 ---
 ```
@@ -299,8 +299,8 @@ Read ROADMAP.md to get the next phase's name and goal.
 ---
 
 **Also available:**
-- `plan-phase {Z+1}` — skip discussion, plan directly
-- `verify-work {Z}` — user acceptance test before continuing
+- `/plan {Z+1}` — plan next phase directly
+- `/verify {Z}` — verify before continuing
 
 ---
 ```
@@ -320,14 +320,14 @@ All {N} phases finished!
 
 **Complete Milestone** — archive and prepare for next
 
-`complete-milestone`
+`/verify` — verify and complete the milestone
 
 <sub>`/clear` first → fresh context window</sub>
 
 ---
 
 **Also available:**
-- `verify-work` — user acceptance test before completing milestone
+- `/verify` — verify before completing milestone
 
 ---
 ```
@@ -351,7 +351,7 @@ Ready to plan the next milestone.
 
 **Start Next Milestone** — questioning → research → requirements → roadmap
 
-`new-milestone`
+`/plan` — plan the next milestone
 
 <sub>`/clear` first → fresh context window</sub>
 
@@ -363,10 +363,10 @@ Ready to plan the next milestone.
 <step name="edge_cases">
 **Handle edge cases:**
 
-- Phase complete but next phase not planned → offer `plan-phase [next]`
+- Phase complete but next phase not planned → offer `/plan`
 - All work complete → offer milestone completion
 - Blockers present → highlight before offering to continue
-- Handoff file exists → mention it, offer `resume-work`
+- Handoff file exists → mention it, offer `/resume`
   </step>
 
 </process>
@@ -376,7 +376,7 @@ Ready to plan the next milestone.
 - [ ] Rich context provided (recent work, decisions, issues)
 - [ ] Current position clear with visual progress
 - [ ] What's next clearly explained
-- [ ] Smart routing: execute-phase if plans exist, plan-phase if not
+- [ ] Smart routing: /build if plans exist, /plan if not
 - [ ] User confirms before any action
 - [ ] Seamless handoff to appropriate gsd command
       </success_criteria>
