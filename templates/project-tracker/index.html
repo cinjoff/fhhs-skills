@@ -202,7 +202,7 @@
           return '<div class="border-l-2 ' + borderClass + ' pl-3 py-2 rounded-r bg-zinc-900/50">' +
             '<div class="flex items-center justify-between gap-3">' +
               '<span class="text-sm text-zinc-50">' +
-                '<span class="text-zinc-500 mr-1.5">' + stage.number + '.</span>' +
+                '<span class="text-zinc-500 mr-1.5">' + escapeHtml(String(stage.number)) + '.</span>' +
                 escapeHtml(stage.name) +
               '</span>' +
               badge +
@@ -269,7 +269,7 @@
         var updatesList = document.getElementById('updates-list');
         updatesList.innerHTML = updates.map(function(u) {
           return '<div class="flex items-start gap-3">' +
-            '<span class="text-xs text-zinc-500 whitespace-nowrap min-w-[70px] pt-0.5">' + relativeTime(u.time) + '</span>' +
+            '<span class="text-xs text-zinc-500 whitespace-nowrap min-w-[70px] pt-0.5">' + escapeHtml(relativeTime(u.time)) + '</span>' +
             '<span class="text-sm text-zinc-300">' + escapeHtml(u.text) + '</span>' +
           '</div>';
         }).join('');

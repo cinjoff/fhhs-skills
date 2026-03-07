@@ -181,7 +181,7 @@ function parseSummaryFile(filePath) {
  */
 function parsePhases(planningDir, roadmapPhases, state) {
   const phasesDir = path.join(planningDir, 'phases');
-  if (!fs.existsSync(phasesDir)) return roadmapPhases;
+  if (!fs.existsSync(phasesDir)) return { phases: roadmapPhases, completionEvents: [] };
 
   let phaseDirs;
   try {
@@ -190,7 +190,7 @@ function parsePhases(planningDir, roadmapPhases, state) {
       .map(d => d.name)
       .sort();
   } catch {
-    return roadmapPhases;
+    return { phases: roadmapPhases, completionEvents: [] };
   }
 
   // Build a map from phase number/name to tasks

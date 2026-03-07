@@ -72,7 +72,6 @@ Project tracker is running at http://localhost:3847
 The dashboard auto-refreshes every 2 seconds and shows:
 - Project overview from PROJECT.md
 - Phase and plan progress from ROADMAP.md and STATE.md
-- Requirements status from REQUIREMENTS.md
 
 Leave this terminal open to keep the server running.
 ```

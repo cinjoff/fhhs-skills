@@ -135,6 +135,16 @@ function tryListen(port, attempt) {
     process.exit(1);
   }
 
+  server.removeAllListeners('error');
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.log(`  Port ${port} is busy, trying ${port + 1}...`);
+      tryListen(port + 1, attempt + 1);
+    } else {
+      throw err;
+    }
+  });
+
   server.listen(port, '127.0.0.1', () => {
     console.log(
       '\n  Project Tracker is running!\n\n' +
@@ -143,16 +153,6 @@ function tryListen(port, attempt) {
       `  Watching:   ${planningDir}\n\n` +
       '  Press Ctrl+C to stop.\n'
     );
-  });
-
-  server.on('error', (err) => {
-    if (err.code === 'EADDRINUSE') {
-      console.log(`  Port ${port} is busy, trying ${port + 1}...`);
-      server.removeAllListeners('error');
-      tryListen(port + 1, attempt + 1);
-    } else {
-      throw err;
-    }
   });
 }
 
