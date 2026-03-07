@@ -109,7 +109,7 @@ Commit: `docs: initialize project planning with GSD structure`
 3. Create `.project-tracker/` in the project root and write the 4 files into it.
 4. Add `.project-tracker/` to `.gitignore` (create the file if it doesn't exist, or append if the entry is missing).
 
-Mention the tracker in the Step 7 handoff output — the user can run `/tracker` to launch the dashboard.
+Mention the tracker in the Step 7 handoff output — the user can run `/fh:tracker` to launch the dashboard.
 
 ---
 
@@ -224,7 +224,7 @@ Project initialized:
 - .planning/STATE.md        — tracking state
 - .planning/config.json     — workflow settings
 - CLAUDE.md                 — project conventions
-- .project-tracker/         — visual dashboard (run /tracker to launch)
+- .project-tracker/         — visual dashboard (run /fh:tracker to launch)
 - GitHub repo               — <repo-url> (private)
 - Vercel project            — linked (auto-deploys on push to main)
 
