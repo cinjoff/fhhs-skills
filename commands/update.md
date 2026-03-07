@@ -10,24 +10,29 @@ $ARGUMENTS
 
 ## Step 1: Get Installed Version
 
-Read the installed plugin version from the cache:
+Read the installed plugin version:
 
 ```bash
-# Check cache for installed version
-CACHE_PLUGIN=$(find "$HOME/.claude/plugins/cache/fhhs-skills" -name "plugin.json" -path "*/.claude-plugin/*" 2>/dev/null | head -1)
-if [ -n "$CACHE_PLUGIN" ]; then
-  cat "$CACHE_PLUGIN"
-else
-  echo "NOT_FOUND"
-fi
+# Check installed_plugins.json for fh@fhhs-skills
+python3 -c "
+import json, pathlib
+data = json.loads(pathlib.Path(pathlib.Path.home() / '.claude/plugins/installed_plugins.json').read_text())
+entry = data.get('plugins', {}).get('fh@fhhs-skills')
+if entry:
+    print(entry[0].get('version', 'unknown'))
+else:
+    print('NOT_INSTALLED')
+" 2>/dev/null || echo "NOT_INSTALLED"
 ```
 
-Parse the `version` field. If NOT_FOUND, the plugin isn't installed yet — tell the user:
+**If NOT_INSTALLED:**
 
 ```
 fhhs-skills is not installed. Install with:
 
   /plugin install fh@fhhs-skills
+
+(First add the marketplace if you haven't: /plugin marketplace add cinjoff/fhhs-skills)
 ```
 
 Exit.
@@ -36,17 +41,24 @@ Exit.
 
 ## Step 2: Check Latest Version
 
-Fetch the latest plugin.json and CHANGELOG.md from GitHub:
+Refresh the marketplace and fetch the changelog from GitHub:
 
 ```bash
-# Get latest version
-curl -sL "https://raw.githubusercontent.com/cinjoff/fhhs-skills/main/.claude-plugin/plugin.json" 2>/dev/null
+# Refresh marketplace to get latest metadata
+claude plugin marketplace refresh fhhs-skills 2>/dev/null
 
+# Get latest version from refreshed marketplace
+python3 -c "
+import json, pathlib
+data = json.loads(pathlib.Path(pathlib.Path.home() / '.claude/plugins/marketplaces/fhhs-skills/.claude-plugin/marketplace.json').read_text())
+print(data['plugins'][0]['version'])
+" 2>/dev/null || echo "FETCH_FAILED"
+```
+
+```bash
 # Get changelog
 curl -sL "https://raw.githubusercontent.com/cinjoff/fhhs-skills/main/CHANGELOG.md" 2>/dev/null
 ```
-
-Parse the `version` field from the fetched plugin.json.
 
 **If fetch fails:**
 ```
