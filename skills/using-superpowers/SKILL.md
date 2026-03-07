@@ -33,7 +33,7 @@ digraph skill_flow {
     "Invoke Skill tool" [shape=box];
     "Announce: 'Using [skill] to [purpose]'" [shape=box];
     "Has checklist?" [shape=diamond];
-    "TaskCreate for each checklist item" [shape=box];
+    "Track each checklist item" [shape=box];
     "Follow skill exactly" [shape=box];
     "Respond (including clarifications)" [shape=doublecircle];
 
@@ -47,9 +47,9 @@ digraph skill_flow {
     "Might any skill apply?" -> "Respond (including clarifications)" [label="definitely not"];
     "Invoke Skill tool" -> "Announce: 'Using [skill] to [purpose]'";
     "Announce: 'Using [skill] to [purpose]'" -> "Has checklist?";
-    "Has checklist?" -> "TaskCreate for each checklist item" [label="yes"];
+    "Has checklist?" -> "Track each checklist item" [label="yes"];
     "Has checklist?" -> "Follow skill exactly" [label="no"];
-    "TaskCreate for each checklist item" -> "Follow skill exactly";
+    "Track each checklist item" -> "Follow skill exactly";
 }
 ```
 

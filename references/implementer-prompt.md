@@ -26,6 +26,10 @@ SKILL.md index, follow rules relevant to your task.
 If ANYTHING is unclear — requirements, approach, dependencies, assumptions — ASK before
 starting. Do not guess. Do not assume. Raise concerns now.
 
+**Use LSP for code navigation:** `goToDefinition` to follow imports, `findReferences` to check
+usage before modifying, `hover` for type info, `documentSymbol` to scan file structure. Faster
+and more accurate than grep.
+
 ## Implementation Rules
 
 **TDD** (if task has `tdd="true"`):

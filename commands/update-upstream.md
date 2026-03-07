@@ -1,10 +1,10 @@
 ---
-description: "Check for upstream updates to Superpowers, Impeccable, or GSD and generate a diff report. Use when the user says 'check for updates', 'update upstream', 'new version of superpowers/impeccable/gsd', or wants to sync forked skills with upstream changes."
+description: "Check for upstream updates to Superpowers, Impeccable, GSD, or feature-dev and generate a diff report. Use when the user says 'check for updates', 'update upstream', 'new version of superpowers/impeccable/gsd/feature-dev', or wants to sync forked skills with upstream changes."
 ---
 
 Check for upstream updates and generate a diff report against the current snapshots.
 
-Usage: $ARGUMENTS — specify `superpowers`, `impeccable`, `gsd`, or `all`. Optionally add a version: `superpowers 4.5.0`.
+Usage: $ARGUMENTS — specify `superpowers`, `impeccable`, `gsd`, `feature-dev`, or `all`. Optionally add a version: `superpowers 4.5.0`.
 
 ---
 
@@ -12,10 +12,12 @@ Usage: $ARGUMENTS — specify `superpowers`, `impeccable`, `gsd`, or `all`. Opti
 
 | Argument | Upstream repo | Current snapshot |
 |----------|--------------|-----------------|
-| `superpowers` | `pcvelz/superpowers` | `upstream/superpowers-{version}/` |
+| `superpowers` | `obra/superpowers` | `upstream/superpowers-{version}/` |
 | `impeccable` | `pbakaus/impeccable` | `upstream/impeccable-{version}/` |
 | `gsd` | `gsd-build/get-shit-done` | `upstream/gsd-{version}/` |
-| `all` | Check all three | All snapshots |
+| `feature-dev` | `anthropics/claude-code-plugins` (official) | `upstream/feature-dev-{sha}/` |
+| `claude-md` | `anthropics/claude-code-plugins` (official) | `upstream/claude-md-management-{version}/` |
+| `all` | Check all five | All snapshots |
 
 Read the current snapshot version from the directory name in `upstream/`.
 
@@ -53,6 +55,12 @@ Compare `upstream/impeccable-{old}/` against the new `commands/` and `skills/` d
 
 ### For GSD:
 Compare `upstream/gsd-{old}/workflows/` against new `workflows/`, `agents/` against new agents, `references/` against new references.
+
+### For feature-dev:
+Compare `upstream/feature-dev-{old}/agents/` against the new `agents/` in the downloaded plugin. feature-dev only contributes agent definitions — compare against our `agents/code-explorer.md`, `agents/code-architect.md`, and `agents/code-reviewer.md`.
+
+### For claude-md:
+Compare `upstream/claude-md-management-{old}/` against the new version. Compare `skills/claude-md-improver/` against new `skills/claude-md-improver/` and `commands/revise-claude-md.md` against new `commands/revise-claude-md.md`.
 
 For each changed file:
 1. Is it a file we forked? → Flag for review

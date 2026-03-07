@@ -68,7 +68,7 @@ Save approved design to `.planning/designs/YYYY-MM-DD-<topic>.md`.
 
 Resolve implementation gray areas before planning:
 
-1. **Scout codebase** for reusable assets — existing components, utilities, patterns that could be leveraged
+1. **Scout codebase** for reusable assets — existing components, utilities, patterns that could be leveraged. Use LSP `workspaceSymbol` to find relevant abstractions by name, and `findReferences` to see how existing patterns are used
 2. **Identify 3-4 gray areas** specific to this phase — layout choices, data flow decisions, error handling approaches, integration patterns
 3. **Ask user** which gray areas to discuss (don't discuss all — let user prioritize)
 4. **Deep-dive** selected areas — present options with trade-offs, get user decisions

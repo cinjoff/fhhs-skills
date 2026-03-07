@@ -9,7 +9,11 @@ The only required check: does `.planning/PROJECT.md` exist?
 - **If YES:** Proceed. The project has GSD tracking set up.
 - **If NO:** Tell the user: "No project found. Run `/new-project` first to set up project tracking." Do not proceed.
 
-All engineering disciplines (TDD, verification, code review, debugging, brainstorming) and design quality commands (critique, polish, normalize, harden, animate) are built into this plugin. No external plugins to detect or install.
+All engineering disciplines (TDD, verification, code review, debugging, brainstorming), design quality commands (critique, polish, normalize, harden, animate), GSD project tracking (`gsd-tools.cjs`), and TypeScript LSP integration are built into this plugin. No external plugins to detect or install.
+
+## GSD Binary
+
+The GSD CLI binary (`gsd-tools.cjs`) is bundled in this plugin's `bin/` directory. During `/setup`, a symlink is created at `$HOME/.claude/get-shit-done/bin/` pointing to the bundled binary. All commands reference this path — no separate GSD installation needed.
 
 ## Frontend Note
 

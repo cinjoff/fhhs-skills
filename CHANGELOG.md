@@ -5,6 +5,31 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-03-07
+
+### Added
+- **`/simplify` command and skill** — parallel code reuse, quality, and efficiency review. Runs automatically as Step 8b in `/build`, also standalone
+- **`/revise-claude-md` command and `claude-md-improver` skill** — audit, evaluate, and improve CLAUDE.md files with GSD-aware context detection
+- **Bundled GSD CLI** — `bin/gsd-tools.cjs` ships with the plugin; `/setup` symlinks it, no separate `npm install -g get-shit-done` needed
+- **LSP integration** — codebase mapper, systematic debugging, and implementer prompt use LSP (`goToDefinition`, `findReferences`, `incomingCalls`, `hover`) for precise code navigation
+- **GSD integration in Superpowers skills** — `writing-plans` and `executing-plans` check for `.planning/PROJECT.md` and route to GSD phase paths automatically
+- **EnterPlanMode prohibition** — hard gates in `writing-plans`, `executing-plans`, and `using-superpowers` prevent plan mode trapping
+- **Cross-platform `/setup`** — detects macOS/Linux/Windows, walks through Homebrew, Node.js, GitHub CLI, Vercel CLI, TypeScript LSP plugin installation
+- **Architecture spec** (`SPEC.md`) — documents the full layer model, routing, and design principles
+- **Session retros** (`.planning/retros/`) — post-session retrospective notes
+
+### Changed
+- **Corrected upstream references** — Superpowers repo is `obra/superpowers` (was `pcvelz`), forked from v4.3.1 (was incorrectly listed as v4.3.4/4.3.5)
+- **Upstream snapshots added** — `upstream/superpowers-4.3.1/`, `upstream/feature-dev-55b58ec6/`, `upstream/claude-md-management-1.0.0/`
+- **COMPATIBILITY.md** — added feature-dev, claude-md-management, external dependencies table, expanded Superpowers and Impeccable coverage
+- **PATCHES.md** — comprehensive rewrite with accurate patch tracking for all upstreams including claude-md-management and feature-dev agents
+- **`/update-gsd` simplified** — streamlined from large script to focused update check
+
+### Removed
+- **`.tasks.json` persistence** — stripped from `writing-plans`, `executing-plans`, `subagent-driven-development`, `dispatching-parallel-agents`, `brainstorming`. GSD state management replaces it
+- **`TaskCreate`/`TaskUpdate` boilerplate** — removed native task tool integration sections from skills (GSD tracking handles this)
+- **`upstream/superpowers-4.3.5/`** — stale snapshot replaced by corrected `upstream/superpowers-4.3.1/`
+
 ## [1.1.0] - 2026-03-06
 
 ### Added

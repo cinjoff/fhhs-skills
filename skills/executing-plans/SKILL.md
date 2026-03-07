@@ -17,19 +17,22 @@ Load plan, review critically, execute tasks in batches, report for review betwee
 
 **Announce at start:** "I'm using the executing-plans skill to implement this plan."
 
+## GSD Integration
+
+**Before anything else, check for GSD project tracking:**
+
+1. Check if `.planning/PROJECT.md` exists
+2. **If GSD active:**
+   - Read `.planning/STATE.md` for current phase/plan position
+   - Read `.planning/ROADMAP.md` for phase goals and requirements
+   - Plans live in `.planning/phases/XX-name/XX-NN-PLAN.md` — look there first
+   - If `.planning/phases/{phase}/{phase}-CONTEXT.md` exists, honor locked decisions
+   - After completion (Step 5), update STATE.md: `node ./.claude/get-shit-done/bin/gsd-tools.cjs state record-session --stopped-at "Completed {phase}-{plan}"`
+3. **If no GSD:** Plans live in `docs/plans/` — use original paths
+
 ## The Process
 
-### Step 0: Load Persisted Tasks
-
-1. Call `TaskList` to check for existing native tasks
-2. **CRITICAL - Locate tasks file:** Try `<plan-path>.tasks.json`, if not found glob for matching `.tasks.json`
-3. If tasks file exists AND native tasks empty: recreate from JSON using TaskCreate, restore blockedBy with TaskUpdate
-4. If native tasks exist: verify they match plan, resume from first `pending`/`in_progress`
-5. If neither: proceed to Step 1b to bootstrap from plan
-
-Update `.tasks.json` after every task status change.
-
-### Step 0.5: Verify Workspace (Worktree Check)
+### Step 0: Verify Workspace (Worktree Check)
 
 Before calling `using-git-worktrees`, check if a worktree already exists:
 
@@ -38,24 +41,14 @@ Before calling `using-git-worktrees`, check if a worktree already exists:
 3. If on main/master with no worktree: **REQUIRED SUB-SKILL:** Use `using-git-worktrees` to create one
 
 ### Step 1: Load and Review Plan
-1. Read plan file fully
-2. Review critically - identify any questions or concerns about the plan
-3. If concerns: Raise them with your human partner before starting
-4. If no concerns: Proceed to task setup
-
-### Step 1b: Bootstrap Tasks from Plan (if needed)
-
-If TaskList returned no tasks or tasks don't match plan:
-
-1. Parse the plan document for `## Task N:` or `### Task N:` headers
-2. For each task found, use TaskCreate with:
-   - subject: The task title from the plan
-   - description: Full task content including steps, files, acceptance criteria
-   - activeForm: Present tense action (e.g., "Implementing X")
-3. **CRITICAL - Dependencies:** For EACH task that has blockedBy in the plan or .tasks.json:
-   - Call `TaskUpdate` with `taskId` and `addBlockedBy: [list-of-blocking-task-ids]`
-   - Do NOT skip this step - dependencies are essential for correct execution order
-4. Call `TaskList` and verify blockedBy relationships show correctly (e.g., "blocked by #1, #2")
+1. **Find the plan:**
+   - If GSD active: check `.planning/phases/` for incomplete plans (PLAN without matching SUMMARY)
+   - If user specified a path, use that
+   - Otherwise: check `docs/plans/` for the most recent plan
+2. Read plan file
+3. Review critically - identify any questions or concerns about the plan
+4. If concerns: Raise them with your human partner before starting
+5. If no concerns: Proceed
 
 ### Step 2: Execute Batch
 **Default: First 3 tasks**
@@ -65,7 +58,6 @@ For each task:
 2. Follow each step exactly (plan has bite-sized steps)
 3. Run verifications as specified
 4. Mark as completed
-5. **Sync `.tasks.json`:** Read the tasks file, update the task's `"status"` to `"completed"` (or `"in_progress"` in step 1), set `"lastUpdated"` to current ISO timestamp, write back. This keeps the persistence file in sync with native tasks for cross-session resume.
 
 ### Step 3: Report
 When batch complete:
@@ -114,6 +106,8 @@ After all tasks complete and verified:
 - Never start implementation on main/master branch without explicit user consent
 
 ## Integration
+
+**GSD tracking:** If GSD is active, prefer using composite commands (`/build`, `/plan`) which handle state management automatically. This skill is the standalone Superpowers alternative.
 
 **Required workflow skills:**
 - **using-git-worktrees** - REQUIRED: Set up isolated workspace before starting

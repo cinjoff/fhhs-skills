@@ -6,22 +6,22 @@ It brings together engineering practices (test-first development, code review, v
 
 ## Getting Started
 
-### Prerequisites
-
-This plugin uses [GSD](https://github.com/gsd-build/get-shit-done) for project state management (tracking phases, milestones, and progress). Install it first:
-
-```bash
-npm install -g get-shit-done
-```
-
 ### Install the plugin
 
 In Claude Code:
 
 ```
 /plugin marketplace add cinjoff/fhhs-skills
-/plugin install fh@fhhs-skills-marketplace
+/plugin install fh@fhhs-skills
 ```
+
+### Run setup
+
+```
+/fh:setup
+```
+
+Setup detects your platform (macOS, Linux, or Windows) and checks for required tools. On macOS/Linux it walks you through installing Homebrew, Node.js, GitHub CLI, and Vercel CLI. On Windows it provides the equivalent installer links. It then auto-installs the TypeScript language server, the TypeScript LSP Claude plugin, and sets up the bundled GSD CLI.
 
 ### Start your first project
 
@@ -168,7 +168,7 @@ The other commands follow similar patterns: systematic investigation for `/fh:fi
 This plugin builds on three open-source projects:
 
 - **[GSD](https://github.com/gsd-build/get-shit-done)** v1.22.4 — project state management
-- **[Superpowers](https://github.com/pcvelz/superpowers)** v4.3.4 — engineering discipline skills
-- **[Impeccable](https://github.com/pbakaus/impeccable)** v1.0.0 — design quality tools
+- **[Superpowers](https://github.com/obra/superpowers)** v4.3.1 — engineering discipline skills
+- **[Impeccable](https://github.com/pbakaus/impeccable)** v1.2.0 — design quality tools
 
 All three are forked and bundled into this plugin. See [PATCHES.md](PATCHES.md) for modifications from upstream.

@@ -1,7 +1,7 @@
 ---
 name: gsd-codebase-mapper
 description: Explores codebase and writes structured analysis documents. Spawned by map-codebase with a focus area (tech, arch, quality, concerns). Writes documents directly to reduce orchestrator context load.
-tools: Read, Bash, Grep, Glob, Write
+tools: Read, Bash, Grep, Glob, Write, LSP
 color: cyan
 skills:
   - gsd-mapper-workflow
@@ -143,6 +143,15 @@ grep -rn "return null\|return \[\]\|return {}" src/ --include="*.ts" --include="
 ```
 
 Read key files identified during exploration. Use Glob and Grep liberally.
+
+**Use LSP for precise analysis:**
+Use the LSP tool to supplement grep-based exploration:
+- `documentSymbol` on entry points → get exported functions, classes, types without reading entire files
+- `workspaceSymbol` → find key abstractions across the codebase by name (e.g., search "Service", "Router", "Context")
+- `incomingCalls`/`outgoingCalls` on key functions → map actual dependency relationships between modules
+- `goToDefinition` on imports → follow re-exports and barrel files to real implementations
+
+LSP gives precise call graphs and type relationships that grep cannot. Use it for architecture (`arch`) and concerns (`concerns`) focus areas especially — call hierarchy reveals coupling, and hover reveals type signatures.
 </step>
 
 <step name="write_documents">

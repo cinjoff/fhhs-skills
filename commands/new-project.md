@@ -8,7 +8,7 @@ $ARGUMENTS
 
 You are a **lean orchestrator**. Guide the user through setup, delegate heavy work to framework skills.
 
-> **Dependency check:** Engineering disciplines and design quality commands are built into this plugin (no external dependency). GSD CLI (`gsd-tools.cjs`) will be initialized per-project in Step 5. No external plugins required.
+> **Dependency check:** All tools are built into this plugin — engineering disciplines, design quality commands, GSD CLI (`gsd-tools.cjs`), and TypeScript LSP. GSD will be initialized per-project in Step 5.
 
 ---
 
@@ -63,21 +63,16 @@ If the user wants to skip this step and set up design later, allow it. They can 
 
 ## Step 4: CLAUDE.md Generation
 
-Create a lean but effective `CLAUDE.md` at the project root. Adapt content to the stack chosen in Step 2 — do not hardcode framework-specific conventions that don't match.
+Invoke `/revise-claude-md init` — this uses the `skills/claude-md-improver/references/templates.md` fhhs-skills project template to generate a high-quality CLAUDE.md from the context gathered in Steps 1-3.
 
-Include:
+Pass it:
+- Project name and description (from Step 1)
+- Tech stack (from Step 2)
+- Whether `.planning/DESIGN.md` was created (from Step 3)
 
-- **Project name** and one-line description (from Step 1)
-- **Tech stack** (from Step 2 — list exactly what was chosen)
-- **Project structure** — where src, components, pages, API routes, and tests live (adapt to the chosen framework's conventions)
-- **Planning state** — "Project state is tracked in `.planning/`. Use `/resume` to check current status."
-- **Design conventions** — "See `.planning/DESIGN.md` for design tokens and aesthetic direction." (only if Step 3 was completed)
-- **Testing conventions** — adapt to the chosen stack (e.g., Vitest for Vite-based, Jest for CRA, pytest for Python). Include test file location conventions.
-- **Commit conventions** — "Use conventional commits: `feat:`, `fix:`, `docs:`, `refactor:`, `test:`. Stage files individually, never `git add .`."
+The template ensures CLAUDE.md includes: tech stack, commands adapted to the chosen framework, architecture, code style with conventional commits, testing conventions, planning state reference, and design system reference.
 
-Keep it under 40 lines. This file helps Claude navigate the project in all future sessions.
-
-Commit: `docs: initialize CLAUDE.md with project conventions`
+Keep it under 40 lines. Commit: `docs: initialize CLAUDE.md with project conventions`
 
 ---
 
@@ -93,12 +88,17 @@ Derive requirements from the vision in Step 1. Create:
 
 **Phase 1 must always be "Project scaffolding and core setup"** — this is where the actual Next.js project gets created, dependencies installed, and base configuration applied.
 
-Use `gsd-tools.cjs` for file creation if available:
+**Set up project-local GSD symlink and initialize:**
 ```bash
+# Create project-local symlink to bundled GSD binary
+mkdir -p .claude/get-shit-done
+ln -sfn "$HOME/.claude/get-shit-done/bin" .claude/get-shit-done/bin
+
+# Initialize project
 node ./.claude/get-shit-done/bin/gsd-tools.cjs init new-project
 ```
 
-If gsd-tools not available, create the files manually following GSD frontmatter conventions.
+If the global symlink is missing (user hasn't run `/setup`), create it first — see `/setup` Step 3.
 
 Commit: `docs: initialize project planning with GSD structure`
 

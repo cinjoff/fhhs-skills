@@ -21,7 +21,7 @@ This command runs in a single context by default. For large refactors (10+ files
 ## Step 1: Scope
 
 Identify the blast radius:
-1. Find all files involved in the refactoring target
+1. Find all files involved in the refactoring target. Use LSP `findReferences` on the target symbol to get precise usage sites, and `incomingCalls`/`outgoingCalls` to map the call graph
 2. Map dependencies: what imports/calls the target, what does the target import/call
 3. Estimate: how many files change, which subsystems affected
 
@@ -84,6 +84,18 @@ If refactoring touches frontend files (`.tsx`, `.css`, component files), add a t
 3. **Design consistency:** "Does the restructured code maintain design consistency per `.planning/DESIGN.md`?"
 
 Fix issues. Tests must remain GREEN after fixes.
+
+---
+
+## Step 5b: Simplify
+
+After review fixes, invoke `skills/simplify/` on the refactoring diff. Refactoring often introduces new abstractions or moves code around — simplify catches:
+
+- Extracted utilities that duplicate existing ones elsewhere in the codebase
+- Restructured code with missed efficiency opportunities (sequential → parallel, redundant reads)
+- Copy-paste remnants from the restructuring
+
+Fix issues. Tests must remain GREEN (iron law still applies). Commit: `refactor(scope): simplify pass`
 
 ---
 

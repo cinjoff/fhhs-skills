@@ -113,6 +113,14 @@ You MUST complete each phase before proceeding to the next.
 
    See `root-cause-tracing.md` in this directory for the complete backward tracing technique.
 
+   **Use LSP for precise tracing:**
+   - `goToDefinition` on the error site → jump to where the bad value is produced
+   - `incomingCalls` on the failing function → see exactly what calls it and with what
+   - `findReferences` on the suspicious variable/parameter → trace all usage sites
+   - `hover` on expressions → see actual types (catches type mismatches without running code)
+
+   LSP tracing is faster and more precise than grep.
+
    **Quick version:**
    - Where does bad value originate?
    - What called this with bad value?

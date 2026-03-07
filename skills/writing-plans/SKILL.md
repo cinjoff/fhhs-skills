@@ -9,6 +9,22 @@ description: Use when you have a spec or requirements for a multi-step task, bef
 
 **You MUST NOT call `EnterPlanMode` or `ExitPlanMode` at any point during this skill.** This skill operates in normal mode and manages its own completion flow via `AskUserQuestion`. Calling `EnterPlanMode` traps the session in plan mode where Write/Edit are restricted. Calling `ExitPlanMode` breaks the workflow and skips the user's execution choice. If you feel the urge to call either, STOP — follow this skill's instructions instead.
 
+## GSD Integration
+
+**Before writing plans, check for GSD project tracking:**
+
+1. Check if `.planning/PROJECT.md` exists
+2. **If GSD active:**
+   - Read `.planning/STATE.md` for current phase/plan position
+   - Read `.planning/ROADMAP.md` for phase goals, requirements, and success criteria
+   - If `.planning/phases/{phase}/{phase}-CONTEXT.md` exists, honor locked decisions — do not contradict them
+   - **Save plans to:** `.planning/phases/XX-name/XX-NN-PLAN.md` (next plan number in phase)
+   - Include GSD frontmatter: `phase`, `plan`, `requirements` (IDs from ROADMAP)
+   - Include `must_haves` in frontmatter (truths, artifacts, key_links) for verification
+3. **If no GSD:** Save plans to `docs/plans/YYYY-MM-DD-<feature-name>.md`
+
+**Prefer composite commands:** If GSD is active, the `/plan` command handles brainstorming, research, discussion, and plan creation with full state management. This skill is the standalone Superpowers alternative.
+
 ## Overview
 
 Write comprehensive implementation plans assuming the engineer has zero context for our codebase and questionable taste. Document everything they need to know: which files to touch for each task, code, testing, docs they might need to check, how to test it. Give them the whole plan as bite-sized tasks. DRY. YAGNI. TDD. Frequent commits.
@@ -18,22 +34,6 @@ Assume they are a skilled developer, but know almost nothing about our toolset o
 **Announce at start:** "I'm using the writing-plans skill to create the implementation plan."
 
 **Context:** This should be run in a dedicated worktree (created by brainstorming skill).
-
-**Save plans to:** `docs/plans/YYYY-MM-DD-<feature-name>.md`
-
-## REQUIRED FIRST STEP: Initialize Task Tracking
-
-**BEFORE exploring code or writing the plan, you MUST:**
-
-1. Call `TaskList` to check for existing tasks from brainstorming
-2. If tasks exist: you will enhance them with implementation details as you write the plan
-3. If no tasks: you will create them with `TaskCreate` as you write each plan task
-
-**Do not proceed to exploration until TaskList has been called.**
-
-```
-TaskList
-```
 
 ## Bite-Sized Task Granularity
 
@@ -142,79 +142,3 @@ AskUserQuestion:
 - Guide them to open new session in worktree
 - **REQUIRED SUB-SKILL:** New session uses executing-plans
 
----
-
-## Native Task Integration Reference
-
-Use Claude Code's native task tools (v2.1.16+) to create structured tasks alongside the plan document.
-
-### Creating Native Tasks
-
-For each task in the plan, create a corresponding native task:
-
-```
-TaskCreate:
-  subject: "Task N: [Component Name]"
-  description: |
-    [Copy the full task content from the plan you just wrote — files, steps, acceptance criteria, everything]
-  activeForm: "Implementing [Component Name]"
-```
-
-### Setting Dependencies
-
-After all tasks created, set blockedBy relationships:
-
-```
-TaskUpdate:
-  taskId: [task-id]
-  addBlockedBy: [prerequisite-task-ids]
-```
-
-### During Execution
-
-Update task status as work progresses:
-
-```
-TaskUpdate:
-  taskId: [task-id]
-  status: in_progress  # when starting
-
-TaskUpdate:
-  taskId: [task-id]
-  status: completed    # when done
-```
-
-### Notes
-
-- Native tasks provide CLI-visible progress tracking
-- Plan document remains the permanent record
-
----
-
-## Task Persistence
-
-At plan completion, write the task persistence file **in the same directory as the plan document**.
-
-If the plan is saved to `docs/plans/2026-01-15-feature.md`, the tasks file MUST be saved to `docs/plans/2026-01-15-feature.md.tasks.json`.
-
-```json
-{
-  "planPath": "docs/plans/2026-01-15-feature.md",
-  "tasks": [
-    {"id": 0, "subject": "Task 0: ...", "status": "pending"},
-    {"id": 1, "subject": "Task 1: ...", "status": "pending", "blockedBy": [0]}
-  ],
-  "lastUpdated": "<timestamp>"
-}
-```
-
-Both the plan `.md` and `.tasks.json` must be co-located in `docs/plans/`.
-
-### Resuming Work
-
-Any new session can resume by running:
-```
-/executing-plans <plan-path>
-```
-
-The skill reads the `.tasks.json` file and continues from where it left off.

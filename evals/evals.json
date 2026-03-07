@@ -117,7 +117,7 @@
       "id": 17,
       "command": "update-upstream",
       "prompt": "check if there's a new version of superpowers",
-      "expected_output": "Should read the current snapshot version from upstream/superpowers-4.3.4/ directory name, check the latest release of pcvelz/superpowers via gh api, diff if newer version available, cross-reference PATCHES.md for conflicts, and present a structured report. Should NOT auto-apply any changes.",
+      "expected_output": "Should read the current snapshot version from upstream/superpowers-{version}/ directory name, check the latest release of obra/superpowers via gh api, diff if newer version available, cross-reference PATCHES.md for conflicts, and present a structured report. Should NOT auto-apply any changes.",
       "files": []
     },
     {

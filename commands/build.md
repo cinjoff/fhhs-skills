@@ -14,6 +14,7 @@ You are a **lean orchestrator**. Stay under 15% context usage. Delegate all heav
 > Task execution: **`general-purpose`** subagents with structured prompt from `references/implementer-prompt.md`. Fresh context per task, no GSD state overhead.
 > Spec gates: **`code-reviewer`** agent after each wave — adversarial spec verification using `references/spec-gate-prompt.md`.
 > Quality review: **`code-reviewer`** agent at end — code quality, security, architecture.
+> Simplify: `skills/simplify/` after quality review — code reuse, efficiency, hygiene.
 > Integration check: **`gsd-integration-checker`** background agent for multi-phase wiring.
 > Phase verification: **`gsd-verifier`** agent for goal-backward verification.
 > Do not use `gsd-executor` or `gsd-planner` — their state management conflicts with this orchestrator.
@@ -316,6 +317,20 @@ Fix any Critical or Important issues from the review. Minor issues are noted but
 
 ---
 
+## Step 8b: Simplify
+
+After quality review fixes are applied, invoke `skills/simplify/` on the implementation diff. This catches complementary issues the quality reviewer doesn't focus on:
+
+- **Code reuse**: newly written code that duplicates existing utilities or helpers
+- **Efficiency**: redundant computations, missed concurrency, N+1 patterns, hot-path bloat
+- **Code hygiene**: parameter sprawl, copy-paste with variation, stringly-typed code, unnecessary nesting
+
+It runs 3 parallel review agents (reuse, quality, efficiency) on the git diff, then fixes issues directly. Let it run and apply fixes. Skip false positives without debate.
+
+**Commit:** `refactor({phase}-{plan}): simplify pass`
+
+---
+
 ## Step 9: Verify
 
 Invoke `skills/verification-before-completion/` — follow it completely. This means:
@@ -340,8 +355,8 @@ Route based on phase status:
 | Condition | Action |
 |-----------|--------|
 | More plans in phase | "Plan X of Y complete." Suggest `/build` for next plan. |
-| Phase complete, more phases | "Phase complete." Suggest `/plan {next}` or `/verify`. |
-| Last phase in milestone | "Milestone complete." Suggest `/gsd:complete-milestone`. |
+| Phase complete, more phases | "Phase complete." Suggest `/plan {next}` or `/verify`. Also suggest `/revise-claude-md` to capture learnings from this phase. |
+| Last phase in milestone | "Milestone complete." Suggest `/gsd:complete-milestone`. Also suggest `/revise-claude-md` — milestone boundaries are natural points to update project conventions. |
 
 If user prefers to skip the branch finishing (more work planned), report what was built with links to key files.
 
@@ -354,6 +369,7 @@ If user prefers to skip the branch finishing (more work planned), report what wa
 - **Spec gate agents:** Get the wave diff and task specs only. Don't load full plan history.
 - **Quality review agent:** Get the full implementation diff and objectives. Include integration findings if available.
 - **Integration checker:** Runs in background. Gets phase SUMMARYs and source directory structure.
+- **Simplify agents:** Run on the git diff only. 3 parallel agents (reuse, quality, efficiency) — lightweight, no plan context needed.
 - **`.planning/DESIGN.md`** is small (~30 lines) — safe to include in every frontend subagent prompt.
 - **Don't load design reference files yourself.** The skills load them when invoked by subagents.
 - **Codebase docs per task type:**

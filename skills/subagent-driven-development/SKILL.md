@@ -53,15 +53,15 @@ digraph process {
         "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" [shape=box];
         "Code quality reviewer subagent approves?" [shape=diamond];
         "Implementer subagent fixes quality issues" [shape=box];
-        "TaskUpdate: mark task completed" [shape=box];
+        "Mark task completed" [shape=box];
     }
 
-    "Read plan, extract tasks, TaskCreate for each with full text" [shape=box];
+    "Read plan, extract all tasks with full text and context" [shape=box];
     "More tasks remain?" [shape=diamond];
     "Dispatch final code reviewer subagent for entire implementation" [shape=box];
     "Use finishing-a-development-branch" [shape=box style=filled fillcolor=lightgreen];
 
-    "Read plan, extract tasks, TaskCreate for each with full text" -> "Dispatch implementer subagent (./implementer-prompt.md)";
+    "Read plan, extract all tasks with full text and context" -> "Dispatch implementer subagent (./implementer-prompt.md)";
     "Dispatch implementer subagent (./implementer-prompt.md)" -> "Implementer subagent asks questions?";
     "Implementer subagent asks questions?" -> "Answer questions, provide context" [label="yes"];
     "Answer questions, provide context" -> "Dispatch implementer subagent (./implementer-prompt.md)";
@@ -74,8 +74,8 @@ digraph process {
     "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" -> "Code quality reviewer subagent approves?";
     "Code quality reviewer subagent approves?" -> "Implementer subagent fixes quality issues" [label="no"];
     "Implementer subagent fixes quality issues" -> "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" [label="re-review"];
-    "Code quality reviewer subagent approves?" -> "TaskUpdate: mark task completed" [label="yes"];
-    "TaskUpdate: mark task completed" -> "More tasks remain?";
+    "Code quality reviewer subagent approves?" -> "Mark task completed" [label="yes"];
+    "Mark task completed" -> "More tasks remain?";
     "More tasks remain?" -> "Dispatch implementer subagent (./implementer-prompt.md)" [label="yes"];
     "More tasks remain?" -> "Dispatch final code reviewer subagent for entire implementation" [label="no"];
     "Dispatch final code reviewer subagent for entire implementation" -> "Use finishing-a-development-branch";
@@ -95,7 +95,6 @@ You: I'm using Subagent-Driven Development to execute this plan.
 
 [Read plan file once: docs/plans/feature-plan.md]
 [Extract all 5 tasks with full text and context]
-[TaskCreate for each task with full description]
 
 Task 1: Hook installation script
 
@@ -226,17 +225,6 @@ Done!
 **If subagent fails task:**
 - Dispatch fix subagent with specific instructions
 - Don't try to fix manually (context pollution)
-
-## Task Persistence Sync
-
-After marking each task completed via `TaskUpdate`, update the `.tasks.json` file to stay in sync:
-
-1. Read `<plan-path>.tasks.json`
-2. Set the task's `"status"` to `"completed"`
-3. Set `"lastUpdated"` to current ISO timestamp
-4. Write the file back
-
-This ensures cross-session resume works correctly. Without this, a new session loading `.tasks.json` would see completed tasks as `"pending"`.
 
 ## Integration
 

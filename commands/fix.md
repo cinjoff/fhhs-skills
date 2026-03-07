@@ -16,7 +16,7 @@ This command runs in a single context by default. Escalates to parallel agents o
 
 Quickly assess bug depth before choosing strategy. Spend <5% context.
 
-1. **Search** for error message or symptom in codebase
+1. **Search** for error message or symptom in codebase. Use LSP `findReferences` on the error site and `hover` for type mismatches
 2. **Run** the most relevant test suite if identifiable
 3. **Assess** and announce:
 
@@ -75,6 +75,14 @@ Verify the fix addresses the right problem:
 3. Are there other callers/consumers of the changed code that could be affected?
 
 If any answer is "no" or "unsure", investigate before proceeding to verification.
+
+---
+
+## Step 4b: Simplify (MODERATE+ only)
+
+**Skip for SIMPLE fixes** — they're typically single-file and don't benefit from a reuse/efficiency pass.
+
+For MODERATE and PARALLEL fixes that touched multiple files, invoke `skills/simplify/` on the fix diff. Multi-file fixes often introduce duplicated patterns or miss existing utilities. Fix issues, then commit: `refactor(fix): simplify pass`
 
 ---
 

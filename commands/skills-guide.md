@@ -22,13 +22,13 @@ Vision questioning -> tech stack defaults (Next.js/TS/Tailwind/Shadcn/Vercel, op
 Requires GSD project. Research-first detection -> brainstorm (`skills/brainstorming/`) -> discuss implementation (lock decisions in CONTEXT.md) -> derive must_haves -> PLAN.md -> plan-check -> execution handoff.
 
 ### `/build` — Execute a plan
-Find plan -> wave-based parallel subagents (structured implementer prompt with TDD, YAGNI, self-review, analysis paralysis guard) -> per-wave spec gate (`code-reviewer` agent, adversarial) -> design gates if frontend (`/critique` -> `/polish` -> `/normalize`) + background integration check (`gsd-integration-checker`) -> SUMMARY.md -> phase completion detection -> dual verification (`gsd-verifier`) -> quality review (`code-reviewer` agent) -> finish.
+Find plan -> wave-based parallel subagents (structured implementer prompt with TDD, YAGNI, self-review, analysis paralysis guard) -> per-wave spec gate (`code-reviewer` agent, adversarial) -> design gates if frontend (`/critique` -> `/polish` -> `/normalize`) + background integration check (`gsd-integration-checker`) -> SUMMARY.md -> phase completion detection -> dual verification (`gsd-verifier`) -> quality review (`code-reviewer` agent) -> `/simplify` pass (reuse, efficiency, code hygiene) -> verify -> finish.
 
 ### `/fix` — Auto-triage bug fix
-Triage depth (SIMPLE/MODERATE/PARALLEL/COMPLEX) -> appropriate debug path (COMPLEX seeds `.planning/debug/` for `/gsd:debug`) -> TDD fix -> design check (frontend anti-patterns) -> spec review -> verify.
+Triage depth (SIMPLE/MODERATE/PARALLEL/COMPLEX) -> appropriate debug path (COMPLEX seeds `.planning/debug/` for `/gsd:debug`) -> TDD fix -> design check (frontend anti-patterns) -> spec review -> `/simplify` pass (MODERATE+ only) -> verify.
 
 ### `/refactor` — Safe code restructuring
-Scope blast radius -> capture baseline (characterization tests if needed) -> atomic steps (revert-on-red iron law) -> two-stage review -> verify.
+Scope blast radius -> capture baseline (characterization tests if needed) -> atomic steps (revert-on-red iron law) -> two-stage review -> `/simplify` pass -> verify.
 
 ### `/verify` — Standalone dual verification
 Goal-backward (must_haves truth table) + evidence-based (fresh commands, exit codes) + frontend suggestion (`/verify-ui`) + anti-pattern detection. Auto-creates gap-closure plans on failure. Writes VERIFICATION.md.
@@ -55,6 +55,16 @@ These are available for frontend work. Used automatically by `/build` design gat
 | `/animate` | Motion and micro-interactions |
 | `/teach-impeccable` | One-time design context setup producing DESIGN.md |
 
+## CLAUDE.md Management
+
+| Command | Purpose |
+|---------|---------|
+| `/revise-claude-md` | Capture session learnings into CLAUDE.md |
+| `/revise-claude-md audit` | Full quality audit with scoring and targeted fixes |
+| `/revise-claude-md init` | Generate initial CLAUDE.md from project context (used by `/new-project`) |
+
+Uses `skills/claude-md-improver/` with GSD-aware quality criteria — knows about `.planning/`, design systems, and phase tracking.
+
 ## Typical Workflows
 
 ```
@@ -62,9 +72,11 @@ First time:   /setup -> /new-project -> /plan -> /build -> /verify
 New project:  /new-project -> /plan -> /build -> /verify
 Feature:     /plan -> /build -> /verify -> /verify-ui
 Bug fix:     /fix
-Refactoring: /refactor
+Refactoring: /refactor (includes /simplify automatically)
+Code cleanup: /simplify (standalone, on any recent changes)
 Resuming:    /resume -> (routes to next action)
 Verifying:   /verify (standalone, any time)
+CLAUDE.md:   /revise-claude-md (after sessions or /revise-claude-md audit)
 ```
 
 ---
@@ -88,6 +100,7 @@ Verifying:   /verify (standalone, any time)
 | `/new-project` | Bootstrap project with design + tracking | `/gsd:new-project` |
 | `/research` | Investigate topic with GSD-compatible output | `/gsd:research-phase` |
 | `/fix` | Auto-triage -> debug -> TDD fix -> verify | — |
+| `/simplify` | Code reuse, efficiency, and hygiene review | — |
 | `/refactor` | Safe restructuring, behavior preservation | — |
 | `/verify` | Standalone dual verification | `/gsd:verify-work` |
 | `/resume` | Context restoration -> routing | `/gsd:resume-work` |
@@ -113,7 +126,7 @@ Verifying:   /verify (standalone, any time)
 | `/gsd:add-phase`, `remove-phase`, `insert-phase` | Edit roadmap structure |
 | `/gsd:health` | Diagnose and repair `.planning/` directory integrity |
 | `/gsd:cleanup` | Archive phase directories from completed milestones |
-| `/gsd:reapply-patches` | Reapply local modifications after a GSD update |
+| `/update-upstream` | Check for upstream updates and generate diff report |
 
 ## Non-Negotiable Disciplines
 
@@ -122,13 +135,23 @@ Every composite that executes code enforces these (via built-in skills):
 1. **TDD** (`skills/test-driven-development/`) — no production code without a failing test first
 2. **Per-wave spec gates** (`references/spec-gate-prompt.md` + `code-reviewer` agent) — adversarial spec verification after each wave, before dependent work starts
 3. **Quality review** (`skills/requesting-code-review/` + `code-reviewer` agent) — code quality, security, architecture at end of build
-4. **Verification-before-completion** (`skills/verification-before-completion/`) — no claims without fresh evidence
-5. **Fresh subagents** (`skills/dispatching-parallel-agents/` + `references/implementer-prompt.md`) — structured prompts with self-review, analysis paralysis guard, deferred items
-6. **YAGNI** — no features, abstractions, or error handling beyond what's specified
+4. **Simplify** (`skills/simplify/`) — code reuse, efficiency, and hygiene review after quality review
+5. **Verification-before-completion** (`skills/verification-before-completion/`) — no claims without fresh evidence
+6. **Fresh subagents** (`skills/dispatching-parallel-agents/` + `references/implementer-prompt.md`) — structured prompts with self-review, analysis paralysis guard, deferred items
+7. **YAGNI** — no features, abstractions, or error handling beyond what's specified
+
+## Code Intelligence
+
+**TypeScript LSP** is a core part of the workflow (installed via `/setup` Step 2). Used by:
+- **Codebase mapper** — precise architecture analysis via `documentSymbol`, `workspaceSymbol`, call hierarchy
+- **Plan** — scout reusable assets via `findReferences`, `workspaceSymbol`
+- **Debugging** — trace data flow via `goToDefinition`, `incomingCalls`, `hover`
+- **Refactor** — map blast radius via `findReferences`, `incomingCalls`/`outgoingCalls`
+- **Build subagents** — precise code navigation instead of grep
 
 ## GSD State Integration
 
-All composites require a GSD project (`.planning/PROJECT.md`). Run `/new-project` first.
+GSD is fully bundled — the CLI binary (`gsd-tools.cjs`) ships with this plugin. All composites require a GSD project (`.planning/PROJECT.md`). Run `/new-project` first.
 
 | Composite | GSD files written |
 |-----------|-------------------|
@@ -147,4 +170,4 @@ All composites require a GSD project (`.planning/PROJECT.md`). Run `/new-project
 2. **Lean orchestrator.** The composite coordinates. Subagents do the work. Stay under 15% context.
 3. **Attribute, don't copy.** Subagent prompts include brief behavioral directives, not full skill recreations.
 4. **GSD as state backend.** All state writes use GSD file formats. If GSD updates formats, composites adapt.
-5. **Self-contained.** All engineering disciplines and design quality tools are built into this plugin — no external dependencies.
+5. **Self-contained.** All engineering disciplines, design quality tools, GSD project tracking, and TypeScript LSP integration are built into this plugin.
