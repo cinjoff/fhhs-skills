@@ -9,8 +9,11 @@ A workflow plugin for [Claude Code](https://claude.com/claude-code) that brings 
 ```
 /plugin marketplace add cinjoff/fhhs-skills
 /plugin install fh@fhhs-skills
+/reload-plugins
 /fh:setup
 ```
+
+Run `/reload-plugins` after installing so the new commands are available in your current session.
 
 Setup detects your platform (macOS, Linux, Windows) and walks you through installing dependencies: Node.js, GitHub CLI, TypeScript language server, and the TypeScript LSP plugin.
 

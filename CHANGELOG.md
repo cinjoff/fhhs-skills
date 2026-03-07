@@ -5,6 +5,19 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-03-07
+
+### Added
+- **Fire horse ASCII art banner** — `/setup` opens with the branded fire horse mark (angular head, diamond glasses, fire traces) matching the FHHS visual identity
+- **Statusline hook** — `hooks/fhhs-statusline.js` shows model name, current task, context usage bar, and update-available indicator
+- **Update check hook** — `hooks/fhhs-check-update.js` checks GitHub for new fhhs-skills versions on SessionStart (background, throttled to 6h)
+- **Context monitor hook** — `hooks/fhhs-context-monitor.js` warns the agent when context window is running low (WARNING at 65%, CRITICAL at 75% used)
+
+### Changed
+- **`/setup` rewritten with FHHS UI branding** — stage banners, status symbols, checkpoint boxes, error boxes, spawning indicators, and Next Up block. Uses `FHHS ►` prefix instead of `GSD ►`
+- **`/setup` installs hooks** — configures `settings.json` with statusline, SessionStart, and PostToolUse hooks; removes old GSD hooks if present
+- **README** — added `/reload-plugins` step to install instructions
+
 ## [1.3.0] - 2026-03-07
 
 ### Changed
