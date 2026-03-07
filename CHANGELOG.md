@@ -5,6 +5,16 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.1] - 2026-03-07
+
+### Fixed
+- **LSP guidance across code-working skills** — simplify review agents, fix triage/spec review, refactor scope/execute, and extract discover/migrate now include specific LSP operations (`findReferences`, `workspaceSymbol`, `rename`, `documentSymbol`, etc.)
+- **Skill frontmatter names** — 16 UI skills still had `ui:` prefix in YAML `name` field after v1.7.0 restructure
+- **SPEC.md accuracy** — architecture diagram reflects prefix-free skill dirs; "Playwright" corrected to "agent-browser"
+
+### Changed
+- **Eval scenarios expanded** — broader coverage across skills
+
 ## [1.7.0] - 2026-03-07
 
 ### Changed
