@@ -23,7 +23,11 @@ This command runs in a single context by default. For large refactors (10+ files
 ## Step 1: Scope
 
 Identify the blast radius:
-1. Find all files involved in the refactoring target. Use LSP `findReferences` on the target symbol to get precise usage sites, and `incomingCalls`/`outgoingCalls` to map the call graph
+1. Find all files involved in the refactoring target. **Use LSP first — faster and more precise than grep:**
+   - `findReferences` on the target symbol to get precise usage sites
+   - `incomingCalls`/`outgoingCalls` to map the call graph
+   - `documentSymbol` to understand file structure before planning changes
+   - For renames: use LSP `rename` — it atomically updates all references across files
 2. Map dependencies: what imports/calls the target, what does the target import/call
 3. Estimate: how many files change, which subsystems affected
 
@@ -63,7 +67,7 @@ Present the step sequence to the user. Wait for approval.
 ## Step 4: Execute
 
 For each step:
-1. Make the structural change
+1. Make the structural change. Use LSP `findReferences` before each modification to verify you've found all usage sites. For symbol renames, prefer LSP `rename` over manual find-and-replace.
 2. Run the full test suite
 3. **GREEN** → commit: `refactor(scope): <what changed and why>`
 4. **RED** → REVERT immediately (`git checkout -- .`), analyze why, try differently

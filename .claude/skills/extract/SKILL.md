@@ -1,5 +1,5 @@
 ---
-name: ui:extract
+name: extract
 description: Extract and consolidate reusable components, design tokens, and patterns into your design system. Identifies opportunities for systematic reuse and enriches your component library.
 user-invokable: true
 ---
@@ -10,7 +10,7 @@ Identify reusable patterns, components, and design tokens, then extract and cons
 
 Analyze the target area to identify extraction opportunities:
 
-1. **Find the design system**: Locate your design system, component library, or shared UI directory (grep for "design system", "ui", "components", etc.). Understand its structure:
+1. **Find the design system**: Use LSP `workspaceSymbol` to search for existing component and utility names before falling back to grep. Locate your design system, component library, or shared UI directory. Understand its structure:
    - Component organization and naming conventions
    - Design token structure (if any)
    - Documentation patterns
@@ -73,8 +73,8 @@ Build improved, reusable versions:
 
 Replace existing uses with the new shared versions:
 
-- **Find all instances**: Search for the patterns you've extracted
-- **Replace systematically**: Update each use to consume the shared version
+- **Find all instances**: Use LSP `findReferences` on each extracted symbol to get every usage site precisely — don't rely on text search alone, which misses aliased imports and re-exports
+- **Replace systematically**: Update each use to consume the shared version. For renames, prefer LSP `rename` for atomic updates across files.
 - **Test thoroughly**: Ensure visual and functional parity
 - **Delete dead code**: Remove the old implementations
 

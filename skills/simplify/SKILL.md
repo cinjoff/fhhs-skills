@@ -18,13 +18,17 @@ Use the Agent tool to launch all three agents concurrently in a single message. 
 
 ### Agent 1: Code Reuse Review
 
+**Use LSP for discovery:** `workspaceSymbol` to find existing utilities by name, `findReferences` to verify a candidate is actually used elsewhere (not dead code), `goToDefinition` to inspect whether an existing function already handles the same logic.
+
 For each change:
 
-1. **Search for existing utilities and helpers** that could replace newly written code. Look for similar patterns elsewhere in the codebase — common locations are utility directories, shared modules, and files adjacent to the changed ones.
-2. **Flag any new function that duplicates existing functionality.** Suggest the existing function to use instead.
+1. **Search for existing utilities and helpers** that could replace newly written code. Use LSP `workspaceSymbol` to search by function/class name before falling back to grep. Look for similar patterns elsewhere in the codebase — common locations are utility directories, shared modules, and files adjacent to the changed ones.
+2. **Flag any new function that duplicates existing functionality.** Use `goToDefinition` on imports to check if the dependency already exposes the needed helper. Suggest the existing function to use instead.
 3. **Flag any inline logic that could use an existing utility** — hand-rolled string manipulation, manual path handling, custom environment checks, ad-hoc type guards, and similar patterns are common candidates.
 
 ### Agent 2: Code Quality Review
+
+**Use LSP for structure:** `documentSymbol` to understand file layout, `findReferences` to check if a parameter or export is actually consumed anywhere, `hover` for type info when checking stringly-typed code.
 
 Review the same changes for hacky patterns:
 
@@ -36,6 +40,8 @@ Review the same changes for hacky patterns:
 6. **Unnecessary JSX nesting**: wrapper Boxes/elements that add no layout value — check if inner component props (flexShrink, alignItems, etc.) already provide the needed behavior
 
 ### Agent 3: Efficiency Review
+
+**Use LSP for tracing:** `incomingCalls`/`outgoingCalls` to map call graphs and spot N+1 patterns, `findReferences` to find all callers of a hot function, `goToDefinition` to trace data flow through layers.
 
 Review the same changes for efficiency:
 

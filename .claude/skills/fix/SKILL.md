@@ -18,7 +18,11 @@ This command runs in a single context by default. Escalates to parallel agents w
 
 Quickly assess bug depth before choosing strategy. Spend <5% context.
 
-1. **Search** for error message or symptom in codebase. Use LSP `findReferences` on the error site and `hover` for type mismatches
+1. **Search** for error message or symptom in codebase. **Use LSP first:**
+   - `findReferences` on the error site to see all callers
+   - `hover` on expressions for type mismatches
+   - `goToDefinition` to trace imports to their source
+   - `diagnostics` to surface type errors and linting issues without running code
 2. **Run** the most relevant test suite if identifiable
 3. **Assess** and announce:
 
@@ -74,7 +78,7 @@ Verify the fix addresses the right problem:
 
 **For MODERATE and PARALLEL, also check:**
 2. Does the failing test from Step 2 actually reproduce the **reported** bug (not a different one)?
-3. Are there other callers/consumers of the changed code that could be affected?
+3. Are there other callers/consumers of the changed code that could be affected? Use LSP `findReferences` on every modified function/export to verify no downstream breakage.
 
 If any answer is "no" or "unsure", investigate before proceeding to verification.
 
