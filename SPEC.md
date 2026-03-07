@@ -49,61 +49,47 @@ fhhs-skills/
 │   ├── plugin.json              # Plugin metadata (name, version, author)
 │   └── marketplace.json         # Marketplace listing
 │
-├── commands/                    # User-facing slash commands
-│   ├── build.md                 # Composite: orchestrate plan execution
-│   ├── plan.md                  # Composite: brainstorm → research → plan
-│   ├── fix.md                   # Composite: triage → debug → TDD fix
-│   ├── refactor.md              # Composite: scope → baseline → atomic steps
-│   ├── verify.md                # Composite: dual verification
-│   ├── resume.md                # Composite: context restore → routing
-│   ├── simplify.md              # Composite: code reuse/quality/efficiency
-│   ├── research.md              # Composite: web search → GSD output
-│   ├── new-project.md           # Composite: bootstrap project
-│   ├── verify-ui.md             # Composite: Playwright screenshots
-│   ├── setup.md                 # One-time orientation
-│   ├── skills-guide.md          # Full command reference
-│   ├── update.md                # Self-update
-│   ├── update-upstream.md       # Check upstream for changes
-│   ├── update-gsd.md            # Redirect to /fh:update
-│   ├── critique.md              # Impeccable: design evaluation
-│   ├── polish.md                # Impeccable: alignment pass
-│   ├── normalize.md             # Impeccable: design system consistency
-│   ├── harden.md                # Impeccable: error/i18n/edge cases
-│   ├── animate.md               # Impeccable: motion design
-│   ├── teach-impeccable.md      # Impeccable: one-time DESIGN.md setup
-│   ├── distill.md               # Impeccable: remove complexity
-│   ├── adapt.md                 # Impeccable: responsive design
-│   ├── bolder.md                # Impeccable: amplify visual impact
-│   ├── quieter.md               # Impeccable: reduce visual intensity
-│   ├── extract.md               # Impeccable: design system extraction
-│   ├── colorize.md              # Impeccable: add strategic color
-│   ├── audit.md                 # Impeccable: accessibility/perf audit
-│   ├── clarify.md               # Impeccable: UX copy improvement
-│   ├── onboard.md               # Impeccable: first-time UX
-│   ├── optimize.md              # Impeccable: performance
-│   ├── delight.md               # Impeccable: personality/joy
-│   ├── add-phase.md             # GSD: roadmap management
-│   ├── remove-phase.md          # GSD: roadmap management
-│   ├── insert-phase.md          # GSD: roadmap management
-│   ├── add-todo.md              # GSD: task capture
-│   ├── check-todos.md           # GSD: task review
-│   ├── complete-milestone.md    # GSD: milestone lifecycle
-│   ├── audit-milestone.md       # GSD: milestone verification
-│   ├── new-milestone.md         # GSD: milestone lifecycle
-│   ├── progress.md              # GSD: status + routing
-│   ├── quick.md                 # GSD: ad-hoc task
-│   ├── health.md                # GSD: .planning/ integrity
-│   ├── cleanup.md               # GSD: archive phases
-│   ├── pause-work.md            # GSD: context save
-│   ├── discuss-phase.md         # GSD: pre-planning conversation
-│   ├── map-codebase.md          # GSD: parallel codebase analysis
-│   ├── settings.md              # GSD: workflow config
-│   ├── set-profile.md           # GSD: model profile switching
-│   ├── validate-phase.md        # GSD: test coverage audit
-│   ├── plan-milestone-gaps.md   # GSD: gap detection
-│   ├── list-phase-assumptions.md # GSD: assumption surfacing
-│   ├── help.md                  # GSD: command listing
-│   └── revise-claude-md.md      # claude-md-management: session learnings / audit / init
+├── commands/                    # Setup/maintenance slash commands (invoked as /fh:name)
+│   ├── setup.md                 # One-time orientation and tooling setup
+│   ├── update.md                # Self-update plugin to latest version
+│   ├── settings.md              # Workflow config and model profiles
+│   ├── new-project.md           # Bootstrap a new GSD-tracked project
+│   ├── health.md                # .planning/ integrity check
+│   ├── help.md                  # Command reference listing
+│   └── revise-claude-md.md      # Capture session learnings into CLAUDE.md
+│
+├── .claude/skills/              # User-facing skills (invoked as /name or /ui:name)
+│   ├── build/                   # Orchestrate plan execution
+│   ├── plan-work/               # Brainstorm → research → plan
+│   ├── fix/                     # Triage → debug → TDD fix
+│   ├── refactor/                # Scope → baseline → atomic refactor steps
+│   ├── verify/                  # Dual verification
+│   ├── resume-work/             # Context restore → routing
+│   ├── simplify/                # Code reuse/quality/efficiency
+│   ├── research/                # Web search → GSD output
+│   ├── progress/                # Status + routing
+│   ├── quick/                   # Ad-hoc task execution
+│   ├── map-codebase/            # Parallel codebase analysis
+│   ├── add-todo/                # Task capture
+│   ├── check-todos/             # Task review
+│   ├── verify-ui/               # Playwright screenshots + visual check
+│   ├── ui:critique/             # Design evaluation
+│   ├── ui:polish/               # Alignment and spacing pass
+│   ├── ui:normalize/            # Design system consistency
+│   ├── ui:harden/               # Error/i18n/edge cases
+│   ├── ui:animate/              # Motion design
+│   ├── ui:teach-impeccable/     # One-time DESIGN.md setup
+│   ├── ui:distill/              # Remove complexity
+│   ├── ui:adapt/                # Responsive design
+│   ├── ui:bolder/               # Amplify visual impact
+│   ├── ui:quieter/              # Reduce visual intensity
+│   ├── ui:extract/              # Design system extraction
+│   ├── ui:colorize/             # Add strategic color
+│   ├── ui:audit/                # Accessibility/perf audit
+│   ├── ui:clarify/              # UX copy improvement
+│   ├── ui:onboard/              # First-time UX
+│   ├── ui:optimize/             # Performance
+│   └── ui:delight/              # Personality/joy
 │
 ├── skills/                      # Internal skills (composites invoke these)
 │   ├── brainstorming/           # Superpowers: collaborative design
