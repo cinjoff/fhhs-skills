@@ -21,8 +21,12 @@ Guide completion of development work by presenting clear options and handling ch
 **Before presenting options, verify tests pass:**
 
 ```bash
-# Run project's test suite
-npm test / cargo test / pytest / go test ./...
+# Run project's test suite — always use non-watch (CI) mode
+CI=true npm test    # Jest
+pnpm test --run     # Vitest
+cargo test          # Rust
+pytest              # Python
+go test ./...       # Go
 ```
 
 **If tests fail:**

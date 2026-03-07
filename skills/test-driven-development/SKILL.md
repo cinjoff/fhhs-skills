@@ -116,7 +116,9 @@ Vague name, tests mock not code
 **MANDATORY. Never skip.**
 
 ```bash
-npm test path/to/test.test.ts
+# Always use non-watch mode (watch mode hangs subagents)
+npx vitest run path/to/test.test.ts   # Vitest
+CI=true npm test path/to/test.test.ts  # Jest
 ```
 
 Confirm:
@@ -171,7 +173,9 @@ Don't add features, refactor other code, or "improve" beyond the test.
 **MANDATORY.**
 
 ```bash
-npm test path/to/test.test.ts
+# Always use non-watch mode (watch mode hangs subagents)
+npx vitest run path/to/test.test.ts   # Vitest
+CI=true npm test path/to/test.test.ts  # Jest
 ```
 
 Confirm:

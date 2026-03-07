@@ -48,6 +48,12 @@ Follow RED-GREEN-REFACTOR per `skills/test-driven-development/`.
 Failing test first, then minimal implementation, then optional cleanup.
 Commit each phase: `test(...)`, `feat(...)`, `refactor(...)`.
 
+**Running tests in subagent context — always use non-watch mode:**
+Tests run in watch mode will hang the subagent indefinitely.
+- Vitest: `pnpm test --run` or `npx vitest run [file]`
+- Jest: `CI=true pnpm test` or `pnpm test -- --watchAll=false`
+- When in doubt: prefix with `CI=true` — most runners respect it.
+
 **Frontend** (if task touches `.tsx`, `.css`, component files):
 Read `.planning/DESIGN.md` and apply `skills/frontend-design/` guidance.
 Add stable selectors for Playwright: `aria-label`, `id`, `role`, or `data-testid`

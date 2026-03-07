@@ -492,9 +492,9 @@ A fix is verified when ALL of these are true:
 **For intermittent bugs:**
 
 ```bash
-# Repeated execution
+# Repeated execution — use CI mode to prevent watch mode hanging
 for i in {1..100}; do
-  npm test -- specific-test.js || echo "Failed on run $i"
+  CI=true npm test -- specific-test.js || echo "Failed on run $i"
 done
 ```
 

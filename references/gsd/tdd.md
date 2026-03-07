@@ -170,10 +170,12 @@ if [ -f Cargo.toml ]; then echo "rust"; fi
 **4. Verify setup:**
 ```bash
 # Run empty test suite - should pass with 0 tests
-npm test  # Node
-pytest    # Python
-go test ./...  # Go
-cargo test    # Rust
+# IMPORTANT: always use non-watch (CI) mode in subagent context
+CI=true npm test  # Node (Jest)
+npx vitest run    # Node (Vitest) — or: pnpm test --run
+pytest            # Python
+go test ./...     # Go
+cargo test        # Rust
 ```
 
 **5. Create first test file:**

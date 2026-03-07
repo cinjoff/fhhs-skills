@@ -5,6 +5,11 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.1] - 2026-03-07
+
+### Fixed
+- **Test subagents no longer hang** — all test-running instructions now specify non-watch (CI) mode; vitest uses `--run`, jest uses `CI=true`, preventing subagents from blocking indefinitely in watch mode
+
 ## [1.6.0] - 2026-03-07
 
 ### Added
