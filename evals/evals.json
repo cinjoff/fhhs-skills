@@ -29,7 +29,7 @@
     },
     {
       "id": 3,
-      "command": "plan",
+      "command": "plan-work",
       "prompt": "I need to add stripe subscription billing to my app. users should be able to pick a plan, enter payment, and see their current subscription in settings. I've never used the stripe API before",
       "expected_output": "Should detect research-first need (unfamiliar API: Stripe), run research step BEFORE brainstorming (not after), delegate research to subagent with Firecrawl/Context7, then brainstorm with findings, discuss implementation gray areas, derive must_haves with user-facing truths, create PLAN.md with proper frontmatter, and run plan-check verification loop.",
       "files": [],
@@ -41,7 +41,7 @@
     },
     {
       "id": 4,
-      "command": "plan",
+      "command": "plan-work",
       "prompt": "plan adding a dark mode toggle to the settings page. we already use tailwind's dark: prefix and have a ThemeProvider component",
       "expected_output": "Should detect well-known pattern (no research needed), skip research step, proceed directly to brainstorming, note frontend work and read DESIGN.md, produce a small plan (2-3 tasks, 5-8 files), include checkpoint:human-verify for visual verification.",
       "files": [],
@@ -77,7 +77,7 @@
     },
     {
       "id": 7,
-      "command": "resume",
+      "command": "resume-work",
       "prompt": "hey, picking this back up. where was I?",
       "expected_output": "Should read STATE.md, ROADMAP.md, CONCERNS.md, scan for incomplete plans (PLAN without SUMMARY), check git state, present a concise briefing with project name/branch/position/status/last activity/blockers, then route to the right next action.",
       "files": [],
@@ -157,7 +157,7 @@
     },
     {
       "id": 13,
-      "command": "plan",
+      "command": "plan-work",
       "prompt": "plan adding real-time notifications. we already discussed this in phase 8 and there's a .planning/phases/08-notifications/08-CONTEXT.md with locked decisions about using SSE instead of websockets",
       "expected_output": "Should detect existing CONTEXT.md, SKIP Step 3 (Discuss Implementation) since decisions are already locked, read the CONTEXT.md and honor the SSE decision in the plan, and NOT re-open the SSE vs websockets discussion. Plan should reference the locked SSE decision.",
       "files": [],
@@ -193,7 +193,7 @@
     },
     {
       "id": 16,
-      "command": "plan",
+      "command": "plan-work",
       "prompt": "i want to add a feature for exporting reports as PDF. this doesn't match any phase in the roadmap",
       "expected_output": "Should compare against ROADMAP.md phases, detect no match, ask user: 'This doesn't match any existing phase. Add as a new phase to the roadmap, or fold into the current phase?' Should wait for user choice before proceeding. If new phase chosen, should add phase to ROADMAP.md and create phase directory.",
       "files": [],
@@ -670,6 +670,115 @@
         {"text": "Does not suggest React/Tailwind for CLI tool", "type": "guard"},
         {"text": "Creates .planning/ structure", "type": "output"},
         {"text": "CLAUDE.md reflects CLI conventions", "type": "output"}
+      ]
+    },
+    {
+      "id": 54,
+      "command": "polish",
+      "prompt": "polish the settings page at src/app/settings/page.tsx",
+      "expected_output": "Should read the file, check .planning/DESIGN.md for design context, then fix alignment, spacing, consistency, and detail issues. Should commit changes.",
+      "files": [],
+      "assertions": [
+        {"text": "Reads the target file", "type": "behavioral"},
+        {"text": "Checks .planning/DESIGN.md for design context", "type": "behavioral"},
+        {"text": "Fixes spacing/alignment issues", "type": "output"}
+      ]
+    },
+    {
+      "id": 55,
+      "command": "harden",
+      "prompt": "harden the checkout form at src/components/CheckoutForm.tsx — make it handle edge cases",
+      "expected_output": "Should read the component, add error handling for failed payments, handle empty/invalid inputs, add loading states, handle network errors gracefully. Should check i18n readiness.",
+      "files": [],
+      "assertions": [
+        {"text": "Adds error handling for edge cases", "type": "output"},
+        {"text": "Handles loading/error states", "type": "output"},
+        {"text": "Checks i18n readiness", "type": "behavioral"}
+      ]
+    },
+    {
+      "id": 56,
+      "command": "adapt",
+      "prompt": "adapt the dashboard layout to work on mobile. currently it's desktop-only with a sidebar",
+      "expected_output": "Should analyze current layout, add responsive breakpoints, convert sidebar to mobile-friendly navigation (bottom nav or hamburger), ensure touch targets are 44px+, test at 375px width.",
+      "files": [],
+      "assertions": [
+        {"text": "Adds responsive breakpoints", "type": "output"},
+        {"text": "Converts sidebar for mobile", "type": "output"},
+        {"text": "Ensures touch target sizes", "type": "behavioral"}
+      ]
+    },
+    {
+      "id": 57,
+      "command": "animate",
+      "prompt": "add animations to the modal component at src/components/Modal.tsx — it just snaps open/closed",
+      "expected_output": "Should add entrance/exit animations (fade + scale or slide), use CSS transitions or framer-motion, respect prefers-reduced-motion, keep animations under 300ms for responsiveness.",
+      "files": [],
+      "assertions": [
+        {"text": "Adds entrance/exit animations", "type": "output"},
+        {"text": "Respects prefers-reduced-motion", "type": "behavioral"},
+        {"text": "Keeps animations performant (<300ms)", "type": "behavioral"}
+      ]
+    },
+    {
+      "id": 58,
+      "command": "distill",
+      "prompt": "distill the user profile page — it has too many sections and options, feels overwhelming",
+      "expected_output": "Should analyze the page, identify low-value sections, consolidate related settings, apply progressive disclosure (hide advanced options), reduce visual noise.",
+      "files": [],
+      "assertions": [
+        {"text": "Identifies and removes low-value elements", "type": "behavioral"},
+        {"text": "Applies progressive disclosure", "type": "output"},
+        {"text": "Reduces visual complexity", "type": "output"}
+      ]
+    },
+    {
+      "id": 59,
+      "command": "normalize",
+      "prompt": "normalize the buttons across the app — some are rounded, some square, inconsistent padding",
+      "expected_output": "Should scan for button variants, identify inconsistencies against the design system or established patterns, standardize border-radius, padding, font-size, and color usage.",
+      "files": [],
+      "assertions": [
+        {"text": "Identifies button inconsistencies", "type": "behavioral"},
+        {"text": "Standardizes to design system patterns", "type": "output"},
+        {"text": "Fixes border-radius/padding/font inconsistencies", "type": "output"}
+      ]
+    },
+    {
+      "id": 60,
+      "command": "audit",
+      "prompt": "audit the landing page at src/app/page.tsx",
+      "expected_output": "Should evaluate across accessibility (WCAG compliance, alt texts, keyboard nav), performance (image optimization, lazy loading), theming (dark mode support), and responsive design. Should produce a severity-rated report.",
+      "files": [],
+      "assertions": [
+        {"text": "Checks accessibility (WCAG)", "type": "behavioral"},
+        {"text": "Checks performance", "type": "behavioral"},
+        {"text": "Produces severity-rated report", "type": "output"}
+      ]
+    },
+    {
+      "id": 61,
+      "command": "onboard",
+      "prompt": "design an onboarding flow for new users — right now they just land on an empty dashboard after signup",
+      "expected_output": "Should design a multi-step onboarding: welcome screen, key feature highlights, first action prompt (e.g., create first project), progress indicator. Should handle empty states with helpful CTAs.",
+      "files": [],
+      "assertions": [
+        {"text": "Designs multi-step onboarding flow", "type": "output"},
+        {"text": "Handles empty states", "type": "output"},
+        {"text": "Includes first action prompt", "type": "output"}
+      ]
+    },
+    {
+      "id": 62,
+      "command": "update",
+      "prompt": "update",
+      "expected_output": "Should check current plugin version against latest available version. If update available, should download and install. Should clear statusline cache after updating. Should report what changed (version diff).",
+      "files": [],
+      "assertions": [
+        {"text": "Checks current vs latest version", "type": "behavioral"},
+        {"text": "Installs update if available", "type": "behavioral"},
+        {"text": "Clears statusline cache", "type": "behavioral"},
+        {"text": "Reports version change", "type": "output"}
       ]
     }
   ]
