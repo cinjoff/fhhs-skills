@@ -5,6 +5,12 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2026-03-07
+
+### Fixed
+- **`/update` command** — uses `marketplace update` (not `refresh`) and refreshes marketplace before installing
+- **Hidden internal skills** — GSD and Superpowers skills no longer clutter the user-facing skill list; only composite commands and Impeccable design skills are shown
+
 ## [1.2.0] - 2026-03-07
 
 ### Added
