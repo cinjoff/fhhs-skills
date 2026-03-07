@@ -5,6 +5,16 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-03-07
+
+### Added
+- **Homebrew auto-install in setup** — `/fh:setup` now checks for Homebrew upfront and installs it if missing before checking other tools
+- **GitHub + Vercel automation in new-project** — `/fh:new-project` now creates a private GitHub repo, links a Vercel project, and connects them for auto-deploys — no manual wiring needed
+
+### Fixed
+- **Command cross-references use correct prefix** — all commands now suggest `/fh:build`, `/fh:plan`, etc. instead of unprefixed `/build`, `/plan` which could trigger wrong commands
+- **Subagent interruption in `/fh:build`** — implementer prompt no longer tells subagents to "ask before starting" (they can't receive answers); subagents now proceed with documented assumptions or return a structured BLOCKED report; orchestrator has explicit recovery protocol for interrupted/blocked agents
+
 ## [1.5.2] - 2026-03-07
 
 ### Fixed
