@@ -2,7 +2,7 @@
 
 A workflow plugin for [Claude Code](https://claude.com/claude-code) that brings together engineering discipline, design quality, and project tracking into one install.
 
-38 commands. 29 internal skills. No other plugins required.
+38 commands. 17 internal skills. 15 specialized agents. No other plugins required.
 
 ## Install
 
@@ -112,7 +112,7 @@ Phase management, milestone lifecycle, and test generation are handled automatic
 
 ## What's Under the Hood
 
-Behind the composite commands, 29 specialized skills handle the heavy lifting. You don't invoke these directly -- the commands orchestrate them for you.
+Behind the composite commands, 17 internal skills and 15 specialized agents handle the heavy lifting. You don't invoke these directly -- the commands orchestrate them for you.
 
 **Engineering discipline** (from [Superpowers](https://github.com/obra/superpowers)):
 - Test-driven development, systematic debugging, verification-before-completion
@@ -120,9 +120,8 @@ Behind the composite commands, 29 specialized skills handle the heavy lifting. Y
 - Brainstorming, parallel agent dispatch, git worktree management
 
 **Project orchestration** (from [GSD](https://github.com/gsd-build/get-shit-done)):
-- Phase planning, execution, and verification
-- Codebase mapping, research, roadmapping
-- Integration checking, test coverage auditing
+- 12 specialized agents for planning, execution, verification, debugging, research, and more
+- Dispatched via composites as subagents with fresh context
 
 **Design quality** (from [Impeccable](https://github.com/pbakaus/impeccable)):
 - Frontend design with high visual quality

@@ -5,6 +5,17 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-03-07
+
+### Changed
+- **Deduplicated GSD agents** — removed 12 near-duplicate skill copies from `skills/gsd-*/`; agents now live only in `agents/` where they're dispatched via the Agent tool. Saves ~31k tokens per session from skill description overhead
+- **Evals updated** — audited all 53 evals against current commands; removed 2 obsolete evals (skills-guide, update-upstream), fixed 3 outdated evals (setup, help, fix-complex). 51 evals remain, all verified passing
+- **README** — updated skill/agent counts (17 skills + 15 agents), clarified GSD agent architecture
+- **SPEC.md** — directory layout updated to reflect agent/skill separation
+
+### Removed
+- `skills/gsd-*/` directories (12 files, ~7,800 lines) — exact duplicates of `agents/gsd-*.md` with only `user-invokable: false` added
+
 ## [1.2.2] - 2026-03-07
 
 ### Changed

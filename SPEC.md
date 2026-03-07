@@ -122,25 +122,24 @@ fhhs-skills/
 │   ├── receiving-code-review/   # Superpowers: review handling
 │   ├── simplify/                # Custom: 3-agent code cleanup
 │   ├── frontend-design/         # Impeccable: design principles + reference/
-│   ├── gsd-executor/            # GSD agent: plan execution
-│   ├── gsd-planner/             # GSD agent: plan creation
-│   ├── gsd-verifier/            # GSD agent: verification
-│   ├── gsd-debugger/            # GSD agent: scientific debugging
-│   ├── gsd-plan-checker/        # GSD agent: plan quality gate
-│   ├── gsd-codebase-mapper/     # GSD agent: codebase analysis
-│   ├── gsd-phase-researcher/    # GSD agent: pre-planning research
-│   ├── gsd-project-researcher/  # GSD agent: domain research
-│   ├── gsd-research-synthesizer/ # GSD agent: research aggregation
-│   ├── gsd-roadmapper/          # GSD agent: roadmap creation
-│   ├── gsd-nyquist-auditor/     # GSD agent: test coverage
-│   ├── claude-md-improver/      # claude-md-management: audit + improve CLAUDE.md
-│   └── gsd-integration-checker/ # GSD agent: cross-phase wiring
+│   └── claude-md-improver/      # claude-md-management: audit + improve CLAUDE.md
 │
 ├── agents/                      # Agent type definitions (for Agent tool)
 │   ├── code-reviewer.md         # Adapted from Superpowers + feature-dev
 │   ├── code-explorer.md         # Adapted from feature-dev
 │   ├── code-architect.md        # Adapted from feature-dev
-│   └── gsd-*.md                 # GSD agent definitions
+│   ├── gsd-planner.md           # GSD: plan creation
+│   ├── gsd-executor.md          # GSD: plan execution
+│   ├── gsd-verifier.md          # GSD: verification
+│   ├── gsd-debugger.md          # GSD: scientific debugging
+│   ├── gsd-plan-checker.md      # GSD: plan quality gate
+│   ├── gsd-codebase-mapper.md   # GSD: codebase analysis
+│   ├── gsd-phase-researcher.md  # GSD: pre-planning research
+│   ├── gsd-project-researcher.md # GSD: domain research
+│   ├── gsd-research-synthesizer.md # GSD: research aggregation
+│   ├── gsd-roadmapper.md        # GSD: roadmap creation
+│   ├── gsd-nyquist-auditor.md   # GSD: test coverage
+│   └── gsd-integration-checker.md # GSD: cross-phase wiring
 │
 ├── references/                  # Shared templates and prompts
 │   ├── implementer-prompt.md    # /build task subagent template

@@ -6,133 +6,671 @@
       "command": "build",
       "prompt": "ok i just finished planning phase 13 for my saas app. there's a PLAN.md at .planning/phases/13-auth/13-01-PLAN.md with 3 tasks — two backend (JWT auth + refresh tokens) and one frontend (login form). the backend tasks are independent but the frontend depends on both. execute it",
       "expected_output": "Should detect GSD mode, find the plan, identify 2 waves (wave 1: 2 parallel backend tasks, wave 2: 1 frontend task), dispatch general-purpose subagents (not gsd-executor), include TDD directives (from internal skills/test-driven-development/) for backend tasks and frontend-design directives (from internal skills/frontend-design/) for the login form, run design gates (/critique then /polish) after frontend task, generate SUMMARY.md, and update GSD state.",
-      "files": []
+      "files": [],
+      "assertions": [
+        {"text": "Identifies 2 waves from task dependencies", "type": "behavioral"},
+        {"text": "Dispatches general-purpose subagents (not gsd-executor)", "type": "behavioral"},
+        {"text": "Includes TDD directives in subagent prompts", "type": "behavioral"},
+        {"text": "Runs design gates for frontend task", "type": "behavioral"},
+        {"text": "Generates SUMMARY.md", "type": "output"}
+      ]
     },
     {
       "id": 2,
       "command": "build",
       "prompt": "build the plan. there's no .planning directory, I just have a plan.md in the root of my project with 2 tasks",
       "expected_output": "Should detect that GSD project is missing (.planning/PROJECT.md absent), stop, and tell the user to run /new-project first. Should NOT proceed with execution.",
-      "files": []
+      "files": [],
+      "assertions": [
+        {"text": "Detects missing .planning/PROJECT.md", "type": "behavioral"},
+        {"text": "Recommends /new-project", "type": "output"},
+        {"text": "Does NOT proceed with execution", "type": "guard"}
+      ]
     },
     {
       "id": 3,
       "command": "plan",
       "prompt": "I need to add stripe subscription billing to my app. users should be able to pick a plan, enter payment, and see their current subscription in settings. I've never used the stripe API before",
       "expected_output": "Should detect research-first need (unfamiliar API: Stripe), run research step BEFORE brainstorming (not after), delegate research to subagent with Firecrawl/Context7, then brainstorm with findings, discuss implementation gray areas, derive must_haves with user-facing truths, create PLAN.md with proper frontmatter, and run plan-check verification loop.",
-      "files": []
+      "files": [],
+      "assertions": [
+        {"text": "Detects research-first need from 'never used Stripe API'", "type": "behavioral"},
+        {"text": "Runs research before brainstorming", "type": "ordering"},
+        {"text": "Creates PLAN.md with must_haves frontmatter", "type": "output"}
+      ]
     },
     {
       "id": 4,
       "command": "plan",
       "prompt": "plan adding a dark mode toggle to the settings page. we already use tailwind's dark: prefix and have a ThemeProvider component",
       "expected_output": "Should detect well-known pattern (no research needed), skip research step, proceed directly to brainstorming, note frontend work and read DESIGN.md, produce a small plan (2-3 tasks, 5-8 files), include checkpoint:human-verify for visual verification.",
-      "files": []
+      "files": [],
+      "assertions": [
+        {"text": "Skips research step for well-known pattern", "type": "behavioral"},
+        {"text": "Notes frontend work and references DESIGN.md", "type": "behavioral"},
+        {"text": "Produces appropriately small plan", "type": "output"}
+      ]
     },
     {
       "id": 5,
       "command": "fix",
       "prompt": "the login page is showing a blank white screen. no errors in the terminal but the browser console says 'Cannot read properties of undefined (reading map)' in AuthProvider.tsx line 42",
       "expected_output": "Should triage as SIMPLE (single file, cause visible from error message), skip systematic debugging, go straight to TDD fix (write failing test reproducing the undefined.map error, fix it, refactor), do frontend check since it's a .tsx file, run verification.",
-      "files": []
+      "files": [],
+      "assertions": [
+        {"text": "Triages as SIMPLE", "type": "behavioral"},
+        {"text": "Skips full systematic debugging", "type": "behavioral"},
+        {"text": "Uses TDD approach (failing test first)", "type": "behavioral"}
+      ]
     },
     {
       "id": 6,
       "command": "fix",
       "prompt": "everything is broken after the last deploy. the API returns 500s on /api/users and /api/billing, the dashboard shows stale data, and there's a new TypeScript error in three different service files. I think it might be related to the prisma schema migration I ran yesterday",
       "expected_output": "Should triage as PARALLEL (3+ independent failures across subsystems), dispatch parallel agents per subsystem (API users, API billing, dashboard), collect results, TDD fix for each, verify all together.",
-      "files": []
+      "files": [],
+      "assertions": [
+        {"text": "Triages as PARALLEL", "type": "behavioral"},
+        {"text": "Dispatches parallel agents per subsystem", "type": "behavioral"},
+        {"text": "Verifies all fixes together", "type": "behavioral"}
+      ]
     },
     {
       "id": 7,
       "command": "resume",
       "prompt": "hey, picking this back up. where was I?",
       "expected_output": "Should read STATE.md, ROADMAP.md, CONCERNS.md, scan for incomplete plans (PLAN without SUMMARY), check git state, present a concise briefing with project name/branch/position/status/last activity/blockers, then route to the right next action.",
-      "files": []
+      "files": [],
+      "assertions": [
+        {"text": "Reads STATE.md, ROADMAP.md", "type": "behavioral"},
+        {"text": "Scans for incomplete plans", "type": "behavioral"},
+        {"text": "Presents briefing with project position", "type": "output"},
+        {"text": "Routes to next action", "type": "behavioral"}
+      ]
     },
     {
       "id": 8,
       "command": "setup",
       "prompt": "just installed fhhs-skills, what do I need to do to get started",
-      "expected_output": "Should welcome the user, explain that fhhs-skills is self-contained (engineering discipline, design quality, and project tracking are all built in), and suggest /new-project to bootstrap a project or /skills-guide for an overview. No dependency checks or plugin installs needed.",
-      "files": []
+      "expected_output": "Should welcome the user with an overview of what fhhs-skills provides (composites, engineering discipline, design quality, code intelligence, project tracking). Should detect platform (macOS/Linux/Windows) and check prerequisites (brew, node, npm, gh, vercel, typescript-language-server, git). Should install missing tools via Homebrew (macOS/Linux) or present winget/installer links (Windows). Should set up TypeScript LSP (npm install -g typescript-language-server typescript + claude plugin install typescript-lsp). Should configure GSD symlink ($HOME/.claude/get-shit-done/bin/). Should present final status report and suggest /new-project, /help, or /resume.",
+      "files": [],
+      "assertions": [
+        {"text": "Welcomes user and explains plugin scope", "type": "output"},
+        {"text": "Detects platform (macOS/Linux/Windows)", "type": "behavioral"},
+        {"text": "Checks prerequisites (node, npm, gh, etc.)", "type": "behavioral"},
+        {"text": "Sets up TypeScript LSP (npm + plugin)", "type": "behavioral"},
+        {"text": "Configures GSD symlink", "type": "behavioral"},
+        {"text": "Presents final status report", "type": "output"},
+        {"text": "Suggests /new-project as next step", "type": "output"}
+      ]
     },
     {
       "id": 9,
       "command": "refactor",
       "prompt": "i want to extract all the inline SQL queries from our route handlers into a separate data access layer. there are about 15 route files that do direct prisma calls",
       "expected_output": "Should identify blast radius (15 files, multiple subsystems), suggest writing a PLAN.md via /plan since it's 10+ files, capture baseline tests first, plan atomic steps, and enforce the iron law (tests never go red).",
-      "files": []
+      "files": [],
+      "assertions": [
+        {"text": "Identifies large blast radius (15 files)", "type": "behavioral"},
+        {"text": "Considers redirecting to /plan for large scope", "type": "behavioral"},
+        {"text": "Enforces iron law (tests never go red)", "type": "behavioral"}
+      ]
     },
     {
       "id": 10,
       "command": "verify",
       "prompt": "verify phase 13",
       "expected_output": "Should load all PLAN.md files in .planning/phases/13-*, extract must_haves, run goal-backward verification (truth table + artifacts + key links via gsd-tools), run evidence-based verification (fresh test suite, build check, linter), detect anti-patterns, write VERIFICATION.md, and generate gap-closure plans if anything fails.",
-      "files": []
+      "files": [],
+      "assertions": [
+        {"text": "Loads PLAN.md files for phase 13", "type": "behavioral"},
+        {"text": "Runs goal-backward verification with truth table", "type": "behavioral"},
+        {"text": "Writes VERIFICATION.md", "type": "output"},
+        {"text": "Generates gap-closure plans on failure", "type": "behavioral"}
+      ]
     },
     {
       "id": 11,
       "command": "new-project",
       "prompt": "I want to build a recipe sharing app where home cooks can post recipes with photos and others can save favorites. should work on mobile. i'm thinking react",
       "expected_output": "Should walk through vision questions one at a time (what/who/why/scope/constraints/success), present default stack (Next.js/TS/Tailwind/Shadcn/Vercel + Supabase since auth/DB needed), invoke /teach-impeccable for design context (output to .planning/DESIGN.md), generate CLAUDE.md under 40 lines, create .planning/ structure with PROJECT.md/REQUIREMENTS.md/ROADMAP.md/STATE.md, and suggest /plan as next step. No external dependency checks needed.",
-      "files": []
+      "files": [],
+      "assertions": [
+        {"text": "Walks through vision questions", "type": "behavioral"},
+        {"text": "Presents default stack with Supabase", "type": "output"},
+        {"text": "Invokes /teach-impeccable", "type": "behavioral"},
+        {"text": "Creates .planning/ structure", "type": "output"},
+        {"text": "Generates CLAUDE.md under 40 lines", "type": "output"}
+      ]
     },
     {
       "id": 12,
       "command": "build",
       "prompt": "execute the plan at .planning/phases/05-onboarding/05-02-PLAN.md. the plan has a task with type checkpoint:human-verify for reviewing the welcome screen visually",
       "expected_output": "Should find the plan, analyze waves, dispatch subagents for non-checkpoint tasks, and when reaching the checkpoint:human-verify task, the subagent should STOP and return structured state (what was built, verification steps, URLs/commands, expected behavior). Orchestrator should present this to user and WAIT before continuing. Should NOT auto-proceed past the checkpoint.",
-      "files": []
+      "files": [],
+      "assertions": [
+        {"text": "Stops at checkpoint:human-verify", "type": "guard"},
+        {"text": "Presents structured state to user", "type": "output"},
+        {"text": "Does NOT auto-proceed past checkpoint", "type": "guard"}
+      ]
     },
     {
       "id": 13,
       "command": "plan",
       "prompt": "plan adding real-time notifications. we already discussed this in phase 8 and there's a .planning/phases/08-notifications/08-CONTEXT.md with locked decisions about using SSE instead of websockets",
       "expected_output": "Should detect existing CONTEXT.md, SKIP Step 3 (Discuss Implementation) since decisions are already locked, read the CONTEXT.md and honor the SSE decision in the plan, and NOT re-open the SSE vs websockets discussion. Plan should reference the locked SSE decision.",
-      "files": []
+      "files": [],
+      "assertions": [
+        {"text": "Detects existing CONTEXT.md", "type": "behavioral"},
+        {"text": "Skips discussion step", "type": "behavioral"},
+        {"text": "Honors locked SSE decision", "type": "behavioral"}
+      ]
     },
     {
       "id": 14,
       "command": "fix",
       "prompt": "users are reporting intermittent 502 errors on our API but I can't reproduce it locally. it happens maybe once every 50 requests and the logs show different errors each time — sometimes connection reset, sometimes timeout, sometimes a memory warning. no clear pattern",
-      "expected_output": "Should triage as COMPLEX (unclear cause, needs hypotheses, intermittent, no clear pattern), write triage findings to .planning/debug/YYYY-MM-DD-intermittent-502-errors.md with initial hypotheses, and recommend /debug for sustained investigation. Should NOT attempt a quick fix or triage as SIMPLE/MODERATE.",
-      "files": []
+      "expected_output": "Should triage as COMPLEX (unclear cause, needs hypotheses, intermittent, no clear pattern), write triage findings to .planning/debug/YYYY-MM-DD-intermittent-502-errors.md with initial hypotheses, and dispatch a gsd-debugger agent for sustained scientific investigation. Should NOT attempt a quick fix or triage as SIMPLE/MODERATE.",
+      "files": [],
+      "assertions": [
+        {"text": "Triages as COMPLEX", "type": "behavioral"},
+        {"text": "Writes to .planning/debug/", "type": "output"},
+        {"text": "Does NOT attempt quick fix", "type": "guard"}
+      ]
     },
     {
       "id": 15,
       "command": "build",
       "prompt": "build the auth phase. there are 3 plans: 05-01 is done (has SUMMARY), 05-02 and 05-03 still need execution",
       "expected_output": "Should detect resume scenario (multiple plans, some complete), report 'Found 3 plans, 1 already completed. Continuing from plan 05-02.' Should skip 05-01 entirely. Should check 05-01's SUMMARY for unresolved 'Issues Encountered' and ask user if any found. Should execute 05-02 first, then 05-03 sequentially.",
-      "files": []
+      "files": [],
+      "assertions": [
+        {"text": "Detects resume scenario", "type": "behavioral"},
+        {"text": "Skips completed plan 05-01", "type": "behavioral"},
+        {"text": "Executes remaining plans sequentially", "type": "behavioral"}
+      ]
     },
     {
       "id": 16,
       "command": "plan",
       "prompt": "i want to add a feature for exporting reports as PDF. this doesn't match any phase in the roadmap",
       "expected_output": "Should compare against ROADMAP.md phases, detect no match, ask user: 'This doesn't match any existing phase. Add as a new phase to the roadmap, or fold into the current phase?' Should wait for user choice before proceeding. If new phase chosen, should add phase to ROADMAP.md and create phase directory.",
-      "files": []
-    },
-    {
-      "id": 17,
-      "command": "update-upstream",
-      "prompt": "check if there's a new version of superpowers",
-      "expected_output": "Should read the current snapshot version from upstream/superpowers-{version}/ directory name, check the latest release of obra/superpowers via gh api, diff if newer version available, cross-reference PATCHES.md for conflicts, and present a structured report. Should NOT auto-apply any changes.",
-      "files": []
+      "files": [],
+      "assertions": [
+        {"text": "Compares against ROADMAP.md phases", "type": "behavioral"},
+        {"text": "Detects no phase match", "type": "behavioral"},
+        {"text": "Asks user before creating new phase", "type": "behavioral"}
+      ]
     },
     {
       "id": 18,
       "command": "critique",
       "prompt": "critique the dashboard page. it's at src/app/dashboard/page.tsx",
       "expected_output": "Should read skills/frontend-design/SKILL.md for design principles and anti-patterns, then evaluate the dashboard page across all dimensions (AI slop detection, visual hierarchy, information architecture, emotional resonance, etc.). Should produce a structured critique report with Anti-Patterns Verdict, Overall Impression, What's Working, Priority Issues with severity, and specific fix commands (/polish, /simplify, etc.).",
-      "files": []
+      "files": [],
+      "assertions": [
+        {"text": "Reads frontend-design skill for anti-patterns", "type": "behavioral"},
+        {"text": "Produces structured critique report", "type": "output"},
+        {"text": "Includes severity ratings", "type": "output"}
+      ]
     },
     {
       "id": 19,
       "command": "teach-impeccable",
       "prompt": "set up the design context for my project",
       "expected_output": "Should explore the codebase first (README, package.json, existing components, brand assets), then ask UX-focused questions about what couldn't be inferred. Should write output to .planning/DESIGN.md (NOT CLAUDE.md) with YAML frontmatter (created date, type: design-context) and a Design Context section with Users, Brand Personality, Aesthetic Direction, and Design Principles.",
-      "files": []
+      "files": [],
+      "assertions": [
+        {"text": "Explores codebase before asking questions", "type": "behavioral"},
+        {"text": "Writes to .planning/DESIGN.md", "type": "output"},
+        {"text": "Includes YAML frontmatter", "type": "output"}
+      ]
+    },
+    {
+      "id": 20,
+      "command": "simplify",
+      "prompt": "simplify the changes I just made",
+      "expected_output": "Should invoke skills/simplify/ which runs 3 parallel review agents on the git diff (code reuse, code quality, efficiency). Should fix issues directly and commit with 'refactor(scope): simplify pass'. Should NOT read full codebase - only operates on changed files from git diff.",
+      "files": [],
+      "assertions": [
+        {"text": "Invokes skills/simplify/", "type": "behavioral"},
+        {"text": "Runs 3 parallel review agents", "type": "behavioral"},
+        {"text": "Operates on git diff only, not full codebase", "type": "context_discipline"},
+        {"text": "Commits with refactor scope", "type": "output"}
+      ]
+    },
+    {
+      "id": 21,
+      "command": "simplify",
+      "prompt": "clean up the auth module after refactoring",
+      "expected_output": "Should invoke skills/simplify/ with the auth module as scope. Should check git diff for recent auth-related changes and run 3 parallel agents. If no git diff exists for auth files, should inform user there are no recent changes to simplify.",
+      "files": [],
+      "assertions": [
+        {"text": "Scopes to auth module", "type": "behavioral"},
+        {"text": "Uses git diff to identify changes", "type": "behavioral"},
+        {"text": "Handles no-changes case gracefully", "type": "guard"}
+      ]
+    },
+    {
+      "id": 22,
+      "command": "research",
+      "prompt": "research how to implement real-time collaborative editing like google docs. looking at CRDTs vs OT",
+      "expected_output": "Should check for .planning/PROJECT.md (GSD dependency). If present, determine scope as Comparison mode (CRDTs vs OT). Should dispatch a Task subagent with Firecrawl/Context7 instructions. Subagent output should go to .planning/phases/XX-name/XX-RESEARCH.md with YAML frontmatter (researched date, domain, confidence). Report should be prescriptive with confidence tags (HIGH/MEDIUM/LOW). Should update STATE.md.",
+      "files": [],
+      "assertions": [
+        {"text": "Checks .planning/PROJECT.md exists", "type": "guard"},
+        {"text": "Identifies Comparison research mode", "type": "behavioral"},
+        {"text": "Dispatches Task subagent (lean orchestrator)", "type": "context_discipline"},
+        {"text": "Output has YAML frontmatter with confidence", "type": "output"},
+        {"text": "Updates STATE.md", "type": "output"}
+      ]
+    },
+    {
+      "id": 23,
+      "command": "research",
+      "prompt": "research best practices for image optimization in Next.js",
+      "expected_output": "Should check for .planning/PROJECT.md. If missing, should stop and tell user to run /new-project first. Should NOT proceed with research without GSD project.",
+      "files": [],
+      "assertions": [
+        {"text": "Checks for .planning/PROJECT.md", "type": "guard"},
+        {"text": "Stops if no GSD project", "type": "guard"},
+        {"text": "Recommends /new-project", "type": "output"}
+      ]
+    },
+    {
+      "id": 24,
+      "command": "verify-ui",
+      "prompt": "check the UI on the settings page at localhost:3000/settings",
+      "expected_output": "Should check for dev server on common ports. Should check agent-browser availability. If agent-browser not installed, should stop and tell user to install it. If available, should capture screenshots at 3 viewports (desktop 1440x900, tablet 768x1024, mobile 375x812), run console health check, read .planning/DESIGN.md for design context, perform design critique with severity ratings, and produce a Visual Verification Report.",
+      "files": [],
+      "assertions": [
+        {"text": "Checks dev server is running", "type": "behavioral"},
+        {"text": "Checks agent-browser availability", "type": "guard"},
+        {"text": "Captures 3 viewport screenshots", "type": "behavioral"},
+        {"text": "Reads .planning/DESIGN.md for design context", "type": "behavioral"},
+        {"text": "Produces severity-rated report", "type": "output"}
+      ]
+    },
+    {
+      "id": 25,
+      "command": "verify-ui",
+      "prompt": "verify the dashboard looks right. agent-browser is not installed on this machine",
+      "expected_output": "Should detect that agent-browser is not available (via which check), stop, and tell the user to install it with 'npm install -g agent-browser'. Should NOT attempt to proceed without it or use alternative tools.",
+      "files": [],
+      "assertions": [
+        {"text": "Detects agent-browser not installed", "type": "guard"},
+        {"text": "Provides install command", "type": "output"},
+        {"text": "Does NOT proceed without agent-browser", "type": "guard"}
+      ]
+    },
+    {
+      "id": 26,
+      "command": "progress",
+      "prompt": "progress",
+      "expected_output": "Should run gsd-tools.cjs init progress, load roadmap analysis and state snapshot, gather recent SUMMARY.md files, present rich status report with progress bar, recent work, current position, key decisions, blockers, pending todos, and route to next action (Route A if unexecuted plans exist, Route B if phase needs planning, Route C/D/E/F for other states).",
+      "files": [],
+      "assertions": [
+        {"text": "Uses gsd-tools.cjs init progress", "type": "behavioral"},
+        {"text": "Uses gsd-tools.cjs roadmap analyze", "type": "behavioral"},
+        {"text": "Presents progress bar", "type": "output"},
+        {"text": "Shows recent work from SUMMARY.md files", "type": "output"},
+        {"text": "Routes to correct next action", "type": "behavioral"},
+        {"text": "Suggests /clear before next command", "type": "output"}
+      ]
+    },
+    {
+      "id": 27,
+      "command": "progress",
+      "prompt": "progress (no .planning/ directory exists)",
+      "expected_output": "Should detect project_exists is false from gsd-tools init, output 'No planning structure found.' and suggest running /new-project. Should NOT attempt to read STATE.md or ROADMAP.md.",
+      "files": [],
+      "assertions": [
+        {"text": "Detects no .planning/ directory", "type": "guard"},
+        {"text": "Suggests /new-project", "type": "output"},
+        {"text": "Does NOT attempt to read non-existent files", "type": "guard"}
+      ]
+    },
+    {
+      "id": 28,
+      "command": "progress",
+      "prompt": "progress (all phases in current milestone are complete)",
+      "expected_output": "Should detect milestone completion (current phase = highest phase), show Route D with milestone complete message, suggest /verify to verify and complete the milestone. Should display the completion celebration format.",
+      "files": [],
+      "assertions": [
+        {"text": "Detects milestone completion", "type": "behavioral"},
+        {"text": "Shows Route D (milestone complete)", "type": "output"},
+        {"text": "Suggests /verify for milestone completion", "type": "output"}
+      ]
+    },
+    {
+      "id": 29,
+      "command": "progress",
+      "prompt": "progress (ROADMAP.md missing but PROJECT.md exists — milestone was archived)",
+      "expected_output": "Should detect between-milestones state (Route F), read MILESTONES.md for last completed version, suggest /plan for next milestone. Should NOT suggest /new-project since PROJECT.md exists.",
+      "files": [],
+      "assertions": [
+        {"text": "Detects between-milestones state (Route F)", "type": "behavioral"},
+        {"text": "Reads MILESTONES.md", "type": "behavioral"},
+        {"text": "Suggests /plan for next milestone", "type": "output"},
+        {"text": "Does NOT suggest /new-project", "type": "guard"}
+      ]
+    },
+    {
+      "id": 30,
+      "command": "quick",
+      "prompt": "quick add a loading spinner to the submit button in the contact form",
+      "expected_output": "Should parse arguments (no flags), use description 'add a loading spinner to the submit button in the contact form', run gsd-tools init quick, create .planning/quick/NNN-slug/ directory, spawn gsd-planner in quick mode (not quick-full), spawn gsd-executor, update STATE.md Quick Tasks Completed table, commit artifacts, show completion banner.",
+      "files": [],
+      "assertions": [
+        {"text": "Parses description correctly (no flags)", "type": "behavioral"},
+        {"text": "Uses gsd-tools init quick", "type": "behavioral"},
+        {"text": "Spawns gsd-planner (quick mode, not quick-full)", "type": "behavioral"},
+        {"text": "Spawns gsd-executor", "type": "behavioral"},
+        {"text": "Creates .planning/quick/ directory", "type": "output"},
+        {"text": "Updates STATE.md Quick Tasks table", "type": "output"},
+        {"text": "No Status column in table (not --full)", "type": "output"}
+      ]
+    },
+    {
+      "id": 31,
+      "command": "quick",
+      "prompt": "quick --discuss --full implement rate limiting on the /api/upload endpoint",
+      "expected_output": "Should parse both flags (--discuss and --full). Should show DISCUSS + FULL banner. In discuss phase: identify 2-4 gray areas about rate limiting (e.g., rate limits per user/IP, response when limited, storage for counters). Present gray areas via AskUserQuestion with multiSelect. Capture decisions in CONTEXT.md. Then spawn gsd-planner in quick-full mode with CONTEXT.md reference. Run plan-checker loop (max 2 iterations). Spawn gsd-executor. Run verification via gsd-verifier. Update STATE.md with Status column. Show completion banner with verification status.",
+      "files": [],
+      "assertions": [
+        {"text": "Parses --discuss and --full flags", "type": "behavioral"},
+        {"text": "Shows DISCUSS + FULL banner", "type": "output"},
+        {"text": "Identifies domain-specific gray areas for rate limiting", "type": "behavioral"},
+        {"text": "Writes CONTEXT.md with locked decisions", "type": "output"},
+        {"text": "Spawns gsd-planner in quick-full mode", "type": "behavioral"},
+        {"text": "Runs plan-checker (max 2 iterations)", "type": "behavioral"},
+        {"text": "Runs gsd-verifier", "type": "behavioral"},
+        {"text": "STATE.md table includes Status column", "type": "output"}
+      ]
+    },
+    {
+      "id": 32,
+      "command": "quick",
+      "prompt": "quick --full rename the UserProfile component to AccountProfile everywhere",
+      "expected_output": "Should parse --full flag. Spawn gsd-planner in quick-full mode (must generate must_haves). Run plan-checker. Spawn gsd-executor. Run gsd-verifier. CONTEXT.md should NOT be created (no --discuss). STATE.md should have Status column.",
+      "files": [],
+      "assertions": [
+        {"text": "Uses quick-full mode for planner", "type": "behavioral"},
+        {"text": "Plan has must_haves in frontmatter", "type": "output"},
+        {"text": "Runs plan-checker", "type": "behavioral"},
+        {"text": "Runs gsd-verifier", "type": "behavioral"},
+        {"text": "No CONTEXT.md created (no --discuss)", "type": "guard"}
+      ]
+    },
+    {
+      "id": 33,
+      "command": "quick",
+      "prompt": "quick fix the typo in the footer (no .planning/ROADMAP.md exists)",
+      "expected_output": "Should detect ROADMAP.md is missing from gsd-tools init quick response (roadmap_exists=false). Should error and tell user that quick mode requires an active project with ROADMAP.md. Should suggest /new-project. Should NOT proceed.",
+      "files": [],
+      "assertions": [
+        {"text": "Detects missing ROADMAP.md", "type": "guard"},
+        {"text": "Suggests /new-project", "type": "output"},
+        {"text": "Does NOT proceed with task", "type": "guard"}
+      ]
+    },
+    {
+      "id": 34,
+      "command": "health",
+      "prompt": "health",
+      "expected_output": "Should run gsd-tools.cjs validate health, parse JSON output with status/errors/warnings/info, format output with banner (GSD Health Check), show status (HEALTHY/DEGRADED/BROKEN), list any errors with codes (E001-E005) and warnings (W001-W009). If repairable issues exist, show footer with 'Run: health --repair'.",
+      "files": [],
+      "assertions": [
+        {"text": "Runs gsd-tools.cjs validate health", "type": "behavioral"},
+        {"text": "Shows status banner (HEALTHY/DEGRADED/BROKEN)", "type": "output"},
+        {"text": "Lists errors with E-codes", "type": "output"},
+        {"text": "Shows repair suggestion if repairable issues exist", "type": "output"}
+      ]
+    },
+    {
+      "id": 35,
+      "command": "health",
+      "prompt": "health --repair",
+      "expected_output": "Should run gsd-tools.cjs validate health --repair. Should show repairs performed (e.g., createConfig, resetConfig, regenerateState, addNyquistKey). Should re-run health check after repairs to confirm issues resolved. Should show final status.",
+      "files": [],
+      "assertions": [
+        {"text": "Passes --repair flag to gsd-tools", "type": "behavioral"},
+        {"text": "Shows repairs performed", "type": "output"},
+        {"text": "Re-runs health check after repairs", "type": "behavioral"},
+        {"text": "Shows final status", "type": "output"}
+      ]
+    },
+    {
+      "id": 36,
+      "command": "revise-claude-md",
+      "prompt": "revise-claude-md",
+      "expected_output": "Should detect Session Learnings mode (no argument). Should reflect on session for missing context (bash commands, code style, testing approaches, environment quirks). Should find and read CLAUDE.md files. Should check for GSD project and DESIGN.md. Should read update-guidelines.md for rules. Should draft additions (one line per concept). Should show proposed changes with diff format and 'Why' rationale. Should ask for approval before applying. Should commit with 'docs: update CLAUDE.md with session learnings'.",
+      "files": [],
+      "assertions": [
+        {"text": "Detects Session Learnings mode", "type": "behavioral"},
+        {"text": "Reads update-guidelines.md", "type": "behavioral"},
+        {"text": "Shows proposed changes in diff format", "type": "output"},
+        {"text": "Asks for approval before applying", "type": "behavioral"},
+        {"text": "Commits with appropriate message", "type": "output"}
+      ]
+    },
+    {
+      "id": 37,
+      "command": "revise-claude-md",
+      "prompt": "revise-claude-md audit",
+      "expected_output": "Should detect Full Audit mode. Should invoke skills/claude-md-improver/ completely. The improver skill handles discovery, quality assessment, scoring, and targeted updates. Should NOT duplicate the improver's work inline.",
+      "files": [],
+      "assertions": [
+        {"text": "Detects Full Audit mode from 'audit' argument", "type": "behavioral"},
+        {"text": "Invokes skills/claude-md-improver/", "type": "behavioral"},
+        {"text": "Delegates completely to improver skill", "type": "context_discipline"}
+      ]
+    },
+    {
+      "id": 38,
+      "command": "revise-claude-md",
+      "prompt": "revise-claude-md init",
+      "expected_output": "Should detect Initial Creation mode. Should read project context from /new-project steps (project name, tech stack, design system). Should read templates.md from claude-md-improver references. Should use the fhhs-skills Project template. Should generate CLAUDE.md under 40 lines with project name, tech stack, commands, architecture, code style, testing, planning, and gotchas sections. Should commit with 'docs: initialize CLAUDE.md with project conventions'.",
+      "files": [],
+      "assertions": [
+        {"text": "Detects Init mode from 'init' argument", "type": "behavioral"},
+        {"text": "Reads templates.md", "type": "behavioral"},
+        {"text": "Uses fhhs-skills Project template", "type": "behavioral"},
+        {"text": "Generates CLAUDE.md under 40 lines", "type": "output"},
+        {"text": "Includes planning section referencing .planning/", "type": "output"}
+      ]
+    },
+    {
+      "id": 39,
+      "command": "map-codebase",
+      "prompt": "map-codebase",
+      "expected_output": "Should run gsd-tools.cjs init map-codebase, create .planning/codebase/ directory, spawn 4 parallel gsd-codebase-mapper agents (tech, arch, quality, concerns) with run_in_background=true. Agents write documents directly (orchestrator does NOT receive document contents). Should verify all 7 documents created (STACK.md, INTEGRATIONS.md, ARCHITECTURE.md, STRUCTURE.md, CONVENTIONS.md, TESTING.md, CONCERNS.md). Should scan for secrets before committing. Should commit and show completion summary with line counts.",
+      "files": [],
+      "assertions": [
+        {"text": "Spawns 4 parallel gsd-codebase-mapper agents", "type": "behavioral"},
+        {"text": "Uses run_in_background=true", "type": "context_discipline"},
+        {"text": "Agents write directly (orchestrator stays lean)", "type": "context_discipline"},
+        {"text": "Verifies all 7 documents exist", "type": "behavioral"},
+        {"text": "Scans for secrets before committing", "type": "guard"},
+        {"text": "Shows completion summary with line counts", "type": "output"}
+      ]
+    },
+    {
+      "id": 40,
+      "command": "map-codebase",
+      "prompt": "map-codebase (codebase already mapped, .planning/codebase/ exists)",
+      "expected_output": "Should detect existing .planning/codebase/ from init context (has_maps=true). Should list existing documents. Should offer 3 choices: Refresh (delete and remap), Update (selectively update), Skip (use existing). Should wait for user choice before proceeding.",
+      "files": [],
+      "assertions": [
+        {"text": "Detects existing codebase map", "type": "behavioral"},
+        {"text": "Offers Refresh/Update/Skip choices", "type": "output"},
+        {"text": "Waits for user choice", "type": "behavioral"}
+      ]
+    },
+    {
+      "id": 41,
+      "command": "help",
+      "prompt": "help",
+      "expected_output": "Should output ONLY the reference content from the command — the command tables for Build Pipeline, Engineering, Navigation, Design Quality, Task Management, Setup & Maintenance, plus Common Workflows, Files & Structure, Architecture, Non-Negotiable Disciplines, and Code Intelligence sections. Should NOT add project-specific analysis, git status, next-step suggestions, or any commentary beyond the reference.",
+      "files": [],
+      "assertions": [
+        {"text": "Outputs reference tables", "type": "output"},
+        {"text": "Includes all 6 command categories (Build Pipeline, Engineering, Navigation, Design Quality, Task Management, Setup & Maintenance)", "type": "output"},
+        {"text": "Includes Architecture and Non-Negotiable Disciplines sections", "type": "output"},
+        {"text": "Includes Code Intelligence section", "type": "output"},
+        {"text": "No project-specific analysis added", "type": "context_discipline"},
+        {"text": "No git status or suggestions added", "type": "context_discipline"}
+      ]
+    },
+    {
+      "id": 43,
+      "command": "add-todo",
+      "prompt": "add-todo The modal z-index is wrong on the billing page, it shows behind the sidebar",
+      "expected_output": "Should create .planning/todos/pending/ and .planning/todos/done/ if missing. Should extract content from arguments. Should infer area as 'ui' (modal, z-index, sidebar are UI concerns). Should check for duplicate todos. Should create file at .planning/todos/pending/YYYY-MM-DD-modal-z-index-billing.md with frontmatter (created, title, area: ui, files). Should update STATE.md todo count. Should commit.",
+      "files": [],
+      "assertions": [
+        {"text": "Creates todo directories if missing", "type": "behavioral"},
+        {"text": "Infers area as 'ui'", "type": "behavioral"},
+        {"text": "Checks for duplicates", "type": "behavioral"},
+        {"text": "Creates file with YAML frontmatter", "type": "output"},
+        {"text": "Updates STATE.md", "type": "output"}
+      ]
+    },
+    {
+      "id": 44,
+      "command": "add-todo",
+      "prompt": "add-todo",
+      "expected_output": "Should detect no arguments provided. Should extract task from current conversation context (what was just discussed). If conversation has no clear task context, should prompt user interactively for the todo description.",
+      "files": [],
+      "assertions": [
+        {"text": "Detects no explicit arguments", "type": "behavioral"},
+        {"text": "Attempts to extract from conversation context", "type": "behavioral"},
+        {"text": "Falls back to interactive prompt if needed", "type": "behavioral"}
+      ]
+    },
+    {
+      "id": 45,
+      "command": "check-todos",
+      "prompt": "check-todos",
+      "expected_output": "Should initialize todo context via gsd-tools. Should list all pending todos from .planning/todos/pending/ with relative timestamps. Should allow user to select a todo. Should load selected todo's full context. Should check ROADMAP.md for phase match. Should offer actions: work on it, add to phase plan, create phase, brainstorm, put back. Should execute chosen action and update STATE.md.",
+      "files": [],
+      "assertions": [
+        {"text": "Lists pending todos with timestamps", "type": "output"},
+        {"text": "Allows todo selection", "type": "behavioral"},
+        {"text": "Checks roadmap for phase match", "type": "behavioral"},
+        {"text": "Offers multiple action choices", "type": "output"},
+        {"text": "Updates STATE.md", "type": "output"}
+      ]
+    },
+    {
+      "id": 46,
+      "command": "settings",
+      "prompt": "settings",
+      "expected_output": "Should present current configuration from .planning/config.json. Should show options for model profile (quality/balanced/budget), workflow toggles (research, plan_check, verifier, auto_advance, nyquist_validation), and git branching (none/per-phase/per-milestone). Should save changes to .planning/config.json. Should offer to save as global defaults to ~/.gsd/defaults.json.",
+      "files": [],
+      "assertions": [
+        {"text": "Shows current config from config.json", "type": "output"},
+        {"text": "Presents model profile options", "type": "output"},
+        {"text": "Presents workflow toggle options", "type": "output"},
+        {"text": "Saves to .planning/config.json", "type": "output"},
+        {"text": "Offers global defaults save", "type": "output"}
+      ]
+    },
+    {
+      "id": 47,
+      "command": "build",
+      "prompt": "build the plan (plan has only frontend tasks - React component refactor, new page layout, CSS updates)",
+      "expected_output": "Should detect all tasks are frontend. Should dispatch subagents with frontend-design directives from skills/frontend-design/. Should run design gates after execution (/critique -> /polish -> /normalize). Should read .planning/DESIGN.md for design context during critique. Should check for frontend anti-patterns (AI slop, emoji in UI, generic gradients).",
+      "files": [],
+      "assertions": [
+        {"text": "Detects frontend-only plan", "type": "behavioral"},
+        {"text": "Includes frontend-design directives in subagent prompts", "type": "behavioral"},
+        {"text": "Runs design gates: critique -> polish -> normalize", "type": "behavioral"},
+        {"text": "Reads DESIGN.md during design gates", "type": "behavioral"},
+        {"text": "Checks for frontend anti-patterns", "type": "behavioral"}
+      ]
+    },
+    {
+      "id": 48,
+      "command": "fix",
+      "prompt": "the CSS grid layout breaks on tablet. elements overlap at 768px width",
+      "expected_output": "Should triage as MODERATE (2-4 files, single subsystem - CSS/layout). Should use systematic debugging to identify the breakpoint issue. Should apply TDD fix. Should detect frontend work and check for design system consistency. Should run /simplify pass (MODERATE triggers simplify). Should verify fix at the specific breakpoint.",
+      "files": [],
+      "assertions": [
+        {"text": "Triages as MODERATE", "type": "behavioral"},
+        {"text": "Detects frontend/CSS work", "type": "behavioral"},
+        {"text": "Runs /simplify pass (MODERATE+ threshold)", "type": "behavioral"},
+        {"text": "Verifies at specific breakpoint", "type": "behavioral"}
+      ]
+    },
+    {
+      "id": 49,
+      "command": "verify",
+      "prompt": "verify (no phase specified, working on current phase from STATE.md)",
+      "expected_output": "Should detect scope from STATE.md current position (no explicit phase argument). Should load PLAN.md files from the current phase directory. Should run full dual verification. Should write VERIFICATION.md in the phase directory. If frontend work detected, should suggest /verify-ui.",
+      "files": [],
+      "assertions": [
+        {"text": "Detects scope from STATE.md", "type": "behavioral"},
+        {"text": "Runs dual verification (goal-backward + evidence-based)", "type": "behavioral"},
+        {"text": "Writes VERIFICATION.md", "type": "output"},
+        {"text": "Suggests /verify-ui for frontend work", "type": "output"}
+      ]
+    },
+    {
+      "id": 50,
+      "command": "progress",
+      "prompt": "progress (phase has UAT.md with status: diagnosed and gaps needing fixes)",
+      "expected_output": "Should detect UAT gaps (uat_with_gaps > 0) and show Route E. Should display UAT Gaps Found message with gap count. Should suggest /plan to plan fixes for the gaps. Should suggest /clear first for fresh context.",
+      "files": [],
+      "assertions": [
+        {"text": "Detects UAT gaps from diagnosed UAT.md", "type": "behavioral"},
+        {"text": "Shows Route E (UAT gaps)", "type": "output"},
+        {"text": "Suggests /plan for gap fixes", "type": "output"},
+        {"text": "Includes /clear suggestion", "type": "output"}
+      ]
+    },
+    {
+      "id": 51,
+      "command": "quick",
+      "prompt": "quick --discuss add webhook support for new user signups",
+      "expected_output": "Should parse --discuss flag (no --full). Should show DISCUSS banner. Should identify gray areas specific to webhooks (e.g., payload format, retry policy, authentication/signing, which events to support). Should present gray areas via AskUserQuestion with multiSelect. Should capture decisions in CONTEXT.md. Should spawn gsd-planner in standard quick mode (NOT quick-full). Should NOT run plan-checker or verifier (no --full). STATE.md table should NOT have Status column.",
+      "files": [],
+      "assertions": [
+        {"text": "Parses --discuss without --full", "type": "behavioral"},
+        {"text": "Shows DISCUSS banner (not DISCUSS + FULL)", "type": "output"},
+        {"text": "Identifies webhook-specific gray areas", "type": "behavioral"},
+        {"text": "Writes CONTEXT.md", "type": "output"},
+        {"text": "Uses standard quick mode (not quick-full)", "type": "behavioral"},
+        {"text": "Does NOT run plan-checker", "type": "guard"},
+        {"text": "Does NOT run verifier", "type": "guard"}
+      ]
+    },
+    {
+      "id": 52,
+      "command": "research",
+      "prompt": "research what auth providers are available for Next.js. we need social login and magic links",
+      "expected_output": "Should check GSD project exists. Should identify Ecosystem research mode ('what exists?'). Should dispatch Task subagent with instructions for Firecrawl/Context7. Should produce prescriptive output ('Use X because Y', not 'Consider X or Y'). Should tag findings with confidence levels. Should save to .planning/phases/XX-name/XX-RESEARCH.md.",
+      "files": [],
+      "assertions": [
+        {"text": "Identifies Ecosystem research mode", "type": "behavioral"},
+        {"text": "Dispatches Task subagent (lean orchestrator)", "type": "context_discipline"},
+        {"text": "Prescriptive output style", "type": "output"},
+        {"text": "Confidence-tagged findings", "type": "output"}
+      ]
+    },
+    {
+      "id": 53,
+      "command": "new-project",
+      "prompt": "I want to create a CLI tool for managing dotfiles. pure node.js, no framework needed, just a simple npm package",
+      "expected_output": "Should walk through vision questions. Should NOT suggest Next.js/React/Tailwind defaults (this is a CLI tool, not a web app). Should adapt stack to CLI context (Node.js, Commander/yargs, minimal deps). Should still invoke /teach-impeccable but adapted for CLI (not visual design). Should create .planning/ structure. CLAUDE.md should reflect CLI-specific conventions (not web conventions).",
+      "files": [],
+      "assertions": [
+        {"text": "Adapts stack for CLI (no web framework defaults)", "type": "behavioral"},
+        {"text": "Does not suggest React/Tailwind for CLI tool", "type": "guard"},
+        {"text": "Creates .planning/ structure", "type": "output"},
+        {"text": "CLAUDE.md reflects CLI conventions", "type": "output"}
+      ]
     }
   ]
 }
