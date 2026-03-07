@@ -5,6 +5,16 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.2] - 2026-03-07
+
+### Changed
+- **README** — rewritten with full command reference, skill overview, and setup instructions
+- **Maintainer commands** — `/update-upstream` and `/update-gsd` moved out of shipped commands
+
+### Added
+- **`/release` command** — maintainer tooling for consistent version bumps, changelog, and GitHub releases
+- **Post-push hook** — reminds to release when untagged commits exist on main
+
 ## [1.2.1] - 2026-03-07
 
 ### Fixed
