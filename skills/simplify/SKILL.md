@@ -1,6 +1,7 @@
 ---
 name: simplify
 description: Review changed code for reuse, quality, and efficiency, then fix any issues found. Use after builds, refactors, or any implementation work to catch duplication, anti-patterns, and missed optimizations.
+user-invokable: false
 ---
 
 # Simplify: Code Review and Cleanup
