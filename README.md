@@ -60,7 +60,7 @@ When you come back to an existing project:
 |---------|-------------|
 | `/resume-work` | Restore context and route to the right next action |
 | `/progress` | See where you are and what's next |
-| `/fh:tracker` | Launch the visual project dashboard (real-time web UI at localhost:3847) |
+| `/tracker` | Launch the visual project dashboard (real-time web UI at localhost:3847) |
 
 ### Design Quality
 
