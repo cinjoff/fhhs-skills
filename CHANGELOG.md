@@ -5,6 +5,11 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.1] - 2026-03-07
+
+### Fixed
+- **Setup re-linking** — `/fh:setup` now always re-links to the latest cached plugin version instead of short-circuiting when symlinks already exist, fixing "banner script not available" errors after upgrades
+
 ## [1.5.0] - 2026-03-07
 
 ### Added

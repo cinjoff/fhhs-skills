@@ -244,17 +244,9 @@ The project CLI (`gsd-tools.cjs`) is bundled with this plugin. Set up symlinks s
 
 **Important:** Run the entire detection, bin linking, and hooks linking in a **single Bash call** so `PLUGIN_ROOT` persists across all steps. The variable does not survive across separate Bash tool calls.
 
-### Check current state
+### Link to latest plugin version
 
-```bash
-if [ -L "$HOME/.claude/get-shit-done/bin" ] && [ -f "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" ]; then
-  echo "✓ ALREADY_CONFIGURED"
-else
-  echo "✗ NOT_CONFIGURED"
-fi
-```
-
-### If NOT_CONFIGURED (or to re-link)
+Always run the linking block below — `ln -sfn` is idempotent and will update stale symlinks pointing to older cached versions.
 
 Run this entire block as a **single** Bash command:
 
