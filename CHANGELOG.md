@@ -5,6 +5,15 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2026-03-07
+
+### Changed
+- **Prefix-free command invocation** — workflow skills now invokable without the `fh:` prefix: `/build`, `/fix`, `/verify`, `/quick`, `/refactor`, `/simplify`, `/research`, `/progress`, `/map-codebase`, `/add-todo`, `/check-todos`, `/verify-ui`
+- **Design skills use `ui:` prefix** — 17 impeccable-derived design commands now invoked as `/ui:polish`, `/ui:critique`, `/ui:audit`, `/ui:animate`, `/ui:bolder`, etc.
+- **Setup/maintenance commands keep `fh:` prefix** — `/fh:setup`, `/fh:update`, `/fh:settings`, `/fh:new-project`, `/fh:health`, `/fh:help`, `/fh:revise-claude-md` unchanged
+- **`/plan` renamed to `/plan-work`** — avoids conflict with Claude Code's native `/plan` command
+- **`/resume` renamed to `/resume-work`** — avoids conflict with Claude Code's native `/resume` command
+
 ## [1.6.1] - 2026-03-07
 
 ### Fixed
