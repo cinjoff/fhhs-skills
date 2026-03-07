@@ -10,26 +10,26 @@ A workflow plugin for [Claude Code](https://claude.com/claude-code) that brings 
 /plugin marketplace add cinjoff/fhhs-skills
 /plugin install fh@fhhs-skills
 /reload-plugins
-/setup
+/fh:setup
 ```
 
 Run `/reload-plugins` after installing so the new commands are available in your current session.
 
-Setup detects your platform (macOS, Linux, Windows) and walks you through installing dependencies: Node.js, GitHub CLI, TypeScript language server, and the TypeScript LSP plugin.
+Setup (`/fh:setup`) detects your platform (macOS, Linux, Windows) and walks you through installing dependencies: Node.js, GitHub CLI, TypeScript language server, and the TypeScript LSP plugin.
 
 ## Quick Start
 
 ```
-/new-project    set up a project with structure and tracking
-/plan           design a feature before building it
-/build          execute the plan with parallel workers and quality gates
-/verify         confirm everything works with real evidence
+/fh:new-project    set up a project with structure and tracking
+/plan-work         design a feature before building it
+/build             execute the plan with parallel workers and quality gates
+/verify            confirm everything works with real evidence
 ```
 
 When you come back to an existing project:
 
 ```
-/resume         restore context and pick up where you left off
+/resume-work    restore context and pick up where you left off
 /progress       see where you are and what's next
 ```
 
@@ -39,8 +39,8 @@ When you come back to an existing project:
 
 | Command | What it does |
 |---------|-------------|
-| `/new-project` | Set up a project with vision, tech stack, design language, and roadmap |
-| `/plan` | Brainstorm, research, and produce an execution-ready plan |
+| `/fh:new-project` | Set up a project with vision, tech stack, design language, and roadmap |
+| `/plan-work` | Brainstorm, research, and produce an execution-ready plan |
 | `/build` | Execute a plan with parallel subagents, TDD, design gates, and verification |
 | `/verify` | Goal-backward verification with truth tables and fresh evidence |
 | `/verify-ui` | Visual verification with browser screenshots |
@@ -58,7 +58,7 @@ When you come back to an existing project:
 
 | Command | What it does |
 |---------|-------------|
-| `/resume` | Restore context and route to the right next action |
+| `/resume-work` | Restore context and route to the right next action |
 | `/progress` | See where you are and what's next |
 
 ### Design Quality
@@ -99,19 +99,19 @@ When you come back to an existing project:
 | `/add-todo` | Capture an idea or task for later |
 | `/check-todos` | See pending todos and pick one |
 
-Phase management, milestone lifecycle, and test generation are handled automatically by `/plan`, `/build`, and `/verify`.
+Phase management, milestone lifecycle, and test generation are handled automatically by `/plan-work`, `/build`, and `/verify`.
 
 ### Setup & Maintenance
 
 | Command | What it does |
 |---------|-------------|
-| `/setup` | One-time setup after installing |
-| `/settings` | Configure workflow preferences |
-| `/health` | Check if your project files are in good shape |
+| `/fh:setup` | One-time setup after installing |
+| `/fh:settings` | Configure workflow preferences |
+| `/fh:health` | Check if your project files are in good shape |
 | `/map-codebase` | Analyze your codebase structure |
-| `/revise-claude-md` | Update CLAUDE.md with learnings from the session |
-| `/update` | Check for updates and install the latest version |
-| `/help` | Command reference and architecture guide |
+| `/fh:revise-claude-md` | Update CLAUDE.md with learnings from the session |
+| `/fh:update` | Check for updates and install the latest version |
+| `/fh:help` | Command reference and architecture guide |
 
 ## What's Under the Hood
 
@@ -146,7 +146,7 @@ All upstreams are forked and bundled. See [PATCHES.md](PATCHES.md) for modificat
 
 **Building a feature:**
 ```
-/plan  ->  /build  ->  /verify  ->  /verify-ui
+/plan-work  ->  /build  ->  /verify  ->  /verify-ui
 ```
 
 **Fixing a bug:**
@@ -161,13 +161,13 @@ All upstreams are forked and bundled. See [PATCHES.md](PATCHES.md) for modificat
 
 **Starting a new session:**
 ```
-/resume
+/resume-work
 ```
 
 ## Updating
 
 ```
-/update
+/fh:update
 ```
 
 ## License

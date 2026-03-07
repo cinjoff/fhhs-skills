@@ -240,6 +240,37 @@ The LSP plugin needs to be installed from the terminal:
 ──────────────────────────────────────────────────────────────
 ```
 
+### 3c: Enable LSP in Claude Code
+
+`CLAUDE_CODE_ENABLE_LSP` must be set in `~/.claude/settings.json` under the `env` key — this is how Claude Code picks up global env vars.
+
+Use the **Read tool** to load `~/.claude/settings.json`, then check if `env.CLAUDE_CODE_ENABLE_LSP` is already present.
+
+If not present, use the **Edit tool** to merge into settings.json:
+
+```json
+{
+  "env": {
+    "CLAUDE_CODE_ENABLE_LSP": "1"
+  }
+}
+```
+
+Merge carefully — do NOT overwrite other `env` keys that may already exist.
+
+After writing:
+
+```
+✓ CLAUDE_CODE_ENABLE_LSP=1 set in ~/.claude/settings.json
+  → Restart Claude Code for LSP to activate
+```
+
+If already present and set to `"1"`:
+
+```
+✓ CLAUDE_CODE_ENABLE_LSP already enabled
+```
+
 ---
 
 ## Step 4: CLI Tools and Hooks Setup
@@ -456,6 +487,7 @@ Then present the status table and next steps as regular markdown text:
 | Vercel CLI                 | ✓ {version} / ○ optional |
 | TypeScript LSP             | ✓ {version}              |
 | LSP Plugin                 | ✓ installed              |
+| LSP Enabled (env)          | ✓ CLAUDE_CODE_ENABLE_LSP=1 |
 | CLI Tools                  | ✓ linked                 |
 | Hooks                      | ✓ statusline + update check + context monitor |
 

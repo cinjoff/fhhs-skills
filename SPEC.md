@@ -13,14 +13,14 @@ The user installs one plugin and gets: planning, building, fixing, refactoring, 
 ```
 ┌─────────────────────────────────────────────────────┐
 │  Composite Commands (user-facing)                   │
-│  /plan  /build  /fix  /refactor  /verify  /resume   │
-│  /simplify  /research  /new-project  /verify-ui     │
+│  /plan-work  /build  /fix  /refactor  /verify  /resume-work │
+│  /simplify  /research  /fh:new-project  /verify-ui     │
 ├─────────────────────────────────────────────────────┤
 │  Design Commands (user-facing, also auto-invoked)   │
 │  /critique /polish /normalize /harden /animate ...  │
 ├─────────────────────────────────────────────────────┤
 │  GSD Structural Commands (user-facing)              │
-│  /add-phase /progress /health /cleanup /quick ...   │
+│  /add-phase /progress /fh:health /cleanup /quick ...   │
 ├─────────────────────────────────────────────────────┤
 │  Internal Skills (invoked by composites, not users) │
 │  brainstorming, TDD, systematic-debugging,          │
@@ -64,7 +64,7 @@ fhhs-skills/
 │   ├── skills-guide.md          # Full command reference
 │   ├── update.md                # Self-update
 │   ├── update-upstream.md       # Check upstream for changes
-│   ├── update-gsd.md            # Redirect to /update
+│   ├── update-gsd.md            # Redirect to /fh:update
 │   ├── critique.md              # Impeccable: design evaluation
 │   ├── polish.md                # Impeccable: alignment pass
 │   ├── normalize.md             # Impeccable: design system consistency
@@ -268,22 +268,22 @@ No auto-apply — the user decides what to merge.
 /plugin install fh@fhhs-skills
 
 # Run setup
-/setup
+/fh:setup
 ```
 
-### Setup Flow (`/setup`)
+### Setup Flow (`/fh:setup`)
 
 1. **Welcome** — overview of what the plugin provides
 2. **Platform detection + prerequisites** — detect macOS/Linux/Windows, check for Homebrew, Node.js, npm, gh, vercel, git. Install missing tools via Homebrew (macOS/Linux) or present Windows-specific installer links
 3. **TypeScript LSP** — auto-detect and install `typescript-language-server` (npm) + `typescript-lsp` Claude plugin
 4. **GSD symlink** — auto-detect and create `$HOME/.claude/get-shit-done/bin/` → plugin's `bin/`
-5. **Summary + next steps** — status report of all tools, route to `/new-project` or `/resume`
+5. **Summary + next steps** — status report of all tools, route to `/fh:new-project` or `/resume-work`
 
-Each step checks current state before acting (idempotent). Running `/setup` multiple times is safe.
+Each step checks current state before acting (idempotent). Running `/fh:setup` multiple times is safe.
 
 ### External Dependencies
 
-| Dependency | Required | Installed by `/setup` | Purpose |
+| Dependency | Required | Installed by `/fh:setup` | Purpose |
 |------------|----------|----------------------|---------|
 | Homebrew | No (macOS/Linux convenience) | Yes (offers install) | Package manager for other tools |
 | Node.js + npm | Yes | Yes (via brew / winget) | Runtime for GSD CLI and TypeScript LSP |
@@ -293,7 +293,7 @@ Each step checks current state before acting (idempotent). Running `/setup` mult
 | `typescript-lsp` Claude plugin | Recommended | Yes (via plugin install) | Claude Code LSP integration |
 | Git | Yes | Yes (via brew / winget) | Version control |
 
-On Windows, `/setup` provides `winget` commands and download links instead of Homebrew.
+On Windows, `/fh:setup` provides `winget` commands and download links instead of Homebrew.
 
 The plugin functions without TypeScript LSP but loses precise navigation features (goToDefinition, findReferences, call hierarchy, hover types). Composites that reference LSP degrade gracefully — they use grep/glob as fallback.
 
