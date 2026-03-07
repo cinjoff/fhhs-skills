@@ -116,7 +116,6 @@ When you come back to an existing project:
 |---------|-------------|
 | `/fh:revise-claude-md` | Update CLAUDE.md with learnings from the session |
 | `/fh:update` | Check for updates and install the latest version |
-| `/fh:update-upstream` | Check for upstream framework updates |
 | `/fh:skills-guide` | Show all commands and how they fit together |
 | `/fh:help` | Quick reference |
 
