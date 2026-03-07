@@ -2,7 +2,7 @@
 
 A workflow plugin for [Claude Code](https://claude.com/claude-code) that brings together engineering discipline, design quality, and project tracking into one install.
 
-55 commands. 29 internal skills. No other plugins required.
+53 commands. 29 internal skills. No other plugins required.
 
 ## Install
 
