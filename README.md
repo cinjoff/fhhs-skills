@@ -137,8 +137,15 @@ Behind the composite commands, 29 specialized skills handle the heavy lifting. Y
 - Frontend design with high visual quality
 - All the design commands listed above (critique, polish, normalize, etc.)
 
+**Feature development** (from [feature-dev](https://github.com/anthropics/claude-code-plugin-examples)):
+- Frontend design skill for distinctive, production-grade interfaces
+
 **CLAUDE.md management** (from [claude-md-management](https://github.com/anthropics/claude-code-plugin-examples)):
 - Audit and improve CLAUDE.md files
+
+**TypeScript LSP** (from [typescript-lsp](https://github.com/anthropics/claude-code-plugin-examples)):
+- Go-to-definition, find-references, hover, and incoming-calls via the TypeScript language server
+- Used by codebase mapping, systematic debugging, and plan execution for precise code navigation
 
 All upstreams are forked and bundled. See [PATCHES.md](PATCHES.md) for modifications.
 
