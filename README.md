@@ -1,79 +1,82 @@
 # fhhs-skills
 
-A workflow plugin for Claude Code that helps you plan, build, and ship software with built-in quality checks at every step.
+A workflow plugin for [Claude Code](https://claude.com/claude-code) that brings together engineering discipline, design quality, and project tracking into one install.
 
-It brings together engineering practices (test-first development, code review, verification), design quality tools (critique, polish, accessibility), and project tracking (phases, milestones, roadmaps) into one install.
+55 commands. 29 internal skills. No other plugins required.
 
-## Getting Started
-
-### Install the plugin
-
-In Claude Code:
+## Install
 
 ```
 /plugin marketplace add cinjoff/fhhs-skills
 /plugin install fh@fhhs-skills
-```
-
-### Run setup
-
-```
 /fh:setup
 ```
 
-Setup detects your platform (macOS, Linux, or Windows) and checks for required tools. On macOS/Linux it walks you through installing Homebrew, Node.js, GitHub CLI, and Vercel CLI. On Windows it provides the equivalent installer links. It then auto-installs the TypeScript language server, the TypeScript LSP Claude plugin, and sets up the bundled GSD CLI.
+Setup detects your platform (macOS, Linux, Windows) and walks you through installing dependencies: Node.js, GitHub CLI, TypeScript language server, and the TypeScript LSP plugin.
 
-### Start your first project
-
-```
-/fh:new-project
-```
-
-This walks you through setting up your project vision, tech stack, design language, and roadmap. Then:
+## Quick Start
 
 ```
-/fh:plan       — design your first feature
-/fh:build      — execute the plan
-/fh:verify     — confirm everything works
+/fh:new-project    set up a project with structure and tracking
+/fh:plan           design a feature before building it
+/fh:build          execute the plan with parallel workers and quality gates
+/fh:verify         confirm everything works with real evidence
 ```
 
-### Resuming work
-
-When you start a new session on an existing project:
+When you come back to an existing project:
 
 ```
 /fh:resume
 ```
 
-It reads your project state, shows where you left off, and suggests what to do next.
+## Commands
 
-## What You Get
-
-**Core workflow** — the commands you'll use most:
+### Core Workflow
 
 | Command | What it does |
 |---------|-------------|
-| `/fh:new-project` | Set up a new project with structure and tracking |
-| `/fh:plan` | Think through a feature before building it |
-| `/fh:build` | Execute a plan with parallel workers and quality gates |
-| `/fh:fix` | Find and fix bugs systematically |
-| `/fh:refactor` | Restructure code safely without breaking anything |
-| `/fh:verify` | Check that what you built actually works |
-| `/fh:resume` | Pick up where you left off in a new session |
+| `/fh:new-project` | Set up a project with vision, tech stack, design language, and roadmap |
+| `/fh:plan` | Brainstorm, research, and produce an execution-ready plan |
+| `/fh:build` | Execute a plan with parallel subagents, TDD, design gates, and verification |
+| `/fh:fix` | Auto-triage and fix bugs with systematic debugging |
+| `/fh:refactor` | Restructure code safely, tests green at every step |
+| `/fh:simplify` | Review code for reuse, quality, and efficiency |
+| `/fh:verify` | Goal-backward verification with truth tables and fresh evidence |
+| `/fh:verify-ui` | Visual verification with browser screenshots |
 | `/fh:research` | Investigate a topic before planning |
+| `/fh:resume` | Restore context and route to the right next action |
 
-**Design tools** — for making interfaces look and feel right:
+### Design Quality
 
 | Command | What it does |
 |---------|-------------|
-| `/fh:critique` | Get honest feedback on your UI design |
-| `/fh:polish` | Fix spacing, alignment, and consistency |
-| `/fh:normalize` | Make sure everything follows your design system |
-| `/fh:harden` | Handle errors, edge cases, and internationalization |
-| `/fh:animate` | Add purposeful motion and micro-interactions |
-| `/fh:verify-ui` | Take screenshots and compare against your design |
+| `/fh:critique` | Evaluate visual hierarchy, information architecture, and design quality |
+| `/fh:polish` | Fix alignment, spacing, consistency, and detail issues |
+| `/fh:normalize` | Match your design system and ensure consistency |
+| `/fh:harden` | Error handling, i18n, text overflow, edge cases |
+| `/fh:animate` | Purposeful motion and micro-interactions |
+| `/fh:audit` | Full accessibility, performance, theming, and responsive audit |
+| `/fh:teach-impeccable` | One-time setup for your project's design language |
 
-**Project management** — for tracking progress across phases:
+<details>
+<summary>More design commands</summary>
+
+| Command | What it does |
+|---------|-------------|
+| `/fh:adapt` | Make designs work across screen sizes and platforms |
+| `/fh:bolder` | Amplify safe designs to be more visually interesting |
+| `/fh:quieter` | Tone down overly aggressive designs |
+| `/fh:distill` | Strip away unnecessary complexity |
+| `/fh:clarify` | Improve confusing labels, errors, and microcopy |
+| `/fh:colorize` | Add strategic color to monochromatic interfaces |
+| `/fh:delight` | Add personality and moments of joy |
+| `/fh:extract` | Pull reusable components into your design system |
+| `/fh:onboard` | Design first-time user experiences and empty states |
+| `/fh:optimize` | Improve loading speed, rendering, and bundle size |
+
+</details>
+
+### Project Management
 
 | Command | What it does |
 |---------|-------------|
@@ -84,7 +87,7 @@ It reads your project state, shows where you left off, and suggests what to do n
 | `/fh:health` | Check if your project files are in good shape |
 
 <details>
-<summary>All project commands</summary>
+<summary>More project commands</summary>
 
 | Command | What it does |
 |---------|-------------|
@@ -104,42 +107,41 @@ It reads your project state, shows where you left off, and suggests what to do n
 | `/fh:list-phase-assumptions` | Surface assumptions before planning |
 | `/fh:audit-milestone` | Verify milestone completion |
 | `/fh:new-milestone` | Start a new milestone cycle |
-| `/fh:help` | Show available commands |
-| `/fh:update-upstream` | Check for updates to underlying frameworks |
 
 </details>
 
-<details>
-<summary>All design commands</summary>
+### Utilities
 
 | Command | What it does |
 |---------|-------------|
-| `/fh:teach-impeccable` | One-time setup for your project's design language |
-| `/fh:audit` | Full accessibility and performance audit |
-| `/fh:bolder` | Make a safe design more visually interesting |
-| `/fh:quieter` | Tone down an overly aggressive design |
-| `/fh:distill` | Strip away unnecessary complexity |
-| `/fh:clarify` | Improve confusing labels and error messages |
-| `/fh:colorize` | Add strategic color to monochromatic interfaces |
-| `/fh:delight` | Add personality and moments of joy |
-| `/fh:adapt` | Make designs work across screen sizes |
-| `/fh:extract` | Pull reusable components into your design system |
-| `/fh:onboard` | Design first-time user experiences |
-| `/fh:optimize` | Improve loading speed and rendering performance |
+| `/fh:revise-claude-md` | Update CLAUDE.md with learnings from the session |
+| `/fh:update` | Check for updates and install the latest version |
+| `/fh:update-upstream` | Check for upstream framework updates |
+| `/fh:skills-guide` | Show all commands and how they fit together |
+| `/fh:help` | Quick reference |
 
-</details>
+## What's Under the Hood
 
-## How It Works
+Behind the composite commands, 29 specialized skills handle the heavy lifting. You don't invoke these directly -- the commands orchestrate them for you.
 
-When you run `/fh:build`, here's what happens behind the scenes:
+**Engineering discipline** (from [Superpowers](https://github.com/obra/superpowers)):
+- Test-driven development, systematic debugging, verification-before-completion
+- Code review (requesting and receiving), writing plans, executing plans
+- Brainstorming, parallel agent dispatch, git worktree management
 
-1. **Workers execute tasks in parallel** — each gets a structured prompt with clear expectations, a self-review checklist, and guardrails to stay focused
-2. **After each wave, a reviewer checks the work** — a specialized agent reads the actual code and compares it to the spec, catching issues before the next wave builds on them
-3. **Design quality gates run automatically** on frontend work — critique, polish, and normalize passes keep your UI consistent
-4. **A final quality review** checks code quality, security, and cross-task consistency
-5. **Verification requires proof** — no "it should work," only "here's the test output showing it works"
+**Project orchestration** (from [GSD](https://github.com/gsd-build/get-shit-done)):
+- Phase planning, execution, and verification
+- Codebase mapping, research, roadmapping
+- Integration checking, test coverage auditing
 
-The other commands follow similar patterns: systematic investigation for `/fh:fix`, safe atomic steps for `/fh:refactor`, research-then-design for `/fh:plan`.
+**Design quality** (from [Impeccable](https://github.com/pbakaus/impeccable)):
+- Frontend design with high visual quality
+- All the design commands listed above (critique, polish, normalize, etc.)
+
+**CLAUDE.md management** (from [claude-md-management](https://github.com/anthropics/claude-code-plugin-examples)):
+- Audit and improve CLAUDE.md files
+
+All upstreams are forked and bundled. See [PATCHES.md](PATCHES.md) for modifications.
 
 ## Typical Workflows
 
@@ -153,22 +155,22 @@ The other commands follow similar patterns: systematic investigation for `/fh:fi
 /fh:fix
 ```
 
-**Refactoring code:**
+**Refactoring:**
 ```
-/fh:refactor
+/fh:refactor  ->  /fh:simplify
 ```
 
 **Starting a new session:**
 ```
-/fh:resume  ->  (routes you to the right next step)
+/fh:resume
 ```
 
-## Based On
+## Updating
 
-This plugin builds on three open-source projects:
+```
+/fh:update
+```
 
-- **[GSD](https://github.com/gsd-build/get-shit-done)** v1.22.4 — project state management
-- **[Superpowers](https://github.com/obra/superpowers)** v4.3.1 — engineering discipline skills
-- **[Impeccable](https://github.com/pbakaus/impeccable)** v1.2.0 — design quality tools
+## License
 
-All three are forked and bundled into this plugin. See [PATCHES.md](PATCHES.md) for modifications from upstream.
+MIT
