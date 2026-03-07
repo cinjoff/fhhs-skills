@@ -102,6 +102,15 @@ If the global symlink is missing (user hasn't run `/fh:setup`), create it first 
 
 Commit: `docs: initialize project planning with GSD structure`
 
+**Project Tracker:** Scaffold `.project-tracker/` for the visual dashboard.
+
+1. Find the fhhs-skills plugin directory by globbing for `**/templates/project-tracker/server.cjs` under `~/.claude/plugins/`.
+2. Read all 4 template files from `templates/project-tracker/` in the plugin directory (`server.cjs`, `parser.cjs`, `index.html`, `README.md`).
+3. Create `.project-tracker/` in the project root and write the 4 files into it.
+4. Add `.project-tracker/` to `.gitignore` (create the file if it doesn't exist, or append if the entry is missing).
+
+Mention the tracker in the Step 7 handoff output — the user can run `/fh:tracker` to launch the dashboard.
+
 ---
 
 ## Step 6: Infrastructure Setup
@@ -215,6 +224,7 @@ Project initialized:
 - .planning/STATE.md        — tracking state
 - .planning/config.json     — workflow settings
 - CLAUDE.md                 — project conventions
+- .project-tracker/         — visual dashboard (run /fh:tracker to launch)
 - GitHub repo               — <repo-url> (private)
 - Vercel project            — linked (auto-deploys on push to main)
 
