@@ -5,6 +5,11 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.2] - 2026-03-08
+
+### Fixed
+- **Build corruption** — `String.replace()` was interpreting `$&` in minified JS as a special pattern, corrupting the bundled output with syntax errors
+
 ## [1.11.1] - 2026-03-08
 
 ### Changed
