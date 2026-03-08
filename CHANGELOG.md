@@ -5,6 +5,17 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.0] - 2026-03-08
+
+### Changed
+- **Project Tracker redesign** — terminal-aesthetic UI with FHHS design language: JetBrains Mono, CRT scan lines, `//` section headers, text status icons (`✓ ▶ · ~`), fire-red active highlights, and acid-green progress glow
+- **Stats bar promoted to hero** — full-width progress bar with completion count as the dominant visual element
+- **Empty states** — sidebar sections now show helpful command hints (`/fh:add-todo`, `/fh:quick`) instead of hiding when empty
+- **Entrance animations** — staggered fade-in on milestone groups, blinking cursor on active subtask, pulsing connection dot
+
+### Removed
+- **Tailwind CSS dependency** — replaced with purpose-built CSS using FHHS color palette
+
 ## [1.9.0] - 2026-03-07
 
 ### Changed
