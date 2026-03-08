@@ -9,22 +9,22 @@ const ConcernsPanel = memo(function ConcernsPanel({ concerns, showToast }) {
 
   return (
     <section>
-      <div className="text-[0.8rem] text-dim mb-[0.35rem]" title="Issues found during audits. Review and fix these periodically to keep quality high."><span className="text-muted">{'//'}</span> concerns</div>
+      <div className="flex items-center gap-[1ch] text-[0.8rem] text-dim mb-[0.35rem]" title="Issues found during audits. Review and fix these periodically to keep quality high.">
+        <span className="flex-1"><span className="text-muted">{'//'}</span> concerns</span>
+        {totalCount > 0 ? (
+          <button
+            className="inline-block font-[inherit] text-[0.65rem] text-muted border border-dim bg-transparent px-2 py-[0.1rem] rounded-[3px] cursor-pointer transition-colors duration-150 whitespace-nowrap shrink-0 hover:text-green hover:border-green focus-visible:text-green focus-visible:border-green focus-visible:outline-1 focus-visible:outline-green focus-visible:outline-offset-1"
+            aria-label="Plan fixes for open concerns"
+            onClick={() => copyToClipboard('/plan-work review the open concerns, prioritize them, and plan fixes', showToast)}
+          >[fix these]</button>
+        ) : null}
+      </div>
       {concerns.categories.map((cat, i) => (
         <div className="flex items-center gap-[1ch] text-[0.8rem] py-[0.15rem]" key={cat.name || i}>
           <span className="text-subtle flex-1">{cat.name}</span>
           <span className="text-amber text-xs [font-variant-numeric:tabular-nums]">({cat.count})</span>
         </div>
       ))}
-      {totalCount > 0 ? (
-        <div className="mt-[0.35rem]">
-          <button
-            className="inline-block font-[inherit] text-[0.65rem] text-muted border border-dim bg-transparent px-2 py-[0.1rem] rounded-[3px] cursor-pointer transition-colors duration-150 whitespace-nowrap shrink-0 hover:text-green hover:border-green focus-visible:text-green focus-visible:border-green focus-visible:outline-1 focus-visible:outline-green focus-visible:outline-offset-1"
-            aria-label="Plan fixes for open concerns"
-            onClick={() => copyToClipboard('/plan-work review the open concerns, prioritize them, and plan fixes', showToast)}
-          >[fix these]</button>
-        </div>
-      ) : null}
     </section>
   );
 });
@@ -34,25 +34,29 @@ const CodebaseFreshness = memo(function CodebaseFreshness({ data, showToast }) {
   if (!cf || !cf.lastUpdated) return null;
 
   const days = daysBetween(cf.lastUpdated);
-  const isStale = cf.isStale || days > 7;
+  const isStale = cf.isStale || days > 5;
   const label = days === 0 ? 'Updated today' : days === 1 ? 'Updated 1d ago' : `Updated ${days}d ago`;
 
   return (
     <section>
-      <div className="text-[0.8rem] text-dim mb-[0.35rem]" title="A snapshot of your codebase structure. Update periodically so your tools have accurate context."><span className="text-muted">{'//'}</span> codebase</div>
+      <div className="flex items-center gap-[1ch] text-[0.8rem] text-dim mb-[0.35rem]" title="A snapshot of your codebase structure. Update periodically so your tools have accurate context.">
+        <span className="flex-1"><span className="text-muted">{'//'}</span> codebase</span>
+        {isStale ? (
+          <button
+            className="inline-block font-[inherit] text-[0.65rem] text-muted border border-dim bg-transparent px-2 py-[0.1rem] rounded-[3px] cursor-pointer transition-colors duration-150 whitespace-nowrap shrink-0 hover:text-green hover:border-green focus-visible:text-green focus-visible:border-green focus-visible:outline-1 focus-visible:outline-green focus-visible:outline-offset-1"
+            aria-label="Update codebase map"
+            onClick={() => copyToClipboard('/map-codebase', showToast)}
+          >[update]</button>
+        ) : null}
+      </div>
       <div className="text-[0.8rem] text-subtle py-[0.15rem]">
         <span className={isStale ? 'text-amber' : ''}>{label}</span>
-        <button
-          className="inline-block font-[inherit] text-[0.65rem] text-muted border border-dim bg-transparent px-2 py-[0.1rem] rounded-[3px] cursor-pointer ml-[0.5ch] transition-colors duration-150 whitespace-nowrap shrink-0 hover:text-green hover:border-green focus-visible:text-green focus-visible:border-green focus-visible:outline-1 focus-visible:outline-green focus-visible:outline-offset-1"
-          aria-label="Update codebase map"
-          onClick={() => copyToClipboard('/map-codebase', showToast)}
-        >[update]</button>
       </div>
     </section>
   );
 });
 
-function BacklogList({ data }) {
+function BacklogList({ data, showToast }) {
   const items = data.backlog || (data.todos?.pending) || [];
   const [expanded, setExpanded] = useState({});
 
@@ -69,7 +73,14 @@ function BacklogList({ data }) {
 
   return (
     <section>
-      <div className="text-[0.8rem] text-dim mb-[0.35rem]"><span className="text-muted">{'//'}</span> backlog <span>({items.length})</span></div>
+      <div className="flex items-center gap-[1ch] text-[0.8rem] text-dim mb-[0.35rem]">
+        <span className="flex-1"><span className="text-muted">{'//'}</span> backlog <span>({items.length})</span></span>
+        <button
+          className="inline-block font-[inherit] text-[0.65rem] text-muted border border-dim bg-transparent px-2 py-[0.1rem] rounded-[3px] cursor-pointer transition-colors duration-150 whitespace-nowrap shrink-0 hover:text-green hover:border-green focus-visible:text-green focus-visible:border-green focus-visible:outline-1 focus-visible:outline-green focus-visible:outline-offset-1"
+          aria-label="Plan open todos"
+          onClick={() => copyToClipboard('/plan-work review open todos and plan them according to priority in new phases', showToast)}
+        >[plan these]</button>
+      </div>
       {items.map((t, i) => {
         const problem = extractProblemSection(t.body);
         const hasBody = problem || t.area;
@@ -149,7 +160,7 @@ export function Sidebar({ data, showToast }) {
     <div className="flex flex-col gap-5">
       <ConcernsPanel concerns={data.concerns} showToast={showToast} />
       <CodebaseFreshness data={data} showToast={showToast} />
-      <BacklogList data={data} />
+      <BacklogList data={data} showToast={showToast} />
       <QuickTaskList data={data} />
     </div>
   );
