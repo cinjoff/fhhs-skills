@@ -221,18 +221,29 @@
     // -----------------------------------------------------------------------
     // Toast
     // -----------------------------------------------------------------------
-    let toastTimer = null;
-    function showToast(setToast, msg) {
-      setToast(msg);
-      if (toastTimer) clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => setToast(''), 1200);
+    function useToast() {
+      const [toast, setToast] = useState('');
+      const timerRef = useRef(null);
+
+      const show = useCallback((msg) => {
+        setToast(msg);
+        if (timerRef.current) clearTimeout(timerRef.current);
+        timerRef.current = setTimeout(() => setToast(''), 1200);
+      }, []);
+
+      // Clean up timer on unmount
+      useEffect(() => () => {
+        if (timerRef.current) clearTimeout(timerRef.current);
+      }, []);
+
+      return [toast, show];
     }
 
-    function copyToClipboard(text, setToast) {
+    function copyToClipboard(text, showToast) {
       navigator.clipboard.writeText(text).then(() => {
-        showToast(setToast, 'Copied!');
+        showToast('Copied!');
       }).catch(() => {
-        showToast(setToast, 'Copy failed');
+        showToast('Copy failed');
       });
     }
 
@@ -296,11 +307,11 @@
     function PlanList({ tasks }) {
       return html`
         <div class="ph-plans">
-          ${tasks.map(tk => {
+          ${tasks.map((tk, i) => {
             const tst = mapStatus(tk.status);
             const tic = tst === 'c' ? '\u2713' : (tst === 'a' ? '\u25B6' : '\u00B7');
             return html`
-              <div class="ph-plan">
+              <div class="ph-plan" key=${tk.name || i}>
                 <span class=${`ph-plan-i ${tst}`}>${tic}</span>
                 <span class="ph-plan-nm">${tk.name}</span>
                 ${tk.objective ? html`<span class="ph-plan-obj">${tk.objective}</span>` : null}
@@ -311,7 +322,7 @@
       `;
     }
 
-    function PhaseRow({ ph, setToast }) {
+    function PhaseRow({ ph, showToast }) {
       const st = mapStatus(ph.status);
       const ic = st === 'c' ? '\u2713' : (st === 'a' ? '\u25B6' : (st === 'd' ? '~' : '\u00B7'));
       const hasTasks = ph.tasks && ph.tasks.length > 0;
@@ -343,8 +354,8 @@
           <span class=${`ph-t ${st}`}>${ph.name}</span>
           ${st !== 'c' && st !== 'd' ? html`
             <span class="ph-tbd">tbd</span>
-            <button class="btn-action" onClick=${() => copyToClipboard(`/plan-work phase ${ph.number}: ${ph.name}`, setToast)}>[plan]</button>
-            <button class="btn-action" onClick=${() => copyToClipboard(`/build phase ${ph.number}: ${ph.name}`, setToast)}>[build]</button>
+            <button class="btn-action" aria-label=${"Plan phase " + ph.number} onClick=${() => copyToClipboard(`/plan-work phase ${ph.number}: ${ph.name}`, showToast)}>[plan]</button>
+            <button class="btn-action" aria-label=${"Build phase " + ph.number} onClick=${() => copyToClipboard(`/build phase ${ph.number}: ${ph.name}`, showToast)}>[build]</button>
           ` : null}
           ${st === 'a' ? html`<span class="ph-b a">active</span>` : null}
           ${st === 'd' ? html`<span class="ph-b d">deferred</span>` : null}
@@ -352,7 +363,7 @@
       `;
     }
 
-    function MilestoneGroup({ ms, setToast }) {
+    function MilestoneGroup({ ms, showToast }) {
       const t = ms.phases.length;
       const d = ms.phases.filter(p => mapStatus(p.status) === 'c').length;
       const allDone = d === t;
@@ -377,7 +388,7 @@
             <span class="mg-ct">${d}/${t}</span>
           </summary>
           <div class="mg-body">
-            ${ms.phases.map(ph => html`<${PhaseRow} ph=${ph} setToast=${setToast} key=${ph.number} />`)}
+            ${ms.phases.map(ph => html`<${PhaseRow} ph=${ph} showToast=${showToast} key=${ph.number} />`)}
           </div>
         </details>
       `;
@@ -447,8 +458,8 @@
       return html`
         <section>
           <div class="sh"><span class="c">//</span> concerns</div>
-          ${concerns.categories.map(cat => html`
-            <div class="cn-row">
+          ${concerns.categories.map((cat, i) => html`
+            <div class="cn-row" key=${cat.name || i}>
               <span class="cn-nm">${cat.name}</span>
               <span class="cn-ct">(${cat.count})</span>
             </div>
@@ -457,7 +468,7 @@
       `;
     }
 
-    function CodebaseFreshness({ data, setToast }) {
+    function CodebaseFreshness({ data, showToast }) {
       const cf = data.codebaseFreshness;
       if (!cf || !cf.lastUpdated) return null;
 
@@ -471,14 +482,14 @@
           <div class="cf">
             <span class=${isStale ? 'cf-stale' : ''}>${label}</span>
             ${isStale ? html`
-              <button class="btn-action" onClick=${() => copyToClipboard('/map-codebase', setToast)}>[update]</button>
+              <button class="btn-action" aria-label="Update codebase map" onClick=${() => copyToClipboard('/map-codebase', showToast)}>[update]</button>
             ` : null}
           </div>
         </section>
       `;
     }
 
-    function BacklogList({ data, setToast }) {
+    function BacklogList({ data, showToast }) {
       // Support both data.todos.pending (current parser) and data.backlog (spec shape)
       const items = data.backlog || (data.todos?.pending) || [];
       const [expanded, setExpanded] = useState({});
@@ -501,7 +512,13 @@
             const hasBody = t.body || t.area;
             return html`
               <div key=${i}>
-                <div class="td" onClick=${hasBody ? () => toggle(i) : undefined}>
+                <div class="td"
+                  onClick=${hasBody ? () => toggle(i) : undefined}
+                  onKeyDown=${hasBody ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(i); } } : undefined}
+                  role=${hasBody ? 'button' : undefined}
+                  tabindex=${hasBody ? '0' : undefined}
+                  aria-expanded=${hasBody ? String(!!expanded[i]) : undefined}
+                >
                   <span class="td-i">\u25CB</span>
                   <span class="td-t">${t.title}</span>
                   ${t.area && !t.body ? html`<span class="td-a">${t.area}</span>` : null}
@@ -540,7 +557,13 @@
             const hasBody = !!q.body;
             return html`
               <div key=${i}>
-                <div class="qt" onClick=${hasBody ? () => toggle(i) : undefined}>
+                <div class="qt"
+                  onClick=${hasBody ? () => toggle(i) : undefined}
+                  onKeyDown=${hasBody ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(i); } } : undefined}
+                  role=${hasBody ? 'button' : undefined}
+                  tabindex=${hasBody ? '0' : undefined}
+                  aria-expanded=${hasBody ? String(!!expanded[i]) : undefined}
+                >
                   <span class=${`qt-i ${qd ? 'done' : 'pen'}`}>${qd ? '\u2713' : '\u00B7'}</span>
                   <span class="qt-num">#${q.number}</span>
                   <span class=${`qt-t ${qd ? 'done' : 'pen'}`}>${q.title}</span>
@@ -586,14 +609,16 @@
     function App() {
       const [data, setData] = useState(null);
       const [connected, setConnected] = useState(false);
-      const [toast, setToast] = useState('');
+      const [toast, showToast] = useToast();
       const esRef = useRef(null);
       const rtRef = useRef(null);
+      const unmountedRef = useRef(false);
 
       const fetchState = useCallback(() => {
         fetch('/api/state')
           .then(r => r.json())
           .then(d => {
+            if (unmountedRef.current) return;
             setData(d);
             document.title = ((d.project && d.project.name) || 'Project') + ' \u2014 tracker';
           })
@@ -601,10 +626,12 @@
       }, []);
 
       const connectSSE = useCallback(() => {
+        if (unmountedRef.current) return;
         if (esRef.current) { esRef.current.close(); esRef.current = null; }
         const es = new EventSource('/api/events');
         esRef.current = es;
         es.onopen = () => {
+          if (unmountedRef.current) { es.close(); return; }
           setConnected(true);
           if (rtRef.current) { clearTimeout(rtRef.current); rtRef.current = null; }
         };
@@ -613,16 +640,18 @@
           setConnected(false);
           es.close();
           esRef.current = null;
-          if (!rtRef.current) {
+          if (!rtRef.current && !unmountedRef.current) {
             rtRef.current = setTimeout(() => { rtRef.current = null; connectSSE(); }, 2000);
           }
         };
       }, [fetchState]);
 
       useEffect(() => {
+        unmountedRef.current = false;
         fetchState();
         connectSSE();
         return () => {
+          unmountedRef.current = true;
           if (esRef.current) esRef.current.close();
           if (rtRef.current) clearTimeout(rtRef.current);
         };
@@ -640,7 +669,7 @@
           <${Stats} data=${data} />
           <div class="grid">
             <div class="ms-list">
-              ${milestones.map((ms, i) => html`<${MilestoneGroup} ms=${ms} setToast=${setToast} key=${ms.name + i} />`)}
+              ${milestones.map((ms, i) => html`<${MilestoneGroup} ms=${ms} showToast=${showToast} key=${ms.name + i} />`)}
             </div>
             <div class="side">
               <section>
@@ -648,8 +677,8 @@
                 <${WorkingOn} data=${data} />
               </section>
               <${ConcernsPanel} data=${data} />
-              <${CodebaseFreshness} data=${data} setToast=${setToast} />
-              <${BacklogList} data=${data} setToast=${setToast} />
+              <${CodebaseFreshness} data=${data} showToast=${showToast} />
+              <${BacklogList} data=${data} showToast=${showToast} />
               <${QuickTaskList} data=${data} />
               <${ActivityList} data=${data} />
             </div>
