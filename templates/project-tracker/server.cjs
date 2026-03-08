@@ -14,13 +14,13 @@ const parseRoadmap = parser.parseRoadmap || ((dir) => {
   const d = parser.parsePlanning(dir);
   return { milestone: d.milestone, phases: d.stages || [] };
 });
-const parseState = parser.parseState || ((dir) => {
+const parseState = parser.parseState || ((_dir) => {
   // Minimal state parse — parsePlanning doesn't expose raw state
   return { currentPhase: '', currentPlan: 1, status: 'active' };
 });
-const parsePhases = parser.parsePhases || ((dir, roadmapPhases, state) => {
+const parsePhases = parser.parsePhases || ((_dir, _roadmapPhases, _state) => {
   // When individual exports aren't available, fall back to full parse
-  const d = parser.parsePlanning(dir);
+  const d = parser.parsePlanning(_dir);
   return { phases: d.stages || [], completionEvents: [] };
 });
 const parseRetros = parser.parseRetros || ((dir) => {
@@ -225,6 +225,8 @@ function categorizeChanges(changedFiles) {
 // In-memory state cache (latest computed result)
 let cache = loadCache();
 let lastState = null;
+let lastCompletionEvents = []; // Stored separately to avoid heuristic reconstruction
+let lastRetros = [];
 
 /**
  * Build the full state, using tiered re-parsing based on changed files.
@@ -257,11 +259,22 @@ function buildState(changedFiles) {
 
   let cacheChanged = false;
 
-  // --- Always re-parse: STATE.md, pending todos, retros ---
-  // (These are cheap and change frequently, always re-parse them)
-  const state = parseState(planningDir);
-  const todos = parseTodos(planningDir);
-  const retros = parseRetros(planningDir);
+  // --- STATE.md, pending todos, retros: re-parse only when changed ---
+  const state = (needs.state || isFullParse)
+    ? parseState(planningDir)
+    : (lastState ? { currentPhase: lastState.stages?.find(s => s.status === 'active')?.number, lastActivity: lastState.lastActivity } : parseState(planningDir));
+
+  const todos = (needs.todos || isFullParse)
+    ? parseTodos(planningDir)
+    : (lastState ? lastState.todos : parseTodos(planningDir));
+
+  let retros;
+  if (needs.retros || isFullParse) {
+    retros = parseRetros(planningDir);
+    lastRetros = retros;
+  } else {
+    retros = lastRetros;
+  }
 
   // --- Re-parse if mtime changed: PROJECT.md ---
   let project;
@@ -324,9 +337,12 @@ function buildState(changedFiles) {
   }
 
   // --- Phases: cache completed, re-parse only changed ---
-  const { phases: stages, completionEvents } = buildPhases(
+  const phaseResult = buildPhases(
     planningDir, roadmapData, state, needs, isFullParse
   );
+  const stages = phaseResult.phases;
+  const completionEvents = phaseResult.completionEvents;
+  lastCompletionEvents = completionEvents;
 
   // Quick tasks
   let quickTasks;
@@ -399,11 +415,7 @@ function buildPhases(planningDir, roadmapData, state, needs, isFullParse) {
   // No phase files changed — reuse last state's phases
   if (needs.changedPhaseDirs.size === 0 && lastState) {
     console.log('  [cache] Phases unchanged, using cached data');
-    // Reconstruct completionEvents from lastState's recentActivity
-    // (completion events are those that aren't retro entries)
-    const completionEvents = (lastState.recentActivity || [])
-      .filter(a => a.text && !a.text.includes('retrospective'));
-    return { phases: lastState.stages || [], completionEvents };
+    return { phases: lastState.stages || [], completionEvents: lastCompletionEvents };
   }
 
   // Some phases changed — do a full re-parse but cache the results
