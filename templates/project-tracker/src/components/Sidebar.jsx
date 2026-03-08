@@ -1,6 +1,6 @@
 import { useState } from 'preact/hooks';
 import { memo } from 'preact/compat';
-import { relativeTime, daysBetween, mapStatus, extractProblemSection, extractFirstParagraph, copyToClipboard } from '../lib/utils.js';
+import { relativeTime, daysBetween, extractProblemSection, extractFirstParagraph, copyToClipboard } from '../lib/utils.js';
 
 const ConcernsPanel = memo(function ConcernsPanel({ concerns }) {
   if (!concerns || !concerns.categories || concerns.categories.length === 0) return null;
@@ -43,7 +43,7 @@ const CodebaseFreshness = memo(function CodebaseFreshness({ data, showToast }) {
   );
 });
 
-function BacklogList({ data, showToast }) {
+function BacklogList({ data }) {
   const items = data.backlog || (data.todos?.pending) || [];
   const [expanded, setExpanded] = useState({});
 
@@ -165,7 +165,7 @@ export function Sidebar({ data, showToast }) {
     <div className="flex flex-col gap-5">
       <ConcernsPanel concerns={data.concerns} />
       <CodebaseFreshness data={data} showToast={showToast} />
-      <BacklogList data={data} showToast={showToast} />
+      <BacklogList data={data} />
       <QuickTaskList data={data} />
       <ActivityList data={data} />
     </div>
