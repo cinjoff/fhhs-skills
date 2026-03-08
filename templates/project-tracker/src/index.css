@@ -1,0 +1,98 @@
+@import "tailwindcss";
+
+@source "./components/**/*.jsx";
+@source "./app.jsx";
+
+@theme {
+  --color-bg: #0a0a0a;
+  --color-surface: #131313;
+  --color-border: #222222;
+  --color-dim: #3a3a3a;
+  --color-muted: #808080;
+  --color-subtle: #a0a0a0;
+  --color-text: #cccccc;
+  --color-bright: #e8e8e8;
+  --color-fire: #ff2d00;
+  --color-orange: #ff6b00;
+  --color-green: #00ff41;
+  --color-amber: #ffb300;
+  --font-family-mono: 'JetBrains Mono', 'Courier New', monospace;
+}
+
+/* Reset */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Base */
+html {
+  font-size: 15px;
+  scrollbar-color: var(--color-dim) transparent;
+}
+
+body {
+  font-family: var(--font-family-mono);
+  background: var(--color-bg);
+  color: var(--color-text);
+  min-height: 100vh;
+  line-height: 1.6;
+}
+
+/* Details marker reset */
+details summary::-webkit-details-marker {
+  display: none;
+}
+
+details summary {
+  list-style: none;
+}
+
+/* Arrow rotation */
+details[open] .arrow {
+  transform: rotate(90deg);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-dim);
+}
+
+/* Animations */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes cFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes bl {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
