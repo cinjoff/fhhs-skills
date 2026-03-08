@@ -1,19 +1,30 @@
 import { useState } from 'preact/hooks';
 import { memo } from 'preact/compat';
-import { relativeTime, daysBetween, extractProblemSection, extractFirstParagraph, copyToClipboard } from '../lib/utils.js';
+import { daysBetween, extractProblemSection, extractFirstParagraph, copyToClipboard } from '../lib/utils.js';
 
-const ConcernsPanel = memo(function ConcernsPanel({ concerns }) {
+const ConcernsPanel = memo(function ConcernsPanel({ concerns, showToast }) {
   if (!concerns || !concerns.categories || concerns.categories.length === 0) return null;
+
+  const totalCount = concerns.categories.reduce((sum, cat) => sum + (cat.count || 0), 0);
 
   return (
     <section>
-      <div className="text-[0.8rem] text-dim mb-[0.35rem]"><span className="text-muted">{'//'}</span> concerns</div>
+      <div className="text-[0.8rem] text-dim mb-[0.35rem]" title="Issues found during audits. Review and fix these periodically to keep quality high."><span className="text-muted">{'//'}</span> concerns</div>
       {concerns.categories.map((cat, i) => (
         <div className="flex items-center gap-[1ch] text-[0.8rem] py-[0.15rem]" key={cat.name || i}>
           <span className="text-subtle flex-1">{cat.name}</span>
           <span className="text-amber text-xs [font-variant-numeric:tabular-nums]">({cat.count})</span>
         </div>
       ))}
+      {totalCount > 0 ? (
+        <div className="mt-[0.35rem]">
+          <button
+            className="inline-block font-[inherit] text-[0.65rem] text-muted border border-dim bg-transparent px-2 py-[0.1rem] rounded-[3px] cursor-pointer transition-colors duration-150 whitespace-nowrap shrink-0 hover:text-green hover:border-green focus-visible:text-green focus-visible:border-green focus-visible:outline-1 focus-visible:outline-green focus-visible:outline-offset-1"
+            aria-label="Plan fixes for open concerns"
+            onClick={() => copyToClipboard('/plan-work review the open concerns, prioritize them, and plan fixes', showToast)}
+          >[fix these]</button>
+        </div>
+      ) : null}
     </section>
   );
 });
@@ -28,16 +39,14 @@ const CodebaseFreshness = memo(function CodebaseFreshness({ data, showToast }) {
 
   return (
     <section>
-      <div className="text-[0.8rem] text-dim mb-[0.35rem]"><span className="text-muted">{'//'}</span> codebase</div>
+      <div className="text-[0.8rem] text-dim mb-[0.35rem]" title="A snapshot of your codebase structure. Update periodically so your tools have accurate context."><span className="text-muted">{'//'}</span> codebase</div>
       <div className="text-[0.8rem] text-subtle py-[0.15rem]">
         <span className={isStale ? 'text-amber' : ''}>{label}</span>
-        {isStale ? (
-          <button
-            className="inline-block font-[inherit] text-[0.65rem] text-muted border border-dim bg-transparent px-2 py-[0.1rem] rounded-[3px] cursor-pointer ml-[0.5ch] transition-colors duration-150 whitespace-nowrap shrink-0 hover:text-green hover:border-green focus-visible:text-green focus-visible:border-green focus-visible:outline-1 focus-visible:outline-green focus-visible:outline-offset-1"
-            aria-label="Update codebase map"
-            onClick={() => copyToClipboard('/map-codebase', showToast)}
-          >[update]</button>
-        ) : null}
+        <button
+          className="inline-block font-[inherit] text-[0.65rem] text-muted border border-dim bg-transparent px-2 py-[0.1rem] rounded-[3px] cursor-pointer ml-[0.5ch] transition-colors duration-150 whitespace-nowrap shrink-0 hover:text-green hover:border-green focus-visible:text-green focus-visible:border-green focus-visible:outline-1 focus-visible:outline-green focus-visible:outline-offset-1"
+          aria-label="Update codebase map"
+          onClick={() => copyToClipboard('/map-codebase', showToast)}
+        >[update]</button>
       </div>
     </section>
   );
@@ -135,39 +144,13 @@ function QuickTaskList({ data }) {
   );
 }
 
-const ActivityList = memo(function ActivityList({ data }) {
-  const updates = data.recentActivity || data.activity || [];
-
-  if (updates.length === 0) {
-    return (
-      <section>
-        <div className="text-[0.8rem] text-dim mb-[0.35rem]"><span className="text-muted">{'//'}</span> activity</div>
-        <div className="text-[0.8rem] text-dim py-[0.15rem] italic">no recent activity</div>
-      </section>
-    );
-  }
-
-  return (
-    <section>
-      <div className="text-[0.8rem] text-dim mb-[0.35rem]"><span className="text-muted">{'//'}</span> activity</div>
-      {updates.slice(0, 6).map((u, i) => (
-        <div className="flex gap-[1.5ch] text-[0.8rem] py-[0.12rem]" key={i}>
-          <span className="text-dim [font-variant-numeric:tabular-nums] whitespace-nowrap min-w-[5.5ch]">{relativeTime(u.time || u.date)}</span>
-          <span className="text-subtle">{u.text}</span>
-        </div>
-      ))}
-    </section>
-  );
-});
-
 export function Sidebar({ data, showToast }) {
   return (
     <div className="flex flex-col gap-5">
-      <ConcernsPanel concerns={data.concerns} />
+      <ConcernsPanel concerns={data.concerns} showToast={showToast} />
       <CodebaseFreshness data={data} showToast={showToast} />
       <BacklogList data={data} />
       <QuickTaskList data={data} />
-      <ActivityList data={data} />
     </div>
   );
 }

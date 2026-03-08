@@ -19,13 +19,6 @@
   --font-family-mono: 'JetBrains Mono', 'Courier New', monospace;
 }
 
-/* Reset */
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
 /* Base */
 html {
   font-size: 15px;
