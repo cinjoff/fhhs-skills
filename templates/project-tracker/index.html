@@ -97,14 +97,12 @@
     details.ph-exp summary::-webkit-details-marker{display:none}
     .ph-exp-arr{color:var(--muted);font-size:0.6rem;width:1ch;text-align:center;display:inline-block;transition:transform .15s ease-out;flex-shrink:0}
     details.ph-exp[open] .ph-exp-arr{transform:rotate(90deg)}
-    .ph-plans{padding:0.15rem 0 0.25rem 7ch}
-    .ph-plan{display:flex;align-items:baseline;gap:0.75ch;padding:0.1rem 0;font-size:0.8rem}
+    .ph-plans{padding:0.15rem 0 0.25rem 6ch}
+    .ph-plan{display:flex;align-items:baseline;gap:0.75ch;padding:0.1rem 0;font-size:0.8rem;overflow:hidden;min-width:0}
     .ph-plan-i{width:1.2ch;text-align:center;flex-shrink:0;font-size:0.75rem}
     .ph-plan-i.c{color:var(--green)}.ph-plan-i.a{color:var(--fire)}.ph-plan-i.n{color:var(--dim)}
-    .ph-plan-nm{color:var(--text)}
+    .ph-plan-nm{color:var(--text);white-space:nowrap;flex-shrink:0}
     .ph-plan-obj{font-size:0.7rem;color:var(--muted);margin-left:0.5ch;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
-    .ph-plan-obj.expanded{white-space:normal;overflow:visible;text-overflow:unset}
-    .ph-plan-exp{flex-wrap:wrap}
 
     /* Sidebar */
     .side{display:flex;flex-direction:column;gap:1.25rem}
@@ -333,23 +331,16 @@
     }
 
     function PlanList({ tasks }) {
-      const [expanded, setExpanded] = useState({});
-      const toggle = (i) => setExpanded(prev => ({ ...prev, [i]: !prev[i] }));
-
       return html`
         <div class="ph-plans">
           ${tasks.map((tk, i) => {
             const tst = mapStatus(tk.status);
             const tic = tst === 'c' ? '\u2713' : (tst === 'a' ? '\u25B6' : '\u00B7');
-            const isExp = expanded[i];
             return html`
-              <div class=${`ph-plan${isExp ? ' ph-plan-exp' : ''}`} key=${tk.name || i}
-                onClick=${tk.objective ? () => toggle(i) : undefined}
-                style=${tk.objective ? 'cursor:pointer' : ''}
-              >
+              <div class="ph-plan" key=${tk.name || i}>
                 <span class=${`ph-plan-i ${tst}`}>${tic}</span>
                 <span class="ph-plan-nm">${tk.name}</span>
-                ${tk.objective ? html`<span class=${`ph-plan-obj${isExp ? ' expanded' : ''}`}>${tk.objective}</span>` : null}
+                ${tk.objective ? html`<span class="ph-plan-obj">${tk.objective}</span>` : null}
               </div>
             `;
           })}
