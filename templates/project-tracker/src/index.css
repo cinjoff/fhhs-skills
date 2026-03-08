@@ -88,6 +88,10 @@ details[open] .arrow {
   50% { opacity: 0; }
 }
 
+.blink {
+  animation: bl 1s step-end infinite;
+}
+
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
