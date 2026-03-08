@@ -33,8 +33,8 @@ function assemble() {
   const css = readFileSync('.build/styles.css', 'utf8');
   const js = readFileSync('.build/app.js', 'utf8');
   const out = template
-    .replace('/*__CSS__*/', css)
-    .replace('/*__JS__*/', js);
+    .replace('/*__CSS__*/', () => css)
+    .replace('/*__JS__*/', () => js);
   writeFileSync('index.html', out);
 }
 
