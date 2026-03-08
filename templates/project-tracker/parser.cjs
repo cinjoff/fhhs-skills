@@ -36,6 +36,25 @@ function parseFrontmatter(content) {
 }
 
 /**
+ * Extract body content from a markdown file (everything after frontmatter closing ---).
+ * If no frontmatter, returns the entire content trimmed.
+ */
+function extractBody(content) {
+  const fmMatch = content.match(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/);
+  if (fmMatch) {
+    return content.slice(fmMatch[0].length).trim();
+  }
+  return content.trim();
+}
+
+/**
+ * Strip XML tags from content, returning plain text.
+ */
+function stripXml(content) {
+  return content.replace(/<[^>]+>/g, '').trim();
+}
+
+/**
  * Map technical status terms to product-friendly language.
  */
 function mapStatus(raw) {
@@ -91,6 +110,9 @@ function parseProject(planningDir) {
  * - Milestones as bullet list under ## Milestones
  * - Progress table: | Phase | Milestone | Plans Complete | Status | Completed |
  *   where Phase column is "1. Foundation" style
+ *
+ * Each phase gets a milestoneName field when a Milestone column exists in the
+ * progress table, or when milestone ranges can be inferred from the bullet list.
  */
 function parseRoadmap(planningDir) {
   const content = safeRead(path.join(planningDir, 'ROADMAP.md'));
@@ -99,9 +121,12 @@ function parseRoadmap(planningDir) {
   const fm = parseFrontmatter(content);
   let milestoneName = fm.milestone || '';
 
-  // If no frontmatter milestone, find the current/latest milestone from bullet list
+  // Parse milestone bullet list: "- emoji **Name** - Phases X-Y (status)"
+  // Build a map of milestone name → phase range for later assignment
+  const milestoneRanges = []; // { name, startPhase, endPhase }
+  const lines = content.split('\n');
+
   if (!milestoneName) {
-    const lines = content.split('\n');
     let lastPlanned = '';
     for (const line of lines) {
       const trimmed = line.trim();
@@ -110,6 +135,15 @@ function parseRoadmap(planningDir) {
         const name = milestoneMatch[1];
         if (/planned|in.?progress/i.test(trimmed)) {
           lastPlanned = name;
+        }
+        // Extract phase range: "Phases X-Y" or "Phase X"
+        const rangeMatch = trimmed.match(/Phases?\s+(\d+)\s*-\s*(\d+)/i);
+        if (rangeMatch) {
+          milestoneRanges.push({
+            name,
+            startPhase: parseInt(rangeMatch[1], 10),
+            endPhase: parseInt(rangeMatch[2], 10),
+          });
         }
       }
     }
@@ -120,7 +154,6 @@ function parseRoadmap(planningDir) {
 
   // Parse progress table — detect column layout from header
   const phases = [];
-  const lines = content.split('\n');
   let inTable = false;
   let headerCols = [];
 
@@ -166,12 +199,32 @@ function parseRoadmap(planningDir) {
     const milestoneIdx = headerCols.indexOf('milestone');
     const goal = goalIdx >= 0 ? (cells[goalIdx] || '') : (milestoneIdx >= 0 ? (cells[milestoneIdx] || '') : '');
 
-    phases.push({
+    // Milestone name: from the Milestone column in the progress table, or from range mapping
+    let phaseMilestoneName = '';
+    if (milestoneIdx >= 0) {
+      phaseMilestoneName = cells[milestoneIdx] || '';
+    } else {
+      // Try to match from milestone ranges parsed from bullet list
+      for (const mr of milestoneRanges) {
+        if (number >= mr.startPhase && number <= mr.endPhase) {
+          phaseMilestoneName = mr.name;
+          break;
+        }
+      }
+    }
+
+    const phase = {
       number,
       name,
       goal,
       status: mapStatus(statusRaw),
-    });
+    };
+
+    if (phaseMilestoneName) {
+      phase.milestoneName = phaseMilestoneName;
+    }
+
+    phases.push(phase);
   }
 
   return { milestone, phases };
@@ -179,17 +232,36 @@ function parseRoadmap(planningDir) {
 
 /**
  * Parse STATE.md - supports both YAML frontmatter and GSD plain-markdown format.
+ * Extracts lastActivity { date, description } from "Last activity:" line.
  */
 function parseState(planningDir) {
   const content = safeRead(path.join(planningDir, 'STATE.md'));
-  if (!content) return { currentPhase: '', currentPlan: 1, status: 'active' };
+  if (!content) return { currentPhase: '', currentPlan: 1, status: 'active', lastActivity: null };
 
   const fm = parseFrontmatter(content);
+
+  let lastActivity = null;
+
+  // Parse Last activity line regardless of frontmatter/markdown mode
+  // Format: "Last activity: YYYY-MM-DD — description" or "Last activity: [YYYY-MM-DD] — [description]"
+  const lines = content.split('\n');
+  for (const line of lines) {
+    const trimmed = line.trim();
+    const activityMatch = trimmed.match(/^Last activity:\s*\[?(\d{4}-\d{2}-\d{2})\]?\s*[—–-]+\s*\[?(.+?)\]?\s*$/i);
+    if (activityMatch) {
+      lastActivity = {
+        date: activityMatch[1],
+        description: activityMatch[2].trim(),
+      };
+    }
+  }
+
   if (fm.current_phase) {
     return {
       currentPhase: fm.current_phase,
       currentPlan: parseInt(fm.current_plan, 10) || 1,
       status: mapStatus(fm.status),
+      lastActivity,
     };
   }
 
@@ -198,7 +270,6 @@ function parseState(planningDir) {
   let currentPlan = 1;
   let status = 'active';
 
-  const lines = content.split('\n');
   for (const line of lines) {
     const trimmed = line.trim();
 
@@ -224,7 +295,7 @@ function parseState(planningDir) {
     }
   }
 
-  return { currentPhase, currentPlan, status };
+  return { currentPhase, currentPlan, status, lastActivity };
 }
 
 /**
@@ -427,6 +498,7 @@ function parseRetros(planningDir) {
 
 /**
  * Parse todos/pending/ and todos/done/ directories.
+ * Returns body field — everything after frontmatter --- closing, trimmed.
  */
 function parseTodos(planningDir) {
   const todosDir = path.join(planningDir, 'todos');
@@ -439,10 +511,12 @@ function parseTodos(planningDir) {
       for (const file of files) {
         const content = safeRead(path.join(pendingDir, file));
         const fm = parseFrontmatter(content);
+        const body = extractBody(content);
         pending.push({
           title: fm.title || file.replace(/^\d{4}-\d{2}-\d{2}-/, '').replace(/\.md$/, '').replace(/-/g, ' '),
           created: fm.created || '',
           area: fm.area || '',
+          body,
         });
       }
     } catch { /* ignore */ }
@@ -453,6 +527,7 @@ function parseTodos(planningDir) {
 
 /**
  * Parse quick/ directory for quick tasks.
+ * Returns body field from plan file content (stripped of frontmatter/XML).
  */
 function parseQuickTasks(planningDir) {
   const quickDir = path.join(planningDir, 'quick');
@@ -483,6 +558,7 @@ function parseQuickTasks(planningDir) {
 
     let title = dir.replace(/^\d+-/, '').replace(/-/g, ' ');
     let status = 'pending';
+    let body = '';
 
     if (planFile) {
       const content = safeRead(path.join(fullDir, planFile));
@@ -490,6 +566,9 @@ function parseQuickTasks(planningDir) {
       if (headingMatch) {
         title = headingMatch[1].trim();
       }
+      // Extract body: strip frontmatter then strip XML tags
+      const rawBody = extractBody(content);
+      body = stripXml(rawBody);
     }
 
     if (summaryFile) {
@@ -499,10 +578,94 @@ function parseQuickTasks(planningDir) {
     const numMatch = dir.match(/^(\d+)/);
     const number = numMatch ? parseInt(numMatch[1], 10) : tasks.length + 1;
 
-    tasks.push({ number, title, status });
+    tasks.push({ number, title, status, body });
   }
 
   return tasks;
+}
+
+/**
+ * Parse .planning/codebase/CONCERNS.md.
+ * Extract each ## Section heading, count items under each (lines starting with **[).
+ * Returns { categories: [{ name, count }], totalCount }.
+ * Empty object with empty categories and 0 totalCount if file missing.
+ */
+function parseConcerns(planningDir) {
+  const content = safeRead(path.join(planningDir, 'codebase', 'CONCERNS.md'));
+  if (!content) return { categories: [], totalCount: 0 };
+
+  const lines = content.split('\n');
+  const categories = [];
+  let currentCategory = null;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    // Match ## heading (but not # top-level heading)
+    const headingMatch = trimmed.match(/^##\s+(.+)$/);
+    if (headingMatch) {
+      // Save previous category if it exists
+      if (currentCategory) {
+        categories.push(currentCategory);
+      }
+      currentCategory = { name: headingMatch[1].trim(), count: 0 };
+      continue;
+    }
+
+    // Count items starting with **[ under current category
+    if (currentCategory && /^\*\*\[/.test(trimmed)) {
+      currentCategory.count++;
+    }
+  }
+
+  // Don't forget the last category
+  if (currentCategory) {
+    categories.push(currentCategory);
+  }
+
+  const totalCount = categories.reduce((sum, cat) => sum + cat.count, 0);
+
+  return { categories, totalCount };
+}
+
+/**
+ * Scan .planning/codebase/ directory. For each .md file, get stat mtimeMs.
+ * Returns { lastUpdated: ISO string of newest mtime, isStale: boolean (>7 days from now) }.
+ * Returns null if directory missing.
+ */
+function parseCodebaseFreshness(planningDir) {
+  const codebaseDir = path.join(planningDir, 'codebase');
+  if (!fs.existsSync(codebaseDir)) return null;
+
+  let files;
+  try {
+    files = fs.readdirSync(codebaseDir).filter(f => f.endsWith('.md'));
+  } catch {
+    return null;
+  }
+
+  if (files.length === 0) return null;
+
+  let newestMtime = 0;
+
+  for (const file of files) {
+    try {
+      const stat = fs.statSync(path.join(codebaseDir, file));
+      if (stat.mtimeMs > newestMtime) {
+        newestMtime = stat.mtimeMs;
+      }
+    } catch {
+      // skip unreadable files
+    }
+  }
+
+  if (newestMtime === 0) return null;
+
+  const lastUpdated = new Date(newestMtime).toISOString();
+  const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+  const isStale = (Date.now() - newestMtime) > sevenDaysMs;
+
+  return { lastUpdated, isStale };
 }
 
 /**
@@ -521,6 +684,8 @@ function parsePlanning(planningDir) {
 
   const todos = parseTodos(planningDir);
   const quickTasks = parseQuickTasks(planningDir);
+  const concerns = parseConcerns(planningDir);
+  const codebaseFreshness = parseCodebaseFreshness(planningDir);
 
   return {
     project,
@@ -529,7 +694,28 @@ function parsePlanning(planningDir) {
     recentActivity,
     todos,
     quickTasks,
+    concerns,
+    codebaseFreshness,
+    lastActivity: state.lastActivity,
   };
 }
 
-module.exports = { parsePlanning };
+module.exports = {
+  parsePlanning,
+  parseProject,
+  parseRoadmap,
+  parseState,
+  parsePhases,
+  parseRetros,
+  parseTodos,
+  parseQuickTasks,
+  parseConcerns,
+  parseCodebaseFreshness,
+  parsePlanFile,
+  parseSummaryFile,
+  parseFrontmatter,
+  mapStatus,
+  extractObjective,
+  extractBody,
+  stripXml,
+};
