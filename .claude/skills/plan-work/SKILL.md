@@ -191,8 +191,8 @@ Before presenting the plan to the user, run this verification checklist. If any 
 **GSD mode — run structural validation first:**
 
 ```bash
-node ./.claude/get-shit-done/bin/gsd-tools.cjs verify plan-structure "${PLAN_PATH}"
-node ./.claude/get-shit-done/bin/gsd-tools.cjs frontmatter validate "${PLAN_PATH}" --schema plan
+node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs verify plan-structure "${PLAN_PATH}"
+node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs frontmatter validate "${PLAN_PATH}" --schema plan
 ```
 
 These catch schema issues (missing frontmatter fields, malformed tasks) automatically. Then run the semantic checks below.

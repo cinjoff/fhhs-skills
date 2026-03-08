@@ -28,7 +28,7 @@ Load plan, review critically, execute tasks in batches, report for review betwee
    - Read `.planning/ROADMAP.md` for phase goals and requirements
    - Plans live in `.planning/phases/XX-name/XX-NN-PLAN.md` — look there first
    - If `.planning/phases/{phase}/{phase}-CONTEXT.md` exists, honor locked decisions
-   - After completion (Step 5), update STATE.md: `node ./.claude/get-shit-done/bin/gsd-tools.cjs state record-session --stopped-at "Completed {phase}-{plan}"`
+   - After completion (Step 5), update STATE.md: `node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs state record-session --stopped-at "Completed {phase}-{plan}"`
 3. **If no GSD:** Plans live in `docs/plans/` — use original paths
 
 ## The Process

@@ -54,7 +54,7 @@ Record start time and check auto-mode:
 ```bash
 PLAN_START_EPOCH=$(date +%s)
 WAVE_START_SHA=$(git rev-parse HEAD)
-AUTO_MODE=$(node ./.claude/get-shit-done/bin/gsd-tools.cjs config-get workflow.auto_advance 2>/dev/null || echo "false")
+AUTO_MODE=$(node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs config-get workflow.auto_advance 2>/dev/null || echo "false")
 ```
 
 ---
@@ -238,7 +238,7 @@ After SUMMARY.md is committed, read `references/gsd-state-updates.md` (co-locate
 **GSD mode — use gsd-tools for completeness check:**
 
 ```bash
-node ./.claude/get-shit-done/bin/gsd-tools.cjs verify phase-completeness "${PHASE_NUM}"
+node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs verify phase-completeness "${PHASE_NUM}"
 ```
 
 **If NOT all plans complete:** Report "Plan X of Y complete, Z remaining." Continue to Step 8.
@@ -250,8 +250,8 @@ node ./.claude/get-shit-done/bin/gsd-tools.cjs verify phase-completeness "${PHAS
 **GSD mode — use gsd-tools verification suite:**
 
 ```bash
-node ./.claude/get-shit-done/bin/gsd-tools.cjs verify artifacts "${PLAN_PATH}"
-node ./.claude/get-shit-done/bin/gsd-tools.cjs verify key-links "${PLAN_PATH}"
+node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs verify artifacts "${PLAN_PATH}"
+node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs verify key-links "${PLAN_PATH}"
 ```
 
 Then manually verify:

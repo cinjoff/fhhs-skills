@@ -95,7 +95,7 @@ mkdir -p .claude/get-shit-done
 ln -sfn "$HOME/.claude/get-shit-done/bin" .claude/get-shit-done/bin
 
 # Initialize project
-node ./.claude/get-shit-done/bin/gsd-tools.cjs init new-project
+node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs init new-project
 ```
 
 If the global symlink is missing (user hasn't run `/fh:setup`), create it first — see `/fh:setup` Step 3.

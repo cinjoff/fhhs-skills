@@ -39,7 +39,7 @@ For each `must_haves.truth` across all plans in scope:
 **Artifacts:**
 
 ```bash
-node ./.claude/get-shit-done/bin/gsd-tools.cjs verify artifacts "${PLAN_PATH}"
+node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs verify artifacts "${PLAN_PATH}"
 ```
 
 This checks that all `must_haves.artifacts` exist on disk with expected content markers.
@@ -47,7 +47,7 @@ This checks that all `must_haves.artifacts` exist on disk with expected content 
 **Key links:**
 
 ```bash
-node ./.claude/get-shit-done/bin/gsd-tools.cjs verify key-links "${PLAN_PATH}"
+node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs verify key-links "${PLAN_PATH}"
 ```
 
 This verifies that artifacts are wired together as specified in `must_haves.key_links`.
@@ -77,10 +77,10 @@ Run gsd-tools structural checks:
 
 ```bash
 # Check all plans have summaries
-node ./.claude/get-shit-done/bin/gsd-tools.cjs verify phase-completeness "${PHASE_NUM}"
+node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs verify phase-completeness "${PHASE_NUM}"
 
 # Check plan structure is valid
-node ./.claude/get-shit-done/bin/gsd-tools.cjs verify plan-structure "${PLAN_PATH}"
+node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs verify plan-structure "${PLAN_PATH}"
 ```
 
 Then manually check for:
@@ -96,7 +96,7 @@ Then manually check for:
 Scaffold with gsd-tools:
 
 ```bash
-node ./.claude/get-shit-done/bin/gsd-tools.cjs template fill verification \
+node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs template fill verification \
   --phase "${PHASE_NUM}" \
   --fields '{"status":"passed|failed", "score":"N/M"}'
 ```
