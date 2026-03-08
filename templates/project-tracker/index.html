@@ -15,7 +15,7 @@
       --muted:#808080;--subtle:#a0a0a0;--text:#ccc;--bright:#e8e8e8;
       --fire:#ff2d00;--orange:#ff6b00;--green:#00ff41;--amber:#ffb300;
     }
-    html{font-size:15px}
+    html{font-size:15px;scrollbar-color:var(--dim) transparent}
     body{font-family:'JetBrains Mono','Courier New',monospace;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.6}
     body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(transparent 0px,transparent 3px,rgba(0,0,0,0.03) 3px,rgba(0,0,0,0.03) 4px);pointer-events:none;z-index:9999}
     ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--dim)}
@@ -29,19 +29,19 @@
     .proj .gt{color:var(--green);margin-right:0.75ch;font-weight:400}
     .ms-lbl{color:var(--muted);font-size:0.85rem}
     .last-act{color:var(--dim);font-size:0.75rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40ch}
-    .dot{width:6px;height:6px;border-radius:50%;background:var(--dim);flex-shrink:0}
+    .dot{width:6px;height:6px;border-radius:50%;background:var(--dim);flex-shrink:0;align-self:center}
     .dot.on{background:var(--green);box-shadow:0 0 6px rgba(0,255,65,0.5);animation:pulse 2s ease-in-out infinite}
     .dot.off{background:var(--fire)}
     @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
 
     /* Stats strip */
-    .stats{display:flex;align-items:center;gap:1.5ch;padding-bottom:1.25rem;margin-bottom:1.25rem;border-bottom:1px solid var(--border)}
-    .s-ct{font-size:0.85rem;color:var(--subtle);white-space:nowrap}
+    .stats{display:flex;align-items:center;flex-wrap:wrap;gap:0.5rem 1.5ch;padding-bottom:1.25rem;margin-bottom:1.25rem;border-bottom:1px solid var(--border)}
+    .s-ct{font-size:0.85rem;color:var(--subtle);white-space:nowrap;font-variant-numeric:tabular-nums}
     .s-ct .n{color:var(--green);font-weight:700}
     .s-ct .t{color:var(--text)}
-    .s-bar{flex:1;height:2px;background:var(--dim);overflow:hidden}
+    .s-bar{flex:1;min-width:4rem;height:2px;background:var(--dim);overflow:hidden}
     .s-fill{height:100%;background:var(--green);transition:width 0.5s ease-out;box-shadow:0 0 8px rgba(0,255,65,0.25)}
-    .s-tags{display:flex;gap:1.5ch;font-size:0.85rem;color:var(--muted)}
+    .s-tags{display:flex;flex-wrap:wrap;gap:0.35rem 2ch;font-size:0.85rem;color:var(--muted)}
     .s-tags .v{font-weight:700}
     .s-tags .active .v{color:var(--fire)}
     .s-tags .defer .v{color:var(--amber)}
@@ -79,12 +79,12 @@
     /* Phase rows */
     .ph{display:flex;align-items:center;gap:1ch;padding:0.2rem 0;font-size:0.85rem}
     .ph-i{width:1.5ch;text-align:center;flex-shrink:0;font-size:0.8rem}
-    .ph-i.c{color:var(--green)}.ph-i.a{color:var(--fire)}.ph-i.d{color:var(--amber);opacity:.5}.ph-i.n{color:var(--dim)}
+    .ph-i.c{color:var(--green)}.ph-i.a{color:var(--fire)}.ph-i.d{color:var(--amber);opacity:.7}.ph-i.n{color:var(--dim)}
     .ph-n{font-variant-numeric:tabular-nums;color:var(--dim);width:2.5ch;text-align:right;flex-shrink:0}
     .ph-t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .ph-t.c{color:var(--muted)}.ph-t.a{color:var(--bright)}.ph-t.d{color:var(--dim)}.ph-t.n{color:var(--subtle)}
     .ph-b{font-size:0.7rem;flex-shrink:0}
-    .ph-b.a{color:var(--fire)}.ph-b.d{color:var(--amber);opacity:.6}
+    .ph-b.a{color:var(--fire)}.ph-b.d{color:var(--amber);opacity:.75}
     .ph-p{font-size:0.7rem;color:var(--dim);font-variant-numeric:tabular-nums;flex-shrink:0}
     .ph-tbd{font-size:0.65rem;color:var(--dim);font-style:italic;flex-shrink:0}
     .blink{animation:bl 1s step-end infinite}
@@ -96,7 +96,7 @@
     details.ph-exp summary::-webkit-details-marker{display:none}
     .ph-exp-arr{color:var(--muted);font-size:0.6rem;width:1ch;text-align:center;display:inline-block;transition:transform .15s ease-out;flex-shrink:0}
     details.ph-exp[open] .ph-exp-arr{transform:rotate(90deg)}
-    .ph-plans{padding:0.15rem 0 0.25rem 3.5ch}
+    .ph-plans{padding:0.15rem 0 0.25rem 7ch}
     .ph-plan{display:flex;align-items:baseline;gap:0.75ch;padding:0.1rem 0;font-size:0.8rem}
     .ph-plan-i{width:1.2ch;text-align:center;flex-shrink:0;font-size:0.75rem}
     .ph-plan-i.c{color:var(--green)}.ph-plan-i.a{color:var(--fire)}.ph-plan-i.n{color:var(--dim)}
@@ -124,7 +124,9 @@
     /* Backlog */
     .td{display:flex;align-items:center;gap:1ch;font-size:0.8rem;padding:0.2rem 0}
     .td-i{color:var(--amber);width:1.5ch;text-align:center;flex-shrink:0;font-size:0.75rem}
-    .td-t{color:var(--subtle);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+    .td-t{color:var(--subtle);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .td[role="button"]{cursor:pointer}
+    .td[role="button"]:focus-visible{outline:1px solid var(--dim);outline-offset:1px}
     .td-a{font-size:0.7rem;color:var(--dim);flex-shrink:0}
     .td-body{font-size:0.75rem;color:var(--dim);padding:0.15rem 0 0.3rem 2.5ch;white-space:pre-wrap;line-height:1.4}
 
@@ -133,7 +135,9 @@
     .qt-i{width:1.5ch;text-align:center;flex-shrink:0;font-size:0.75rem}
     .qt-i.done{color:var(--green)}.qt-i.pen{color:var(--dim)}
     .qt-num{color:var(--dim)}
-    .qt-t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+    .qt-t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .qt[role="button"]{cursor:pointer}
+    .qt[role="button"]:focus-visible{outline:1px solid var(--dim);outline-offset:1px}
     .qt-t.done{color:var(--muted)}.qt-t.pen{color:var(--subtle)}
     .qt-body{font-size:0.75rem;color:var(--dim);padding:0.15rem 0 0.3rem 2.5ch;white-space:pre-wrap;line-height:1.4}
 
@@ -154,10 +158,16 @@
     /* Action buttons */
     .btn-action{display:inline-block;font-family:inherit;font-size:0.65rem;color:var(--muted);border:1px solid var(--dim);background:transparent;padding:0.1rem 0.5rem;border-radius:3px;cursor:pointer;margin-left:0.5ch;transition:color .15s,border-color .15s;white-space:nowrap;flex-shrink:0}
     .btn-action:hover{color:var(--green);border-color:var(--green)}
+    .btn-action:focus-visible{color:var(--green);border-color:var(--green);outline:1px solid var(--green);outline-offset:1px}
 
     /* Toast */
     .toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--green);color:var(--green);font-family:inherit;font-size:0.8rem;padding:0.4rem 1.2rem;border-radius:3px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:10000}
     .toast.show{opacity:1}
+
+    /* Reduced motion */
+    @media(prefers-reduced-motion:reduce){
+      *,*::before,*::after{animation-duration:0.01ms !important;animation-iteration-count:1 !important;transition-duration:0.01ms !important}
+    }
   </style>
 </head>
 <body>
@@ -422,13 +432,13 @@
       }
 
       let dc = 0;
-      const subs = activeTask.subtasks.map(st => {
+      const subs = activeTask.subtasks.map((st, i) => {
         const isDone = st.status === 'done' || st.status === 'complete';
         const isAct = st.status === 'in_progress' || st.status === 'active';
         if (isDone) dc++;
         const cls = isDone ? 'done' : (isAct ? 'act' : 'pen');
         return html`
-          <div class="wc-st">
+          <div class="wc-st" key=${st.name || i}>
             ${isDone
               ? html`<span class="wc-si done">\u2713</span>`
               : isAct
@@ -622,7 +632,7 @@
             setData(d);
             document.title = ((d.project && d.project.name) || 'Project') + ' \u2014 tracker';
           })
-          .catch(e => console.error(e));
+          .catch(() => {});
       }, []);
 
       const connectSSE = useCallback(() => {
@@ -658,7 +668,7 @@
       }, [fetchState, connectSSE]);
 
       if (!data) {
-        return html`<div class="wrap"><span class="proj"><span class="gt">></span> loading...</span></div>`;
+        return html`<div class="wrap"><span class="proj"><span class="gt">></span> loading<span class="blink">_</span></span></div>`;
       }
 
       const milestones = groupByMilestone(data.stages || []);
@@ -669,7 +679,7 @@
           <${Stats} data=${data} />
           <div class="grid">
             <div class="ms-list">
-              ${milestones.map((ms, i) => html`<${MilestoneGroup} ms=${ms} showToast=${showToast} key=${ms.name + i} />`)}
+              ${milestones.map((ms, i) => html`<${MilestoneGroup} ms=${ms} showToast=${showToast} key=${`ms-${i}-${ms.name}`} />`)}
             </div>
             <div class="side">
               <section>
