@@ -126,27 +126,28 @@ function parseRoadmap(planningDir) {
   const milestoneRanges = []; // { name, startPhase, endPhase }
   const lines = content.split('\n');
 
-  if (!milestoneName) {
-    let lastPlanned = '';
-    for (const line of lines) {
-      const trimmed = line.trim();
-      const milestoneMatch = trimmed.match(/^-\s+(?:✅|📋|🚧|⬜)\s+\*\*(.+?)\*\*/);
-      if (milestoneMatch) {
-        const name = milestoneMatch[1];
-        if (/planned|in.?progress/i.test(trimmed)) {
-          lastPlanned = name;
-        }
-        // Extract phase range: "Phases X-Y" or "Phase X"
-        const rangeMatch = trimmed.match(/Phases?\s+(\d+)\s*-\s*(\d+)/i);
-        if (rangeMatch) {
-          milestoneRanges.push({
-            name,
-            startPhase: parseInt(rangeMatch[1], 10),
-            endPhase: parseInt(rangeMatch[2], 10),
-          });
-        }
+  // Always parse bullet list for full milestone names and ranges
+  let lastPlanned = '';
+  for (const line of lines) {
+    const trimmed = line.trim();
+    const milestoneMatch = trimmed.match(/^-\s+(?:✅|📋|🚧|⬜)\s+\*\*(.+?)\*\*/);
+    if (milestoneMatch) {
+      const name = milestoneMatch[1];
+      if (/planned|in.?progress/i.test(trimmed)) {
+        lastPlanned = name;
+      }
+      // Extract phase range: "Phases X-Y" or "Phase X"
+      const rangeMatch = trimmed.match(/Phases?\s+(\d+)\s*-\s*(\d+)/i);
+      if (rangeMatch) {
+        milestoneRanges.push({
+          name,
+          startPhase: parseInt(rangeMatch[1], 10),
+          endPhase: parseInt(rangeMatch[2], 10),
+        });
       }
     }
+  }
+  if (!milestoneName) {
     milestoneName = lastPlanned || '';
   }
 
@@ -199,18 +200,21 @@ function parseRoadmap(planningDir) {
     const milestoneIdx = headerCols.indexOf('milestone');
     const goal = goalIdx >= 0 ? (cells[goalIdx] || '') : (milestoneIdx >= 0 ? (cells[milestoneIdx] || '') : '');
 
-    // Milestone name: from the Milestone column in the progress table, or from range mapping
+    // Milestone name: prefer full name from bullet list, fall back to table column
     let phaseMilestoneName = '';
-    if (milestoneIdx >= 0) {
-      phaseMilestoneName = cells[milestoneIdx] || '';
-    } else {
-      // Try to match from milestone ranges parsed from bullet list
-      for (const mr of milestoneRanges) {
-        if (number >= mr.startPhase && number <= mr.endPhase) {
-          phaseMilestoneName = mr.name;
-          break;
-        }
+    // First try phase range from bullet list (has full names like "v1.0 Local-First CRDT Storage")
+    for (const mr of milestoneRanges) {
+      if (number >= mr.startPhase && number <= mr.endPhase) {
+        phaseMilestoneName = mr.name;
+        break;
       }
+    }
+    // Fall back to Milestone column if no range matched
+    if (!phaseMilestoneName && milestoneIdx >= 0) {
+      const tableVal = cells[milestoneIdx] || '';
+      // Try to find full name from bullet list that starts with the table value
+      const fullName = milestoneRanges.find(mr => mr.name.startsWith(tableVal));
+      phaseMilestoneName = fullName ? fullName.name : tableVal;
     }
 
     const phase = {
@@ -612,8 +616,8 @@ function parseConcerns(planningDir) {
       continue;
     }
 
-    // Count items starting with **[ under current category
-    if (currentCategory && /^\*\*\[/.test(trimmed)) {
+    // Count bold items (**Title:**) under current category — skip **Analysis Date:**
+    if (currentCategory && /^\*\*[^*]/.test(trimmed) && !/^\*\*Analysis Date/i.test(trimmed)) {
       currentCategory.count++;
     }
   }

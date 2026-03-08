@@ -23,12 +23,13 @@
     .wrap{max-width:1100px;margin:0 auto;padding:1.5rem}
 
     /* Header */
-    .hdr{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:0.75rem}
-    .hdr-l{display:flex;align-items:baseline;min-width:0;flex:1;gap:1.5ch}
+    .hdr{display:flex;align-items:start;justify-content:space-between;margin-bottom:0.75rem;gap:1ch}
+    .hdr-l{display:flex;flex-direction:column;min-width:0;flex:1;gap:0.15rem}
+    .hdr-top{display:flex;align-items:baseline;gap:1.5ch}
     .proj{font-size:1.1rem;font-weight:700;color:var(--bright);white-space:nowrap}
     .proj .gt{color:var(--green);margin-right:0.75ch;font-weight:400}
     .ms-lbl{color:var(--muted);font-size:0.85rem}
-    .last-act{color:var(--dim);font-size:0.75rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40ch}
+    .last-act{color:var(--dim);font-size:0.75rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .dot{width:6px;height:6px;border-radius:50%;background:var(--dim);flex-shrink:0;align-self:center}
     .dot.on{background:var(--green);box-shadow:0 0 6px rgba(0,255,65,0.5);animation:pulse 2s ease-in-out infinite}
     .dot.off{background:var(--fire)}
@@ -101,7 +102,9 @@
     .ph-plan-i{width:1.2ch;text-align:center;flex-shrink:0;font-size:0.75rem}
     .ph-plan-i.c{color:var(--green)}.ph-plan-i.a{color:var(--fire)}.ph-plan-i.n{color:var(--dim)}
     .ph-plan-nm{color:var(--text)}
-    .ph-plan-obj{font-size:0.7rem;color:var(--muted);margin-left:0.5ch;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .ph-plan-obj{font-size:0.7rem;color:var(--muted);margin-left:0.5ch;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+    .ph-plan-obj.expanded{white-space:normal;overflow:visible;text-overflow:unset}
+    .ph-plan-exp{flex-wrap:wrap}
 
     /* Sidebar */
     .side{display:flex;flex-direction:column;gap:1.25rem}
@@ -214,6 +217,19 @@
       return 'n';
     }
 
+    function extractProblemSection(body) {
+      if (!body) return '';
+      const match = body.match(/##\s*Problem\s*\n([\s\S]*?)(?=\n##\s|\n---|\s*$)/i);
+      return match ? match[1].trim() : '';
+    }
+
+    function extractFirstParagraph(body) {
+      if (!body) return '';
+      const trimmed = body.trim();
+      const idx = trimmed.indexOf('\n\n');
+      return idx > 0 ? trimmed.slice(0, idx).trim() : trimmed;
+    }
+
     function groupByMilestone(stages) {
       const groups = [];
       const map = {};
@@ -279,8 +295,10 @@
       return html`
         <header class="hdr">
           <div class="hdr-l">
-            <h1 class="proj"><span class="gt">></span>${project.name || '...'}</h1>
-            ${milestone.name ? html`<span class="ms-lbl">${milestone.name}</span>` : null}
+            <div class="hdr-top">
+              <h1 class="proj"><span class="gt">></span>${project.name || '...'}</h1>
+              ${milestone.name ? html`<span class="ms-lbl">${milestone.name}</span>` : null}
+            </div>
             ${lastActText ? html`<span class="last-act">${lastActText}</span>` : null}
           </div>
           <span class=${`dot ${connected ? 'on' : 'off'}`}></span>
@@ -315,16 +333,23 @@
     }
 
     function PlanList({ tasks }) {
+      const [expanded, setExpanded] = useState({});
+      const toggle = (i) => setExpanded(prev => ({ ...prev, [i]: !prev[i] }));
+
       return html`
         <div class="ph-plans">
           ${tasks.map((tk, i) => {
             const tst = mapStatus(tk.status);
             const tic = tst === 'c' ? '\u2713' : (tst === 'a' ? '\u25B6' : '\u00B7');
+            const isExp = expanded[i];
             return html`
-              <div class="ph-plan" key=${tk.name || i}>
+              <div class=${`ph-plan${isExp ? ' ph-plan-exp' : ''}`} key=${tk.name || i}
+                onClick=${tk.objective ? () => toggle(i) : undefined}
+                style=${tk.objective ? 'cursor:pointer' : ''}
+              >
                 <span class=${`ph-plan-i ${tst}`}>${tic}</span>
                 <span class="ph-plan-nm">${tk.name}</span>
-                ${tk.objective ? html`<span class="ph-plan-obj">${tk.objective}</span>` : null}
+                ${tk.objective ? html`<span class=${`ph-plan-obj${isExp ? ' expanded' : ''}`}>${tk.objective}</span>` : null}
               </div>
             `;
           })}
@@ -340,6 +365,7 @@
 
       if (hasTasks) {
         const pd = ph.tasks.filter(t => mapStatus(t.status) === 'c').length;
+        const needsBuild = st !== 'c' && st !== 'd' && pd < ph.tasks.length;
         return html`
           <details class="ph-exp" open=${shouldOpen || undefined}>
             <summary>
@@ -350,13 +376,14 @@
               <span class="ph-p">${pd}/${ph.tasks.length}</span>
               ${st === 'a' ? html`<span class="ph-b a">active</span>` : null}
               ${st === 'd' ? html`<span class="ph-b d">deferred</span>` : null}
+              ${needsBuild ? html`<button class="btn-action" aria-label=${"Build phase " + ph.number} onClick=${(e) => { e.preventDefault(); copyToClipboard('/build phase ' + ph.number + ': ' + ph.name, showToast); }}>[build]</button>` : null}
             </summary>
             <${PlanList} tasks=${ph.tasks} />
           </details>
         `;
       }
 
-      // No tasks — show tbd + action buttons
+      // No tasks — unplanned phase, show [plan] only
       return html`
         <div class="ph">
           <span class=${`ph-i ${st}`}>${ic}</span>
@@ -365,7 +392,6 @@
           ${st !== 'c' && st !== 'd' ? html`
             <span class="ph-tbd">tbd</span>
             <button class="btn-action" aria-label=${"Plan phase " + ph.number} onClick=${() => copyToClipboard(`/plan-work phase ${ph.number}: ${ph.name}`, showToast)}>[plan]</button>
-            <button class="btn-action" aria-label=${"Build phase " + ph.number} onClick=${() => copyToClipboard(`/build phase ${ph.number}: ${ph.name}`, showToast)}>[build]</button>
           ` : null}
           ${st === 'a' ? html`<span class="ph-b a">active</span>` : null}
           ${st === 'd' ? html`<span class="ph-b d">deferred</span>` : null}
@@ -519,7 +545,8 @@
         <section>
           <div class="sh"><span class="c">//</span> backlog <span>(${items.length})</span></div>
           ${items.map((t, i) => {
-            const hasBody = t.body || t.area;
+            const problem = extractProblemSection(t.body);
+            const hasBody = problem || t.area;
             return html`
               <div key=${i}>
                 <div class="td"
@@ -531,11 +558,11 @@
                 >
                   <span class="td-i">\u25CB</span>
                   <span class="td-t">${t.title}</span>
-                  ${t.area && !t.body ? html`<span class="td-a">${t.area}</span>` : null}
+                  ${t.area && !problem ? html`<span class="td-a">${t.area}</span>` : null}
                   ${t.priority ? html`<span class="td-a">${t.priority}</span>` : null}
                 </div>
-                ${expanded[i] && (t.body || t.area) ? html`
-                  <div class="td-body">${t.body || t.area}</div>
+                ${expanded[i] && hasBody ? html`
+                  <div class="td-body">${problem || t.area}</div>
                 ` : null}
               </div>
             `;
@@ -564,7 +591,8 @@
           <div class="sh"><span class="c">//</span> quick_tasks</div>
           ${qts.map((q, i) => {
             const qd = q.status === 'complete';
-            const hasBody = !!q.body;
+            const firstPara = extractFirstParagraph(q.body);
+            const hasBody = !!firstPara;
             return html`
               <div key=${i}>
                 <div class="qt"
@@ -578,8 +606,8 @@
                   <span class="qt-num">#${q.number}</span>
                   <span class=${`qt-t ${qd ? 'done' : 'pen'}`}>${q.title}</span>
                 </div>
-                ${expanded[i] && q.body ? html`
-                  <div class="qt-body">${q.body}</div>
+                ${expanded[i] && firstPara ? html`
+                  <div class="qt-body">${firstPara}</div>
                 ` : null}
               </div>
             `;
