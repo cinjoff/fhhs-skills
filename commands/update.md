@@ -41,17 +41,14 @@ Exit.
 
 ## Step 2: Check Latest Version
 
-Refresh the marketplace and fetch the changelog from GitHub:
+Fetch the latest version from GitHub and the changelog:
 
 ```bash
-# Refresh marketplace to get latest metadata
-claude plugin marketplace update fhhs-skills 2>/dev/null
-
-# Get latest version from refreshed marketplace
-python3 -c "
-import json, pathlib
-data = json.loads(pathlib.Path(pathlib.Path.home() / '.claude/plugins/marketplaces/fhhs-skills/.claude-plugin/marketplace.json').read_text())
-print(data['plugins'][0]['version'])
+# Get latest version from GitHub raw
+curl -sL "https://raw.githubusercontent.com/cinjoff/fhhs-skills/main/.claude-plugin/plugin.json" 2>/dev/null | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+print(data['version'])
 " 2>/dev/null || echo "FETCH_FAILED"
 ```
 
@@ -135,8 +132,6 @@ AskUserQuestion:
 **If "Yes, update now":**
 
 ```bash
-# Refresh marketplace to ensure update pulls the latest version
-claude plugin marketplace update fhhs-skills 2>/dev/null
 claude plugin update fh@fhhs-skills
 ```
 
