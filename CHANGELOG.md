@@ -5,6 +5,11 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.2] - 2026-03-08
+
+### Fixed
+- **Parallel tool call errors** — reference files (implementer-prompt, spec-gate-prompt, etc.) were not shipped with plugin installs, causing "File does not exist" errors that cascaded into "Cancelled: parallel tool call" failures during /build and /plan-work
+
 ## [1.12.1] - 2026-03-08
 
 ### Changed
