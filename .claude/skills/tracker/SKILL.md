@@ -10,15 +10,7 @@ $ARGUMENTS
 
 ---
 
-## Step 1: Check for `.project-tracker/`
-
-Check if `.project-tracker/` exists in the current working directory:
-
-```bash
-[ -d ".project-tracker" ] && echo "EXISTS" || echo "MISSING"
-```
-
-**If MISSING**, scaffold it:
+## Step 1: Refresh template files
 
 1. Find the fhhs-skills plugin directory by globbing for `**/templates/project-tracker/server.cjs` under the user's home directory `~/.claude/plugins/`.
 2. Read all 4 template files from `templates/project-tracker/` in the plugin directory:
@@ -26,8 +18,9 @@ Check if `.project-tracker/` exists in the current working directory:
    - `parser.cjs`
    - `index.html`
    - `README.md`
-3. Create `.project-tracker/` and write the 4 files into it.
-4. Check if `.gitignore` exists and contains `.project-tracker/`:
+3. Create `.project-tracker/` if it doesn't exist.
+4. Write all 4 files into `.project-tracker/`, overwriting any existing versions.
+5. Check if `.gitignore` exists and contains `.project-tracker/`:
    - If `.gitignore` doesn't exist, create it with `.project-tracker/` as its content.
    - If `.gitignore` exists but doesn't contain `.project-tracker/`, append `.project-tracker/` on a new line.
    - If `.gitignore` already contains `.project-tracker/`, do nothing.
