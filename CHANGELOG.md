@@ -5,6 +5,12 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.0] - 2026-03-08
+
+### Added
+- **Flat plan parsing** — tracker now discovers plans from `.planning/plans/NN-PLAN.md` in addition to `.planning/phases/{dir}/XX-NN-PLAN.md`
+- **Auto-generated phases** — when no ROADMAP.md exists, phases are built from discovered plan files
+
 ## [1.11.2] - 2026-03-08
 
 ### Fixed
