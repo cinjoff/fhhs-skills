@@ -8,7 +8,7 @@ Standalone verification of work. Combines GSD goal-backward verification with ev
 
 What to verify (phase number, branch name, or leave blank for current work): $ARGUMENTS
 
-> **Dependency check:** Verify `.planning/PROJECT.md` exists (required — enables artifact and key-link verification via gsd-tools). Evidence-based verification is built into this plugin. See the `references/dependency-check.md` file in the same plugin directory as this command for detection details.
+> **Dependency check:** Verify `.planning/PROJECT.md` exists (required — if missing, tell user to run `/fh:new-project` first; enables artifact and key-link verification via gsd-tools). Evidence-based verification is built into this plugin.
 
 This command runs in a single context. No subagents — verification should be direct and observable.
 

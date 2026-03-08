@@ -10,8 +10,6 @@ The user wants to plan: $ARGUMENTS
 
 You are a **lean orchestrator**. Your job is to coordinate, not to do heavy work yourself. Delegate research and analysis to subagents to keep your context clean.
 
-> **Dependency check:** Read `references/dependency-check.md` from the fhhs-skills plugin directory. GSD project is required — check below.
-
 > **CRITICAL — GSD project required:**
 > Check if `.planning/PROJECT.md` exists.
 > - **If YES → proceed.** Read STATE.md for current phase/plan. Read ROADMAP.md for phase goals. Read phase-specific CONTEXT.md for locked decisions.

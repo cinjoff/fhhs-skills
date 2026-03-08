@@ -10,11 +10,11 @@ What to build or which plan to execute: $ARGUMENTS
 
 You are a **lean orchestrator**. Stay under 15% context usage. Delegate all heavy work to subagents.
 
-> **Dependency check:** Verify `.planning/PROJECT.md` exists (required — if missing, tell user to run `/fh:new-project` first). Engineering disciplines (TDD, verification, review) and design quality commands are built into this plugin. See the `references/dependency-check.md` file in the same plugin directory as this command for detection details.
+> **Dependency check:** Verify `.planning/PROJECT.md` exists (required — if missing, tell user to run `/fh:new-project` first). Engineering disciplines (TDD, verification, review) and design quality commands are built into this plugin.
 
 > **Execution pipeline — fresh subagents for tasks, specialized agents for review:**
-> Task execution: **`general-purpose`** subagents with structured prompt from `references/implementer-prompt.md`. Fresh context per task, no GSD state overhead.
-> Spec gates: **`code-reviewer`** agent after each wave — adversarial spec verification using `references/spec-gate-prompt.md`.
+> Task execution: **`general-purpose`** subagents with structured prompt from `references/implementer-prompt.md` (co-located with this skill). Fresh context per task, no GSD state overhead.
+> Spec gates: **`code-reviewer`** agent after each wave — adversarial spec verification using `references/spec-gate-prompt.md` (co-located with this skill).
 > Quality review: **`code-reviewer`** agent at end — code quality, security, architecture.
 > Simplify: `skills/simplify/` after quality review — code reuse, efficiency, hygiene.
 > Integration check: **`gsd-integration-checker`** background agent for multi-phase wiring.
@@ -78,7 +78,7 @@ The template includes all behavioral directives (TDD, frontend, commits, YAGNI),
 
 ### Checkpoint protocol
 
-If a task has `type="checkpoint:*"`, read `references/checkpoint-protocol.md` from the fhhs-skills plugin directory for the full protocol. It covers checkpoint types (human-verify, decision, human-action), return format, auto-mode behavior, standard mode continuation, and authentication gate handling.
+If a task has `type="checkpoint:*"`, read `references/checkpoint-protocol.md` (co-located with this skill) for the full protocol. It covers checkpoint types (human-verify, decision, human-action), return format, auto-mode behavior, standard mode continuation, and authentication gate handling.
 
 **For independent tasks in the same wave:** dispatch subagents in parallel.
 **For sequential waves:** wait for all tasks in current wave before starting next.
@@ -219,7 +219,7 @@ If any checks fail, flag in SUMMARY under "Issues Encountered".
 
 ### Generate SUMMARY.md
 
-Read `references/summary-template.md` from the fhhs-skills plugin directory for the full template (frontmatter schema, gsd-tools scaffold command, body sections).
+Read `references/summary-template.md` (co-located with this skill) for the full template (frontmatter schema, gsd-tools scaffold command, body sections).
 
 **Commit:** `docs({phase}-{plan}): complete {description}`
 
@@ -229,7 +229,7 @@ Read `references/summary-template.md` from the fhhs-skills plugin directory for 
 
 **Skip this step if not in GSD mode.**
 
-After SUMMARY.md is committed, read `references/gsd-state-updates.md` from the fhhs-skills plugin directory and run all state update commands. This covers: advance-plan, update-progress, record-metric, add-decision, record-session, and roadmap update.
+After SUMMARY.md is committed, read `references/gsd-state-updates.md` (co-located with this skill) and run all state update commands. This covers: advance-plan, update-progress, record-metric, add-decision, record-session, and roadmap update.
 
 ---
 

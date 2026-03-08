@@ -8,7 +8,7 @@ Auto-triage and fix bugs with TDD discipline.
 
 The issue: $ARGUMENTS
 
-> **Dependency check:** Verify `.planning/PROJECT.md` exists (required). Engineering disciplines (TDD, verification) and design quality commands are built into this plugin. See the `references/dependency-check.md` file in the same plugin directory as this command for detection details.
+> **Dependency check:** Verify `.planning/PROJECT.md` exists (required — if missing, tell user to run `/fh:new-project` first). Engineering disciplines (TDD, verification) and design quality commands are built into this plugin.
 
 This command runs in a single context by default. Escalates to parallel agents when needed.
 
