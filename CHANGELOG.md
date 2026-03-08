@@ -5,6 +5,27 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.0] - 2026-03-08
+
+### Added
+- **Tracker v2** — complete rewrite with Preact, JSX components, Tailwind CSS, tiered caching server, and build infrastructure
+- **Plan objectives** — extracts and displays objectives from PLAN.md files
+- **Sidebar action buttons** — [fix these] on concerns, [update] on codebase, with tooltips
+- **Expandable phases** — click to expand/collapse phase details
+
+### Changed
+- **Update command** — fetches latest version from GitHub raw instead of marketplace cache
+- **Tracker launch** — always refreshes template files from plugin source
+
+### Fixed
+- **Grid overflow** — constrain left column with min-w-0
+- **7 tracker bugs** — concerns counts, milestone names, buttons, header, body extracts, objectives
+- **Tiered caching** — gate state/todos/retros re-parsing, store completion events
+- **Plan row layout** — constrain width and align with phase titles
+
+### Removed
+- **Recent Activity section** — removed from sidebar
+
 ## [1.10.0] - 2026-03-08
 
 ### Changed
