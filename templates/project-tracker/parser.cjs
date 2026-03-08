@@ -228,12 +228,34 @@ function parseState(planningDir) {
 }
 
 /**
+ * Extract objective text from a PLAN.md file.
+ * Returns the first sentence or ~150 chars, trimmed.
+ */
+function extractObjective(content) {
+  const match = content.match(/<objective>([\s\S]*?)<\/objective>/);
+  if (!match) return '';
+  const raw = match[1].trim();
+  if (!raw) return '';
+  // Take first sentence (up to period followed by space/end), or truncate at ~150 chars
+  const sentenceMatch = raw.match(/^(.+?\.)\s/);
+  if (sentenceMatch && sentenceMatch[1].length <= 150) {
+    return sentenceMatch[1];
+  }
+  if (raw.length <= 150) return raw;
+  // Truncate at word boundary near 150 chars
+  const truncated = raw.slice(0, 150).replace(/\s+\S*$/, '');
+  return truncated + '…';
+}
+
+/**
  * Parse plan files (XX-NN-PLAN.md) in a phase directory.
- * Extracts task names from XML <task>/<name> elements.
+ * Extracts task names from XML <task>/<name> elements and objective text.
  */
 function parsePlanFile(filePath) {
   const content = safeRead(filePath);
-  if (!content) return [];
+  if (!content) return { tasks: [], objective: '' };
+
+  const objective = extractObjective(content);
 
   const tasks = [];
   const taskRegex = /<task[^>]*>([\s\S]*?)<\/task>/g;
@@ -245,7 +267,7 @@ function parsePlanFile(filePath) {
       tasks.push({ name: nameMatch[1] });
     }
   }
-  return tasks;
+  return { tasks, objective };
 }
 
 /**
@@ -319,7 +341,7 @@ function parsePhases(planningDir, roadmapPhases, state) {
     const tasks = [];
     for (const pf of planFiles) {
       const planNum = parseInt(pf.split('-')[1], 10);
-      const subtasks = parsePlanFile(path.join(fullDir, pf));
+      const { tasks: subtasks, objective } = parsePlanFile(path.join(fullDir, pf));
 
       const isCurrentPhase = state.currentPhase === dir || parseInt(state.currentPhase, 10) === phaseNum;
       const isCurrentPlan = state.currentPlan === planNum;
@@ -340,6 +362,7 @@ function parsePhases(planningDir, roadmapPhases, state) {
       tasks.push({
         plan: planNum,
         name: taskName,
+        objective,
         status: taskStatus,
         subtasks: subtasks.map(st => ({
           name: st.name,
