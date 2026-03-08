@@ -4,99 +4,164 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Project Tracker</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            zinc: {
-              50: '#fafafa', 100: '#f4f4f5', 200: '#e4e4e7', 300: '#d4d4d8',
-              400: '#a1a1aa', 500: '#71717a', 600: '#52525b', 700: '#3f3f46',
-              800: '#27272a', 900: '#18181b', 950: '#09090b',
-            }
-          }
-        }
-      }
-    }
-  </script>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='14' font-family='monospace' fill='%2300ff41'>></text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
   <style>
-    html { font-size: 14px; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; }
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: #52525b; }
-    details summary { cursor: pointer; list-style: none; }
-    details summary::-webkit-details-marker { display: none; }
-    details summary::before { content: '\25B6'; display: inline-block; margin-right: 8px; font-size: 10px; transition: transform 0.15s; color: #71717a; }
-    details[open] summary::before { transform: rotate(90deg); }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#0a0a0a;--surface:#131313;--border:#222;--dim:#3a3a3a;
+      --muted:#555;--subtle:#888;--text:#ccc;--bright:#e8e8e8;
+      --fire:#ff2d00;--orange:#ff6b00;--green:#00ff41;--amber:#ffb300;
+    }
+    html{font-size:13px}
+    body{font-family:'JetBrains Mono','Courier New',monospace;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.6}
+    body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(transparent 0px,transparent 3px,rgba(0,0,0,0.03) 3px,rgba(0,0,0,0.03) 4px);pointer-events:none;z-index:9999}
+    ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--dim)}
+
+    .wrap{max-width:1100px;margin:0 auto;padding:1.5rem}
+
+    /* Header */
+    .hdr{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:0.75rem}
+    .hdr-l{display:flex;align-items:baseline;min-width:0}
+    .proj{font-size:1.1rem;font-weight:700;color:var(--bright);white-space:nowrap}
+    .proj .gt{color:var(--green);margin-right:0.75ch;font-weight:400}
+    .ms-lbl{color:var(--muted);font-size:0.85rem;margin-left:1.5ch}
+    .dot{width:6px;height:6px;border-radius:50%;background:var(--dim);flex-shrink:0}
+    .dot.on{background:var(--green);box-shadow:0 0 6px rgba(0,255,65,0.5);animation:pulse 2s ease-in-out infinite}
+    .dot.off{background:var(--fire)}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+    /* Stats strip */
+    .stats{display:flex;align-items:center;gap:1.5ch;padding-bottom:1.25rem;margin-bottom:1.25rem;border-bottom:1px solid var(--border)}
+    .s-ct{font-size:0.85rem;color:var(--subtle);white-space:nowrap}
+    .s-ct .n{color:var(--green);font-weight:700}
+    .s-ct .t{color:var(--text)}
+    .s-bar{flex:1;height:2px;background:var(--dim);overflow:hidden}
+    .s-fill{height:100%;background:var(--green);transition:width 0.5s ease-out;box-shadow:0 0 8px rgba(0,255,65,0.25)}
+    .s-tags{display:flex;gap:1.5ch;font-size:0.85rem;color:var(--muted)}
+    .s-tags .v{font-weight:700}
+    .s-tags .active .v{color:var(--fire)}
+    .s-tags .defer .v{color:var(--amber)}
+    .s-tags .todo .v{color:var(--amber)}
+
+    /* Grid */
+    .grid{display:grid;grid-template-columns:1fr 260px;gap:2rem}
+    @media(max-width:800px){.grid{grid-template-columns:1fr}}
+
+    /* Milestones */
+    .ms-list{display:flex;flex-direction:column;gap:1px}
+    details.mg{background:var(--surface);border:1px solid var(--border);animation:fadeUp 0.2s ease-out both}
+    details.mg.is-active{border-color:rgba(255,45,0,0.3)}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+    details.mg:nth-child(2){animation-delay:.04s}details.mg:nth-child(3){animation-delay:.08s}
+    details.mg:nth-child(4){animation-delay:.12s}details.mg:nth-child(5){animation-delay:.16s}
+    details.mg:nth-child(6){animation-delay:.2s}details.mg:nth-child(7){animation-delay:.24s}
+
+    details.mg summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:1ch;padding:0.5rem 0.75rem;user-select:none}
+    details.mg summary::-webkit-details-marker{display:none}
+    .mg-arr{color:var(--muted);font-size:0.7rem;width:1.2ch;text-align:center;display:inline-block;transition:transform .15s ease-out}
+    details.mg[open] .mg-arr{transform:rotate(90deg)}
+    .mg-ico{width:1.5ch;text-align:center;font-size:0.8rem;flex-shrink:0}
+    .mg-ico.c{color:var(--green)}.mg-ico.a{color:var(--fire)}.mg-ico.p{color:var(--dim)}
+    .mg-nm{font-weight:700;font-size:0.9rem;color:var(--bright);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .mg-rng{font-size:0.75rem;color:var(--muted);margin-right:0.5ch}
+    .mg-bar{width:48px;height:2px;background:var(--dim);overflow:hidden;flex-shrink:0}
+    .mg-bf{height:100%;background:var(--green);transition:width .3s ease-out}
+    .mg-bf.partial{background:var(--fire)}
+    .mg-ct{font-size:0.75rem;color:var(--muted);font-variant-numeric:tabular-nums;flex-shrink:0}
+
+    .mg-body{padding:0 0.75rem 0.5rem;animation:cFade .15s ease-out}
+    @keyframes cFade{from{opacity:0}to{opacity:1}}
+
+    /* Phase rows */
+    .ph{display:flex;align-items:center;gap:1ch;padding:0.2rem 0;font-size:0.85rem}
+    .ph-i{width:1.5ch;text-align:center;flex-shrink:0;font-size:0.8rem}
+    .ph-i.c{color:var(--green)}.ph-i.a{color:var(--fire)}.ph-i.d{color:var(--amber);opacity:.5}.ph-i.n{color:var(--dim)}
+    .ph-n{font-variant-numeric:tabular-nums;color:var(--dim);width:2.5ch;text-align:right;flex-shrink:0}
+    .ph-t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .ph-t.c{color:var(--muted)}.ph-t.a{color:var(--bright)}.ph-t.d{color:var(--dim)}.ph-t.n{color:var(--subtle)}
+    .ph-b{font-size:0.7rem;flex-shrink:0}
+    .ph-b.a{color:var(--fire)}.ph-b.d{color:var(--amber);opacity:.6}
+    .ph-p{font-size:0.7rem;color:var(--dim);font-variant-numeric:tabular-nums;flex-shrink:0}
+    .blink{animation:bl 1s step-end infinite}
+    @keyframes bl{0%,100%{opacity:1}50%{opacity:0}}
+
+    /* Sidebar */
+    .side{display:flex;flex-direction:column;gap:1.25rem}
+    .sh{font-size:0.8rem;color:var(--dim);margin-bottom:0.35rem}
+    .sh .c{color:var(--muted)}
+    .empty{font-size:0.8rem;color:var(--dim);padding:0.15rem 0;font-style:italic}
+    .empty .cmd{font-style:normal;color:var(--subtle)}
+
+    /* Working On */
+    .wc{border:1px solid rgba(255,45,0,0.35);background:var(--surface);padding:0.65rem}
+    .wc-nm{font-weight:700;font-size:0.85rem;color:var(--bright);margin-bottom:0.4rem}
+    .wc-st{display:flex;align-items:center;gap:1ch;font-size:0.8rem;padding:0.12rem 0}
+    .wc-si{width:1.5ch;text-align:center;flex-shrink:0;font-size:0.75rem}
+    .wc-si.done{color:var(--green)}.wc-si.act{color:var(--fire)}.wc-si.pen{color:var(--dim)}
+    .wc-sn{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .wc-sn.done{color:var(--muted);text-decoration:line-through}.wc-sn.act{color:var(--bright)}.wc-sn.pen{color:var(--subtle)}
+    .wc-bar{height:2px;background:var(--dim);margin-top:0.6rem;overflow:hidden}
+    .wc-bf{height:100%;background:var(--fire);transition:width .3s ease-out}
+
+    /* Todos */
+    .td{display:flex;align-items:center;gap:1ch;font-size:0.8rem;padding:0.2rem 0}
+    .td-i{color:var(--amber);width:1.5ch;text-align:center;flex-shrink:0;font-size:0.75rem}
+    .td-t{color:var(--subtle);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .td-a{font-size:0.7rem;color:var(--dim);flex-shrink:0}
+
+    /* Quick tasks */
+    .qt{display:flex;align-items:center;gap:1ch;font-size:0.8rem;padding:0.2rem 0}
+    .qt-i{width:1.5ch;text-align:center;flex-shrink:0;font-size:0.75rem}
+    .qt-i.done{color:var(--green)}.qt-i.pen{color:var(--dim)}
+    .qt-num{color:var(--dim)}
+    .qt-t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .qt-t.done{color:var(--muted)}.qt-t.pen{color:var(--subtle)}
+
+    /* Activity */
+    .ac{display:flex;gap:1.5ch;font-size:0.8rem;padding:0.12rem 0}
+    .ac-t{color:var(--dim);font-variant-numeric:tabular-nums;white-space:nowrap;min-width:5.5ch}
+    .ac-x{color:var(--subtle)}
   </style>
 </head>
-<body class="bg-zinc-950 text-zinc-50 min-h-screen">
-
-  <div class="max-w-[1400px] mx-auto px-6 py-6">
-
-    <!-- Header -->
-    <header class="flex items-center justify-between mb-6">
-      <div>
-        <h1 id="project-name" class="text-xl font-semibold text-zinc-50">Loading...</h1>
-        <p id="milestone-name" class="text-sm text-zinc-400 mt-0.5"></p>
+<body>
+  <div class="wrap">
+    <header class="hdr">
+      <div class="hdr-l">
+        <h1 class="proj"><span class="gt">&gt;</span><span id="project-name">...</span></h1>
+        <span class="ms-lbl" id="milestone-name"></span>
       </div>
-      <div class="flex items-center gap-4">
-        <div id="stats-bar" class="flex items-center gap-6 text-sm text-zinc-400"></div>
-        <div id="connection-status" class="flex items-center gap-2 text-xs text-zinc-400">
-          <span id="connection-dot" class="w-2 h-2 rounded-full bg-zinc-600"></span>
-          <span id="connection-text">Connecting</span>
-        </div>
-      </div>
+      <span class="dot" id="connection-dot"></span>
     </header>
 
-    <!-- Main grid -->
-    <div class="grid grid-cols-[1fr_320px] gap-6">
+    <div class="stats">
+      <span class="s-ct"><span class="n" id="s-done">0</span><span class="t">/<span id="s-total">0</span></span></span>
+      <div class="s-bar"><div class="s-fill" id="s-fill" style="width:0%"></div></div>
+      <div class="s-tags" id="s-tags"></div>
+    </div>
 
-      <!-- Left: Milestones -->
-      <div id="milestones-container" class="space-y-3">
-        <!-- Milestones rendered here -->
-      </div>
+    <div class="grid">
+      <div class="ms-list" id="milestones-container"></div>
 
-      <!-- Right: Sidebar -->
-      <div class="space-y-4">
-
-        <!-- Currently Working On -->
-        <section id="current-work-section" class="hidden">
-          <h2 class="text-xs font-medium uppercase tracking-wider text-zinc-400 mb-2">Working On</h2>
-          <div id="current-work-card" class="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden">
-            <div class="p-3 space-y-2">
-              <h3 id="current-task-name" class="text-sm font-semibold text-zinc-50"></h3>
-              <ul id="current-subtasks" class="space-y-1.5"></ul>
-            </div>
-            <div class="h-1 bg-zinc-800">
-              <div id="progress-bar" class="h-full bg-blue-500 transition-all duration-300" style="width: 0%"></div>
-            </div>
-          </div>
+      <div class="side">
+        <section>
+          <div class="sh"><span class="c">//</span> working_on</div>
+          <div id="work-content"><div class="empty">no active task</div></div>
         </section>
-
-        <!-- Pending Todos -->
-        <section id="todos-section" class="hidden">
-          <h2 class="text-xs font-medium uppercase tracking-wider text-zinc-400 mb-2">
-            Pending Todos <span id="todos-count" class="text-zinc-500"></span>
-          </h2>
-          <div id="todos-list" class="space-y-1"></div>
+        <section>
+          <div class="sh"><span class="c">//</span> todos <span id="todos-count"></span></div>
+          <div id="todos-list"><div class="empty">none &mdash; <span class="cmd">/fh:add-todo</span></div></div>
         </section>
-
-        <!-- Quick Tasks -->
-        <section id="quick-section" class="hidden">
-          <h2 class="text-xs font-medium uppercase tracking-wider text-zinc-400 mb-2">Quick Tasks</h2>
-          <div id="quick-list" class="space-y-1"></div>
+        <section>
+          <div class="sh"><span class="c">//</span> quick_tasks</div>
+          <div id="quick-list"><div class="empty">none &mdash; <span class="cmd">/fh:quick</span></div></div>
         </section>
-
-        <!-- Recent Updates -->
-        <section id="updates-section" class="hidden">
-          <h2 class="text-xs font-medium uppercase tracking-wider text-zinc-400 mb-2">Recent Activity</h2>
-          <div id="updates-list" class="space-y-2"></div>
+        <section>
+          <div class="sh"><span class="c">//</span> activity</div>
+          <div id="updates-list"><div class="empty">no recent activity</div></div>
         </section>
-
       </div>
     </div>
   </div>
@@ -107,238 +172,191 @@
       var then = new Date(dateStr).getTime();
       if (isNaN(then)) return '';
       var diff = Math.floor((Date.now() - then) / 1000);
-      if (diff < 10) return 'just now';
-      if (diff < 60) return diff + 's ago';
-      if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
-      if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+      if (diff < 10) return 'now';
+      if (diff < 60) return diff + 's';
+      if (diff < 3600) return Math.floor(diff / 60) + 'm';
+      if (diff < 86400) return Math.floor(diff / 3600) + 'h';
       var days = Math.floor(diff / 86400);
-      if (days === 1) return 'yesterday';
-      if (days < 30) return days + 'd ago';
+      if (days === 1) return '1d';
+      if (days < 30) return days + 'd';
       return new Date(dateStr).toLocaleDateString();
     }
 
-    function escapeHtml(str) {
-      if (!str) return '';
-      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    function esc(s) {
+      if (!s) return '';
+      return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
     function mapStatus(s) {
-      if (!s) return 'up next';
+      if (!s) return 'n';
       var l = s.toLowerCase();
-      if (l === 'complete' || l === 'completed' || l === 'done' || l === 'code_complete' || l === 'code-complete') return 'complete';
-      if (l === 'active' || l === 'in_progress') return 'active';
-      if (l === 'deferred' || l === 'superseded') return 'deferred';
-      return 'up next';
+      if (l === 'complete' || l === 'completed' || l === 'done' || l === 'code_complete' || l === 'code-complete') return 'c';
+      if (l === 'active' || l === 'in_progress') return 'a';
+      if (l === 'deferred' || l === 'superseded') return 'd';
+      return 'n';
     }
 
-    function checkSvg(cls) {
-      return '<svg class="w-3.5 h-3.5 ' + (cls || 'text-green-500') + ' flex-shrink-0" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M5 8l2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-    }
-
-    function circleSvg(cls) {
-      return '<svg class="w-3.5 h-3.5 ' + (cls || 'text-zinc-600') + ' flex-shrink-0" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/></svg>';
-    }
-
-    function activeSvg() {
-      return '<svg class="w-3.5 h-3.5 text-blue-500 flex-shrink-0" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="8" r="3" fill="currentColor"/></svg>';
-    }
-
-    function miniProgressBar(done, total) {
-      var pct = total > 0 ? Math.round((done / total) * 100) : 0;
-      var color = pct === 100 ? 'bg-green-500' : 'bg-blue-500';
-      return '<div class="flex items-center gap-2 min-w-[100px]">' +
-        '<div class="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">' +
-          '<div class="h-full rounded-full ' + color + '" style="width:' + pct + '%"></div>' +
-        '</div>' +
-        '<span class="text-xs text-zinc-500 tabular-nums">' + done + '/' + total + '</span>' +
-      '</div>';
-    }
-
-    function setConnected(c) {
-      document.getElementById('connection-dot').className = 'w-2 h-2 rounded-full ' + (c ? 'bg-green-500' : 'bg-red-500');
-      document.getElementById('connection-text').textContent = c ? 'Live' : 'Offline';
-    }
-
-    // Group stages by milestone goal field
     function groupByMilestone(stages) {
-      var groups = [];
-      var map = {};
+      var groups = [], map = {};
       for (var i = 0; i < stages.length; i++) {
-        var s = stages[i];
-        var key = s.goal || 'Other';
-        if (!map[key]) {
-          map[key] = { name: key, phases: [] };
-          groups.push(map[key]);
-        }
+        var s = stages[i], key = s.goal || 'Phases';
+        if (!map[key]) { map[key] = { name: key, phases: [] }; groups.push(map[key]); }
         map[key].phases.push(s);
       }
       return groups;
     }
 
+    function setConnected(c) {
+      document.getElementById('connection-dot').className = 'dot ' + (c ? 'on' : 'off');
+    }
+
     function render(data) {
       if (!data) return;
 
-      document.getElementById('project-name').textContent = (data.project && data.project.name) || 'Untitled Project';
+      document.getElementById('project-name').textContent = (data.project && data.project.name) || 'untitled';
       document.getElementById('milestone-name').textContent = (data.milestone && data.milestone.name) || '';
-      document.title = ((data.project && data.project.name) || 'Project') + ' - Tracker';
+      document.title = ((data.project && data.project.name) || 'Project') + ' \u2014 tracker';
 
       var stages = data.stages || [];
+      var total = stages.length;
+      var done = stages.filter(function(s) { return mapStatus(s.status) === 'c'; }).length;
+      var active = stages.filter(function(s) { return mapStatus(s.status) === 'a'; }).length;
+      var deferred = stages.filter(function(s) { return mapStatus(s.status) === 'd'; }).length;
+      var todosN = (data.todos && data.todos.pending) ? data.todos.pending.length : 0;
+      var pct = total > 0 ? Math.round((done / total) * 100) : 0;
 
-      // Stats bar
-      var totalPhases = stages.length;
-      var donePhases = stages.filter(function(s) { return mapStatus(s.status) === 'complete'; }).length;
-      var activePhases = stages.filter(function(s) { return mapStatus(s.status) === 'active'; }).length;
-      var deferredPhases = stages.filter(function(s) { return mapStatus(s.status) === 'deferred'; }).length;
-      var todosCount = (data.todos && data.todos.pending) ? data.todos.pending.length : 0;
-      document.getElementById('stats-bar').innerHTML =
-        '<span class="text-green-500 font-medium">' + donePhases + '</span><span class="text-zinc-500">/</span><span>' + totalPhases + ' phases</span>' +
-        (activePhases > 0 ? '<span class="text-blue-400">' + activePhases + ' active</span>' : '') +
-        (deferredPhases > 0 ? '<span class="text-yellow-500/70">' + deferredPhases + ' deferred</span>' : '') +
-        (todosCount > 0 ? '<span class="text-amber-400">' + todosCount + ' todos</span>' : '');
+      document.getElementById('s-done').textContent = done;
+      document.getElementById('s-total').textContent = total;
+      document.getElementById('s-fill').style.width = pct + '%';
+
+      var tags = '';
+      if (active > 0) tags += '<span class="active"><span class="v">' + active + '</span> active</span>';
+      if (deferred > 0) tags += '<span class="defer"><span class="v">' + deferred + '</span> deferred</span>';
+      if (todosN > 0) tags += '<span class="todo"><span class="v">' + todosN + '</span> todos</span>';
+      document.getElementById('s-tags').innerHTML = tags;
 
       // Milestones
       var milestones = groupByMilestone(stages);
-      var container = document.getElementById('milestones-container');
-      container.innerHTML = milestones.map(function(ms) {
-        var total = ms.phases.length;
-        var done = ms.phases.filter(function(p) { return mapStatus(p.status) === 'complete'; }).length;
-        var allDone = done === total;
-        var hasActive = ms.phases.some(function(p) { return mapStatus(p.status) === 'active'; });
+      document.getElementById('milestones-container').innerHTML = milestones.map(function(ms) {
+        var t = ms.phases.length;
+        var d = ms.phases.filter(function(p) { return mapStatus(p.status) === 'c'; }).length;
+        var allDone = d === t;
+        var hasAct = ms.phases.some(function(p) { return mapStatus(p.status) === 'a'; });
 
-        var msIcon = allDone ? checkSvg('text-green-500') : (hasActive ? activeSvg() : circleSvg('text-zinc-500'));
-        var msStatusText = allDone ? '<span class="text-green-500 text-xs">Complete</span>'
-          : (hasActive ? '<span class="text-blue-400 text-xs">In Progress</span>'
-          : '<span class="text-zinc-500 text-xs">Planned</span>');
+        var ico = allDone ? '\u2713' : (hasAct ? '\u25B6' : '\u00B7');
+        var icoCls = allDone ? 'c' : (hasAct ? 'a' : 'p');
+        var firstN = ms.phases[0].number, lastN = ms.phases[ms.phases.length - 1].number;
+        var rng = firstN === lastN ? firstN : firstN + '\u2013' + lastN;
+        var shouldOpen = hasAct || (!allDone && d > 0);
+        var barPct = t > 0 ? Math.round(d / t * 100) : 0;
 
-        var firstNum = ms.phases[0].number;
-        var lastNum = ms.phases[ms.phases.length - 1].number;
-        var rangeText = firstNum === lastNum ? 'Phase ' + firstNum : 'Phases ' + firstNum + '-' + lastNum;
-
-        var shouldOpen = hasActive || (!allDone && done > 0);
-
-        var phaseRows = ms.phases.map(function(phase) {
-          var st = mapStatus(phase.status);
-          var icon = st === 'complete' ? checkSvg() : (st === 'active' ? activeSvg() : (st === 'deferred' ? circleSvg('text-yellow-500/50') : circleSvg()));
-          var textCls = st === 'complete' ? 'text-zinc-500' : (st === 'deferred' ? 'text-zinc-600' : 'text-zinc-200');
+        var rows = ms.phases.map(function(ph) {
+          var st = mapStatus(ph.status);
+          var ic = st === 'c' ? '\u2713' : (st === 'a' ? '\u25B6' : (st === 'd' ? '~' : '\u00B7'));
           var badge = '';
-          if (st === 'active') badge = '<span class="px-1.5 py-0.5 rounded text-[11px] bg-blue-500/15 text-blue-400">Active</span>';
-          else if (st === 'deferred') badge = '<span class="px-1.5 py-0.5 rounded text-[11px] bg-yellow-500/10 text-yellow-500/60">Deferred</span>';
-
-          var taskDetail = '';
-          if (phase.tasks && phase.tasks.length > 0) {
-            var tasksDone = phase.tasks.filter(function(t) { return mapStatus(t.status) === 'complete'; }).length;
-            taskDetail = '<span class="text-xs text-zinc-600 ml-1">' + tasksDone + '/' + phase.tasks.length + ' plans</span>';
+          if (st === 'a') badge = '<span class="ph-b a">active</span>';
+          else if (st === 'd') badge = '<span class="ph-b d">deferred</span>';
+          var plans = '';
+          if (ph.tasks && ph.tasks.length > 0) {
+            var pd = ph.tasks.filter(function(t) { return mapStatus(t.status) === 'c'; }).length;
+            plans = '<span class="ph-p">' + pd + '/' + ph.tasks.length + '</span>';
           }
-
-          return '<div class="flex items-center gap-2 py-1 px-2 rounded hover:bg-zinc-800/50">' +
-            icon +
-            '<span class="text-zinc-500 text-xs tabular-nums w-6">' + phase.number + '</span>' +
-            '<span class="text-sm ' + textCls + ' flex-1 truncate">' + escapeHtml(phase.name) + '</span>' +
-            taskDetail +
-            badge +
-          '</div>';
+          return '<div class="ph">' +
+            '<span class="ph-i ' + st + '">' + ic + '</span>' +
+            '<span class="ph-n">' + ph.number + '</span>' +
+            '<span class="ph-t ' + st + '">' + esc(ph.name) + '</span>' +
+            plans + badge + '</div>';
         }).join('');
 
-        return '<details class="bg-zinc-900/60 border border-zinc-800/80 rounded-lg overflow-hidden"' + (shouldOpen ? ' open' : '') + '>' +
-          '<summary class="flex items-center gap-3 px-4 py-3 hover:bg-zinc-800/30 select-none">' +
-            '<div class="flex items-center gap-2 flex-1 min-w-0">' +
-              msIcon +
-              '<span class="font-semibold text-sm text-zinc-100">' + escapeHtml(ms.name) + '</span>' +
-              '<span class="text-xs text-zinc-500">' + rangeText + '</span>' +
-              msStatusText +
-            '</div>' +
-            miniProgressBar(done, total) +
+        return '<details class="mg' + (hasAct ? ' is-active' : '') + '"' + (shouldOpen ? ' open' : '') + '>' +
+          '<summary>' +
+            '<span class="mg-arr">\u25B8</span>' +
+            '<span class="mg-ico ' + icoCls + '">' + ico + '</span>' +
+            '<span class="mg-nm">' + esc(ms.name) + '</span>' +
+            '<span class="mg-rng">' + rng + '</span>' +
+            '<div class="mg-bar"><div class="mg-bf' + (allDone ? '' : ' partial') + '" style="width:' + barPct + '%"></div></div>' +
+            '<span class="mg-ct">' + d + '/' + t + '</span>' +
           '</summary>' +
-          '<div class="px-2 pb-2 pt-1">' +
-            phaseRows +
-          '</div>' +
+          '<div class="mg-body">' + rows + '</div>' +
         '</details>';
       }).join('');
 
-      // Current work
-      var currentSection = document.getElementById('current-work-section');
+      // Working On
+      var workEl = document.getElementById('work-content');
       var activeTask = null;
       for (var i = 0; i < stages.length; i++) {
-        if (mapStatus(stages[i].status) === 'active' && stages[i].tasks) {
+        if (mapStatus(stages[i].status) === 'a' && stages[i].tasks) {
           for (var j = 0; j < stages[i].tasks.length; j++) {
-            if (mapStatus(stages[i].tasks[j].status) === 'active') {
-              activeTask = stages[i].tasks[j];
-              break;
-            }
+            if (mapStatus(stages[i].tasks[j].status) === 'a') { activeTask = stages[i].tasks[j]; break; }
           }
           if (activeTask) break;
         }
       }
 
       if (activeTask && activeTask.subtasks && activeTask.subtasks.length > 0) {
-        currentSection.classList.remove('hidden');
-        document.getElementById('current-task-name').textContent = activeTask.name || 'Current Task';
-        var doneCount = 0;
-        document.getElementById('current-subtasks').innerHTML = activeTask.subtasks.map(function(st) {
+        var dc = 0;
+        var subs = activeTask.subtasks.map(function(st) {
           var isDone = st.status === 'done' || st.status === 'complete';
           var isAct = st.status === 'in_progress' || st.status === 'active';
-          if (isDone) doneCount++;
-          return '<li class="flex items-center gap-2">' +
-            (isDone ? checkSvg() : (isAct ? activeSvg() : circleSvg())) +
-            '<span class="text-xs ' + (isDone ? 'text-zinc-500 line-through' : 'text-zinc-300') + '">' + escapeHtml(st.name) + '</span>' +
-          '</li>';
+          if (isDone) dc++;
+          var icoHtml = isDone
+            ? '<span class="wc-si done">\u2713</span>'
+            : (isAct
+              ? '<span class="wc-si act"><span class="blink">\u258C</span></span>'
+              : '<span class="wc-si pen">\u00B7</span>');
+          var cls = isDone ? 'done' : (isAct ? 'act' : 'pen');
+          return '<div class="wc-st">' + icoHtml +
+            '<span class="wc-sn ' + cls + '">' + esc(st.name) + '</span></div>';
         }).join('');
-        var pct = activeTask.subtasks.length > 0 ? Math.round((doneCount / activeTask.subtasks.length) * 100) : 0;
-        document.getElementById('progress-bar').style.width = pct + '%';
+        var wp = activeTask.subtasks.length > 0 ? Math.round(dc / activeTask.subtasks.length * 100) : 0;
+        workEl.innerHTML = '<div class="wc">' +
+          '<div class="wc-nm">' + esc(activeTask.name || 'Current Task') + '</div>' +
+          subs +
+          '<div class="wc-bar"><div class="wc-bf" style="width:' + wp + '%"></div></div>' +
+        '</div>';
       } else {
-        currentSection.classList.add('hidden');
+        workEl.innerHTML = '<div class="empty">no active task</div>';
       }
 
       // Todos
-      var todosSection = document.getElementById('todos-section');
       var todos = (data.todos && data.todos.pending) || [];
+      var todosEl = document.getElementById('todos-list');
+      var todosCountEl = document.getElementById('todos-count');
       if (todos.length > 0) {
-        todosSection.classList.remove('hidden');
-        document.getElementById('todos-count').textContent = '(' + todos.length + ')';
-        document.getElementById('todos-list').innerHTML = todos.map(function(t) {
-          var area = t.area ? '<span class="text-[11px] text-zinc-500 bg-zinc-800 px-1.5 py-0.5 rounded">' + escapeHtml(t.area) + '</span>' : '';
-          return '<div class="flex items-center gap-2 py-1.5 px-2 rounded bg-zinc-900/50 border-l-2 border-l-amber-500/40">' +
-            circleSvg('text-amber-500/50') +
-            '<span class="text-xs text-zinc-300 flex-1 truncate">' + escapeHtml(t.title) + '</span>' +
-            area +
-          '</div>';
+        todosCountEl.textContent = '(' + todos.length + ')';
+        todosEl.innerHTML = todos.map(function(t) {
+          var area = t.area ? '<span class="td-a">' + esc(t.area) + '</span>' : '';
+          return '<div class="td"><span class="td-i">\u25CB</span><span class="td-t">' + esc(t.title) + '</span>' + area + '</div>';
         }).join('');
       } else {
-        todosSection.classList.add('hidden');
+        todosCountEl.textContent = '';
+        todosEl.innerHTML = '<div class="empty">none \u2014 <span class="cmd">/fh:add-todo</span></div>';
       }
 
       // Quick Tasks
-      var quickSection = document.getElementById('quick-section');
       var qts = data.quickTasks || [];
+      var quickEl = document.getElementById('quick-list');
       if (qts.length > 0) {
-        quickSection.classList.remove('hidden');
-        document.getElementById('quick-list').innerHTML = qts.map(function(q) {
-          var done = q.status === 'complete';
-          return '<div class="flex items-center gap-2 py-1.5 px-2 rounded bg-zinc-900/50 border-l-2 ' + (done ? 'border-l-green-500/50' : 'border-l-zinc-700') + '">' +
-            (done ? checkSvg() : circleSvg()) +
-            '<span class="text-xs ' + (done ? 'text-zinc-500' : 'text-zinc-300') + ' flex-1 truncate">' +
-              '<span class="text-zinc-600 mr-1">#' + q.number + '</span>' +
-              escapeHtml(q.title) +
-            '</span>' +
-          '</div>';
+        quickEl.innerHTML = qts.map(function(q) {
+          var qd = q.status === 'complete';
+          return '<div class="qt">' +
+            '<span class="qt-i ' + (qd ? 'done' : 'pen') + '">' + (qd ? '\u2713' : '\u00B7') + '</span>' +
+            '<span class="qt-num">#' + q.number + '</span>' +
+            '<span class="qt-t ' + (qd ? 'done' : 'pen') + '">' + esc(q.title) + '</span></div>';
         }).join('');
       } else {
-        quickSection.classList.add('hidden');
+        quickEl.innerHTML = '<div class="empty">none \u2014 <span class="cmd">/fh:quick</span></div>';
       }
 
-      // Recent Activity
-      var updatesSection = document.getElementById('updates-section');
+      // Activity
       var updates = data.recentActivity || [];
+      var updEl = document.getElementById('updates-list');
       if (updates.length > 0) {
-        updatesSection.classList.remove('hidden');
-        document.getElementById('updates-list').innerHTML = updates.slice(0, 6).map(function(u) {
-          return '<div class="flex items-start gap-2">' +
-            '<span class="text-[11px] text-zinc-600 whitespace-nowrap min-w-[56px] pt-px tabular-nums">' + escapeHtml(relativeTime(u.time)) + '</span>' +
-            '<span class="text-xs text-zinc-400">' + escapeHtml(u.text) + '</span>' +
-          '</div>';
+        updEl.innerHTML = updates.slice(0, 6).map(function(u) {
+          return '<div class="ac"><span class="ac-t">' + esc(relativeTime(u.time)) + '</span><span class="ac-x">' + esc(u.text) + '</span></div>';
         }).join('');
       } else {
-        updatesSection.classList.add('hidden');
+        updEl.innerHTML = '<div class="empty">no recent activity</div>';
       }
     }
 
