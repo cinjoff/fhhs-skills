@@ -369,100 +369,183 @@ function parseSummaryFile(filePath) {
 }
 
 /**
- * Parse phase directories under phases/.
+ * Parse flat plan files from plans/ directory.
+ * Pattern: NN-PLAN.md where NN maps to phase number.
+ * Also checks for NN-SUMMARY.md for completion status.
  */
-function parsePhases(planningDir, roadmapPhases, state) {
-  const phasesDir = path.join(planningDir, 'phases');
-  if (!fs.existsSync(phasesDir)) return { phases: roadmapPhases, completionEvents: [] };
+function parseFlatPlans(planningDir, state) {
+  const plansDir = path.join(planningDir, 'plans');
+  if (!fs.existsSync(plansDir)) return {};
 
-  let phaseDirs;
+  let files;
   try {
-    phaseDirs = fs.readdirSync(phasesDir, { withFileTypes: true })
-      .filter(d => d.isDirectory())
-      .map(d => d.name)
-      .sort();
+    files = fs.readdirSync(plansDir).sort();
   } catch {
-    return { phases: roadmapPhases, completionEvents: [] };
+    return {};
+  }
+
+  const planFiles = files.filter(f => /^\d{2}-PLAN\.md$/i.test(f));
+  const summaryFiles = files.filter(f => /^\d{2}-SUMMARY\.md$/i.test(f));
+
+  const completedPhases = new Set();
+  for (const sf of summaryFiles) {
+    completedPhases.add(parseInt(sf.split('-')[0], 10));
   }
 
   const phaseTaskMap = {};
-  const completionEvents = [];
+  for (const pf of planFiles) {
+    const phaseNum = parseInt(pf.split('-')[0], 10);
+    const { tasks: subtasks, objective } = parsePlanFile(path.join(plansDir, pf));
 
-  for (const dir of phaseDirs) {
-    const phaseNum = parseInt(dir.split('-')[0], 10);
-    const fullDir = path.join(phasesDir, dir);
-
-    let files;
-    try {
-      files = fs.readdirSync(fullDir).sort();
-    } catch {
-      continue;
+    const isCurrentPhase = parseInt(state.currentPhase, 10) === phaseNum;
+    let taskStatus;
+    if (completedPhases.has(phaseNum)) {
+      taskStatus = 'complete';
+    } else if (isCurrentPhase) {
+      taskStatus = 'active';
+    } else {
+      taskStatus = 'up next';
     }
 
-    const planFiles = files.filter(f => /^\d{2}-\d{2}-PLAN\.md$/i.test(f));
-    const summaryFiles = files.filter(f => /^\d{2}-\d{2}-SUMMARY\.md$/i.test(f));
+    const firstSubtask = subtasks[0];
+    const taskName = firstSubtask
+      ? firstSubtask.name.replace(/^Task\s+\d+:\s*/i, '')
+      : `Plan ${phaseNum}`;
 
-    const completedPlans = new Set();
-    const summaries = {};
-    for (const sf of summaryFiles) {
-      const planNum = parseInt(sf.split('-')[1], 10);
-      const summary = parseSummaryFile(path.join(fullDir, sf));
-      if (summary) {
-        completedPlans.add(planNum);
-        summaries[planNum] = summary;
-      }
-    }
-
-    const tasks = [];
-    for (const pf of planFiles) {
-      const planNum = parseInt(pf.split('-')[1], 10);
-      const { tasks: subtasks, objective } = parsePlanFile(path.join(fullDir, pf));
-
-      const isCurrentPhase = state.currentPhase === dir || parseInt(state.currentPhase, 10) === phaseNum;
-      const isCurrentPlan = state.currentPlan === planNum;
-      let taskStatus;
-      if (completedPlans.has(planNum)) {
-        taskStatus = 'complete';
-      } else if (isCurrentPhase && isCurrentPlan) {
-        taskStatus = 'active';
-      } else {
-        taskStatus = 'up next';
-      }
-
-      const firstSubtask = subtasks[0];
-      const taskName = firstSubtask
-        ? firstSubtask.name.replace(/^Task\s+\d+:\s*/i, '')
-        : `Plan ${planNum}`;
-
-      tasks.push({
-        plan: planNum,
-        name: taskName,
-        objective,
-        status: taskStatus,
-        subtasks: subtasks.map(st => ({
-          name: st.name,
-          status: completedPlans.has(planNum) ? 'done' : (isCurrentPhase && isCurrentPlan ? 'in_progress' : 'pending'),
-        })),
-      });
-
-      if (completedPlans.has(planNum) && summaries[planNum] && summaries[planNum].completedAt) {
-        completionEvents.push({
-          time: summaries[planNum].completedAt,
-          text: `Completed "${taskName}"`,
-        });
-      }
-    }
-
-    phaseTaskMap[phaseNum] = tasks;
+    phaseTaskMap[phaseNum] = [{
+      plan: 1,
+      name: taskName,
+      objective,
+      status: taskStatus,
+      subtasks: subtasks.map(st => ({
+        name: st.name,
+        status: completedPhases.has(phaseNum) ? 'done' : (isCurrentPhase ? 'in_progress' : 'pending'),
+      })),
+    }];
   }
 
-  const enrichedPhases = roadmapPhases.map(phase => {
-    const tasks = phaseTaskMap[phase.number];
-    if (tasks && tasks.length > 0) {
-      return { ...phase, tasks };
+  return phaseTaskMap;
+}
+
+/**
+ * Parse phase directories under phases/.
+ * Also scans plans/ for flat plan files (NN-PLAN.md).
+ */
+function parsePhases(planningDir, roadmapPhases, state) {
+  const phaseTaskMap = {};
+  const completionEvents = [];
+
+  // 1. Scan flat plans/ directory (NN-PLAN.md)
+  const flatPlans = parseFlatPlans(planningDir, state);
+  Object.assign(phaseTaskMap, flatPlans);
+
+  // 2. Scan phase directories (phases/{dir}/XX-NN-PLAN.md) — overwrites flat plans if both exist
+  const phasesDir = path.join(planningDir, 'phases');
+  if (fs.existsSync(phasesDir)) {
+    let phaseDirs;
+    try {
+      phaseDirs = fs.readdirSync(phasesDir, { withFileTypes: true })
+        .filter(d => d.isDirectory())
+        .map(d => d.name)
+        .sort();
+    } catch {
+      phaseDirs = [];
     }
-    return phase;
-  });
+
+    for (const dir of phaseDirs) {
+      const phaseNum = parseInt(dir.split('-')[0], 10);
+      const fullDir = path.join(phasesDir, dir);
+
+      let files;
+      try {
+        files = fs.readdirSync(fullDir).sort();
+      } catch {
+        continue;
+      }
+
+      const planFiles = files.filter(f => /^\d{2}-\d{2}-PLAN\.md$/i.test(f));
+      const summaryFiles = files.filter(f => /^\d{2}-\d{2}-SUMMARY\.md$/i.test(f));
+
+      if (planFiles.length === 0) continue;
+
+      const completedPlans = new Set();
+      const summaries = {};
+      for (const sf of summaryFiles) {
+        const planNum = parseInt(sf.split('-')[1], 10);
+        const summary = parseSummaryFile(path.join(fullDir, sf));
+        if (summary) {
+          completedPlans.add(planNum);
+          summaries[planNum] = summary;
+        }
+      }
+
+      const tasks = [];
+      for (const pf of planFiles) {
+        const planNum = parseInt(pf.split('-')[1], 10);
+        const { tasks: subtasks, objective } = parsePlanFile(path.join(fullDir, pf));
+
+        const isCurrentPhase = state.currentPhase === dir || parseInt(state.currentPhase, 10) === phaseNum;
+        const isCurrentPlan = state.currentPlan === planNum;
+        let taskStatus;
+        if (completedPlans.has(planNum)) {
+          taskStatus = 'complete';
+        } else if (isCurrentPhase && isCurrentPlan) {
+          taskStatus = 'active';
+        } else {
+          taskStatus = 'up next';
+        }
+
+        const firstSubtask = subtasks[0];
+        const taskName = firstSubtask
+          ? firstSubtask.name.replace(/^Task\s+\d+:\s*/i, '')
+          : `Plan ${planNum}`;
+
+        tasks.push({
+          plan: planNum,
+          name: taskName,
+          objective,
+          status: taskStatus,
+          subtasks: subtasks.map(st => ({
+            name: st.name,
+            status: completedPlans.has(planNum) ? 'done' : (isCurrentPhase && isCurrentPlan ? 'in_progress' : 'pending'),
+          })),
+        });
+
+        if (completedPlans.has(planNum) && summaries[planNum] && summaries[planNum].completedAt) {
+          completionEvents.push({
+            time: summaries[planNum].completedAt,
+            text: `Completed "${taskName}"`,
+          });
+        }
+      }
+
+      phaseTaskMap[phaseNum] = tasks;
+    }
+  }
+
+  // Enrich roadmap phases with task data
+  let enrichedPhases;
+  if (roadmapPhases.length > 0) {
+    enrichedPhases = roadmapPhases.map(phase => {
+      const tasks = phaseTaskMap[phase.number];
+      if (tasks && tasks.length > 0) {
+        return { ...phase, tasks };
+      }
+      return phase;
+    });
+  } else {
+    // No roadmap — build phases from discovered plans
+    const phaseNums = Object.keys(phaseTaskMap).map(Number).sort((a, b) => a - b);
+    enrichedPhases = phaseNums.map(num => ({
+      number: num,
+      name: `Phase ${num}`,
+      goal: '',
+      status: phaseTaskMap[num].every(t => t.status === 'complete') ? 'complete'
+        : phaseTaskMap[num].some(t => t.status === 'active') ? 'active'
+        : 'up next',
+      tasks: phaseTaskMap[num],
+    }));
+  }
 
   return { phases: enrichedPhases, completionEvents };
 }
