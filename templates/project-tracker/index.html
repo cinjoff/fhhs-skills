@@ -24,10 +24,11 @@
 
     /* Header */
     .hdr{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:0.75rem}
-    .hdr-l{display:flex;align-items:baseline;min-width:0}
+    .hdr-l{display:flex;align-items:baseline;min-width:0;flex:1;gap:1.5ch}
     .proj{font-size:1.1rem;font-weight:700;color:var(--bright);white-space:nowrap}
     .proj .gt{color:var(--green);margin-right:0.75ch;font-weight:400}
-    .ms-lbl{color:var(--muted);font-size:0.85rem;margin-left:1.5ch}
+    .ms-lbl{color:var(--muted);font-size:0.85rem}
+    .last-act{color:var(--dim);font-size:0.75rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40ch}
     .dot{width:6px;height:6px;border-radius:50%;background:var(--dim);flex-shrink:0}
     .dot.on{background:var(--green);box-shadow:0 0 6px rgba(0,255,65,0.5);animation:pulse 2s ease-in-out infinite}
     .dot.off{background:var(--fire)}
@@ -123,87 +124,80 @@
     /* Backlog */
     .td{display:flex;align-items:center;gap:1ch;font-size:0.8rem;padding:0.2rem 0}
     .td-i{color:var(--amber);width:1.5ch;text-align:center;flex-shrink:0;font-size:0.75rem}
-    .td-t{color:var(--subtle);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .td-t{color:var(--subtle);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
     .td-a{font-size:0.7rem;color:var(--dim);flex-shrink:0}
+    .td-body{font-size:0.75rem;color:var(--dim);padding:0.15rem 0 0.3rem 2.5ch;white-space:pre-wrap;line-height:1.4}
 
     /* Quick tasks */
     .qt{display:flex;align-items:center;gap:1ch;font-size:0.8rem;padding:0.2rem 0}
     .qt-i{width:1.5ch;text-align:center;flex-shrink:0;font-size:0.75rem}
     .qt-i.done{color:var(--green)}.qt-i.pen{color:var(--dim)}
     .qt-num{color:var(--dim)}
-    .qt-t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .qt-t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
     .qt-t.done{color:var(--muted)}.qt-t.pen{color:var(--subtle)}
+    .qt-body{font-size:0.75rem;color:var(--dim);padding:0.15rem 0 0.3rem 2.5ch;white-space:pre-wrap;line-height:1.4}
 
     /* Activity */
     .ac{display:flex;gap:1.5ch;font-size:0.8rem;padding:0.12rem 0}
     .ac-t{color:var(--dim);font-variant-numeric:tabular-nums;white-space:nowrap;min-width:5.5ch}
     .ac-x{color:var(--subtle)}
+
+    /* Concerns */
+    .cn-row{display:flex;align-items:center;gap:1ch;font-size:0.8rem;padding:0.15rem 0}
+    .cn-nm{color:var(--subtle);flex:1}
+    .cn-ct{color:var(--amber);font-size:0.75rem;font-variant-numeric:tabular-nums}
+
+    /* Codebase freshness */
+    .cf{font-size:0.8rem;color:var(--subtle);padding:0.15rem 0}
+    .cf-stale{color:var(--amber)}
+
+    /* Action buttons */
+    .btn-action{display:inline-block;font-family:inherit;font-size:0.65rem;color:var(--muted);border:1px solid var(--dim);background:transparent;padding:0.1rem 0.5rem;border-radius:3px;cursor:pointer;margin-left:0.5ch;transition:color .15s,border-color .15s;white-space:nowrap;flex-shrink:0}
+    .btn-action:hover{color:var(--green);border-color:var(--green)}
+
+    /* Toast */
+    .toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--green);color:var(--green);font-family:inherit;font-size:0.8rem;padding:0.4rem 1.2rem;border-radius:3px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:10000}
+    .toast.show{opacity:1}
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <header class="hdr">
-      <div class="hdr-l">
-        <h1 class="proj"><span class="gt">&gt;</span><span id="project-name">...</span></h1>
-        <span class="ms-lbl" id="milestone-name"></span>
-      </div>
-      <span class="dot" id="connection-dot"></span>
-    </header>
+  <div id="app"></div>
 
-    <div class="stats">
-      <span class="s-ct"><span class="n" id="s-done">0</span><span class="t">/<span id="s-total">0</span></span></span>
-      <div class="s-bar"><div class="s-fill" id="s-fill" style="width:0%"></div></div>
-      <div class="s-tags" id="s-tags"></div>
-    </div>
+  <script type="module">
+    import { h, render as preactRender } from 'https://esm.sh/preact@10.25.4';
+    import { useState, useEffect, useRef, useCallback } from 'https://esm.sh/preact@10.25.4/hooks';
+    import htm from 'https://esm.sh/htm@3.1.1';
 
-    <div class="grid">
-      <div class="ms-list" id="milestones-container"></div>
+    const html = htm.bind(h);
 
-      <div class="side">
-        <section>
-          <div class="sh"><span class="c">//</span> working_on</div>
-          <div id="work-content"><div class="empty">no active task</div></div>
-        </section>
-        <section>
-          <div class="sh"><span class="c">//</span> backlog <span id="todos-count"></span></div>
-          <div id="todos-list"><div class="empty">none &mdash; <span class="cmd">/fh:add-todo</span></div></div>
-        </section>
-        <section>
-          <div class="sh"><span class="c">//</span> quick_tasks</div>
-          <div id="quick-list"><div class="empty">none &mdash; <span class="cmd">/fh:quick</span></div></div>
-        </section>
-        <section>
-          <div class="sh"><span class="c">//</span> activity</div>
-          <div id="updates-list"><div class="empty">no recent activity</div></div>
-        </section>
-      </div>
-    </div>
-  </div>
-
-  <script>
+    // -----------------------------------------------------------------------
+    // Utilities
+    // -----------------------------------------------------------------------
     function relativeTime(dateStr) {
       if (!dateStr) return '';
-      var then = new Date(dateStr).getTime();
+      const then = new Date(dateStr).getTime();
       if (isNaN(then)) return '';
-      var diff = Math.floor((Date.now() - then) / 1000);
+      const diff = Math.floor((Date.now() - then) / 1000);
       if (diff < 10) return 'now';
       if (diff < 60) return diff + 's';
       if (diff < 3600) return Math.floor(diff / 60) + 'm';
       if (diff < 86400) return Math.floor(diff / 3600) + 'h';
-      var days = Math.floor(diff / 86400);
+      const days = Math.floor(diff / 86400);
       if (days === 1) return '1d';
       if (days < 30) return days + 'd';
       return new Date(dateStr).toLocaleDateString();
     }
 
-    function esc(s) {
-      if (!s) return '';
-      return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    function daysBetween(dateStr) {
+      if (!dateStr) return Infinity;
+      const then = new Date(dateStr).getTime();
+      if (isNaN(then)) return Infinity;
+      return Math.floor((Date.now() - then) / 86400000);
     }
 
     function mapStatus(s) {
       if (!s) return 'n';
-      var l = s.toLowerCase();
+      const l = s.toLowerCase();
       if (l === 'complete' || l === 'completed' || l === 'done' || l === 'code_complete' || l === 'code-complete') return 'c';
       if (l === 'active' || l === 'in_progress') return 'a';
       if (l === 'deferred' || l === 'superseded') return 'd';
@@ -211,211 +205,461 @@
     }
 
     function groupByMilestone(stages) {
-      var groups = [], map = {};
-      for (var i = 0; i < stages.length; i++) {
-        var s = stages[i], key = s.goal || 'Phases';
-        if (!map[key]) { map[key] = { name: key, phases: [] }; groups.push(map[key]); }
+      const groups = [];
+      const map = {};
+      for (const s of stages) {
+        const key = s.milestoneName || s.goal || 'Phases';
+        if (!map[key]) {
+          map[key] = { name: key, phases: [] };
+          groups.push(map[key]);
+        }
         map[key].phases.push(s);
       }
       return groups;
     }
 
-    function setConnected(c) {
-      document.getElementById('connection-dot').className = 'dot ' + (c ? 'on' : 'off');
+    // -----------------------------------------------------------------------
+    // Toast
+    // -----------------------------------------------------------------------
+    let toastTimer = null;
+    function showToast(setToast, msg) {
+      setToast(msg);
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => setToast(''), 1200);
     }
 
-    function render(data) {
-      if (!data) return;
+    function copyToClipboard(text, setToast) {
+      navigator.clipboard.writeText(text).then(() => {
+        showToast(setToast, 'Copied!');
+      }).catch(() => {
+        showToast(setToast, 'Copy failed');
+      });
+    }
 
-      document.getElementById('project-name').textContent = (data.project && data.project.name) || 'untitled';
-      document.getElementById('milestone-name').textContent = (data.milestone && data.milestone.name) || '';
-      document.title = ((data.project && data.project.name) || 'Project') + ' \u2014 tracker';
+    // -----------------------------------------------------------------------
+    // Components
+    // -----------------------------------------------------------------------
+    function Header({ data, connected }) {
+      const project = data.project || {};
+      const milestone = data.milestone || {};
+      const lastAct = data.lastActivity
+        || data.state?.lastActivity
+        || (data.recentActivity && data.recentActivity.length > 0
+          ? { date: data.recentActivity[0].time, description: data.recentActivity[0].text }
+          : null);
 
-      var stages = data.stages || [];
-      var total = stages.length;
-      var done = stages.filter(function(s) { return mapStatus(s.status) === 'c'; }).length;
-      var active = stages.filter(function(s) { return mapStatus(s.status) === 'a'; }).length;
-      var deferred = stages.filter(function(s) { return mapStatus(s.status) === 'd'; }).length;
-      var todosN = (data.todos && data.todos.pending) ? data.todos.pending.length : 0;
-      var pct = total > 0 ? Math.round((done / total) * 100) : 0;
+      let lastActText = '';
+      if (lastAct && lastAct.date) {
+        const ago = relativeTime(lastAct.date);
+        const agoStr = ago === 'now' ? 'just now' : `${ago} ago`;
+        lastActText = `Last: ${agoStr}` + (lastAct.description ? ` \u2014 ${lastAct.description}` : '');
+      }
 
-      document.getElementById('s-done').textContent = done;
-      document.getElementById('s-total').textContent = total;
-      document.getElementById('s-fill').style.width = pct + '%';
+      return html`
+        <header class="hdr">
+          <div class="hdr-l">
+            <h1 class="proj"><span class="gt">></span>${project.name || '...'}</h1>
+            ${milestone.name ? html`<span class="ms-lbl">${milestone.name}</span>` : null}
+            ${lastActText ? html`<span class="last-act">${lastActText}</span>` : null}
+          </div>
+          <span class=${`dot ${connected ? 'on' : 'off'}`}></span>
+        </header>
+      `;
+    }
 
-      var tags = '';
-      if (active > 0) tags += '<span class="active"><span class="v">' + active + '</span> active</span>';
-      if (deferred > 0) tags += '<span class="defer"><span class="v">' + deferred + '</span> deferred</span>';
-      if (todosN > 0) tags += '<span class="todo"><span class="v">' + todosN + '</span> backlog</span>';
-      document.getElementById('s-tags').innerHTML = tags;
+    function Stats({ data }) {
+      const stages = data.stages || [];
+      const total = stages.length;
+      const done = stages.filter(s => mapStatus(s.status) === 'c').length;
+      const active = stages.filter(s => mapStatus(s.status) === 'a').length;
+      const deferred = stages.filter(s => mapStatus(s.status) === 'd').length;
+      const todosN = (data.todos?.pending?.length) || (data.backlog?.length) || 0;
+      const pct = total > 0 ? Math.round((done / total) * 100) : 0;
 
-      // Milestones
-      var milestones = groupByMilestone(stages);
-      document.getElementById('milestones-container').innerHTML = milestones.map(function(ms) {
-        var t = ms.phases.length;
-        var d = ms.phases.filter(function(p) { return mapStatus(p.status) === 'c'; }).length;
-        var allDone = d === t;
-        var hasAct = ms.phases.some(function(p) { return mapStatus(p.status) === 'a'; });
+      // Tag pills from data.tags or computed
+      const tags = data.tags || {};
 
-        var ico = allDone ? '\u2713' : (hasAct ? '\u25B6' : '\u00B7');
-        var icoCls = allDone ? 'c' : (hasAct ? 'a' : 'p');
-        var firstN = ms.phases[0].number, lastN = ms.phases[ms.phases.length - 1].number;
-        var rng = firstN === lastN ? firstN : firstN + '\u2013' + lastN;
-        var shouldOpen = hasAct || (!allDone && d > 0);
-        var barPct = t > 0 ? Math.round(d / t * 100) : 0;
+      return html`
+        <div class="stats">
+          <span class="s-ct"><span class="n">${done}</span><span class="t">/${total}</span></span>
+          <div class="s-bar"><div class="s-fill" style=${{ width: pct + '%' }}></div></div>
+          <div class="s-tags">
+            ${active > 0 ? html`<span class="active"><span class="v">${active}</span> active</span>` : null}
+            ${deferred > 0 ? html`<span class="defer"><span class="v">${deferred}</span> deferred</span>` : null}
+            ${todosN > 0 ? html`<span class="todo"><span class="v">${todosN}</span> backlog</span>` : null}
+            ${tags.planned ? html`<span><span class="v">${tags.planned}</span> planned</span>` : null}
+          </div>
+        </div>
+      `;
+    }
 
-        var rows = ms.phases.map(function(ph) {
-          var st = mapStatus(ph.status);
-          var ic = st === 'c' ? '\u2713' : (st === 'a' ? '\u25B6' : (st === 'd' ? '~' : '\u00B7'));
-          var badge = '';
-          if (st === 'a') badge = '<span class="ph-b a">active</span>';
-          else if (st === 'd') badge = '<span class="ph-b d">deferred</span>';
-          var hasTasks = ph.tasks && ph.tasks.length > 0;
-          var plans = '';
-          var tbd = '';
-          if (hasTasks) {
-            var pd = ph.tasks.filter(function(t) { return mapStatus(t.status) === 'c'; }).length;
-            plans = '<span class="ph-p">' + pd + '/' + ph.tasks.length + '</span>';
-          } else {
-            tbd = '<span class="ph-tbd">tbd</span>';
-          }
+    function PlanList({ tasks }) {
+      return html`
+        <div class="ph-plans">
+          ${tasks.map(tk => {
+            const tst = mapStatus(tk.status);
+            const tic = tst === 'c' ? '\u2713' : (tst === 'a' ? '\u25B6' : '\u00B7');
+            return html`
+              <div class="ph-plan">
+                <span class=${`ph-plan-i ${tst}`}>${tic}</span>
+                <span class="ph-plan-nm">${tk.name}</span>
+                ${tk.objective ? html`<span class="ph-plan-obj">${tk.objective}</span>` : null}
+              </div>
+            `;
+          })}
+        </div>
+      `;
+    }
 
-          if (hasTasks) {
-            var planRows = ph.tasks.map(function(tk) {
-              var tst = mapStatus(tk.status);
-              var tic = tst === 'c' ? '\u2713' : (tst === 'a' ? '\u25B6' : '\u00B7');
-              var objHtml = tk.objective ? '<span class="ph-plan-obj">' + esc(tk.objective) + '</span>' : '';
-              return '<div class="ph-plan">' +
-                '<span class="ph-plan-i ' + tst + '">' + tic + '</span>' +
-                '<span class="ph-plan-nm">' + esc(tk.name) + '</span>' +
-                objHtml + '</div>';
-            }).join('');
-            var shouldOpenPh = st === 'a';
-            return '<details class="ph-exp"' + (shouldOpenPh ? ' open' : '') + '>' +
-              '<summary>' +
-                '<span class="ph-exp-arr">\u25B8</span>' +
-                '<span class="ph-i ' + st + '">' + ic + '</span>' +
-                '<span class="ph-n">' + ph.number + '</span>' +
-                '<span class="ph-t ' + st + '">' + esc(ph.name) + '</span>' +
-                plans + badge +
-              '</summary>' +
-              '<div class="ph-plans">' + planRows + '</div>' +
-            '</details>';
-          }
+    function PhaseRow({ ph, setToast }) {
+      const st = mapStatus(ph.status);
+      const ic = st === 'c' ? '\u2713' : (st === 'a' ? '\u25B6' : (st === 'd' ? '~' : '\u00B7'));
+      const hasTasks = ph.tasks && ph.tasks.length > 0;
+      const shouldOpen = st === 'a';
 
-          return '<div class="ph">' +
-            '<span class="ph-i ' + st + '">' + ic + '</span>' +
-            '<span class="ph-n">' + ph.number + '</span>' +
-            '<span class="ph-t ' + st + '">' + esc(ph.name) + '</span>' +
-            tbd + badge + '</div>';
-        }).join('');
+      if (hasTasks) {
+        const pd = ph.tasks.filter(t => mapStatus(t.status) === 'c').length;
+        return html`
+          <details class="ph-exp" open=${shouldOpen || undefined}>
+            <summary>
+              <span class="ph-exp-arr">\u25B8</span>
+              <span class=${`ph-i ${st}`}>${ic}</span>
+              <span class="ph-n">${ph.number}</span>
+              <span class=${`ph-t ${st}`}>${ph.name}</span>
+              <span class="ph-p">${pd}/${ph.tasks.length}</span>
+              ${st === 'a' ? html`<span class="ph-b a">active</span>` : null}
+              ${st === 'd' ? html`<span class="ph-b d">deferred</span>` : null}
+            </summary>
+            <${PlanList} tasks=${ph.tasks} />
+          </details>
+        `;
+      }
 
-        return '<details class="mg' + (hasAct ? ' is-active' : '') + '"' + (shouldOpen ? ' open' : '') + '>' +
-          '<summary>' +
-            '<span class="mg-arr">\u25B8</span>' +
-            '<span class="mg-ico ' + icoCls + '">' + ico + '</span>' +
-            '<span class="mg-nm">' + esc(ms.name) + '</span>' +
-            '<span class="mg-rng">' + rng + '</span>' +
-            '<div class="mg-bar"><div class="mg-bf' + (allDone ? '' : ' partial') + '" style="width:' + barPct + '%"></div></div>' +
-            '<span class="mg-ct">' + d + '/' + t + '</span>' +
-          '</summary>' +
-          '<div class="mg-body">' + rows + '</div>' +
-        '</details>';
-      }).join('');
+      // No tasks — show tbd + action buttons
+      return html`
+        <div class="ph">
+          <span class=${`ph-i ${st}`}>${ic}</span>
+          <span class="ph-n">${ph.number}</span>
+          <span class=${`ph-t ${st}`}>${ph.name}</span>
+          ${st !== 'c' && st !== 'd' ? html`
+            <span class="ph-tbd">tbd</span>
+            <button class="btn-action" onClick=${() => copyToClipboard(`/plan-work phase ${ph.number}: ${ph.name}`, setToast)}>[plan]</button>
+            <button class="btn-action" onClick=${() => copyToClipboard(`/build phase ${ph.number}: ${ph.name}`, setToast)}>[build]</button>
+          ` : null}
+          ${st === 'a' ? html`<span class="ph-b a">active</span>` : null}
+          ${st === 'd' ? html`<span class="ph-b d">deferred</span>` : null}
+        </div>
+      `;
+    }
 
-      // Working On
-      var workEl = document.getElementById('work-content');
-      var activeTask = null;
-      for (var i = 0; i < stages.length; i++) {
-        if (mapStatus(stages[i].status) === 'a' && stages[i].tasks) {
-          for (var j = 0; j < stages[i].tasks.length; j++) {
-            if (mapStatus(stages[i].tasks[j].status) === 'a') { activeTask = stages[i].tasks[j]; break; }
+    function MilestoneGroup({ ms, setToast }) {
+      const t = ms.phases.length;
+      const d = ms.phases.filter(p => mapStatus(p.status) === 'c').length;
+      const allDone = d === t;
+      const hasAct = ms.phases.some(p => mapStatus(p.status) === 'a');
+      const ico = allDone ? '\u2713' : (hasAct ? '\u25B6' : '\u00B7');
+      const icoCls = allDone ? 'c' : (hasAct ? 'a' : 'p');
+
+      const firstN = ms.phases[0].number;
+      const lastN = ms.phases[ms.phases.length - 1].number;
+      const rng = firstN === lastN ? String(firstN) : `${firstN}\u2013${lastN}`;
+      const shouldOpen = hasAct || (!allDone && d > 0);
+      const barPct = t > 0 ? Math.round(d / t * 100) : 0;
+
+      return html`
+        <details class=${`mg${hasAct ? ' is-active' : ''}`} open=${shouldOpen || undefined}>
+          <summary>
+            <span class="mg-arr">\u25B8</span>
+            <span class=${`mg-ico ${icoCls}`}>${ico}</span>
+            <span class="mg-nm">${ms.name}</span>
+            <span class="mg-rng">${rng}</span>
+            <div class="mg-bar"><div class=${`mg-bf${allDone ? '' : ' partial'}`} style=${{ width: barPct + '%' }}></div></div>
+            <span class="mg-ct">${d}/${t}</span>
+          </summary>
+          <div class="mg-body">
+            ${ms.phases.map(ph => html`<${PhaseRow} ph=${ph} setToast=${setToast} key=${ph.number} />`)}
+          </div>
+        </details>
+      `;
+    }
+
+    function WorkingOn({ data }) {
+      const stages = data.stages || [];
+      let activeTask = null;
+      for (const stage of stages) {
+        if (mapStatus(stage.status) === 'a' && stage.tasks) {
+          for (const task of stage.tasks) {
+            if (mapStatus(task.status) === 'a') {
+              activeTask = task;
+              break;
+            }
           }
           if (activeTask) break;
         }
       }
 
-      if (activeTask && activeTask.subtasks && activeTask.subtasks.length > 0) {
-        var dc = 0;
-        var subs = activeTask.subtasks.map(function(st) {
-          var isDone = st.status === 'done' || st.status === 'complete';
-          var isAct = st.status === 'in_progress' || st.status === 'active';
-          if (isDone) dc++;
-          var icoHtml = isDone
-            ? '<span class="wc-si done">\u2713</span>'
-            : (isAct
-              ? '<span class="wc-si act"><span class="blink">\u258C</span></span>'
-              : '<span class="wc-si pen">\u00B7</span>');
-          var cls = isDone ? 'done' : (isAct ? 'act' : 'pen');
-          return '<div class="wc-st">' + icoHtml +
-            '<span class="wc-sn ' + cls + '">' + esc(st.name) + '</span></div>';
-        }).join('');
-        var wp = activeTask.subtasks.length > 0 ? Math.round(dc / activeTask.subtasks.length * 100) : 0;
-        workEl.innerHTML = '<div class="wc">' +
-          '<div class="wc-nm">' + esc(activeTask.name || 'Current Task') + '</div>' +
-          subs +
-          '<div class="wc-bar"><div class="wc-bf" style="width:' + wp + '%"></div></div>' +
-        '</div>';
-      } else {
-        workEl.innerHTML = '<div class="empty">no active task</div>';
+      // Also check data.workingOn
+      if (!activeTask && data.workingOn?.task) {
+        activeTask = {
+          name: data.workingOn.task,
+          subtasks: data.workingOn.subtasks || [],
+        };
       }
 
-      // Todos
-      var todos = (data.todos && data.todos.pending) || [];
-      var todosEl = document.getElementById('todos-list');
-      var todosCountEl = document.getElementById('todos-count');
-      if (todos.length > 0) {
-        todosCountEl.textContent = '(' + todos.length + ')';
-        todosEl.innerHTML = todos.map(function(t) {
-          var area = t.area ? '<span class="td-a">' + esc(t.area) + '</span>' : '';
-          return '<div class="td"><span class="td-i">\u25CB</span><span class="td-t">' + esc(t.title) + '</span>' + area + '</div>';
-        }).join('');
-      } else {
-        todosCountEl.textContent = '';
-        todosEl.innerHTML = '<div class="empty">none \u2014 <span class="cmd">/fh:add-todo</span></div>';
+      if (!activeTask || !activeTask.subtasks || activeTask.subtasks.length === 0) {
+        return html`<div class="empty">no active task</div>`;
       }
 
-      // Quick Tasks
-      var qts = data.quickTasks || [];
-      var quickEl = document.getElementById('quick-list');
-      if (qts.length > 0) {
-        quickEl.innerHTML = qts.map(function(q) {
-          var qd = q.status === 'complete';
-          return '<div class="qt">' +
-            '<span class="qt-i ' + (qd ? 'done' : 'pen') + '">' + (qd ? '\u2713' : '\u00B7') + '</span>' +
-            '<span class="qt-num">#' + q.number + '</span>' +
-            '<span class="qt-t ' + (qd ? 'done' : 'pen') + '">' + esc(q.title) + '</span></div>';
-        }).join('');
-      } else {
-        quickEl.innerHTML = '<div class="empty">none \u2014 <span class="cmd">/fh:quick</span></div>';
-      }
+      let dc = 0;
+      const subs = activeTask.subtasks.map(st => {
+        const isDone = st.status === 'done' || st.status === 'complete';
+        const isAct = st.status === 'in_progress' || st.status === 'active';
+        if (isDone) dc++;
+        const cls = isDone ? 'done' : (isAct ? 'act' : 'pen');
+        return html`
+          <div class="wc-st">
+            ${isDone
+              ? html`<span class="wc-si done">\u2713</span>`
+              : isAct
+                ? html`<span class="wc-si act"><span class="blink">\u258C</span></span>`
+                : html`<span class="wc-si pen">\u00B7</span>`
+            }
+            <span class=${`wc-sn ${cls}`}>${st.name}</span>
+          </div>
+        `;
+      });
 
-      // Activity
-      var updates = data.recentActivity || [];
-      var updEl = document.getElementById('updates-list');
-      if (updates.length > 0) {
-        updEl.innerHTML = updates.slice(0, 6).map(function(u) {
-          return '<div class="ac"><span class="ac-t">' + esc(relativeTime(u.time)) + '</span><span class="ac-x">' + esc(u.text) + '</span></div>';
-        }).join('');
-      } else {
-        updEl.innerHTML = '<div class="empty">no recent activity</div>';
-      }
+      const wp = activeTask.subtasks.length > 0 ? Math.round(dc / activeTask.subtasks.length * 100) : 0;
+
+      return html`
+        <div class="wc">
+          <div class="wc-nm">${activeTask.name || 'Current Task'}</div>
+          ${subs}
+          <div class="wc-bar"><div class="wc-bf" style=${{ width: wp + '%' }}></div></div>
+        </div>
+      `;
     }
 
-    function fetchState() {
-      fetch('/api/state').then(function(r) { return r.json(); }).then(render).catch(function(e) { console.error(e); });
+    function ConcernsPanel({ data }) {
+      const concerns = data.concerns;
+      if (!concerns || !concerns.categories || concerns.categories.length === 0) return null;
+
+      return html`
+        <section>
+          <div class="sh"><span class="c">//</span> concerns</div>
+          ${concerns.categories.map(cat => html`
+            <div class="cn-row">
+              <span class="cn-nm">${cat.name}</span>
+              <span class="cn-ct">(${cat.count})</span>
+            </div>
+          `)}
+        </section>
+      `;
     }
 
-    var es = null, rt = null;
-    function connectSSE() {
-      if (es) { es.close(); es = null; }
-      es = new EventSource('/api/events');
-      es.onopen = function() { setConnected(true); if (rt) { clearTimeout(rt); rt = null; } };
-      es.addEventListener('refresh', fetchState);
-      es.onerror = function() { setConnected(false); es.close(); es = null; if (!rt) rt = setTimeout(function() { rt = null; connectSSE(); }, 2000); };
+    function CodebaseFreshness({ data, setToast }) {
+      const cf = data.codebaseFreshness;
+      if (!cf || !cf.lastUpdated) return null;
+
+      const days = daysBetween(cf.lastUpdated);
+      const isStale = cf.isStale || days > 7;
+      const label = days === 0 ? 'Updated today' : days === 1 ? 'Updated 1d ago' : `Updated ${days}d ago`;
+
+      return html`
+        <section>
+          <div class="sh"><span class="c">//</span> codebase</div>
+          <div class="cf">
+            <span class=${isStale ? 'cf-stale' : ''}>${label}</span>
+            ${isStale ? html`
+              <button class="btn-action" onClick=${() => copyToClipboard('/map-codebase', setToast)}>[update]</button>
+            ` : null}
+          </div>
+        </section>
+      `;
     }
 
-    document.addEventListener('DOMContentLoaded', function() { fetchState(); connectSSE(); });
+    function BacklogList({ data, setToast }) {
+      // Support both data.todos.pending (current parser) and data.backlog (spec shape)
+      const items = data.backlog || (data.todos?.pending) || [];
+      const [expanded, setExpanded] = useState({});
+
+      if (items.length === 0) {
+        return html`
+          <section>
+            <div class="sh"><span class="c">//</span> backlog</div>
+            <div class="empty">none \u2014 <span class="cmd">/fh:add-todo</span></div>
+          </section>
+        `;
+      }
+
+      const toggle = (i) => setExpanded(prev => ({ ...prev, [i]: !prev[i] }));
+
+      return html`
+        <section>
+          <div class="sh"><span class="c">//</span> backlog <span>(${items.length})</span></div>
+          ${items.map((t, i) => {
+            const hasBody = t.body || t.area;
+            return html`
+              <div key=${i}>
+                <div class="td" onClick=${hasBody ? () => toggle(i) : undefined}>
+                  <span class="td-i">\u25CB</span>
+                  <span class="td-t">${t.title}</span>
+                  ${t.area && !t.body ? html`<span class="td-a">${t.area}</span>` : null}
+                  ${t.priority ? html`<span class="td-a">${t.priority}</span>` : null}
+                </div>
+                ${expanded[i] && (t.body || t.area) ? html`
+                  <div class="td-body">${t.body || t.area}</div>
+                ` : null}
+              </div>
+            `;
+          })}
+        </section>
+      `;
+    }
+
+    function QuickTaskList({ data }) {
+      const qts = data.quickTasks || [];
+      const [expanded, setExpanded] = useState({});
+
+      if (qts.length === 0) {
+        return html`
+          <section>
+            <div class="sh"><span class="c">//</span> quick_tasks</div>
+            <div class="empty">none \u2014 <span class="cmd">/fh:quick</span></div>
+          </section>
+        `;
+      }
+
+      const toggle = (i) => setExpanded(prev => ({ ...prev, [i]: !prev[i] }));
+
+      return html`
+        <section>
+          <div class="sh"><span class="c">//</span> quick_tasks</div>
+          ${qts.map((q, i) => {
+            const qd = q.status === 'complete';
+            const hasBody = !!q.body;
+            return html`
+              <div key=${i}>
+                <div class="qt" onClick=${hasBody ? () => toggle(i) : undefined}>
+                  <span class=${`qt-i ${qd ? 'done' : 'pen'}`}>${qd ? '\u2713' : '\u00B7'}</span>
+                  <span class="qt-num">#${q.number}</span>
+                  <span class=${`qt-t ${qd ? 'done' : 'pen'}`}>${q.title}</span>
+                </div>
+                ${expanded[i] && q.body ? html`
+                  <div class="qt-body">${q.body}</div>
+                ` : null}
+              </div>
+            `;
+          })}
+        </section>
+      `;
+    }
+
+    function ActivityList({ data }) {
+      const updates = data.recentActivity || data.activity || [];
+
+      if (updates.length === 0) {
+        return html`
+          <section>
+            <div class="sh"><span class="c">//</span> activity</div>
+            <div class="empty">no recent activity</div>
+          </section>
+        `;
+      }
+
+      return html`
+        <section>
+          <div class="sh"><span class="c">//</span> activity</div>
+          ${updates.slice(0, 6).map((u, i) => html`
+            <div class="ac" key=${i}>
+              <span class="ac-t">${relativeTime(u.time || u.date)}</span>
+              <span class="ac-x">${u.text}</span>
+            </div>
+          `)}
+        </section>
+      `;
+    }
+
+    // -----------------------------------------------------------------------
+    // App
+    // -----------------------------------------------------------------------
+    function App() {
+      const [data, setData] = useState(null);
+      const [connected, setConnected] = useState(false);
+      const [toast, setToast] = useState('');
+      const esRef = useRef(null);
+      const rtRef = useRef(null);
+
+      const fetchState = useCallback(() => {
+        fetch('/api/state')
+          .then(r => r.json())
+          .then(d => {
+            setData(d);
+            document.title = ((d.project && d.project.name) || 'Project') + ' \u2014 tracker';
+          })
+          .catch(e => console.error(e));
+      }, []);
+
+      const connectSSE = useCallback(() => {
+        if (esRef.current) { esRef.current.close(); esRef.current = null; }
+        const es = new EventSource('/api/events');
+        esRef.current = es;
+        es.onopen = () => {
+          setConnected(true);
+          if (rtRef.current) { clearTimeout(rtRef.current); rtRef.current = null; }
+        };
+        es.addEventListener('refresh', fetchState);
+        es.onerror = () => {
+          setConnected(false);
+          es.close();
+          esRef.current = null;
+          if (!rtRef.current) {
+            rtRef.current = setTimeout(() => { rtRef.current = null; connectSSE(); }, 2000);
+          }
+        };
+      }, [fetchState]);
+
+      useEffect(() => {
+        fetchState();
+        connectSSE();
+        return () => {
+          if (esRef.current) esRef.current.close();
+          if (rtRef.current) clearTimeout(rtRef.current);
+        };
+      }, [fetchState, connectSSE]);
+
+      if (!data) {
+        return html`<div class="wrap"><span class="proj"><span class="gt">></span> loading...</span></div>`;
+      }
+
+      const milestones = groupByMilestone(data.stages || []);
+
+      return html`
+        <div class="wrap">
+          <${Header} data=${data} connected=${connected} />
+          <${Stats} data=${data} />
+          <div class="grid">
+            <div class="ms-list">
+              ${milestones.map((ms, i) => html`<${MilestoneGroup} ms=${ms} setToast=${setToast} key=${ms.name + i} />`)}
+            </div>
+            <div class="side">
+              <section>
+                <div class="sh"><span class="c">//</span> working_on</div>
+                <${WorkingOn} data=${data} />
+              </section>
+              <${ConcernsPanel} data=${data} />
+              <${CodebaseFreshness} data=${data} setToast=${setToast} />
+              <${BacklogList} data=${data} setToast=${setToast} />
+              <${QuickTaskList} data=${data} />
+              <${ActivityList} data=${data} />
+            </div>
+          </div>
+          <div class=${`toast${toast ? ' show' : ''}`}>${toast}</div>
+        </div>
+      `;
+    }
+
+    preactRender(html`<${App} />`, document.getElementById('app'));
   </script>
 </body>
 </html>
