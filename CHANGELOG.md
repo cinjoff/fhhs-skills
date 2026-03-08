@@ -5,6 +5,12 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.4] - 2026-03-08
+
+### Fixed
+- **GSD tools path** — all shipped skills used `./` (relative to CWD) instead of `$HOME/` for `gsd-tools.cjs`, causing "GSD tools not found" errors in user projects
+- **Tracker milestone plans** — scans `.planning/milestones/` directories for phase plan files, fixing empty task lists for all historical phases
+
 ## [1.12.3] - 2026-03-08
 
 ### Fixed
