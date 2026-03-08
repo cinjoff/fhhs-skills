@@ -5,6 +5,11 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.1] - 2026-03-08
+
+### Changed
+- **Tracker startup** — skips template file copying when already up to date, using version-based caching
+
 ## [1.12.0] - 2026-03-08
 
 ### Added
