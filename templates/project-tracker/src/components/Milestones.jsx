@@ -3,7 +3,7 @@ import { mapStatus, copyToClipboard } from '../lib/utils.js';
 
 function PlanList({ tasks }) {
   return (
-    <div className="pl-[6ch] py-[0.15rem] pb-1">
+    <div className="pl-[6ch] py-[0.15rem] pb-1 min-w-0">
       {tasks.map((tk, i) => {
         const tst = mapStatus(tk.status);
         const tic = tst === 'c' ? '\u2713' : (tst === 'a' ? '\u25B6' : '\u00B7');
@@ -29,7 +29,7 @@ function PhaseRow({ ph, showToast }) {
     const pd = ph.tasks.filter(t => mapStatus(t.status) === 'c').length;
     const needsBuild = st !== 'c' && st !== 'd' && pd < ph.tasks.length;
     return (
-      <details className="m-0" open={shouldOpen || undefined}>
+      <details className="m-0 min-w-0" open={shouldOpen || undefined}>
         <summary className="cursor-pointer flex items-center gap-[1ch] py-[0.2rem] text-[0.85rem]">
           <span className="arrow text-muted text-[0.6rem] w-[1ch] text-center inline-block transition-transform duration-150 ease-out shrink-0">{'\u25B8'}</span>
           <span className={`w-[1.5ch] text-center shrink-0 text-[0.8rem] ${st === 'c' ? 'text-green' : st === 'a' ? 'text-fire' : st === 'd' ? 'text-amber opacity-70' : 'text-dim'}`}>{ic}</span>
@@ -89,7 +89,7 @@ export const MilestoneGroup = memo(function MilestoneGroup({ ms, showToast, inde
 
   return (
     <details
-      className={`bg-surface border border-border animate-[fadeUp_0.2s_ease-out_both]${hasAct ? ' border-[rgba(255,45,0,0.3)]' : ''}`}
+      className={`bg-surface border border-border animate-[fadeUp_0.2s_ease-out_both] min-w-0${hasAct ? ' border-[rgba(255,45,0,0.3)]' : ''}`}
       open={shouldOpen || undefined}
       style={{ animationDelay: `${(index || 0) * 0.04}s` }}
     >
@@ -103,7 +103,7 @@ export const MilestoneGroup = memo(function MilestoneGroup({ ms, showToast, inde
         </div>
         <span className="text-xs text-muted [font-variant-numeric:tabular-nums] shrink-0">{d}/{t}</span>
       </summary>
-      <div className="px-3 pb-2 animate-[cFade_0.15s_ease-out]">
+      <div className="px-3 pb-2 animate-[cFade_0.15s_ease-out] min-w-0 overflow-hidden">
         {ms.phases.map(ph => <PhaseRow ph={ph} showToast={showToast} key={ph.number} />)}
       </div>
     </details>

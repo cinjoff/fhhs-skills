@@ -37,7 +37,7 @@ function App() {
       <Header data={data} connected={connected} />
       <Stats data={data} />
       <div className="grid grid-cols-[1fr_260px] gap-8 max-[800px]:grid-cols-1">
-        <div className="flex flex-col gap-px">
+        <div className="flex flex-col gap-px min-w-0">
           {milestones.map((ms, i) => (
             <MilestoneGroup ms={ms} showToast={showToast} index={i} key={`ms-${i}-${ms.name}`} />
           ))}
