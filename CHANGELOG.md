@@ -5,6 +5,15 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.1] - 2026-03-08
+
+### Changed
+- **Sidebar action buttons** — repositions [fix these] and [update] inline with section titles instead of below content
+- **Codebase staleness** — [update] button only appears when codebase map is >5 days old
+
+### Added
+- **Backlog planning** — [plan these] button on backlog section copies `/plan-work` command to prioritize and plan open todos
+
 ## [1.11.0] - 2026-03-08
 
 ### Added
