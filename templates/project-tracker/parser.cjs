@@ -439,12 +439,33 @@ function parsePhases(planningDir, roadmapPhases, state) {
   const flatPlans = parseFlatPlans(planningDir, state);
   Object.assign(phaseTaskMap, flatPlans);
 
-  // 2. Scan phase directories (phases/{dir}/XX-NN-PLAN.md) — overwrites flat plans if both exist
+  // 2. Scan milestone directories (milestones/{milestone}/XX-NN-PLAN.md)
+  //    then phase directories (phases/{dir}/XX-NN-PLAN.md) — phases/ overrides milestones/
+  const scanDirs = [];
+
+  // Milestones first (lower priority — will be overwritten by phases/ if both exist)
+  const milestonesDir = path.join(planningDir, 'milestones');
+  if (fs.existsSync(milestonesDir)) {
+    try {
+      const msDirs = fs.readdirSync(milestonesDir, { withFileTypes: true })
+        .filter(d => d.isDirectory())
+        .map(d => path.join(milestonesDir, d.name));
+      for (const msDir of msDirs) {
+        scanDirs.push(msDir);
+      }
+    } catch { /* ignore */ }
+  }
+
+  // phases/ dir last (higher priority)
   const phasesDir = path.join(planningDir, 'phases');
   if (fs.existsSync(phasesDir)) {
+    scanDirs.push(phasesDir);
+  }
+
+  for (const parentDir of scanDirs) {
     let phaseDirs;
     try {
-      phaseDirs = fs.readdirSync(phasesDir, { withFileTypes: true })
+      phaseDirs = fs.readdirSync(parentDir, { withFileTypes: true })
         .filter(d => d.isDirectory())
         .map(d => d.name)
         .sort();
@@ -454,7 +475,8 @@ function parsePhases(planningDir, roadmapPhases, state) {
 
     for (const dir of phaseDirs) {
       const phaseNum = parseInt(dir.split('-')[0], 10);
-      const fullDir = path.join(phasesDir, dir);
+      if (isNaN(phaseNum)) continue;
+      const fullDir = path.join(parentDir, dir);
 
       let files;
       try {

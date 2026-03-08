@@ -216,6 +216,9 @@ function categorizeChanges(changedFiles) {
       needs.codebaseFreshness = true;
     } else if (parts[0] === 'phases' && parts.length >= 2) {
       needs.changedPhaseDirs.add(parts[1]);
+    } else if (parts[0] === 'milestones' && parts.length >= 3) {
+      // milestones/{milestone-name}/{phase-dir}/... → treat as phase change
+      needs.changedPhaseDirs.add(parts[2]);
     }
   }
 
