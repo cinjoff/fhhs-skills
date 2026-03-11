@@ -211,7 +211,66 @@ This only needs to be done once.
 
 ---
 
-## Step 7: Handoff
+## Step 7: Conductor Configuration
+
+Check if Conductor is installed:
+
+```bash
+[ -d "/Applications/Conductor.app" ] && echo "INSTALLED" || echo "NOT_INSTALLED"
+```
+
+If `NOT_INSTALLED`, skip to Step 8.
+
+If installed, create `conductor.json` in the project root with scripts tailored to the tech stack chosen in Step 2.
+
+**For Next.js (default stack):**
+
+```json
+{
+  "scripts": {
+    "setup": "npm install && [ -f \"$CONDUCTOR_ROOT_PATH/.env.local\" ] && ln -s \"$CONDUCTOR_ROOT_PATH/.env.local\" .env.local || true",
+    "run": "npm run dev -- --port $CONDUCTOR_PORT"
+  }
+}
+```
+
+**For other common stacks** — adapt the scripts:
+
+| Stack | Setup script | Run script |
+|-------|-------------|------------|
+| Next.js | `npm install && ln -s "$CONDUCTOR_ROOT_PATH/.env.local" .env.local` | `npm run dev -- --port $CONDUCTOR_PORT` |
+| Rails | `bundle install && ln -s "$CONDUCTOR_ROOT_PATH/.env" .env` | `bin/rails server -p $CONDUCTOR_PORT` |
+| Django | `pip install -r requirements.txt && ln -s "$CONDUCTOR_ROOT_PATH/.env" .env` | `python manage.py runserver $CONDUCTOR_PORT` |
+| Phoenix | `mix deps.get && ln -s "$CONDUCTOR_ROOT_PATH/.env" .env` | `mix phx.server` (uses `PORT=$CONDUCTOR_PORT`) |
+| Vite | `npm install && ln -s "$CONDUCTOR_ROOT_PATH/.env" .env` | `npm run dev -- --port $CONDUCTOR_PORT` |
+
+The setup script should:
+1. Install dependencies
+2. Symlink `.env` (or `.env.local`) from `$CONDUCTOR_ROOT_PATH` if it exists
+
+The run script should:
+1. Start the dev server using `$CONDUCTOR_PORT` for port assignment (each Conductor workspace gets a unique port range of 10)
+
+After creating `conductor.json`, tell the user:
+
+```
+✓ conductor.json created — Conductor workspaces will auto-configure
+
+  Conductor environment variables available in scripts:
+  • $CONDUCTOR_ROOT_PATH      — repo root (shared across workspaces)
+  • $CONDUCTOR_WORKSPACE_PATH — this workspace's directory
+  • $CONDUCTOR_PORT           — unique port for this workspace
+  • $CONDUCTOR_WORKSPACE_NAME — workspace name
+
+  Place shared files (like .env) in the repo root directory.
+  Each workspace will symlink them via the setup script.
+```
+
+Commit: `chore: add conductor.json for workspace configuration`
+
+---
+
+## Step 8: Handoff
 
 Report to the user:
 
@@ -225,6 +284,7 @@ Project initialized:
 - .planning/config.json     — workflow settings
 - CLAUDE.md                 — project conventions
 - .project-tracker/         — visual dashboard (run /fh:tracker to launch)
+- conductor.json            — Conductor workspace scripts (if Conductor detected)
 - GitHub repo               — <repo-url> (private)
 - Vercel project            — linked (auto-deploys on push to main)
 
