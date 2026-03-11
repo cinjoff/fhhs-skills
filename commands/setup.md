@@ -450,7 +450,66 @@ After writing settings.json:
 
 ---
 
-## Step 6: Summary
+## Step 6: Conductor Configuration
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ FHHS ► CONDUCTOR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+[Conductor](https://conductor.build) lets you run multiple Claude Code agents in parallel workspaces. Each workspace gets a copy of your git files plus isolated setup/run scripts. This step checks whether Conductor is installed and reminds the user to configure it per-project.
+
+### 6a: Detect Conductor
+
+```bash
+# Check if the Conductor app exists
+[ -d "/Applications/Conductor.app" ] && echo "INSTALLED" || echo "NOT_INSTALLED"
+```
+
+If `NOT_INSTALLED`:
+
+```
+○ Conductor not detected (optional)
+  Conductor runs parallel coding agents in isolated workspaces.
+  Download from https://conductor.build if interested.
+```
+
+Skip to Step 7.
+
+### 6b: Conductor awareness
+
+If installed, display:
+
+```
+✓ Conductor detected
+
+  Conductor uses conductor.json in your repo root to configure workspaces.
+  When you start a new project with /fh:new-project, a conductor.json
+  will be created automatically with setup + run scripts for your stack.
+
+  Key environment variables available in Conductor scripts:
+  ┌────────────────────────────┬──────────────────────────────────┐
+  │ $CONDUCTOR_ROOT_PATH       │ Repository root directory        │
+  │ $CONDUCTOR_WORKSPACE_PATH  │ Current workspace directory      │
+  │ $CONDUCTOR_PORT            │ Assigned port (range of 10)      │
+  │ $CONDUCTOR_WORKSPACE_NAME  │ Workspace name                   │
+  │ $CONDUCTOR_DEFAULT_BRANCH  │ Default branch (usually main)    │
+  └────────────────────────────┴──────────────────────────────────┘
+
+  If you have an existing project, create conductor.json manually:
+
+    {
+      "scripts": {
+        "setup": "npm install && ln -s \"$CONDUCTOR_ROOT_PATH/.env\" .env",
+        "run": "npm run dev -- --port $CONDUCTOR_PORT"
+      }
+    }
+```
+
+---
+
+## Step 7: Summary
 
 Display the summary banner as **direct text output** (not via Bash — Bash output gets collapsed by Claude Code and users won't see it). Output this exactly:
 
@@ -490,6 +549,7 @@ Then present the status table and next steps as regular markdown text:
 | LSP Enabled (env)          | ✓ CLAUDE_CODE_ENABLE_LSP=1 |
 | CLI Tools                  | ✓ linked                 |
 | Hooks                      | ✓ statusline + update check + context monitor |
+| Conductor                  | ✓ detected / ○ not installed (optional) |
 
 ───────────────────────────────────────────────────────────────
 
