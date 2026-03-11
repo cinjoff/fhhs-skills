@@ -244,11 +244,14 @@ Task(
 
 <files_to_read>
 - .planning/STATE.md (Project State)
-- ./CLAUDE.md (if exists — follow project-specific guidelines)
 ${DISCUSS_MODE ? '- ' + QUICK_DIR + '/' + next_num + '-CONTEXT.md (User decisions — locked, do not revisit)' : ''}
 </files_to_read>
 
-**Project skills:** Check .claude/skills/ or .agents/skills/ directory (if either exists) — read SKILL.md files, plans should account for project skill rules
+<optional_files_to_read>
+Read these ONE AT A TIME (not in parallel with other reads) — skip any that don't exist:
+- ./CLAUDE.md (project-specific guidelines)
+- .claude/skills/ directory (read SKILL.md files, plans should account for project skill rules)
+</optional_files_to_read>
 
 </planning_context>
 
@@ -399,9 +402,13 @@ Execute quick task ${next_num}.
 <files_to_read>
 - ${QUICK_DIR}/${next_num}-PLAN.md (Plan)
 - .planning/STATE.md (Project state)
-- ./CLAUDE.md (Project instructions, if exists)
-- .claude/skills/ or .agents/skills/ (Project skills, if either exists — list skills, read SKILL.md for each, follow relevant rules during implementation)
 </files_to_read>
+
+<optional_files_to_read>
+Read these ONE AT A TIME (not in parallel with other reads) — skip any that don't exist:
+- ./CLAUDE.md (Project instructions)
+- .claude/skills/ directory (list skills, read SKILL.md for each, follow relevant rules during implementation)
+</optional_files_to_read>
 
 <constraints>
 - Execute all tasks in the plan

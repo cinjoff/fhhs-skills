@@ -14,9 +14,12 @@ You are implementing a task from a plan.
 
 ## Project Context
 
-Read `./CLAUDE.md` for project conventions.
-Check `.claude/skills/` or `.agents/skills/` for project-specific patterns — read each
+If `./CLAUDE.md` exists, read it for project conventions.
+If `.claude/skills/` exists, check it for project-specific patterns — read each
 SKILL.md index, follow rules relevant to your task.
+
+**Important:** Read optional files (CLAUDE.md, skills/) ONE AT A TIME — do not batch
+them with other reads. If a file doesn't exist, skip it and continue.
 
 {CLAUDE_MD_SECTIONS}
 {DESIGN_DECISIONS}
