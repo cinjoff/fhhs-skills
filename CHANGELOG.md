@@ -5,6 +5,14 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.5] - 2026-03-11
+
+### Fixed
+- **Parallel read cascade errors** — subagent prompts in /build and /quick no longer batch optional files (CLAUDE.md, skills/) with required reads, preventing cascade cancellations when optional files don't exist
+
+### Added
+- **Conductor workspace support** — /fh:setup detects Conductor and shows configuration guidance; /fh:new-project auto-generates conductor.json with stack-appropriate setup and run scripts
+
 ## [1.12.4] - 2026-03-08
 
 ### Fixed
