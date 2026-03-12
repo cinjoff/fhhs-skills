@@ -723,8 +723,10 @@
       "files": [],
       "assertions": [
         {"text": "Reads the target file", "type": "behavioral"},
-        {"text": "Checks .planning/DESIGN.md for design context", "type": "behavioral"},
-        {"text": "Fixes spacing/alignment issues", "type": "output"}
+        {"text": "Reads .planning/DESIGN.md for design context", "type": "behavioral"},
+        {"text": "Fixes spacing/alignment issues", "type": "output"},
+        {"text": "Commits changes with descriptive message", "type": "output"},
+        {"text": "Does not over-engineer beyond the specific request", "type": "guard"}
       ]
     },
     {
@@ -736,7 +738,9 @@
       "assertions": [
         {"text": "Adds error handling for edge cases", "type": "output"},
         {"text": "Handles loading/error states", "type": "output"},
-        {"text": "Checks i18n readiness", "type": "behavioral"}
+        {"text": "Checks i18n readiness", "type": "behavioral"},
+        {"text": "Commits changes with descriptive message", "type": "output"},
+        {"text": "Does not over-engineer beyond the specific request", "type": "guard"}
       ]
     },
     {
@@ -746,9 +750,12 @@
       "expected_output": "Should analyze current layout, add responsive breakpoints, convert sidebar to mobile-friendly navigation (bottom nav or hamburger), ensure touch targets are 44px+, test at 375px width.",
       "files": [],
       "assertions": [
+        {"text": "Reads .planning/DESIGN.md for design context", "type": "behavioral"},
         {"text": "Adds responsive breakpoints", "type": "output"},
         {"text": "Converts sidebar for mobile", "type": "output"},
-        {"text": "Ensures touch target sizes", "type": "behavioral"}
+        {"text": "Ensures minimum 44px touch target sizes", "type": "behavioral"},
+        {"text": "Commits changes with descriptive message", "type": "output"},
+        {"text": "Does not over-engineer beyond the specific request", "type": "guard"}
       ]
     },
     {
@@ -758,9 +765,12 @@
       "expected_output": "Should add entrance/exit animations (fade + scale or slide), use CSS transitions or framer-motion, respect prefers-reduced-motion, keep animations under 300ms for responsiveness.",
       "files": [],
       "assertions": [
+        {"text": "Reads .planning/DESIGN.md for design context", "type": "behavioral"},
         {"text": "Adds entrance/exit animations", "type": "output"},
-        {"text": "Respects prefers-reduced-motion", "type": "behavioral"},
-        {"text": "Keeps animations performant (<300ms)", "type": "behavioral"}
+        {"text": "Respects prefers-reduced-motion media query", "type": "behavioral"},
+        {"text": "Keeps transition durations under 300ms", "type": "behavioral"},
+        {"text": "Commits changes with descriptive message", "type": "output"},
+        {"text": "Does not over-engineer beyond the specific request", "type": "guard"}
       ]
     },
     {
@@ -772,7 +782,9 @@
       "assertions": [
         {"text": "Identifies and removes low-value elements", "type": "behavioral"},
         {"text": "Applies progressive disclosure", "type": "output"},
-        {"text": "Reduces visual complexity", "type": "output"}
+        {"text": "Reduces visual complexity", "type": "output"},
+        {"text": "Commits changes with descriptive message", "type": "output"},
+        {"text": "Does not over-engineer beyond the specific request", "type": "guard"}
       ]
     },
     {
@@ -782,9 +794,12 @@
       "expected_output": "Should scan for button variants, identify inconsistencies against the design system or established patterns, standardize border-radius, padding, font-size, and color usage.",
       "files": [],
       "assertions": [
+        {"text": "Reads .planning/DESIGN.md for design context", "type": "behavioral"},
         {"text": "Identifies button inconsistencies", "type": "behavioral"},
         {"text": "Standardizes to design system patterns", "type": "output"},
-        {"text": "Fixes border-radius/padding/font inconsistencies", "type": "output"}
+        {"text": "Fixes border-radius/padding/font inconsistencies", "type": "output"},
+        {"text": "Commits changes with descriptive message", "type": "output"},
+        {"text": "Does not over-engineer beyond the specific request", "type": "guard"}
       ]
     },
     {
@@ -807,8 +822,10 @@
       "files": [],
       "assertions": [
         {"text": "Designs multi-step onboarding flow", "type": "output"},
-        {"text": "Handles empty states", "type": "output"},
-        {"text": "Includes first action prompt", "type": "output"}
+        {"text": "Handles empty states with helpful CTAs", "type": "output"},
+        {"text": "Includes first action prompt", "type": "output"},
+        {"text": "Adds progress indicator for onboarding steps", "type": "output"},
+        {"text": "Does not over-engineer beyond the specific request", "type": "guard"}
       ]
     },
     {
@@ -1151,7 +1168,9 @@
       "assertions": [
         {"text": "Detects raw HTML inputs in user-form.tsx that should use shadcn Input", "type": "behavioral"},
         {"text": "Detects hard-coded color values in sidebar that should use CSS variables", "type": "behavioral"},
-        {"text": "Detects raw <a> tags in sidebar that should use Next.js Link", "type": "behavioral"}
+        {"text": "Detects raw <a> tags in sidebar that should use Next.js Link", "type": "behavioral"},
+        {"text": "Commits changes with descriptive message", "type": "output"},
+        {"text": "Does not over-engineer beyond the specific request", "type": "guard"}
       ]
     },
     {
@@ -1170,7 +1189,9 @@
       "assertions": [
         {"text": "Detects client-side waterfall (sequential fetches in useEffect)", "type": "behavioral"},
         {"text": "Detects layout thrashing (offsetWidth reads in loop)", "type": "behavioral"},
-        {"text": "Detects missing debounce on data-table search despite hook existing", "type": "behavioral"}
+        {"text": "Detects missing debounce on data-table search despite hook existing", "type": "behavioral"},
+        {"text": "Detects unoptimized images (raw img instead of next/image)", "type": "behavioral"},
+        {"text": "Does not over-engineer beyond the specific request", "type": "guard"}
       ]
     },
     {
@@ -1243,9 +1264,12 @@
         "evals/fixtures/nextjs-app-deep/CLAUDE.md"
       ],
       "assertions": [
+        {"text": "Reads .planning/DESIGN.md for design context", "type": "behavioral"},
         {"text": "Detects hard-coded z-[9999] on toast", "type": "behavioral"},
         {"text": "Detects inconsistent use of design tokens vs hard-coded colors", "type": "behavioral"},
-        {"text": "Fixes spacing and alignment issues", "type": "output"}
+        {"text": "Fixes spacing and alignment issues", "type": "output"},
+        {"text": "Commits changes with descriptive message", "type": "output"},
+        {"text": "Does not over-engineer beyond the specific request", "type": "guard"}
       ]
     },
     {
@@ -1265,7 +1289,9 @@
       "assertions": [
         {"text": "Detects duplicated email validation across 3 files", "type": "behavioral"},
         {"text": "Detects duplicated fetch pattern in api.ts", "type": "behavioral"},
-        {"text": "Recommends extracting shared validation utility", "type": "output"}
+        {"text": "Recommends extracting shared validation utility", "type": "output"},
+        {"text": "Commits changes with descriptive message", "type": "output"},
+        {"text": "Does not over-engineer beyond the specific request", "type": "guard"}
       ]
     },
     {
@@ -1283,14 +1309,17 @@
       "assertions": [
         {"text": "Detects fixed 280px sidebar width as non-responsive", "type": "behavioral"},
         {"text": "Detects min-w-[800px] on users page as mobile-hostile", "type": "behavioral"},
-        {"text": "Recommends hamburger/overlay pattern for mobile navigation", "type": "output"}
+        {"text": "Recommends hamburger/overlay pattern for mobile navigation", "type": "output"},
+        {"text": "Ensures minimum 44px touch target sizes for interactive elements", "type": "behavioral"},
+        {"text": "Commits changes with descriptive message", "type": "output"},
+        {"text": "Does not over-engineer beyond the specific request", "type": "guard"}
       ]
     },
     {
       "id": 83,
-      "command": "fix",
+      "command": "critique",
       "prompt": "review the e2e tests and suggest improvements following Playwright best practices",
-      "expected_output": "Should detect CSS selector anti-patterns (.email-input, .btn-primary, .text-red-600), recommend role-based or test-id locators, suggest Page Object Model pattern, and identify missing error state test coverage.",
+      "expected_output": "Should read the frontend-design skill for critique methodology, then produce a structured critique report. Should detect CSS selector anti-patterns (.email-input, .btn-primary, .text-red-600), recommend role-based or test-id locators, suggest Page Object Model pattern, identify missing error state test coverage, and rate each finding by severity.",
       "files": [
         "evals/fixtures/nextjs-app-deep/e2e/login.spec.ts",
         "evals/fixtures/nextjs-app-deep/playwright.config.ts",
@@ -1298,9 +1327,12 @@
         "evals/fixtures/nextjs-app-deep/CLAUDE.md"
       ],
       "assertions": [
+        {"text": "Reads frontend-design skill for critique methodology", "type": "behavioral"},
+        {"text": "Produces a structured report with severity ratings per finding", "type": "output"},
         {"text": "Detects CSS selector usage (.email-input, .btn-primary) as anti-pattern", "type": "behavioral"},
         {"text": "Recommends role-based locators (getByRole, getByLabel)", "type": "output"},
-        {"text": "Recommends Page Object Model pattern", "type": "output"}
+        {"text": "Recommends Page Object Model pattern", "type": "output"},
+        {"text": "Does not auto-apply fixes — critique is read-only analysis", "type": "guard"}
       ]
     },
     {
@@ -1417,7 +1449,9 @@
       "assertions": [
         {"text": "Detects missing skeleton/loading states", "type": "behavioral"},
         {"text": "Detects missing empty states for zero-data scenarios", "type": "behavioral"},
-        {"text": "Recommends specific empty state patterns", "type": "output"}
+        {"text": "Recommends specific empty state patterns with CTAs", "type": "output"},
+        {"text": "Commits changes with descriptive message", "type": "output"},
+        {"text": "Does not over-engineer beyond the specific request", "type": "guard"}
       ]
     },
     {
@@ -1433,7 +1467,228 @@
       "assertions": [
         {"text": "Identifies 'Something went wrong' as unhelpful generic error", "type": "behavioral"},
         {"text": "Suggests more specific, actionable error messages", "type": "output"},
-        {"text": "Improves form field labels or placeholder text", "type": "output"}
+        {"text": "Improves form field labels or placeholder text", "type": "output"},
+        {"text": "Commits changes with descriptive message", "type": "output"},
+        {"text": "Does not over-engineer beyond the specific request", "type": "guard"}
+      ]
+    },
+    {
+      "id": 91,
+      "command": "secure",
+      "prompt": "scan just the changed files for security issues (default scope, not --full)",
+      "expected_output": "Should use default scoping (git diff from merge-base, not full codebase). Should compute merge-base, collect changed + staged + unstaged file list, filter to source files, deduplicate. Should still dispatch 4 parallel agents on the scoped file set. Report should note 'Scanning N files' with the scoped count, not the full codebase count.",
+      "files": [],
+      "assertions": [
+        {"text": "Uses git merge-base for default scope (not full codebase)", "type": "behavioral"},
+        {"text": "Deduplicates changed + staged + unstaged file lists", "type": "behavioral"},
+        {"text": "Filters to source files only", "type": "behavioral"},
+        {"text": "Dispatches 4 parallel agents on scoped files", "type": "behavioral"},
+        {"text": "Reports scoped file count (not full codebase)", "type": "output"}
+      ]
+    },
+    {
+      "id": 92,
+      "command": "secure",
+      "prompt": "security scan --full on just the auth module: src/lib/auth.ts and the login route",
+      "expected_output": "Should detect hardcoded JWT secret 'acme-dashboard-secret-2024' (CRITICAL), localStorage for token storage (HIGH), 'as TokenPayload' type assertion bypassing type safety, error details leaked in login route catch (String(error) exposes internals), and hardcoded role 'viewer' in login. Gate output should be BLOCK due to CRITICAL (hardcoded secret).",
+      "files": [
+        "evals/fixtures/nextjs-app-deep/src/lib/auth.ts",
+        "evals/fixtures/nextjs-app-deep/src/app/api/auth/login/route.ts",
+        "evals/fixtures/nextjs-app-deep/src/app/api/auth/refresh/route.ts"
+      ],
+      "assertions": [
+        {"text": "Finds hardcoded JWT secret as CRITICAL", "type": "behavioral"},
+        {"text": "Finds localStorage token storage as HIGH", "type": "behavioral"},
+        {"text": "Finds error details leak (String(error)) in login route", "type": "behavioral"},
+        {"text": "Gate output is BLOCK (CRITICAL finding present)", "type": "output"},
+        {"text": "Fix suggestion includes environment variable for JWT secret", "type": "output"}
+      ]
+    },
+    {
+      "id": 93,
+      "command": "secure",
+      "prompt": "run a security scan on the data route at src/app/api/data/route.ts",
+      "expected_output": "Should detect user-controlled table name passed directly to supabase.from(table) — allows querying arbitrary tables (CRITICAL IDOR/injection). Should detect missing authentication check (HIGH). Should detect no CORS configuration (MEDIUM). Gate output should be BLOCK.",
+      "files": [
+        "evals/fixtures/nextjs-app-deep/src/app/api/data/route.ts"
+      ],
+      "assertions": [
+        {"text": "Finds user-controlled table name as CRITICAL (IDOR or injection)", "type": "behavioral"},
+        {"text": "Finds missing authentication check as HIGH", "type": "behavioral"},
+        {"text": "Gate output is BLOCK", "type": "output"},
+        {"text": "Fix suggestion includes allowlist for table names", "type": "output"}
+      ]
+    },
+    {
+      "id": 94,
+      "command": "secure",
+      "prompt": "check the comment-card and comments API for XSS vulnerabilities",
+      "expected_output": "Should detect dangerouslySetInnerHTML with user-provided content (comment.content) in comment-card.tsx as CRITICAL stored XSS. Should detect that comments POST route accepts raw body.content without sanitization. Gate output should be BLOCK. Fix should recommend sanitizing HTML (DOMPurify) or using text rendering instead of dangerouslySetInnerHTML.",
+      "files": [
+        "evals/fixtures/nextjs-app-deep/src/components/comment-card.tsx",
+        "evals/fixtures/nextjs-app-deep/src/app/api/comments/route.ts"
+      ],
+      "assertions": [
+        {"text": "Finds dangerouslySetInnerHTML with user content as CRITICAL XSS", "type": "behavioral"},
+        {"text": "Finds missing input sanitization on comments POST", "type": "behavioral"},
+        {"text": "Gate output is BLOCK", "type": "output"},
+        {"text": "Recommends DOMPurify or text rendering as fix", "type": "output"}
+      ]
+    },
+    {
+      "id": 95,
+      "command": "secure",
+      "prompt": "scan the users API route for security issues",
+      "expected_output": "Should detect POST accepting arbitrary body fields (mass assignment — user controls what gets inserted). Should detect DELETE exposed without authentication. Should detect no rate limiting on operations. Should note that error.message from Supabase is returned verbatim (information disclosure). Report should include file:line references.",
+      "files": [
+        "evals/fixtures/nextjs-app-deep/src/app/api/users/route.ts"
+      ],
+      "assertions": [
+        {"text": "Finds mass assignment vulnerability in POST (inserts raw body)", "type": "behavioral"},
+        {"text": "Finds missing authentication on DELETE", "type": "behavioral"},
+        {"text": "Finds Supabase error.message exposed to client", "type": "behavioral"},
+        {"text": "Report includes file:line references", "type": "output"}
+      ]
+    },
+    {
+      "id": 96,
+      "command": "review",
+      "prompt": "review my changes — I only touched CSS files (globals.css and a few component styles)",
+      "expected_output": "Should run full review pipeline: quality review (code-reviewer), security scan (should find minimal issues in CSS-only changes), evidence verification (tests, build, lint). TS strictness check should report 'No any found' since CSS has no TS. Should detect frontend work and suggest /fh:verify-ui for visual verification. Should NOT include Next.js perf patterns for CSS-only changes unless components were touched.",
+      "files": [],
+      "assertions": [
+        {"text": "Runs quality review via code-reviewer agent", "type": "behavioral"},
+        {"text": "Security scan runs but finds minimal/no issues in CSS", "type": "behavioral"},
+        {"text": "TS strictness check reports no violations (CSS only)", "type": "output"},
+        {"text": "Suggests /fh:verify-ui for visual verification (frontend work detected)", "type": "output"},
+        {"text": "Proceeds to promotion options (likely PASS)", "type": "behavioral"}
+      ]
+    },
+    {
+      "id": 97,
+      "command": "review",
+      "prompt": "review — the diff has several uses of 'any' type in the new service files",
+      "expected_output": "Should run TS strictness check (Step 4) and detect 'any' usage in added lines. Should flag each instance with file and line. Should BLOCK promotion because 'any' in new code is a blocking finding per the gate decision table. Should recommend replacing with proper types (unknown + type guards or concrete interfaces). Should NOT proceed to promotion until any usage is fixed.",
+      "files": [],
+      "assertions": [
+        {"text": "TS strictness grep detects any usage in diff", "type": "behavioral"},
+        {"text": "Reports any locations with file references", "type": "output"},
+        {"text": "Gate decision is BLOCK (any in new code)", "type": "guard"},
+        {"text": "Recommends replacing any with proper types", "type": "output"},
+        {"text": "Does NOT proceed to promotion while blocked", "type": "guard"}
+      ]
+    },
+    {
+      "id": 98,
+      "command": "review",
+      "prompt": "review my changes (tests are failing — 3 out of 20 tests red)",
+      "expected_output": "Should run evidence verification (Step 3) and detect failing tests from fresh test run output. Should report: '20 tests total, 17 passed, 3 failed' with exit code. Should BLOCK promotion because verification failures are blocking per gate table. Should diagnose which tests are failing. Should NOT proceed to promotion. Should suggest fixing tests before re-reviewing.",
+      "files": [],
+      "assertions": [
+        {"text": "Runs fresh test suite and reads output", "type": "behavioral"},
+        {"text": "Reports test count and failure details", "type": "output"},
+        {"text": "Gate decision is BLOCK (verification failures)", "type": "guard"},
+        {"text": "Does NOT proceed to promotion", "type": "guard"},
+        {"text": "Suggests fixing tests then re-reviewing", "type": "output"}
+      ]
+    },
+    {
+      "id": 99,
+      "command": "review",
+      "prompt": "review — I think everything is clean, ready to create a PR",
+      "expected_output": "Should run full pipeline: quality review, security scan, evidence verification, TS strictness. If all pass: generate review report (quality score, security status, verification evidence, TS strictness results). Gate decision PASS. Invoke finishing-a-development-branch with promotion options (PR/merge/keep/discard). PR title should follow conventional commit format type(scope): summary. Should present the 4 options to user.",
+      "files": [],
+      "assertions": [
+        {"text": "Runs all 4 review steps in order", "type": "ordering"},
+        {"text": "Generates structured review report with all sections", "type": "output"},
+        {"text": "Gate decision is PASS", "type": "output"},
+        {"text": "Presents promotion options (PR/merge/keep/discard)", "type": "output"},
+        {"text": "PR title enforces conventional commit format", "type": "output"}
+      ]
+    },
+    {
+      "id": 100,
+      "command": "review",
+      "prompt": "review the changes (security scan finds HIGH but no CRITICAL issues)",
+      "expected_output": "Should run full pipeline. Security scan returns WARN (HIGH findings but no CRITICAL). Code quality review passes. Evidence verification passes. Gate decision should be WARN — log HIGH findings in report, recommend fixing, but proceed to promotion unless user wants to fix first. Should present findings with severity and file:line references. Should still allow promotion.",
+      "files": [],
+      "assertions": [
+        {"text": "Security scan returns WARN (HIGH, no CRITICAL)", "type": "behavioral"},
+        {"text": "Gate decision is WARN (not BLOCK)", "type": "output"},
+        {"text": "HIGH findings logged with severity and file references", "type": "output"},
+        {"text": "Proceeds to promotion options despite WARN", "type": "behavioral"},
+        {"text": "Recommends fixing HIGH findings but does not require it", "type": "output"}
+      ]
+    },
+    {
+      "id": 101,
+      "command": "review",
+      "prompt": "review — this is a Next.js project and I changed several API routes and a page component",
+      "expected_output": "Should detect Next.js project (checks for next.config.*). Should include nextjs-perf skill patterns in the code quality review criteria (client-side waterfalls, caching patterns, unnecessary client components, barrel import bundle bloat). Security scan should focus on API routes. Evidence verification should include build check. TS strictness check should run on the diff. Review report should mention Next.js-specific findings if any.",
+      "files": [
+        "evals/fixtures/nextjs-app-deep/next.config.ts",
+        "evals/fixtures/nextjs-app-deep/tsconfig.json",
+        "evals/fixtures/nextjs-app-deep/CLAUDE.md"
+      ],
+      "assertions": [
+        {"text": "Detects Next.js project from next.config.*", "type": "behavioral"},
+        {"text": "Includes nextjs-perf patterns in quality review criteria", "type": "behavioral"},
+        {"text": "Quality review covers waterfall and bundle patterns", "type": "behavioral"},
+        {"text": "Security scan focuses on API route changes", "type": "behavioral"},
+        {"text": "Review report generated with all sections", "type": "output"}
+      ]
+    },
+    {
+      "id": 102,
+      "command": "review",
+      "prompt": "review (code quality review finds Critical issue: function silently swallows errors and returns undefined)",
+      "expected_output": "Should run quality review and receive Critical finding. Gate decision should BLOCK on Critical code review finding (per gate table). Should report the Critical finding with file context. Should fix directly or dispatch fix agent. After fix, should re-run only the quality review step (not entire pipeline). Should proceed to promotion after re-check passes.",
+      "files": [],
+      "assertions": [
+        {"text": "Gate BLOCKS on Critical code review finding", "type": "guard"},
+        {"text": "Reports Critical finding with file context", "type": "output"},
+        {"text": "Fixes the Critical finding", "type": "behavioral"},
+        {"text": "Re-runs only the blocked step (not entire pipeline)", "type": "behavioral"},
+        {"text": "Proceeds to promotion after re-check passes", "type": "behavioral"}
+      ]
+    },
+    {
+      "id": 103,
+      "command": "review",
+      "prompt": "review (no changes on current branch — clean diff)",
+      "expected_output": "Should detect empty diff (no changes from merge-base to HEAD). Should report there's nothing to review. Should NOT dispatch code-reviewer, security agents, or run verification. Should NOT offer promotion options.",
+      "files": [],
+      "assertions": [
+        {"text": "Detects empty diff (no changes)", "type": "behavioral"},
+        {"text": "Reports nothing to review", "type": "output"},
+        {"text": "Does NOT dispatch review agents", "type": "guard"},
+        {"text": "Does NOT offer promotion options", "type": "guard"}
+      ]
+    },
+    {
+      "id": 104,
+      "command": "review",
+      "prompt": "review — this is NOT a GSD project (no .planning/ directory)",
+      "expected_output": "Should run the full review pipeline regardless of GSD status. /review is a pure quality gate — it does NOT require .planning/PROJECT.md. Should run quality review, security scan, evidence verification, TS strictness. Should proceed to promotion options normally. Should NOT suggest /new-project or refuse to run.",
+      "files": [],
+      "assertions": [
+        {"text": "Runs full review pipeline without GSD project", "type": "behavioral"},
+        {"text": "Does NOT require .planning/PROJECT.md", "type": "guard"},
+        {"text": "Does NOT suggest /new-project", "type": "guard"},
+        {"text": "Proceeds to promotion options normally", "type": "behavioral"}
+      ]
+    },
+    {
+      "id": 105,
+      "command": "secure",
+      "prompt": "security scan on a project with no vulnerabilities found",
+      "expected_output": "Should dispatch 4 parallel agents, collect results, find no findings. Should report 'Scanning N files for OWASP Top 10 vulnerabilities.' followed by clean report. Gate output should be 'PASS (clean)'. Should NOT fabricate findings.",
+      "files": [],
+      "assertions": [
+        {"text": "Dispatches 4 parallel agents even for clean code", "type": "behavioral"},
+        {"text": "Reports zero findings accurately", "type": "output"},
+        {"text": "Gate output is PASS (clean)", "type": "output"},
+        {"text": "Does NOT fabricate or hallucinate vulnerabilities", "type": "guard"}
       ]
     }
   ]
