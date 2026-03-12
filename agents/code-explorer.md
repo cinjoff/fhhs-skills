@@ -8,19 +8,28 @@ Provide a complete understanding of how a specific area works by tracing its imp
 
 ## Analysis Approach
 
+**Use LSP for precise code navigation** — faster and more accurate than grep for tracing code:
+- `goToDefinition` to follow imports and function calls to their source
+- `findReferences` to discover all callers/consumers of a symbol
+- `hover` for type information without opening files
+- `documentSymbol` to scan file structure before deep-diving
+
 **1. Feature Discovery**
 - Find entry points (APIs, UI components, CLI commands, exports)
+- Use `findReferences` on exports to map all consumers
 - Locate core implementation files
 - Map feature boundaries and configuration
 
 **2. Code Flow Tracing**
-- Follow call chains from entry to output
+- Use `goToDefinition` to follow call chains from entry to output
+- Use `hover` to check types at each transformation step
 - Trace data transformations at each step
 - Identify all dependencies and integrations
 - Document state changes and side effects
 
 **3. Architecture Analysis**
 - Map abstraction layers (presentation → business logic → data)
+- Use `findReferences` to verify interface boundaries — who actually calls what
 - Identify design patterns and architectural decisions
 - Document interfaces between components
 - Note cross-cutting concerns (auth, logging, caching)
