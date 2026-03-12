@@ -1960,6 +1960,160 @@
         {"text": "Does NOT silently proceed with mismatched state", "type": "guard"},
         {"text": "Does NOT overwrite STATE.md without user confirmation", "type": "guard"}
       ]
+    },
+    {
+      "id": 124,
+      "command": "review",
+      "prompt": "review these changed files — auth, API routes, and the comment card. check for security issues especially",
+      "expected_output": "Should run security scan and detect SQL injection in api/users/route.ts (string-interpolated query), hardcoded secrets in auth.ts (JWT_SECRET inline), XSS vulnerability in comment-card.tsx (dangerouslySetInnerHTML on user content), and exposed env values in .env.example. Should BLOCK on CRITICAL findings (SQL injection, hardcoded secrets). Should generate a review report with file:line references for each finding. Should recommend fixes for each issue.",
+      "files": [
+        "evals/fixtures/nextjs-app-deep/src/lib/auth.ts",
+        "evals/fixtures/nextjs-app-deep/src/app/api/users/route.ts",
+        "evals/fixtures/nextjs-app-deep/src/components/comment-card.tsx",
+        "evals/fixtures/nextjs-app-deep/src/app/api/data/route.ts",
+        "evals/fixtures/nextjs-app-deep/.env.example",
+        "evals/fixtures/nextjs-app-deep/CLAUDE.md",
+        "evals/fixtures/nextjs-app-deep/next.config.ts",
+        "evals/fixtures/nextjs-app-deep/tsconfig.json"
+      ],
+      "assertions": [
+        {"text": "Detects SQL injection in api/users/route.ts (string-interpolated query)", "type": "behavioral"},
+        {"text": "Detects hardcoded JWT secret in auth.ts", "type": "behavioral"},
+        {"text": "Detects XSS vulnerability in comment-card.tsx (dangerouslySetInnerHTML)", "type": "behavioral"},
+        {"text": "BLOCKs on CRITICAL security findings", "type": "output"},
+        {"text": "Generates review report with file:line references", "type": "output"},
+        {"text": "Does NOT approve the review with unresolved CRITICALs", "type": "guard"}
+      ]
+    },
+    {
+      "id": 125,
+      "command": "review",
+      "prompt": "review these frontend component changes — sidebar, metric card, and user form",
+      "expected_output": "Should run security scan but find minimal security issues in pure frontend components. Quality review should catch design anti-patterns: sidebar uses hardcoded colors instead of CSS variables, user-form uses raw HTML inputs instead of shadcn components, metric-card may lack responsive handling. Should suggest /verify-ui for visual verification of component changes. Should reference DESIGN.md conventions.",
+      "files": [
+        "evals/fixtures/nextjs-app-deep/src/components/sidebar.tsx",
+        "evals/fixtures/nextjs-app-deep/src/components/metric-card.tsx",
+        "evals/fixtures/nextjs-app-deep/src/components/user-form.tsx",
+        "evals/fixtures/nextjs-app-deep/.planning/DESIGN.md",
+        "evals/fixtures/nextjs-app-deep/CLAUDE.md"
+      ],
+      "assertions": [
+        {"text": "Security scan finds minimal/no critical issues in frontend components", "type": "behavioral"},
+        {"text": "Detects design anti-patterns (hardcoded colors, raw HTML inputs)", "type": "behavioral"},
+        {"text": "References DESIGN.md conventions for component quality", "type": "behavioral"},
+        {"text": "Suggests /verify-ui for visual verification", "type": "output"},
+        {"text": "Does NOT block on security for pure frontend components", "type": "guard"}
+      ]
+    },
+    {
+      "id": 126,
+      "command": "simplify",
+      "prompt": "simplify these files — the data table is massive, utils is a grab bag, and the API module repeats itself",
+      "expected_output": "Should detect: data-table.tsx is a god component (180+ lines mixing search, sort, pagination, rendering) needing decomposition. utils.ts is a kitchen-sink module (cn() plus unrelated helpers) needing extraction. api.ts has duplicated fetch patterns that should use a shared wrapper. Should run 3 parallel review agents scoped to git diff. Should produce concrete split/extract recommendations with before/after outlines.",
+      "files": [
+        "evals/fixtures/nextjs-app-deep/src/components/data-table.tsx",
+        "evals/fixtures/nextjs-app-deep/src/lib/utils.ts",
+        "evals/fixtures/nextjs-app-deep/src/lib/api.ts",
+        "evals/fixtures/nextjs-app-deep/src/lib/validators.ts",
+        "evals/fixtures/nextjs-app-deep/CLAUDE.md"
+      ],
+      "assertions": [
+        {"text": "Detects data-table.tsx as god component (180+ lines)", "type": "behavioral"},
+        {"text": "Detects utils.ts as kitchen-sink module needing extraction", "type": "behavioral"},
+        {"text": "Detects duplicated fetch pattern in api.ts", "type": "behavioral"},
+        {"text": "Runs parallel review agents on the changed file scope", "type": "behavioral"},
+        {"text": "Produces concrete split/extract recommendations", "type": "output"}
+      ]
+    },
+    {
+      "id": 127,
+      "command": "resume-work",
+      "prompt": "hey picking this back up, where was I?",
+      "expected_output": "Should read STATE.md and find Phase 02 (dashboard) is in-progress as current phase. Should find 02-01-PLAN.md exists without a matching SUMMARY (incomplete). Should detect 3 pending todos (todo-001, todo-002, todo-003). Should present briefing showing Phase 01 complete, Phase 02 in-progress. Should route to continue the unfinished plan (task 2) or fix a regression if one is flagged in todos.",
+      "files": [
+        "evals/fixtures/nextjs-app-deep/.planning/STATE.md",
+        "evals/fixtures/nextjs-app-deep/.planning/ROADMAP.md",
+        "evals/fixtures/nextjs-app-deep/.planning/phases/02-dashboard/02-01-PLAN.md",
+        "evals/fixtures/nextjs-app-deep/.planning/todos/todo-001.md",
+        "evals/fixtures/nextjs-app-deep/.planning/todos/todo-002.md",
+        "evals/fixtures/nextjs-app-deep/.planning/todos/todo-003.md",
+        "evals/fixtures/nextjs-app-deep/CLAUDE.md"
+      ],
+      "assertions": [
+        {"text": "Reads STATE.md and identifies Phase 02 as current in-progress phase", "type": "behavioral"},
+        {"text": "Finds 02-01-PLAN.md without matching SUMMARY (incomplete plan)", "type": "behavioral"},
+        {"text": "Detects 3 pending todos", "type": "behavioral"},
+        {"text": "Presents briefing with Phase 01 complete and Phase 02 in-progress", "type": "output"},
+        {"text": "Routes to continue unfinished plan or address regression", "type": "behavioral"}
+      ]
+    },
+    {
+      "id": 128,
+      "command": "verify",
+      "prompt": "verify phase 1 — make sure everything claimed in the summary actually shipped correctly",
+      "expected_output": "Should compare 01-01-PLAN.md must_haves against 01-01-SUMMARY.md claimed deliverables. Should verify that files claimed as delivered actually exist on disk (auth.ts, auth.test.ts). Should catch the hardcoded JWT secret in auth.ts as a security gap in supposedly-completed phase. Should catch that auth.test.ts only tests the happy path (missing error/edge case coverage). Should produce a verification report with pass/fail per must_have.",
+      "files": [
+        "evals/fixtures/nextjs-app-deep/.planning/phases/01-auth/01-01-PLAN.md",
+        "evals/fixtures/nextjs-app-deep/.planning/phases/01-auth/01-01-SUMMARY.md",
+        "evals/fixtures/nextjs-app-deep/.planning/ROADMAP.md",
+        "evals/fixtures/nextjs-app-deep/src/lib/auth.ts",
+        "evals/fixtures/nextjs-app-deep/src/__tests__/auth.test.ts",
+        "evals/fixtures/nextjs-app-deep/CLAUDE.md"
+      ],
+      "assertions": [
+        {"text": "Compares 01-01-PLAN.md must_haves against 01-01-SUMMARY.md deliverables", "type": "behavioral"},
+        {"text": "Verifies claimed files exist on disk", "type": "behavioral"},
+        {"text": "Catches hardcoded JWT secret in auth.ts as security gap", "type": "behavioral"},
+        {"text": "Catches auth.test.ts only testing happy path", "type": "behavioral"},
+        {"text": "Produces verification report with pass/fail per must_have", "type": "output"}
+      ]
+    },
+    {
+      "id": 129,
+      "command": "progress",
+      "prompt": "show me the project progress",
+      "expected_output": "Should use gsd-tools to read STATE.md and ROADMAP.md. Should report Phase 01 (auth) as COMPLETE with summary on disk. Should report Phase 02 (dashboard) as IN_PROGRESS with plan but no summary. Should calculate overall progress at ~25-30% (1 of ~3-4 phases complete). Should route to correct next action: Route A (unexecuted plan exists — suggest /build for 02-01-PLAN.md).",
+      "files": [
+        "evals/fixtures/nextjs-app-deep/.planning/STATE.md",
+        "evals/fixtures/nextjs-app-deep/.planning/ROADMAP.md",
+        "evals/fixtures/nextjs-app-deep/.planning/PROJECT.md",
+        "evals/fixtures/nextjs-app-deep/.planning/phases/01-auth/01-01-SUMMARY.md",
+        "evals/fixtures/nextjs-app-deep/.planning/phases/02-dashboard/02-01-PLAN.md",
+        "evals/fixtures/nextjs-app-deep/CLAUDE.md"
+      ],
+      "assertions": [
+        {"text": "Reads STATE.md and ROADMAP.md using gsd-tools", "type": "behavioral"},
+        {"text": "Reports Phase 01 as COMPLETE", "type": "output"},
+        {"text": "Reports Phase 02 as IN_PROGRESS", "type": "output"},
+        {"text": "Calculates overall progress at approximately 25-30%", "type": "output"},
+        {"text": "Routes to Route A — suggests /build for unexecuted 02-01-PLAN.md", "type": "behavioral"}
+      ]
+    },
+    {
+      "id": 130,
+      "command": "build",
+      "prompt": "I just finished planning phase 2, build it, then verify and tell me progress",
+      "expected_output": "Should execute a lifecycle chain: first invoke /build for 02-01-PLAN.md, then on completion invoke /verify for phase 2 deliverables, then invoke /progress showing updated state. Each step must complete before the next starts. /build should invoke /review internally as part of pre-promotion checks. Final /progress output should show Phase 02 further along than before (plan executed, summary generated).",
+      "files": [
+        "evals/fixtures/nextjs-app-deep/.planning/PROJECT.md",
+        "evals/fixtures/nextjs-app-deep/.planning/STATE.md",
+        "evals/fixtures/nextjs-app-deep/.planning/ROADMAP.md",
+        "evals/fixtures/nextjs-app-deep/.planning/DESIGN.md",
+        "evals/fixtures/nextjs-app-deep/CLAUDE.md",
+        "evals/fixtures/nextjs-app-deep/.planning/phases/02-dashboard/02-01-PLAN.md",
+        "evals/fixtures/nextjs-app-deep/next.config.ts",
+        "evals/fixtures/nextjs-app-deep/tsconfig.json",
+        "evals/fixtures/nextjs-app-deep/playwright.config.ts"
+      ],
+      "assertions": [
+        {"text": "Invokes /build for 02-01-PLAN.md first", "type": "ordering"},
+        {"text": "Invokes /verify for phase 2 after build completes", "type": "ordering"},
+        {"text": "Invokes /progress after verify completes", "type": "ordering"},
+        {"text": "/build invokes /review internally for pre-promotion checks", "type": "behavioral"},
+        {"text": "Each step completes before the next starts (sequential chain)", "type": "ordering"},
+        {"text": "Final progress output shows Phase 02 further along", "type": "output"},
+        {"text": "Does NOT skip any step in the chain", "type": "guard"}
+      ]
     }
   ]
 }
