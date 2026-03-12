@@ -1,3 +1,6 @@
 .DS_Store
 .firecrawl/
 .project-tracker/
+__pycache__/
+*.pyc
+fhhs-skills-workspace/full-run-*/

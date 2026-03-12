@@ -272,11 +272,20 @@ Respond with ONLY a JSON array (no markdown, no explanation):
                     continue
                 return None
 
-            # Map grades back to assertions — handle both "passed"/"p" keys
+            # Map grades back to assertions — use "i" field if available, fall back to position
+            grades_by_index = {}
+            for g in grades_raw:
+                idx = g.get("i")
+                if idx is not None:
+                    grades_by_index[idx] = g
+
             grades = []
             for i, a in enumerate(assertions):
-                if i < len(grades_raw):
+                # Try 1-based index lookup first, fall back to positional
+                g = grades_by_index.get(i + 1) if grades_by_index else None
+                if g is None and i < len(grades_raw):
                     g = grades_raw[i]
+                if g is not None:
                     passed = g.get("p", g.get("passed", False))
                     reason = g.get("r", g.get("reason", ""))
                 else:
