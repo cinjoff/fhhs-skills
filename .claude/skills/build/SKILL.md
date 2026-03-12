@@ -15,8 +15,7 @@ You are a **lean orchestrator**. Stay under 15% context usage. Delegate all heav
 > **Execution pipeline — fresh subagents for tasks, specialized agents for review:**
 > Task execution: **`general-purpose`** subagents with structured prompt from `references/implementer-prompt.md` (co-located with this skill). Fresh context per task, no GSD state overhead.
 > Spec gates: **`code-reviewer`** agent after each wave — adversarial spec verification using `references/spec-gate-prompt.md` (co-located with this skill).
-> Quality review: **`code-reviewer`** agent at end — code quality, security, architecture.
-> Simplify: `skills/simplify/` after quality review — code reuse, efficiency, hygiene.
+> Simplify: `skills/simplify/` after all waves — code reuse, efficiency, hygiene.
 > Integration check: **`gsd-integration-checker`** background agent for multi-phase wiring.
 > Phase verification: **`gsd-verifier`** agent for goal-backward verification.
 > Do not use `gsd-executor` or `gsd-planner` — their state management conflicts with this orchestrator.
@@ -76,6 +75,30 @@ Use the structured template at `references/implementer-prompt.md`. Fill its plac
 
 The template includes all behavioral directives (TDD, frontend, commits, YAGNI), deviation rules 1-4, guardrails (analysis paralysis, scope boundary, deferred items), self-review checklist, and structured report format.
 
+**Conditional context injection — verify the template activates these for each task:**
+- **Playwright:** If task `<files>` contain `*.spec.*`, `*.test.*`, `e2e/`, or `playwright.config.*`, the template directs subagents to read `skills/playwright-testing/` (POM, role-based locators, auto-waiting). Verify this context is relevant before dispatch — don't include Playwright weight for non-test tasks.
+- **Next.js perf:** If `next.config.*` exists in the project root, the template directs subagents to read `skills/nextjs-perf/` (waterfall avoidance, Suspense boundaries, barrel import awareness, caching). No action needed if the project doesn't use Next.js.
+- **TypeScript strictness:** The template includes inline TS rules for all TypeScript projects. These are enforced at the spec gate (Step 3b) — subagents should follow them during implementation.
+
+### Skill context for subagents
+
+Before dispatching the first wave, collect skill metadata for subagent prompts:
+
+If `.claude/skills/` exists:
+1. List all skill directories
+2. Read each SKILL.md's frontmatter only (name + description, ~2 lines each)
+3. Format as a compact skill index block:
+   ```
+   Available project skills (read SKILL.md in full if relevant to your task):
+   - adapt: Adapt designs to different screen sizes and devices
+   - playwright-testing: Playwright testing patterns and best practices
+   - nextjs-perf: Next.js and React performance patterns
+   ...
+   ```
+4. Store as `{SKILL_INDEX}` — injected into every subagent prompt via the implementer template
+
+This replaces per-subagent skill directory scanning. Each subagent sees the full menu but only deep-reads what's relevant.
+
 ### Checkpoint protocol
 
 If a task has `type="checkpoint:*"`, read `references/checkpoint-protocol.md` (co-located with this skill) for the full protocol. It covers checkpoint types (human-verify, decision, human-action), return format, auto-mode behavior, standard mode continuation, and authentication gate handling.
@@ -120,7 +143,7 @@ Once all tasks are accounted for (completed, or explicitly skipped with user sig
 
 **After each wave completes and passes spot-check, run a spec gate before starting the next wave.**
 
-This catches spec deviations before dependent waves build on wrong foundations. Run for ALL waves including the final wave — the quality review in Step 8 focuses on code quality, not spec compliance.
+This catches spec deviations before dependent waves build on wrong foundations. Run for ALL waves including the final wave.
 
 ### Dispatch spec reviewer
 
@@ -133,6 +156,19 @@ Use the template at `references/spec-gate-prompt.md` with **`subagent_type: "cod
 - Wave diff: `git diff {WAVE_START_SHA}..{WAVE_END_SHA}`
 
 **If wave had multiple tasks:** dispatch one spec reviewer for the entire wave (reviews the combined diff). This is faster than per-task reviewers and catches cross-task issues within the wave.
+
+### Inline TypeScript strictness — BLOCKING criteria
+
+The spec gate template checks TypeScript strictness. These are the BLOCKING rules the gate enforces on every wave diff:
+
+| Pattern | Verdict | Required fix |
+|---------|---------|-------------|
+| `any` type usage (explicit or implicit via missing annotations) | **BLOCK** | Replace with `unknown` + type guard, generic, or concrete type |
+| `as any` or `as unknown as X` type assertions | **BLOCK** | Use type guard (`is` keyword), `satisfies`, or fix the type mismatch |
+| Non-exhaustive `switch` on union/enum without `default: { const _: never = val; }` | **BLOCK** | Add exhaustive default or `satisfies never` check |
+| Type assertion (`as T`) where a type guard would work | **WARN** | Suggest type guard — not blocking but flag it |
+
+These rules are also in the implementer-prompt template so subagents should catch most issues during implementation. The spec gate is the backstop.
 
 ### Handle results
 
@@ -162,9 +198,18 @@ Use the template at `references/spec-gate-prompt.md` with **`subagent_type: "cod
 
 **Skip if:** This is the first phase, or no previous phases have SUMMARYs.
 
-### Design gates (frontend only)
+### Design gates (visual-heavy changes only)
 
-**Skip if no tasks touched `.tsx`, `.css`, or component files.**
+Calculate visual change ratio:
+- Count files changed that are visual (`.tsx`, `.css`, `.scss`, component files)
+- Count total files changed
+- Visual ratio = visual files / total files
+
+**Trigger design gates when:** visual ratio > 40% AND visual file count >= 3
+**Skip when:** ratio is low (backend-heavy build) or only 1-2 visual files touched (minor tweaks)
+
+When triggered, run the design pipeline (critique → polish → normalize) below.
+When skipped, note: "Design gates skipped (N/M files visual). Run /critique or /polish manually if needed."
 
 After all waves complete (including spec gates) and BEFORE self-check, run the design quality pipeline:
 
@@ -195,7 +240,7 @@ Uses design quality commands (`/critique`, `/polish`, `/normalize`) and `skills/
 
 ### Step 4b: Collect integration check results
 
-**If a background integration check was dispatched:** collect its results now. Integration findings feed into Step 8 (quality review). If critical wiring issues found (orphaned exports, broken data flows), flag to user before proceeding.
+**If a background integration check was dispatched:** collect its results now. If critical wiring issues found (orphaned exports, broken data flows), flag to user before proceeding. Integration findings feed into Step 9 (post-build review).
 
 ---
 
@@ -277,33 +322,9 @@ Write `{phase}-VERIFICATION.md` with truth table, artifacts, key links, requirem
 
 ---
 
-## Step 8: Quality Review
+## Step 8: Simplify
 
-After all tasks complete, dispatch a quality review. Spec compliance was verified per-wave in Step 3b — this review focuses on code quality and cross-task consistency.
-
-### Dispatch quality reviewer
-
-Use `skills/requesting-code-review/` with **`subagent_type: "code-reviewer"`** (specialized agent).
-
-**Scope:** Full implementation diff from plan start to now.
-**Focus areas:**
-- Code quality: naming, structure, error handling, DRY
-- Security: injection, auth bypass, data exposure
-- Architecture: separation of concerns, scalability
-- Test quality: tests verify behavior not mocks, edge cases covered
-- Cross-task consistency: shared patterns, naming conventions, type alignment
-
-**Integration findings:** If Step 4b produced integration check results, include them in the reviewer prompt. The quality reviewer should verify that flagged wiring issues were addressed or explain why they're acceptable.
-
-### Handle results
-
-Fix any Critical or Important issues from the review. Minor issues are noted but don't block.
-
----
-
-## Step 8b: Simplify
-
-After quality review fixes are applied, invoke `skills/simplify/` on the implementation diff. This catches complementary issues the quality reviewer doesn't focus on:
+After all tasks complete (including spec gates and design gates), invoke `skills/simplify/` on the implementation diff. This catches:
 
 - **Code reuse**: newly written code that duplicates existing utilities or helpers
 - **Efficiency**: redundant computations, missed concurrency, N+1 patterns, hot-path bloat
@@ -315,20 +336,21 @@ It runs 3 parallel review agents (reuse, quality, efficiency) on the git diff, t
 
 ---
 
-## Step 9: Verify
+## Step 9: Post-Build Review
 
-Invoke `skills/verification-before-completion/` — follow it completely. This means:
-- Run all verification commands fresh (tests, types, linter)
-- Read full output, check exit codes
-- Only claim completion with evidence
+Auto-invoke `/review --quick` — this runs code quality + architecture analysis without the full security scan. It catches naming issues, structural problems, test quality gaps, and cross-file inconsistencies before they accumulate.
 
-If this was frontend work, suggest running `/verify-ui` for visual verification.
+If the review surfaces issues:
+- **BLOCK** findings → fix before continuing
+- **WARN** findings → report to user, continue if they approve
 
----
+After the review, report what was built:
+- Tasks completed, commits made, key files created/modified
+- Design gates: ran / skipped (with reason)
+- Integration check results (if ran)
+- Review findings summary
 
-## Step 10: Complete
-
-Invoke `skills/finishing-a-development-branch/` — it handles merge/PR/keep/discard options and worktree cleanup.
+For deeper scrutiny, suggest `/review` (adds security scan + gap analysis).
 
 **GSD completion (if GSD active):**
 
@@ -351,11 +373,11 @@ If user prefers to skip the branch finishing (more work planned), report what wa
 - **Orchestrator (you):** Stay lean. Don't read source files. Don't load more than 2 `.planning/` files at a time. Delegate all file reading to subagents.
 - **Task subagents:** Fresh context each. Load only what that task needs. Use `references/implementer-prompt.md` template.
 - **Spec gate agents:** Get the wave diff and task specs only. Don't load full plan history.
-- **Quality review agent:** Get the full implementation diff and objectives. Include integration findings if available.
 - **Integration checker:** Runs in background. Gets phase SUMMARYs and source directory structure.
 - **Simplify agents:** Run on the git diff only. 3 parallel agents (reuse, quality, efficiency) — lightweight, no plan context needed.
+- **Post-build review:** `/review --quick` dispatches 1 code-reviewer agent on the diff. Adds ~1 subagent turn, no security scan overhead.
 - **`.planning/DESIGN.md`** is small (~30 lines) — safe to include in every frontend subagent prompt.
-- **Don't load design reference files yourself.** The skills load them when invoked by subagents.
+- **Skill index:** Collect once (Step 3), inject into every subagent prompt as `{SKILL_INDEX}`. Subagents deep-read only what's relevant.
 - **Codebase docs per task type:**
   - UI work -> CONVENTIONS.md + DESIGN.md
   - New files -> STRUCTURE.md

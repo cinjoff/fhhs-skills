@@ -21,6 +21,11 @@ Gather project context from all available sources.
 - Read `.planning/ROADMAP.md` — phase list, progress table
 - Read `.planning/CONCERNS.md` — known issues (if exists)
 
+### Pending Todos
+- Scan `.planning/todos/` for pending items (if directory exists)
+- Count total pending todos, broken down by priority (high vs medium vs low)
+- Note any overdue or stale items
+
 ### Incomplete Work Detection
 
 Scan `.planning/phases/` for:
@@ -31,6 +36,18 @@ Scan `.planning/phases/` for:
 | All SUMMARY.md present, no VERIFICATION.md | Phase complete but unverified |
 | RESEARCH.md without PLAN.md | Research done, planning needed |
 | Phase in ROADMAP but no files | Phase not yet planned |
+
+### State Integrity Check
+
+Compare STATE.md claims against actual files on disk:
+
+| STATE.md Claim | Actual Disk State | Verdict |
+|---|---|---|
+| Phase N is IN_PROGRESS | `phases/{N}-*/` directory doesn't exist | **State corruption** |
+| Phase N is COMPLETE | No SUMMARY.md in `phases/{N}-*/` | **State corruption** |
+| Current phase is N | ROADMAP.md shows different phase | **State mismatch** |
+
+If any corruption or mismatch is detected, flag it prominently in the briefing and suggest `/fh:health --repair`.
 
 ### Git State
 - Current branch name
@@ -49,6 +66,7 @@ Summarize concisely:
 **Branch:** {branch} ({N unpushed commits | up to date | no upstream})
 **Position:** Phase {N} ({name}), plan {X} of {Y}
 **Status:** {Plans 01-02 complete. Plan 03 not started.}
+**Pending Todos:** {N pending todos (X high priority) | No pending todos}
 **Last activity:** {date} — {what was done}
 **Blockers:** {None | list from CONCERNS.md}
 ```
@@ -69,6 +87,7 @@ Based on detected state, recommend next action:
 | Phase complete, unverified | "All plans done. Verify with `/verify {phase}`." |
 | All phases done | "Milestone complete." Run milestone audit inline: aggregate phase verifications, check cross-phase integration, assess requirements coverage, then archive via `gsd-tools.cjs milestone complete`. |
 | Uncommitted changes | "Uncommitted work in N files. Review before continuing?" |
+| State corruption detected | "STATE.md is out of sync with actual files. Run `/fh:health --repair` to fix." |
 | No `.planning/PROJECT.md` | "No project found. Run `/fh:new-project` to set up tracking." |
 | No clear state | "No active work detected. What would you like to work on?" |
 

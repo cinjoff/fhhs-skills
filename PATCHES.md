@@ -46,6 +46,7 @@ Upstream reference: `upstream/feature-dev-55b58ec6/agents/code-reviewer.md`
 | 1 | Removed YAML frontmatter (model, tools, color) | Not needed — agent config handled by Claude Code plugin system |
 | 2 | Broadened scope from "feature" to "area" | Used for general codebase exploration, not just features |
 | 3 | Added "Essential files" section to output format | Composites use this list to build deep context |
+| 4 | Added LSP instructions (goToDefinition, findReferences, hover, documentSymbol) | Consistent with build subagents and refactor — LSP is faster and more precise than grep for tracing code flow |
 
 Upstream reference: `upstream/feature-dev-55b58ec6/agents/code-explorer.md`
 
@@ -53,6 +54,7 @@ Upstream reference: `upstream/feature-dev-55b58ec6/agents/code-explorer.md`
 | # | Change | Rationale |
 |---|--------|-----------|
 | 1 | Removed YAML frontmatter (model, tools, color) | Not needed — agent config handled by Claude Code plugin system |
+| 2 | Added LSP instructions (workspaceSymbol, findReferences, goToDefinition, documentSymbol) | Consistent with other agents — LSP enables precise pattern discovery and interface verification |
 
 Upstream reference: `upstream/feature-dev-55b58ec6/agents/code-architect.md`
 
@@ -88,6 +90,32 @@ No changes.
 | 1 | Added EnterPlanMode/ExitPlanMode prohibition with HARD-GATE | Prevents plan mode trapping in Claude Code |
 | 2 | Execution handoff: plain text → AskUserQuestion with structured options | Better UX in Claude Code |
 | 3 | Subagent references: `superpowers:` prefix removed | Internal references only |
+
+## Vercel React Best Practices (forked from v1.0.0, 64bee5b7)
+
+### nextjs-perf (skill)
+| # | Change | Rationale |
+|---|--------|-----------|
+| 1 | Added YAML frontmatter (`name: nextjs-perf`, `user-invokable: false`) | Plugin skill format requirement |
+| 2 | Trimmed from 58 rules to ~35 most Next.js-relevant rules | Removed generic JS micro-optimizations (covered by general code quality skills) and low-impact advanced patterns |
+| 3 | Removed individual rule files, consolidated into single SKILL.md | Self-contained within plugin shipping boundary (.claude/skills/) |
+| 4 | Reorganized with inline code examples for highest-impact rules | Subagents read SKILL.md directly — examples must be inline, not in separate files |
+
+Upstream reference: `upstream/vercel-react-best-practices-64bee5b7/`
+
+## playwright-best-practices (forked from v1.0, b4b0fd3c)
+
+### playwright-testing (skill)
+| # | Change | Rationale |
+|---|--------|-----------|
+| 1 | Renamed skill `playwright-best-practices` → `playwright-testing` | Consistent naming with other forked skills |
+| 2 | Set `user-invokable: false` | Not a standalone command — loaded conditionally by `/build` and `/fix` |
+| 3 | Distilled upstream activity-based reference guide into decision-tree structure | Faster navigation for subagents; full references preserved in `references/` |
+| 4 | Added inline Core Patterns section (locator priority, assertion patterns, POM summary) | Quick reference without reading separate files |
+| 5 | Added Common Pitfalls table | Prevents most frequent Playwright anti-patterns |
+| 6 | Added subagent context note (non-watch mode) | Watch mode hangs subagents |
+
+Upstream reference: `upstream/playwright-best-practices-b4b0fd3c/`
 
 ## Impeccable (forked from v1.2.0)
 

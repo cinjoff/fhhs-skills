@@ -20,6 +20,21 @@ This command runs in a single context by default. For large refactors (10+ files
 
 ---
 
+## Step 0: Analysis Mode (no target specified)
+
+If the user asks to "refactor this codebase", "clean up", or "find things to refactor" without specifying a target, invoke `skills/simplify/` first to identify refactoring candidates. It runs 3 parallel review agents that scan for:
+
+- **God components/classes** — files doing too many things, violating single responsibility
+- **Kitchen-sink utilities** — catch-all modules that should be split by domain
+- **Duplicate patterns** — copy-pasted logic with minor variations that should be extracted
+- **Redundant abstractions** — wrappers that add no value over the underlying API
+
+Present the findings to the user as a numbered list with file paths, descriptions, and estimated blast radius. Let them choose what to refactor. Then proceed to Step 1 with the chosen target.
+
+**Skip this step** if the user already specified a concrete refactoring target (file, function, module, pattern).
+
+---
+
 ## Step 1: Scope
 
 Identify the blast radius:
@@ -78,24 +93,9 @@ Report progress after each commit.
 
 ---
 
-## Step 5: Review
+## Step 5: Simplify
 
-Dispatch review via `skills/requesting-code-review/` with **`subagent_type: "code-reviewer"`** (specialized agent).
-
-Two review focuses:
-1. **Behavior preservation:** "Is behavior unchanged?" — test suite is the evidence. All tests that passed before must still pass.
-2. **Structural quality:** "Is the code actually better?" — readability, cohesion, coupling, naming clarity.
-
-If refactoring touches frontend files (`.tsx`, `.css`, component files), add a third focus:
-3. **Design consistency:** "Does the restructured code maintain design consistency per `.planning/DESIGN.md`?"
-
-Fix issues. Tests must remain GREEN after fixes.
-
----
-
-## Step 5b: Simplify
-
-After review fixes, invoke `skills/simplify/` on the refactoring diff. Refactoring often introduces new abstractions or moves code around — simplify catches:
+After execution, invoke `skills/simplify/` on the refactoring diff. Refactoring often introduces new abstractions or moves code around — simplify catches:
 
 - Extracted utilities that duplicate existing ones elsewhere in the codebase
 - Restructured code with missed efficiency opportunities (sequential → parallel, redundant reads)
@@ -105,18 +105,9 @@ Fix issues. Tests must remain GREEN (iron law still applies). Commit: `refactor(
 
 ---
 
-## Step 6: Verify
+## Step 6: Completion
 
-Invoke `skills/verification-before-completion/`:
-- Run FULL test suite (not just affected area) — check exit code
-- Verify no behavior changes escaped characterization tests
-- Only claim complete with evidence
-
----
-
-## Step 7: Complete
-
-If on a feature branch, invoke `skills/finishing-a-development-branch/`.
+After simplify pass, suggest `/review` for comprehensive analysis (code quality + architecture + behavior preservation evidence). The user decides when to run it.
 
 Generate SUMMARY.md with refactoring steps, commit hashes, before/after metrics, test evidence.
 Update STATE.md: note refactoring completed, structural changes made.

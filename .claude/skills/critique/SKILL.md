@@ -6,7 +6,7 @@ user-invokable: true
 
 Conduct a holistic design critique, evaluating whether the interface actually works---not just technically, but as a designed experience. Think like a design director giving feedback.
 
-**First**: Use the frontend-design skill for design principles and anti-patterns.
+**First**: Read the `skills/frontend-design/` skill to load design principles and the full anti-patterns checklist. This is required context — the anti-patterns list is the foundation for the AI Slop Detection check below.
 
 ## Design Critique
 
@@ -88,16 +88,23 @@ A brief gut reaction---what works, what doesn't, and the single biggest opportun
 Highlight 2-3 things done well. Be specific about why they work.
 
 ### Priority Issues
-The 3-5 most impactful design problems, ordered by importance:
+The 3-5 most impactful design problems, ordered by importance.
+
+**Every issue MUST include a severity rating:**
+- **CRITICAL** — Fundamentally broken UX or AI slop that must be fixed before shipping
+- **HIGH** — Significant usability or design problem that degrades the experience
+- **MEDIUM** — Noticeable issue that should be addressed but doesn't block shipping
+- **LOW** — Minor polish item or suggestion for improvement
 
 For each issue:
+- **Severity**: `CRITICAL` | `HIGH` | `MEDIUM` | `LOW`
 - **What**: Name the problem clearly
 - **Why it matters**: How this hurts users or undermines goals
 - **Fix**: What to do about it (be concrete)
 - **Command**: Which command to use (prefer: {{available_commands}} — or other installed skills you're sure exist)
 
 ### Minor Observations
-Quick notes on smaller issues worth addressing.
+Quick notes on smaller issues worth addressing. Include a severity rating (`MEDIUM` or `LOW`) for each.
 
 ### Questions to Consider
 Provocative questions that might unlock better solutions:

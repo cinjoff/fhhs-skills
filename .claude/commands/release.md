@@ -67,7 +67,13 @@ Put the recommended option first.
 
 ## Step 3: Write Changelog Entry
 
-Generate a changelog entry for the new version. Follow these rules:
+Generate a changelog entry for the new version by parsing conventional commit messages.
+
+**Parse commits using conventional commit format:**
+- Map commit types to changelog sections: `feat` → Added, `fix` → Fixed, `refactor` → Changed, `style` → Changed, `perf` → Changed
+- Filter out internal commits (`docs`, `chore`, `test`, `ci`) unless they are user-visible
+- Strip the type prefix and scope from each message, then humanize into a clean bullet
+- Group related commits (same scope or same feature) into single bullets
 
 **Format:**
 ```markdown
@@ -138,12 +144,26 @@ git push && git push --tags
 
 ## Step 6: Create GitHub Release
 
-Extract ONLY the changelog entry for this version (the `## [A.B.C]` section content, without the version header itself).
+Extract the changelog entry for this version and enhance with highlight and install sections.
 
 ```bash
 cd /Users/konstantin/Documents/github.nosync/fhhs-skills
 gh release create vA.B.C --title "vA.B.C" --notes "$(cat <<'RELEASE_EOF'
+## Highlight
+
+[1-2 sentence summary of the most impactful change in this release]
+
 [changelog entry content here — the ### sections and bullets, not the ## version header]
+
+## Install / Update
+
+```
+# First install
+claude plugin install fhhs-skills
+
+# Update existing
+/fh:update
+```
 RELEASE_EOF
 )"
 ```

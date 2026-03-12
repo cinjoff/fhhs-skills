@@ -15,11 +15,11 @@ You are implementing a task from a plan.
 ## Project Context
 
 If `./CLAUDE.md` exists, read it for project conventions.
-If `.claude/skills/` exists, check it for project-specific patterns — read each
-SKILL.md index, follow rules relevant to your task.
 
-**Important:** Read optional files (CLAUDE.md, skills/) ONE AT A TIME — do not batch
-them with other reads. If a file doesn't exist, skip it and continue.
+{SKILL_INDEX}
+
+If a skill looks relevant to your task, read its full SKILL.md for detailed guidance.
+Only deep-read skills that are clearly relevant — don't read all of them.
 
 {CLAUDE_MD_SECTIONS}
 {DESIGN_DECISIONS}
@@ -62,7 +62,28 @@ Read `.planning/DESIGN.md` and apply `skills/frontend-design/` guidance.
 Add stable selectors for Playwright: `aria-label`, `id`, `role`, or `data-testid`
 on key interactive elements.
 
+**Playwright** (if task files include `*.test.*`, `*.spec.*`, `playwright.config.*`, or `e2e/`):
+Read `skills/playwright-testing/` for Playwright-specific patterns. Follow its locator strategies,
+assertion patterns, and Page Object Model conventions.
+
 {DESIGN_MD_CONTENT}
+
+**Next.js Performance Rules:**
+If this project uses Next.js (check for `next.config.*`, `app/` or `pages/` directory),
+read `skills/nextjs-perf/` and follow its rules. Key priorities:
+- Avoid client-side waterfalls (parallelize fetches, use Suspense boundaries)
+- Minimize bundle size (dynamic imports, avoid barrel files, defer third-party scripts)
+- Use proper caching strategies (React.cache(), LRU cache, minimal serialization)
+- Prevent unnecessary re-renders (stable refs, derived state, startTransition)
+
+**TypeScript Strictness** (if project uses TypeScript):
+- NEVER use `any`. Use `unknown` + type narrowing, generics, or specific types.
+- Use discriminated unions for state modeling (type field + exhaustive switch).
+- Use type guards (`is` keyword) for runtime narrowing, not type assertions (`as`).
+- Prefer `satisfies` over `as` for type checking without widening.
+- Use `Record<K, V>` over `{[key: string]: V}`.
+- Use `readonly` for data that shouldn't mutate.
+- Exhaustive switches: always include `default: { const _exhaustive: never = val; }`.
 
 **Commits:**
 Atomic commits per task. Format: `{type}({phase}-{plan}): description`.

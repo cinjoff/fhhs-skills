@@ -39,6 +39,8 @@ Execute the chosen path:
 - **PARALLEL:** Dispatch one **`gsd-debugger`** agent per subsystem (specialized — scientific debugging with hypothesis tracking). Each agent gets: the specific failure, relevant files, and instruction to produce root cause + proposed fix. Collect results. Then Step 2 for each fix.
 - **COMPLEX:** Write triage findings to `.planning/debug/{issue-slug}.md` with: error message, files investigated, hypotheses formed, test results observed. Slug convention: `YYYY-MM-DD-{first-3-words-kebab}` (e.g., `2026-03-06-payment-timeout-error`). If slug exists, append `-2`. Then dispatch a `gsd-debugger` agent with the session file for sustained scientific investigation. If user says try anyway → MODERATE path.
 
+**Todo integration:** After triage, scan `.planning/todos/` for items matching the bug (same file, same subsystem, or same error). If a todo matches, note its ID — mark it resolved after the fix lands in Step 2.
+
 ---
 
 ## Step 2: TDD Fix
@@ -47,6 +49,12 @@ Invoke `skills/test-driven-development/`. Follow completely:
 - **RED:** Write failing test proving the bug
 - **GREEN:** Minimal fix
 - **REFACTOR:** Cleanup
+
+If the bug is in frontend code and the project uses Playwright (check for `playwright.config.*`), write the failing test using Playwright patterns from `skills/playwright-testing/`. Follow the Page Object Model pattern for test structure and use role-based locators (`getByRole`, `getByLabel`) over CSS selectors. See `skills/playwright-testing/` for the full locator priority and assertion patterns.
+
+**Breakpoint-specific verification:** If the fix targets a CSS/layout bug at a specific viewport or breakpoint, verify at that exact breakpoint. Resize to the target width (e.g., 768px for tablet, 375px for mobile) and confirm the layout is correct. If Playwright is available, use `page.setViewportSize()` in the test.
+
+When writing tests or fixes in TypeScript, follow TypeScript strictness rules: no `any`, use proper type guards, exhaustive switches.
 
 For SIMPLE triage: the failing test captures the bug directly (cause already known).
 
@@ -69,41 +77,13 @@ If the fix touches `.tsx`, `.css`, components, or styles:
 
 ---
 
-## Step 4: Quick Spec Review
+## Step 4: Post-Fix Review
 
-Verify the fix addresses the right problem:
+**For MODERATE+ fixes:** Invoke `skills/simplify/` on the fix diff. Then suggest `/review` for comprehensive analysis.
 
-**For ALL depths (including SIMPLE):**
-1. Does the fix address the **root cause**, not just the symptom?
+**For SIMPLE fixes:** Suggest `/review --quick` for a fast quality check.
 
-**For MODERATE and PARALLEL, also check:**
-2. Does the failing test from Step 2 actually reproduce the **reported** bug (not a different one)?
-3. Are there other callers/consumers of the changed code that could be affected? Use LSP `findReferences` on every modified function/export to verify no downstream breakage.
-
-If any answer is "no" or "unsure", investigate before proceeding to verification.
-
----
-
-## Step 4b: Simplify (MODERATE+ only)
-
-**Skip for SIMPLE fixes** — they're typically single-file and don't benefit from a reuse/efficiency pass.
-
-For MODERATE and PARALLEL fixes that touched multiple files, invoke `skills/simplify/` on the fix diff. Multi-file fixes often introduce duplicated patterns or miss existing utilities. Fix issues, then commit: `refactor(fix): simplify pass`
-
----
-
-## Step 5: Verify
-
-Invoke `skills/verification-before-completion/`. Follow completely:
-- Run all verification commands fresh
-- Read full output, check exit codes
-- Only claim fixed with evidence
-
----
-
-## Step 6: Complete
-
-If on a feature branch and fix is standalone, invoke `skills/finishing-a-development-branch/`.
+Do NOT auto-invoke /review. The user decides when to run analysis.
 
 Generate lightweight SUMMARY.md in the phase directory:
 
