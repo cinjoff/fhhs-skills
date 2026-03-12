@@ -39,6 +39,8 @@ Execute the chosen path:
 - **PARALLEL:** Dispatch one **`gsd-debugger`** agent per subsystem (specialized — scientific debugging with hypothesis tracking). Each agent gets: the specific failure, relevant files, and instruction to produce root cause + proposed fix. Collect results. Then Step 2 for each fix.
 - **COMPLEX:** Write triage findings to `.planning/debug/{issue-slug}.md` with: error message, files investigated, hypotheses formed, test results observed. Slug convention: `YYYY-MM-DD-{first-3-words-kebab}` (e.g., `2026-03-06-payment-timeout-error`). If slug exists, append `-2`. Then dispatch a `gsd-debugger` agent with the session file for sustained scientific investigation. If user says try anyway → MODERATE path.
 
+**Todo integration:** After triage, scan `.planning/todos/` for items matching the bug (same file, same subsystem, or same error). If a todo matches, note its ID — mark it resolved after the fix lands in Step 2.
+
 ---
 
 ## Step 2: TDD Fix
@@ -48,7 +50,9 @@ Invoke `skills/test-driven-development/`. Follow completely:
 - **GREEN:** Minimal fix
 - **REFACTOR:** Cleanup
 
-If the bug is in frontend code and the project uses Playwright (check for `playwright.config.*`), write the failing test using Playwright patterns from `skills/playwright-testing/`. Use proper locators (`getByRole`, `getByLabel`, `getByTestId`) over CSS selectors.
+If the bug is in frontend code and the project uses Playwright (check for `playwright.config.*`), write the failing test using Playwright patterns from `skills/playwright-testing/`. Follow the Page Object Model pattern for test structure and use role-based locators (`getByRole`, `getByLabel`) over CSS selectors. See `skills/playwright-testing/` for the full locator priority and assertion patterns.
+
+**Breakpoint-specific verification:** If the fix targets a CSS/layout bug at a specific viewport or breakpoint, verify at that exact breakpoint. Resize to the target width (e.g., 768px for tablet, 375px for mobile) and confirm the layout is correct. If Playwright is available, use `page.setViewportSize()` in the test.
 
 When writing tests or fixes in TypeScript, follow TypeScript strictness rules: no `any`, use proper type guards, exhaustive switches.
 
@@ -73,22 +77,13 @@ If the fix touches `.tsx`, `.css`, components, or styles:
 
 ---
 
-## Step 4: Pre-Promotion Review
+## Step 4: Post-Fix Review
 
-**For MODERATE+ fixes:** Invoke `skills/simplify/` first on the fix diff (multi-file fixes often introduce duplicated patterns or miss existing utilities), then invoke `skills/review/`.
+**For MODERATE+ fixes:** Invoke `skills/simplify/` on the fix diff. Then suggest `/review` for comprehensive analysis.
 
-**For SIMPLE fixes:** Invoke `skills/review/` directly (skip simplify — single-file fixes don't benefit from a reuse/efficiency pass).
+**For SIMPLE fixes:** Suggest `/review --quick` for a fast quality check.
 
-`skills/review/` handles:
-- Quality check (verifies fix addresses root cause, not just symptom)
-- Security scan on changed files
-- Evidence verification (tests, build, lint — fresh output with exit codes)
-- TypeScript strictness check
-- Promotion (PR/merge/keep/discard with conventional commit title)
-
-**Context for /review:** Root cause, fix applied, test added, triage depth.
-
-If /review reports BLOCKED findings: fix them, then re-invoke /review.
+Do NOT auto-invoke /review. The user decides when to run analysis.
 
 Generate lightweight SUMMARY.md in the phase directory:
 

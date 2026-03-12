@@ -1,74 +1,132 @@
 ---
 name: review
-description: Pre-promotion code review workflow. Orchestrates quality review, security scan, evidence verification, and TypeScript strictness check before PR/merge. Use when the user says 'review', 'ready to merge', 'create PR', 'promote', or 'ship it'.
+description: Comprehensive code analysis — code quality, architecture, security, goal verification, and gap analysis. Use when the user says 'review', 'review my changes', 'is this ready', 'check my work', 'code review', or wants deep scrutiny before promoting. Also available as a targeted pass with --quick or --verify flags.
 user-invokable: true
 ---
 
-Pre-promotion review workflow. Orchestrates quality, security, evidence verification, and TypeScript strictness before promoting changes.
+Comprehensive code review — quality, architecture, security, goal verification, gap analysis.
 
 Context or flags: $ARGUMENTS
 
-You are a **lean orchestrator**. Stay under 15% context usage. Delegate review work to specialized agents.
+You are a **lean orchestrator**. Stay under 15% context usage. Delegate all analysis to subagents.
 
-**IMPORTANT:** This skill does NOT touch GSD state (STATE.md, ROADMAP.md). GSD state updates are the caller's responsibility (e.g., /build Step 6). This is a pure quality gate.
+**IMPORTANT:** This skill does NOT touch GSD state (STATE.md, ROADMAP.md). State updates are the caller's responsibility.
 
 ---
 
-## Step 1: Code Quality Review
+## Modes
 
-Dispatch a code quality review via `skills/requesting-code-review/` with **`subagent_type: "code-reviewer"`** (specialized agent).
+| Flag | What runs | When to use |
+|------|-----------|-------------|
+| *(default — full)* | All 9 steps | Deep scrutiny before promoting |
+| `--quick` | Steps 1, 4, 5, 6, 7, 8 (quality + TS + evidence only) | Fast pre-commit sanity check |
+| `--verify` | Steps 1, 3, 6, 7, 8 (goal verification only) | Check must_have truth tables |
 
-**Scope:** Full diff from branch base to HEAD.
+---
+
+## Step 1: Scope
+
+Determine the diff range, file list, and project type.
+
 ```bash
 BASE_BRANCH=$(git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null || echo "HEAD~10")
-git diff $BASE_BRANCH..HEAD
+git diff --stat $BASE_BRANCH..HEAD
 ```
 
-**Focus areas:**
-- Code quality: naming, structure, error handling, DRY
-- Test quality: tests verify behavior (not mocks), edge cases covered
-- Cross-file consistency: shared patterns, naming conventions, type alignment
-- Architecture: separation of concerns, scalability
+Detect project type:
+- **Next.js** — `next.config.*` exists
+- **TypeScript** — `tsconfig.json` exists
+- **GSD project** — `.planning/` directory with PLAN.md files
 
-**If Next.js project** (check for `next.config.*`): include `skills/nextjs-perf/` patterns as review criteria — client-side waterfalls, caching (React.cache/LRU), unnecessary client components, barrel import bundle bloat.
-
-Use the enhanced review template at `skills/review/references/review-prompt.md` for the reviewer prompt.
-
-Collect findings classified as: Critical, Important, Minor, Nitpick.
+Record: `BASE_BRANCH`, file list, project type, total lines changed.
 
 ---
 
-## Step 2: Security Scan
+## Step 2: Dispatch Analysis (full and --quick modes)
 
-Invoke `skills/secure/` on changed files.
+Based on mode, dispatch parallel subagents. Each agent receives ONLY the diff + its specific checklist — keep agent context lean.
 
-The security scan dispatches 4 parallel agents covering:
-- Injection + XSS
-- Auth + Session
-- Data Exposure
-- Access Control + Config
+### Full mode — dispatch 3 parallel agents:
 
-Collect the gate output: `BLOCK`, `WARN`, or `PASS`.
+**Agent 1 — Code Quality + Architecture** (`subagent_type: "code-reviewer"`)
+- Prompt: `skills/review/references/review-prompt.md`
+- Input: full diff (`git diff $BASE_BRANCH..HEAD`)
+- Covers: naming, structure, error handling, DRY, complexity, test quality, cross-file consistency, dependency direction, separation of concerns, abstraction quality, API design, cross-cutting concerns
+- If Next.js: include `skills/nextjs-perf/` criteria
+
+**Agent 2 — Security Scan** (4 parallel sub-scanners, `subagent_type: "general-purpose"`)
+- Checklist: `skills/secure/references/owasp-checklist.md` (do NOT duplicate — reference from secure/)
+- Input: changed files only (`git diff --name-only $BASE_BRANCH..HEAD`)
+- Split into 4 parallel sub-scanners:
+  - Scanner A: Injection + XSS
+  - Scanner B: Auth + Session Management
+  - Scanner C: Data Exposure + Sensitive Data
+  - Scanner D: Access Control + Security Config
+- Each scanner reads its assigned files in full, checks against its OWASP categories
+- Severity: CRITICAL / HIGH / MEDIUM / LOW
+
+**Agent 3 — Gap Analysis** (`subagent_type: "code-reviewer"`)
+- Prompt: gap analysis section of `skills/review/references/review-prompt.md`
+- Input: full diff
+- Covers: untested code paths, unhandled error states, incomplete features (TODO/FIXME/PLACEHOLDER), missing edge cases, API contract gaps
+
+### --quick mode — dispatch 1 agent:
+
+**Agent 1 — Code Quality** (`subagent_type: "code-reviewer"`)
+- Same as full mode Agent 1, but skip architecture deep-dive
+- Focus: naming, structure, error handling, test quality, cross-file consistency
+
+### --verify mode — skip Step 2 entirely.
 
 ---
 
-## Step 3: Evidence Verification
+## Step 3: Goal Verification (full and --verify modes)
 
-Invoke `skills/verification-before-completion/` — follow it completely. This is **NON-NEGOTIABLE**. Every promotion must have evidence backing.
+**Inline — no subagent.** Runs only if a `.planning/` directory exists with PLAN.md files in scope.
 
-This means:
-- Run all verification commands fresh (tests, build, linter)
-- Read full output, check exit codes
-- No claims without proof
-- Record: test count, pass/fail, build status, lint status
+For each relevant PLAN.md:
+
+1. **Extract must_haves** — parse the must_have checklist from the plan
+2. **Truth table** — for each must_have, check against the codebase:
+   - File reads: does the artifact exist?
+   - Content markers: does it contain the expected implementation?
+   - Grep checks: are key patterns present?
+   - Test coverage: is there a test for this requirement?
+3. **Artifact verification** — run `gsd-tools.cjs verify artifacts` if available
+4. **Key link verification** — run `gsd-tools.cjs verify key-links` if available
+5. **Truth table output:**
+
+```
+| must_have | evidence | status |
+|-----------|----------|--------|
+| User can log in | src/auth/login.ts exists, login.test.ts passes | PASS |
+| Error boundary on /dashboard | No ErrorBoundary component found | FAIL |
+```
+
+Mark each as PASS / FAIL / PARTIAL. Any FAIL is a blocking finding.
+
+---
+
+## Step 4: Evidence Collection (full and --quick modes)
+
+Run verification commands fresh. Non-negotiable — no cached results.
+
+```bash
+# Tests
+npm test 2>&1; echo "EXIT:$?"
+# Build
+npm run build 2>&1; echo "EXIT:$?"
+# Lint
+npm run lint 2>&1; echo "EXIT:$?"
+```
+
+Record: test count, pass/fail, build exit code, lint exit code, raw output excerpts.
 
 **If frontend work** (`.tsx`/`.css` files changed): suggest `/fh:verify-ui` for visual verification but don't block on it.
 
 ---
 
-## Step 4: TypeScript Strictness Check
-
-Grep the diff for TypeScript strictness violations:
+## Step 5: TypeScript Strictness Check (full and --quick modes)
 
 ```bash
 BASE_BRANCH=$(git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null || echo "HEAD~10")
@@ -80,59 +138,68 @@ git diff $BASE_BRANCH..HEAD | grep '^\+' | grep -v '^\+\+\+' | grep -E '\bas\b\s
 git diff $BASE_BRANCH..HEAD | grep '^\+' | grep -v '^\+\+\+' | grep -E 'switch\s*\(' || echo "No switch statements found"
 ```
 
-Report violations:
+Report:
 - `any` usage count and locations
 - `as` type assertion count and locations
 - Switch statements without exhaustive handling (check if `default` or `satisfies` is present)
 
 ---
 
-## Step 5: Gate Decision
+## Step 6: Aggregate + Classify
 
-Aggregate all findings from Steps 1-4:
+Collect all findings from Steps 2-5. Deduplicate (same file:line across agents). Classify:
 
-| Finding | Decision |
-|---------|----------|
-| CRITICAL security findings | **BLOCK** — Must fix before proceeding. Dispatch fix agents. |
-| Code review Critical/Important | **BLOCK** — Must fix. |
-| Verification failures (tests/build/lint red) | **BLOCK** — Must fix. |
-| TypeScript `any` usage in new code | **BLOCK** — Must replace with proper types. |
-| HIGH security findings | **WARN** — Log in review report, recommend fixing. |
-| Code review Minor + MEDIUM/LOW security | **PASS** with notes. |
-| Code review Nitpick | **PASS** — note only, don't block or warn. |
+| Source | Severity scale |
+|--------|---------------|
+| Code quality / architecture | Critical / Important / Minor / Nitpick |
+| Security scan | CRITICAL / HIGH / MEDIUM / LOW |
+| Gap analysis | Critical / Important / Minor |
+| Goal verification | PASS / FAIL / PARTIAL |
+| Evidence (tests/build/lint) | PASS / FAIL |
+| TS strictness | Blocking (`any`) / Warning (`as`, switches) |
 
-**If BLOCKED:**
-1. Report all blocking findings to user
-2. For security CRITICAL: dispatch fix agents (`general-purpose`) with finding details + file context
-3. For code review Critical/Important: fix directly or dispatch agents
-4. For verification failures: diagnose and fix
-5. For `any` usage: replace with proper types
-6. After fixes: **re-run the blocked steps** (not the entire pipeline — only re-check what failed)
-
-**If WARN:** Present warnings to user. Proceed to Step 6 unless user wants to fix.
-
-**If PASS:** Proceed to Step 6.
+Sort: all blocking items first, then warnings, then informational.
 
 ---
 
-## Step 6: Review Report
+## Step 7: Report + Route
 
-Generate a structured review report:
+Generate a structured report. For each finding above Minor/MEDIUM, include a **Next action** recommendation:
+
+| Finding type | Recommended action |
+|---|---|
+| Bug / broken behavior | `/fix` |
+| Structural / architectural issue | `/refactor` |
+| Missing functionality / incomplete feature | `/plan-work` |
+| Security vulnerability | Fix inline or `/fix` |
+| Goal verification failure | `/plan-work` for gap-closure |
+| Style / naming | Fix directly |
+
+### Report format:
 
 ```
-## Pre-Promotion Review Report
+## Comprehensive Review Report
 
-### Code Quality
+### Code Quality + Architecture
 - Score: X/10
 - Critical: N | Important: N | Minor: N | Nitpick: N
-- Key findings: [summary]
+- Key findings: [summary with next-action routing]
 
 ### Security
-- Status: PASS/WARN/BLOCK
+- Status: PASS / WARN / BLOCK
 - CRITICAL: N | HIGH: N | MEDIUM: N | LOW: N
-- Key findings: [summary]
+- Key findings: [summary with next-action routing]
 
-### Verification Evidence
+### Gap Analysis
+- Untested paths: N | Unhandled errors: N | Incomplete features: N
+- Key findings: [summary with next-action routing]
+
+### Goal Verification (if applicable)
+- must_haves: N total | N PASS | N FAIL | N PARTIAL
+- Truth table: [inline]
+- Blocking gaps: [summary with next-action routing]
+
+### Evidence
 - Tests: N passed, N failed (exit code X)
 - Build: PASS/FAIL (exit code X)
 - Lint: PASS/FAIL (exit code X)
@@ -145,26 +212,46 @@ Generate a structured review report:
 
 ### Gate Decision: PASS / WARN / BLOCK
 - [reasoning]
+
+### Recommended Next Actions
+1. [ordered list of actions with skill routing]
 ```
 
 ---
 
-## Step 7: Promote
+## Step 8: Gate Decision
 
-If all gates pass (or user explicitly overrides warnings), invoke `skills/finishing-a-development-branch/`.
+| Finding | Decision |
+|---------|----------|
+| CRITICAL security findings | **BLOCK** — must fix before proceeding |
+| Code review Critical / Important | **BLOCK** — must fix |
+| Goal verification FAIL | **BLOCK** — must close gaps |
+| Evidence failures (tests/build/lint red) | **BLOCK** — must fix |
+| TypeScript `any` in new code | **BLOCK** — must replace with proper types |
+| HIGH security findings | **WARN** — log in report, recommend fixing |
+| MEDIUM security + Minor code | **PASS** with notes |
+| Nitpick / LOW | **PASS** — note only |
 
-**Conventional commit enforcement:** The PR title / merge commit message must follow:
+**If BLOCKED:** Report all blocking findings with next-action routing. Do NOT auto-fix — present the findings and let the user decide which action to take (`/fix`, `/refactor`, `/plan-work`, or manual).
+
+**If WARN:** Present warnings. Proceed to Step 9 unless user wants to fix.
+
+**If PASS:** Proceed to Step 9.
+
+---
+
+## Step 9: Promote
+
+If all gates pass (or user explicitly overrides), invoke `skills/finishing-a-development-branch/`.
+
+**Conventional commit enforcement:** PR title / merge commit must follow:
 ```
 type(scope): summary
 ```
 Where `type` is one of: `feat`, `fix`, `refactor`, `style`, `test`, `docs`, `chore`, `perf`, `build`, `ci`.
 
-If the caller provided context about what was built/fixed, use it to derive the conventional commit title. Otherwise, analyze the diff to determine the appropriate type and scope.
-
-Present the user with options from `skills/finishing-a-development-branch/`:
+Derive the type and scope from the diff analysis. Present options:
 - Create PR
 - Merge to main
 - Keep branch (more work planned)
 - Discard
-
-If user chooses PR, ensure the PR title follows conventional commit format.

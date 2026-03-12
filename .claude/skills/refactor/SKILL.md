@@ -20,6 +20,21 @@ This command runs in a single context by default. For large refactors (10+ files
 
 ---
 
+## Step 0: Analysis Mode (no target specified)
+
+If the user asks to "refactor this codebase", "clean up", or "find things to refactor" without specifying a target, invoke `skills/simplify/` first to identify refactoring candidates. It runs 3 parallel review agents that scan for:
+
+- **God components/classes** — files doing too many things, violating single responsibility
+- **Kitchen-sink utilities** — catch-all modules that should be split by domain
+- **Duplicate patterns** — copy-pasted logic with minor variations that should be extracted
+- **Redundant abstractions** — wrappers that add no value over the underlying API
+
+Present the findings to the user as a numbered list with file paths, descriptions, and estimated blast radius. Let them choose what to refactor. Then proceed to Step 1 with the chosen target.
+
+**Skip this step** if the user already specified a concrete refactoring target (file, function, module, pattern).
+
+---
+
 ## Step 1: Scope
 
 Identify the blast radius:
@@ -90,18 +105,9 @@ Fix issues. Tests must remain GREEN (iron law still applies). Commit: `refactor(
 
 ---
 
-## Step 6: Pre-Promotion Review
+## Step 6: Completion
 
-After simplify pass, invoke `skills/review/`. It handles:
-- Quality review (behavior preservation + structural quality + design consistency)
-- Security scan on changed files
-- Evidence verification (full test suite — iron law compliance proof)
-- TypeScript strictness check
-- Promotion (PR/merge/keep/discard with conventional commit title)
-
-**Context for /review:** Refactoring scope, characterization tests baseline, iron law compliance evidence.
-
-If /review reports BLOCKED findings: fix them (tests must remain GREEN — iron law still applies), then re-invoke /review.
+After simplify pass, suggest `/review` for comprehensive analysis (code quality + architecture + behavior preservation evidence). The user decides when to run it.
 
 Generate SUMMARY.md with refactoring steps, commit hashes, before/after metrics, test evidence.
 Update STATE.md: note refactoring completed, structural changes made.

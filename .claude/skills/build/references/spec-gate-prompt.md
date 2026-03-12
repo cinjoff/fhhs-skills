@@ -67,6 +67,18 @@ optimistic. You MUST verify everything independently by reading the actual code.
 - Type assertions (`as`) that could be replaced with type guards
 - Non-exhaustive switch statements on union types
 
+## Lightweight Security Check (CRITICAL patterns only)
+
+Scan the wave diff for these CRITICAL-severity patterns. This is NOT a full security audit — it catches only the highest-risk patterns that should never ship. A comprehensive scan is available via `/review`.
+
+**Injection:** String concatenation in SQL queries (`${...}` inside query strings), user input in `exec()`/`execSync()`, `eval()` with dynamic input
+**Hardcoded secrets:** API keys, tokens, passwords as string literals (patterns: `sk-`, `AKIA`, `ghp_`, `-----BEGIN PRIVATE KEY`)
+**Auth bypass:** API routes or server actions without auth checks (`export function POST/GET/PUT/DELETE` without `getServerSession`/`auth()`/`verifyToken` nearby)
+**XSS:** `dangerouslySetInnerHTML` with unsanitized input, `innerHTML =` with user data
+
+If found: flag as BLOCKING with severity CRITICAL-SECURITY. These are as blocking as spec deviations.
+If not found: no output needed (don't report "no security issues" — it clutters the report).
+
 **Wrong behavior:**
 - Code runs but produces wrong output
 - Logic errors in conditionals or data flow
