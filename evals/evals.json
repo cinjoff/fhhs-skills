@@ -1288,7 +1288,7 @@
     },
     {
       "id": 83,
-      "command": "playwright-testing",
+      "command": "fix",
       "prompt": "review the e2e tests and suggest improvements following Playwright best practices",
       "expected_output": "Should detect CSS selector anti-patterns (.email-input, .btn-primary, .text-red-600), recommend role-based or test-id locators, suggest Page Object Model pattern, and identify missing error state test coverage.",
       "files": [

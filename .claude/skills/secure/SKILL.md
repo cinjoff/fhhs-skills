@@ -18,7 +18,8 @@ Determine scan target:
 
 **Default (changed files):**
 ```bash
-git diff --name-only HEAD~1..HEAD
+MERGE_BASE=$(git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null || echo "HEAD~1")
+git diff --name-only $MERGE_BASE..HEAD
 git diff --name-only --staged
 git diff --name-only
 ```
