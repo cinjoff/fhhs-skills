@@ -5,14 +5,16 @@
       "id": 1,
       "command": "build",
       "prompt": "ok i just finished planning phase 13 for my saas app. there's a PLAN.md at .planning/phases/13-auth/13-01-PLAN.md with 3 tasks — two backend (JWT auth + refresh tokens) and one frontend (login form). the backend tasks are independent but the frontend depends on both. execute it",
-      "expected_output": "Should detect GSD mode, find the plan, identify 2 waves (wave 1: 2 parallel backend tasks, wave 2: 1 frontend task), dispatch general-purpose subagents (not gsd-executor), include TDD directives (from internal skills/test-driven-development/) for backend tasks and frontend-design directives (from internal skills/frontend-design/) for the login form, run design gates (/critique then /polish) after frontend task, generate SUMMARY.md, and update GSD state.",
+      "expected_output": "Should detect GSD mode, find the plan, identify 2 waves (wave 1: 2 parallel backend tasks, wave 2: 1 frontend task), dispatch general-purpose subagents (not gsd-executor), include TDD directives (from internal skills/test-driven-development/) for backend tasks and frontend-design directives (from internal skills/frontend-design/) for the login form, run design gates (/critique then /polish) after frontend task, generate SUMMARY.md, update GSD state, and invoke /review for pre-promotion quality + security + TS strictness checks.",
       "files": [],
       "assertions": [
         {"text": "Identifies 2 waves from task dependencies", "type": "behavioral"},
         {"text": "Dispatches general-purpose subagents (not gsd-executor)", "type": "behavioral"},
         {"text": "Includes TDD directives in subagent prompts", "type": "behavioral"},
         {"text": "Runs design gates for frontend task", "type": "behavioral"},
-        {"text": "Generates SUMMARY.md", "type": "output"}
+        {"text": "Generates SUMMARY.md", "type": "output"},
+        {"text": "Invokes /review for pre-promotion checks (not requesting-code-review directly)", "type": "behavioral"},
+        {"text": "Does NOT invoke requesting-code-review or finishing-a-development-branch directly", "type": "guard"}
       ]
     },
     {
@@ -147,12 +149,14 @@
       "id": 12,
       "command": "build",
       "prompt": "execute the plan at .planning/phases/05-onboarding/05-02-PLAN.md. the plan has a task with type checkpoint:human-verify for reviewing the welcome screen visually",
-      "expected_output": "Should find the plan, analyze waves, dispatch subagents for non-checkpoint tasks, and when reaching the checkpoint:human-verify task, the subagent should STOP and return structured state (what was built, verification steps, URLs/commands, expected behavior). Orchestrator should present this to user and WAIT before continuing. Should NOT auto-proceed past the checkpoint.",
+      "expected_output": "Should find the plan, analyze waves, dispatch subagents for non-checkpoint tasks, and when reaching the checkpoint:human-verify task, the subagent should STOP and return structured state (what was built, verification steps, URLs/commands, expected behavior). Orchestrator should present this to user and WAIT before continuing. Should NOT auto-proceed past the checkpoint. After checkpoint passes, invokes /review for pre-promotion quality and security checks.",
       "files": [],
       "assertions": [
         {"text": "Stops at checkpoint:human-verify", "type": "guard"},
         {"text": "Presents structured state to user", "type": "output"},
-        {"text": "Does NOT auto-proceed past checkpoint", "type": "guard"}
+        {"text": "Does NOT auto-proceed past checkpoint", "type": "guard"},
+        {"text": "Invokes /review after checkpoint passes (not requesting-code-review directly)", "type": "behavioral"},
+        {"text": "Does NOT invoke finishing-a-development-branch directly", "type": "guard"}
       ]
     },
     {
@@ -779,6 +783,309 @@
         {"text": "Installs update if available", "type": "behavioral"},
         {"text": "Clears statusline cache", "type": "behavioral"},
         {"text": "Reports version change", "type": "output"}
+      ]
+    },
+    {
+      "id": 63,
+      "command": "build",
+      "prompt": "Build the auth plan at .planning/phases/01-auth/01-01-PLAN.md. It has 3 tasks — JWT auth middleware, refresh token rotation (both backend, independent), and a login form that depends on both.",
+      "expected_output": "Should detect GSD mode, find the plan, identify 2 waves (wave 1: 2 parallel backend tasks, wave 2: 1 frontend task). Dispatch general-purpose subagents with Next.js performance rules in prompts (waterfall avoidance, bundle awareness). Spec gates run per wave. Design gates (critique → polish → normalize) run for the frontend login form task. Simplify pass runs after all waves. Then invoke /review which runs quality review (code-reviewer agent), security scan (4 parallel agents), TS strictness check (any usage in diff), gate decision, and promote. SUMMARY.md generated with correct frontmatter. PR title follows conventional commit format.",
+      "files": [
+        "evals/fixtures/nextjs-app-basic/next.config.js",
+        "evals/fixtures/nextjs-app-basic/tsconfig.json",
+        "evals/fixtures/nextjs-app-basic/playwright.config.ts",
+        "evals/fixtures/nextjs-app-basic/.planning/PROJECT.md",
+        "evals/fixtures/nextjs-app-basic/.planning/STATE.md",
+        "evals/fixtures/nextjs-app-basic/.planning/ROADMAP.md",
+        "evals/fixtures/nextjs-app-basic/.planning/DESIGN.md",
+        "evals/fixtures/nextjs-app-basic/CLAUDE.md",
+        "evals/fixtures/plans/auth-plan.md"
+      ],
+      "assertions": [
+        {"text": "Loads Next.js performance rules into subagent prompts (references waterfall or bundle patterns)", "type": "behavioral"},
+        {"text": "Spec gates run BEFORE design gates", "type": "ordering"},
+        {"text": "Simplify runs BEFORE /review", "type": "ordering"},
+        {"text": "/review runs quality → security → gate → promote in sequence", "type": "ordering"},
+        {"text": "Dispatches code-reviewer agent for quality review", "type": "behavioral"},
+        {"text": "Dispatches 4 parallel agents for security scan", "type": "behavioral"},
+        {"text": "Checks for any usage in diff (TS strictness)", "type": "behavioral"},
+        {"text": "Generates SUMMARY.md with correct frontmatter", "type": "output"},
+        {"text": "PR title follows type(scope): summary format", "type": "output"},
+        {"text": "Does NOT invoke requesting-code-review directly (uses /review instead)", "type": "guard"},
+        {"text": "Does NOT invoke finishing-a-development-branch directly (uses /review instead)", "type": "guard"},
+        {"text": "Frontend login form task gets DESIGN.md context in subagent prompt", "type": "behavioral"},
+        {"text": "Design gates run for frontend task (critique → polish → normalize)", "type": "behavioral"},
+        {"text": "GSD state updated in /build Step 6 BEFORE /review invocation", "type": "ordering"}
+      ]
+    },
+    {
+      "id": 64,
+      "command": "build",
+      "prompt": "Execute the API refactor plan at .planning/phases/02-api/02-01-PLAN.md",
+      "expected_output": "Should build the API refactor plan. During /review, security scan finds SQL injection via string concatenation (CRITICAL) and hardcoded JWT secret (CRITICAL) in existing code. CRITICAL findings BLOCK promotion. Fix agent is dispatched to remediate CRITICAL findings (parameterized queries, env-based secrets). After fix, re-scan verifies remediation. MEDIUM findings (missing CORS) are logged but do not block. Promotion proceeds after re-scan passes.",
+      "files": [
+        "evals/fixtures/nextjs-app-security-issues/next.config.js",
+        "evals/fixtures/nextjs-app-security-issues/tsconfig.json",
+        "evals/fixtures/nextjs-app-security-issues/.planning/PROJECT.md",
+        "evals/fixtures/nextjs-app-security-issues/.planning/STATE.md",
+        "evals/fixtures/nextjs-app-security-issues/src/app/api/users/route.ts",
+        "evals/fixtures/nextjs-app-security-issues/src/app/api/data/route.ts",
+        "evals/fixtures/nextjs-app-security-issues/src/lib/auth.ts",
+        "evals/fixtures/nextjs-app-security-issues/.env.example",
+        "evals/fixtures/nextjs-app-security-issues/src/components/comment.tsx",
+        "evals/fixtures/plans/api-refactor-plan.md"
+      ],
+      "assertions": [
+        {"text": "Security scan dispatches 4 parallel agents", "type": "behavioral"},
+        {"text": "Identifies SQL string concatenation as CRITICAL", "type": "behavioral"},
+        {"text": "Identifies hardcoded JWT secret as CRITICAL", "type": "behavioral"},
+        {"text": "BLOCKS promotion on CRITICAL findings", "type": "guard"},
+        {"text": "Dispatches fix agent to remediate CRITICAL findings", "type": "behavioral"},
+        {"text": "Re-scans after fix before promoting", "type": "ordering"},
+        {"text": "Review report includes security findings with file:line references", "type": "output"},
+        {"text": "MEDIUM findings (missing CORS) logged but do not block promotion", "type": "behavioral"},
+        {"text": "Fix agent replaces SQL concatenation with parameterized queries", "type": "behavioral"}
+      ]
+    },
+    {
+      "id": 65,
+      "command": "build",
+      "prompt": "Build the dashboard plan at .planning/phases/02-dashboard/02-01-PLAN.md",
+      "expected_output": "Should identify 2 waves. Wave 1 is the component task (no Playwright involvement) — subagent prompt should NOT include Playwright guidance. Wave 2 is the Playwright test task — subagent detects *.spec.* files in task and loads Playwright guidance (Page Object Model, locator strategies, auto-waiting). Spec gates run per wave. /review runs after both waves. SUMMARY.md notes Playwright tests written.",
+      "files": [
+        "evals/fixtures/nextjs-app-basic/next.config.js",
+        "evals/fixtures/nextjs-app-basic/tsconfig.json",
+        "evals/fixtures/nextjs-app-basic/playwright.config.ts",
+        "evals/fixtures/nextjs-app-basic/.planning/PROJECT.md",
+        "evals/fixtures/nextjs-app-basic/.planning/STATE.md",
+        "evals/fixtures/nextjs-app-basic/.planning/DESIGN.md",
+        "evals/fixtures/nextjs-app-basic/CLAUDE.md",
+        "evals/fixtures/plans/dashboard-plan.md"
+      ],
+      "assertions": [
+        {"text": "Wave 1 subagent prompt does NOT include Playwright guidance", "type": "guard"},
+        {"text": "Wave 2 subagent prompt includes Playwright guidance (detects *.spec.* in task files)", "type": "behavioral"},
+        {"text": "Playwright prompt references Page Object Model and locator strategies", "type": "behavioral"},
+        {"text": "Playwright detection happens per-task, not globally at plan level", "type": "ordering"},
+        {"text": "TDD directive references Playwright patterns for test task", "type": "behavioral"},
+        {"text": "SUMMARY.md notes Playwright tests written", "type": "output"},
+        {"text": "Design gates run for component task in wave 1 (frontend)", "type": "behavioral"}
+      ]
+    },
+    {
+      "id": 66,
+      "command": "build",
+      "prompt": "Build the auth plan at .planning/phases/01-auth/01-01-PLAN.md",
+      "expected_output": "Should build the auth plan. During spec gate, the gate catches any usage in the subagent output (e.g., function params typed as any). This is flagged as BLOCKING — not advisory. Fix agent replaces any with specific types (unknown + type guards, or concrete interface types). Fix happens before the next wave starts. as any assertions are also rejected. Suggests unknown or proper type guard as alternatives.",
+      "files": [
+        "evals/fixtures/nextjs-app-typescript-issues/next.config.js",
+        "evals/fixtures/nextjs-app-typescript-issues/tsconfig.json",
+        "evals/fixtures/nextjs-app-typescript-issues/.planning/PROJECT.md",
+        "evals/fixtures/nextjs-app-typescript-issues/.planning/STATE.md",
+        "evals/fixtures/nextjs-app-typescript-issues/src/lib/api.ts",
+        "evals/fixtures/nextjs-app-typescript-issues/src/components/form.tsx",
+        "evals/fixtures/nextjs-app-typescript-issues/src/types/index.ts",
+        "evals/fixtures/nextjs-app-typescript-issues/src/hooks/useAuth.ts",
+        "evals/fixtures/nextjs-app-typescript-issues/CLAUDE.md",
+        "evals/fixtures/plans/auth-plan.md"
+      ],
+      "assertions": [
+        {"text": "Spec gate checks for any type usage in subagent output", "type": "behavioral"},
+        {"text": "Flags any as BLOCKING (not just advisory)", "type": "behavioral"},
+        {"text": "Fix agent replaces any with specific type (unknown + type guard or concrete type)", "type": "behavioral"},
+        {"text": "Fix happens before next wave starts", "type": "ordering"},
+        {"text": "Does not accept as any assertions", "type": "guard"},
+        {"text": "Suggests type guard or unknown as alternatives to any", "type": "behavioral"},
+        {"text": "Non-exhaustive switch violations in existing code flagged", "type": "behavioral"}
+      ]
+    },
+    {
+      "id": 67,
+      "command": "fix",
+      "prompt": "The user profile page crashes when the user has no avatar — TypeError: Cannot read properties of null (reading 'url'). It's in src/components/profile.tsx",
+      "expected_output": "Should triage as MODERATE (single component, one subsystem). Invokes systematic debugging to locate null reference in profile.tsx (accessing avatar.url when avatar is null). TDD approach: writes failing test first reproducing the null avatar case, then fixes with optional chaining or null check, confirms test passes. Frontend check reads DESIGN.md for fallback avatar styling. Simplify runs before /review. /review runs quality review on the fix diff, security scan on changed files, TS strictness check. Fix commit uses fix(profile): prefix. Does NOT fix unrelated pre-existing issues.",
+      "files": [
+        "evals/fixtures/nextjs-app-basic/next.config.js",
+        "evals/fixtures/nextjs-app-basic/tsconfig.json",
+        "evals/fixtures/nextjs-app-basic/.planning/PROJECT.md",
+        "evals/fixtures/nextjs-app-basic/.planning/DESIGN.md",
+        "evals/fixtures/nextjs-app-basic/CLAUDE.md"
+      ],
+      "assertions": [
+        {"text": "Triages as MODERATE (2-4 files, one subsystem)", "type": "behavioral"},
+        {"text": "Invokes systematic-debugging skill", "type": "behavioral"},
+        {"text": "Writes failing test BEFORE fix (TDD red-green-refactor)", "type": "behavioral"},
+        {"text": "Frontend check reads DESIGN.md for fallback styling", "type": "behavioral"},
+        {"text": "Simplify runs before /review", "type": "ordering"},
+        {"text": "/review runs quality review on fix diff", "type": "behavioral"},
+        {"text": "/review runs security scan on changed files", "type": "behavioral"},
+        {"text": "/review checks for any in diff (TS strictness)", "type": "behavioral"},
+        {"text": "Fix commit message uses fix(scope): prefix", "type": "output"},
+        {"text": "Does NOT fix unrelated pre-existing issues", "type": "guard"},
+        {"text": "Null reference fix uses optional chaining or type guard (not as any)", "type": "behavioral"}
+      ]
+    },
+    {
+      "id": 68,
+      "command": "refactor",
+      "prompt": "Refactor the auth module to extract token management into a separate service. src/lib/auth.ts currently handles JWT signing, verification, session management, and refresh token rotation — split token concerns out into src/lib/token-service.ts",
+      "expected_output": "Should scope with LSP findReferences to map blast radius (all files importing from auth.ts). Captures baseline test suite (must be GREEN). Plans atomic steps ordered safest-first (create new file, move functions, update imports, remove old code). Executes with tests green at every step — reverts immediately if tests go red. Simplify pass after completion. /review runs quality review (behavior preservation focus), security scan (extracted auth service), TS strictness check, and if Next.js files touched, perf patterns. Atomic commits with refactor(auth): prefix.",
+      "files": [
+        "evals/fixtures/nextjs-app-basic/next.config.js",
+        "evals/fixtures/nextjs-app-basic/tsconfig.json",
+        "evals/fixtures/nextjs-app-basic/.planning/PROJECT.md",
+        "evals/fixtures/nextjs-app-basic/CLAUDE.md"
+      ],
+      "assertions": [
+        {"text": "Uses LSP findReferences to scope blast radius of auth.ts", "type": "behavioral"},
+        {"text": "Captures baseline test suite and verifies GREEN", "type": "behavioral"},
+        {"text": "Plans atomic steps ordered safest-first", "type": "behavioral"},
+        {"text": "Reverts immediately if tests go red (iron law)", "type": "guard"},
+        {"text": "Simplify before /review", "type": "ordering"},
+        {"text": "/review quality focus includes behavior preservation", "type": "behavioral"},
+        {"text": "/review security scan checks extracted auth service", "type": "behavioral"},
+        {"text": "/review checks for any introduced during refactoring", "type": "behavioral"},
+        {"text": "If Next.js files touched, review includes perf patterns", "type": "behavioral"},
+        {"text": "Atomic commits with refactor(scope): prefix", "type": "output"},
+        {"text": "Tests remain green at every atomic step", "type": "behavioral"}
+      ]
+    },
+    {
+      "id": 69,
+      "command": "secure",
+      "prompt": "Scan the whole codebase for security issues",
+      "expected_output": "Should scope the full codebase and dispatch exactly 4 parallel scanning agents. Agent findings: SQL injection via string concatenation in api/users/route.ts (CRITICAL), XSS via dangerouslySetInnerHTML in comment.tsx (CRITICAL), hardcoded JWT secret in auth.ts (CRITICAL), session stored in localStorage (HIGH), .env.example with real-looking API keys (CRITICAL), missing CORS on data route (MEDIUM), no auth check on data route (HIGH). Report has file:line references, findings grouped by severity then category. Overlapping findings from different agents are deduplicated.",
+      "files": [
+        "evals/fixtures/nextjs-app-security-issues/src/app/api/users/route.ts",
+        "evals/fixtures/nextjs-app-security-issues/src/app/api/data/route.ts",
+        "evals/fixtures/nextjs-app-security-issues/src/components/comment.tsx",
+        "evals/fixtures/nextjs-app-security-issues/src/lib/auth.ts",
+        "evals/fixtures/nextjs-app-security-issues/.env.example",
+        "evals/fixtures/nextjs-app-security-issues/.planning/PROJECT.md"
+      ],
+      "assertions": [
+        {"text": "Dispatches exactly 4 parallel scanning agents", "type": "behavioral"},
+        {"text": "Finds SQL injection via string concatenation (CRITICAL) in api/users/route.ts", "type": "behavioral"},
+        {"text": "Finds XSS via dangerouslySetInnerHTML with user input (CRITICAL) in comment.tsx", "type": "behavioral"},
+        {"text": "Finds hardcoded JWT secret (CRITICAL) in auth.ts", "type": "behavioral"},
+        {"text": "Finds .env.example with real-looking API keys (CRITICAL)", "type": "behavioral"},
+        {"text": "Finds missing CORS (MEDIUM) and no auth (HIGH) on data route", "type": "behavioral"},
+        {"text": "Finds localStorage session storage (HIGH) in auth.ts", "type": "behavioral"},
+        {"text": "Report has file:line references for each finding", "type": "output"},
+        {"text": "Findings grouped by severity then category", "type": "output"},
+        {"text": "Deduplicates overlapping findings from different agents", "type": "behavioral"}
+      ]
+    },
+    {
+      "id": 70,
+      "command": "review",
+      "prompt": "Review my changes before creating a PR",
+      "expected_output": "Should run the full /review pipeline: code quality review first (code-reviewer agent), then security scan (4 parallel agents), then TS strictness check (any usage in diff). Gate decision aggregates all findings. If Next.js project detected, includes perf patterns in review. Review report includes quality score, security findings, and TS strictness results. Presents promotion options (PR/merge/keep/discard from finishing-a-development-branch). PR title enforces conventional commit format.",
+      "files": [
+        "evals/fixtures/nextjs-app-basic/next.config.js",
+        "evals/fixtures/nextjs-app-basic/tsconfig.json",
+        "evals/fixtures/nextjs-app-basic/.planning/PROJECT.md",
+        "evals/fixtures/nextjs-app-basic/CLAUDE.md"
+      ],
+      "assertions": [
+        {"text": "Quality review runs first (code-reviewer agent)", "type": "ordering"},
+        {"text": "Security scan runs second (4 parallel agents)", "type": "ordering"},
+        {"text": "Gate decision aggregates quality + security + TS strictness results", "type": "ordering"},
+        {"text": "Checks diff for any usage (TS strictness)", "type": "behavioral"},
+        {"text": "Detects Next.js project and includes perf patterns in review", "type": "behavioral"},
+        {"text": "Review report includes quality score, security findings, TS strictness", "type": "output"},
+        {"text": "Presents PR/merge/keep/discard promotion options", "type": "behavioral"},
+        {"text": "PR title enforces conventional commit format type(scope): summary", "type": "output"},
+        {"text": "/review does NOT touch STATE.md (GSD state updates happen in /build)", "type": "guard"}
+      ]
+    },
+    {
+      "id": 71,
+      "command": "release",
+      "prompt": "Release a new version",
+      "expected_output": "Should gather changes from git log since last tag, classify conventional commit types (feat, fix, refactor, chore, docs). Suggest version bump based on changes (feat → minor, fix → patch, breaking → major). Generate conventional changelog with groups: feat → Added, fix → Fixed, refactor → Changed. Bump both plugin.json and marketplace.json to the same version. Create commit + tag + push + GitHub release. Internal chore/docs commits excluded from user-facing changelog. Asks user for version bump approval before proceeding.",
+      "files": [],
+      "assertions": [
+        {"text": "Parses conventional commit types from git log", "type": "behavioral"},
+        {"text": "Changelog groups: feat→Added, fix→Fixed, refactor→Changed", "type": "output"},
+        {"text": "Both plugin.json and marketplace.json get same version", "type": "behavioral"},
+        {"text": "GitHub release notes include changelog content", "type": "output"},
+        {"text": "Does NOT include internal chore/docs commits in user-facing changelog", "type": "guard"},
+        {"text": "Asks user for version bump approval before proceeding", "type": "behavioral"}
+      ]
+    },
+    {
+      "id": 72,
+      "command": "build",
+      "prompt": "Build the plan at plan.md in the project root",
+      "expected_output": "Should detect that .planning/PROJECT.md is missing (no GSD project initialized). Stops immediately and tells the user to run /fh:new-project first. Does NOT proceed with any execution — no subagent dispatch, no plan parsing, no wave analysis.",
+      "files": [],
+      "assertions": [
+        {"text": "Detects missing .planning/PROJECT.md", "type": "behavioral"},
+        {"text": "Recommends /fh:new-project", "type": "output"},
+        {"text": "Does NOT proceed with any execution", "type": "guard"}
+      ]
+    },
+    {
+      "id": 73,
+      "command": "plan-work",
+      "prompt": "Plan and build adding user settings page with a dark mode toggle. The project already has a ThemeProvider and uses Tailwind dark: prefix.",
+      "expected_output": "Should run /plan-work first: skips research (dark mode toggle is well-known pattern), brainstorms design options (toggle placement, persistence strategy, system preference detection), discusses with user, derives must_haves with user-facing truths, creates PLAN.md with proper frontmatter. Then /build: loads Next.js perf rules, dispatches subagents, spec gate per wave, design gates (critique → polish → normalize) for frontend components. Design gates run after spec gates. Simplify before /review. /review runs full pipeline (quality + security + TS strictness). SUMMARY.md generated with must_haves verification. PR with conventional commit title.",
+      "files": [
+        "evals/fixtures/nextjs-app-basic/next.config.js",
+        "evals/fixtures/nextjs-app-basic/tsconfig.json",
+        "evals/fixtures/nextjs-app-basic/.planning/PROJECT.md",
+        "evals/fixtures/nextjs-app-basic/.planning/STATE.md",
+        "evals/fixtures/nextjs-app-basic/.planning/ROADMAP.md",
+        "evals/fixtures/nextjs-app-basic/.planning/DESIGN.md",
+        "evals/fixtures/nextjs-app-basic/CLAUDE.md"
+      ],
+      "assertions": [
+        {"text": "Skips research for well-known pattern (dark mode toggle)", "type": "behavioral"},
+        {"text": "Brainstorms design options for toggle placement and persistence", "type": "behavioral"},
+        {"text": "Derives must_haves with user-facing truths", "type": "behavioral"},
+        {"text": "Creates PLAN.md with proper YAML frontmatter and XML task structure", "type": "output"},
+        {"text": "Build loads Next.js perf rules into subagent prompts", "type": "behavioral"},
+        {"text": "Spec gate runs per wave", "type": "behavioral"},
+        {"text": "Design gates run (critique → polish → normalize) for frontend components", "type": "behavioral"},
+        {"text": "Design gates run after spec gates", "type": "ordering"},
+        {"text": "Simplify before /review", "type": "ordering"},
+        {"text": "/review runs quality review on full diff", "type": "behavioral"},
+        {"text": "/review runs security scan", "type": "behavioral"},
+        {"text": "/review runs TS strictness check", "type": "behavioral"},
+        {"text": "SUMMARY.md generated with must_haves verification", "type": "output"},
+        {"text": "PR with conventional commit title type(scope): summary", "type": "output"},
+        {"text": "ThemeProvider and Tailwind dark: prefix acknowledged in plan context", "type": "behavioral"}
+      ]
+    },
+    {
+      "id": 74,
+      "command": "fix",
+      "prompt": "API returns 500 on /api/users and /api/billing simultaneously, and the dashboard shows stale data. Three independent failures.",
+      "expected_output": "Should triage as PARALLEL (3+ independent failures across different subsystems). Dispatches parallel gsd-debugger agents — one per failing subsystem (users API, billing API, dashboard staleness). Each debugger uses scientific method (hypothesis → test → conclude). TDD fix per root cause. Simplify after all fixes. /review security scan catches SQL injection in /api/users route (CRITICAL). BLOCKS on CRITICAL. Fix agent addresses SQL injection. Re-scan after security fix. SUMMARY.md notes all three subsystem fixes plus security remediation.",
+      "files": [
+        "evals/fixtures/nextjs-app-security-issues/next.config.js",
+        "evals/fixtures/nextjs-app-security-issues/tsconfig.json",
+        "evals/fixtures/nextjs-app-security-issues/.planning/PROJECT.md",
+        "evals/fixtures/nextjs-app-security-issues/.planning/STATE.md",
+        "evals/fixtures/nextjs-app-security-issues/src/app/api/users/route.ts",
+        "evals/fixtures/nextjs-app-security-issues/src/app/api/data/route.ts",
+        "evals/fixtures/nextjs-app-security-issues/src/lib/auth.ts",
+        "evals/fixtures/nextjs-app-security-issues/src/components/comment.tsx",
+        "evals/fixtures/nextjs-app-security-issues/CLAUDE.md"
+      ],
+      "assertions": [
+        {"text": "Triages as PARALLEL (3+ independent failures)", "type": "behavioral"},
+        {"text": "Dispatches parallel gsd-debugger agents per subsystem", "type": "behavioral"},
+        {"text": "Each debugger uses scientific method (hypothesis → test → conclude)", "type": "behavioral"},
+        {"text": "TDD fix for each root cause", "type": "behavioral"},
+        {"text": "Simplify after fixes", "type": "ordering"},
+        {"text": "/review security scan catches SQL injection in /api/users", "type": "behavioral"},
+        {"text": "/review BLOCKS on CRITICAL security finding", "type": "behavioral"},
+        {"text": "Fix agent addresses CRITICAL finding (SQL injection)", "type": "behavioral"},
+        {"text": "Re-scan after security fix before promoting", "type": "ordering"},
+        {"text": "SUMMARY.md notes all three subsystem fixes plus security remediation", "type": "output"},
+        {"text": "Does NOT invoke requesting-code-review directly", "type": "guard"}
       ]
     }
   ]
