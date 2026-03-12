@@ -1,0 +1,352 @@
+{
+  "run_date": "2026-03-12T22:04:53.343837",
+  "grader": "llm (haiku) + keyword fallback",
+  "model": "haiku",
+  "total_evals": 130,
+  "llm_graded": 130,
+  "keyword_fallback": 0,
+  "successful": 130,
+  "errors": 0,
+  "timeouts": 0,
+  "total_assertions": 647,
+  "passed_assertions": 538,
+  "overall_pass_rate": 0.8315301391035549,
+  "by_command": {
+    "adapt": {
+      "evals": 2,
+      "assertions": 12,
+      "passed": 9,
+      "pass_rate": 0.75,
+      "errors": 0,
+      "avg_duration_ms": 44535
+    },
+    "add-todo": {
+      "evals": 2,
+      "assertions": 8,
+      "passed": 8,
+      "pass_rate": 1.0,
+      "errors": 0,
+      "avg_duration_ms": 31276
+    },
+    "animate": {
+      "evals": 1,
+      "assertions": 6,
+      "passed": 4,
+      "pass_rate": 0.6666666666666666,
+      "errors": 0,
+      "avg_duration_ms": 52586
+    },
+    "audit": {
+      "evals": 2,
+      "assertions": 7,
+      "passed": 7,
+      "pass_rate": 1.0,
+      "errors": 0,
+      "avg_duration_ms": 57828
+    },
+    "bolder": {
+      "evals": 2,
+      "assertions": 10,
+      "passed": 8,
+      "pass_rate": 0.8,
+      "errors": 0,
+      "avg_duration_ms": 46103
+    },
+    "build": {
+      "evals": 15,
+      "assertions": 91,
+      "passed": 63,
+      "pass_rate": 0.6923076923076923,
+      "errors": 0,
+      "avg_duration_ms": 56554
+    },
+    "check-todos": {
+      "evals": 2,
+      "assertions": 8,
+      "passed": 5,
+      "pass_rate": 0.625,
+      "errors": 0,
+      "avg_duration_ms": 36955
+    },
+    "clarify": {
+      "evals": 1,
+      "assertions": 5,
+      "passed": 4,
+      "pass_rate": 0.8,
+      "errors": 0,
+      "avg_duration_ms": 43082
+    },
+    "colorize": {
+      "evals": 2,
+      "assertions": 10,
+      "passed": 10,
+      "pass_rate": 1.0,
+      "errors": 0,
+      "avg_duration_ms": 46109
+    },
+    "critique": {
+      "evals": 3,
+      "assertions": 12,
+      "passed": 12,
+      "pass_rate": 1.0,
+      "errors": 0,
+      "avg_duration_ms": 41172
+    },
+    "delight": {
+      "evals": 2,
+      "assertions": 10,
+      "passed": 10,
+      "pass_rate": 1.0,
+      "errors": 0,
+      "avg_duration_ms": 49296
+    },
+    "distill": {
+      "evals": 1,
+      "assertions": 5,
+      "passed": 4,
+      "pass_rate": 0.8,
+      "errors": 0,
+      "avg_duration_ms": 58260
+    },
+    "extract": {
+      "evals": 1,
+      "assertions": 5,
+      "passed": 4,
+      "pass_rate": 0.8,
+      "errors": 0,
+      "avg_duration_ms": 42063
+    },
+    "fix": {
+      "evals": 8,
+      "assertions": 43,
+      "passed": 30,
+      "pass_rate": 0.6976744186046512,
+      "errors": 0,
+      "avg_duration_ms": 45477
+    },
+    "harden": {
+      "evals": 2,
+      "assertions": 8,
+      "passed": 4,
+      "pass_rate": 0.5,
+      "errors": 0,
+      "avg_duration_ms": 42861
+    },
+    "health": {
+      "evals": 3,
+      "assertions": 11,
+      "passed": 10,
+      "pass_rate": 0.9090909090909091,
+      "errors": 0,
+      "avg_duration_ms": 26465
+    },
+    "help": {
+      "evals": 1,
+      "assertions": 6,
+      "passed": 5,
+      "pass_rate": 0.8333333333333334,
+      "errors": 0,
+      "avg_duration_ms": 23668
+    },
+    "map-codebase": {
+      "evals": 2,
+      "assertions": 9,
+      "passed": 9,
+      "pass_rate": 1.0,
+      "errors": 0,
+      "avg_duration_ms": 29724
+    },
+    "new-project": {
+      "evals": 2,
+      "assertions": 9,
+      "passed": 9,
+      "pass_rate": 1.0,
+      "errors": 0,
+      "avg_duration_ms": 57070
+    },
+    "normalize": {
+      "evals": 2,
+      "assertions": 11,
+      "passed": 8,
+      "pass_rate": 0.7272727272727273,
+      "errors": 0,
+      "avg_duration_ms": 41031
+    },
+    "onboard": {
+      "evals": 2,
+      "assertions": 10,
+      "passed": 9,
+      "pass_rate": 0.9,
+      "errors": 0,
+      "avg_duration_ms": 48496
+    },
+    "optimize": {
+      "evals": 1,
+      "assertions": 5,
+      "passed": 3,
+      "pass_rate": 0.6,
+      "errors": 0,
+      "avg_duration_ms": 47201
+    },
+    "plan-work": {
+      "evals": 5,
+      "assertions": 27,
+      "passed": 17,
+      "pass_rate": 0.6296296296296297,
+      "errors": 0,
+      "avg_duration_ms": 53686
+    },
+    "polish": {
+      "evals": 3,
+      "assertions": 16,
+      "passed": 12,
+      "pass_rate": 0.75,
+      "errors": 0,
+      "avg_duration_ms": 40740
+    },
+    "progress": {
+      "evals": 8,
+      "assertions": 33,
+      "passed": 29,
+      "pass_rate": 0.8787878787878788,
+      "errors": 0,
+      "avg_duration_ms": 38168
+    },
+    "quick": {
+      "evals": 5,
+      "assertions": 30,
+      "passed": 30,
+      "pass_rate": 1.0,
+      "errors": 0,
+      "avg_duration_ms": 42294
+    },
+    "quieter": {
+      "evals": 2,
+      "assertions": 10,
+      "passed": 10,
+      "pass_rate": 1.0,
+      "errors": 0,
+      "avg_duration_ms": 42323
+    },
+    "refactor": {
+      "evals": 3,
+      "assertions": 17,
+      "passed": 14,
+      "pass_rate": 0.8235294117647058,
+      "errors": 0,
+      "avg_duration_ms": 48794
+    },
+    "release": {
+      "evals": 1,
+      "assertions": 6,
+      "passed": 5,
+      "pass_rate": 0.8333333333333334,
+      "errors": 0,
+      "avg_duration_ms": 36445
+    },
+    "research": {
+      "evals": 3,
+      "assertions": 12,
+      "passed": 12,
+      "pass_rate": 1.0,
+      "errors": 0,
+      "avg_duration_ms": 33695
+    },
+    "resume-work": {
+      "evals": 4,
+      "assertions": 17,
+      "passed": 17,
+      "pass_rate": 1.0,
+      "errors": 0,
+      "avg_duration_ms": 28719
+    },
+    "review": {
+      "evals": 12,
+      "assertions": 64,
+      "passed": 56,
+      "pass_rate": 0.875,
+      "errors": 0,
+      "avg_duration_ms": 41937
+    },
+    "revise-claude-md": {
+      "evals": 3,
+      "assertions": 13,
+      "passed": 12,
+      "pass_rate": 0.9230769230769231,
+      "errors": 0,
+      "avg_duration_ms": 34866
+    },
+    "secure": {
+      "evals": 7,
+      "assertions": 36,
+      "passed": 32,
+      "pass_rate": 0.8888888888888888,
+      "errors": 0,
+      "avg_duration_ms": 34185
+    },
+    "settings": {
+      "evals": 1,
+      "assertions": 5,
+      "passed": 5,
+      "pass_rate": 1.0,
+      "errors": 0,
+      "avg_duration_ms": 26910
+    },
+    "setup": {
+      "evals": 1,
+      "assertions": 7,
+      "passed": 7,
+      "pass_rate": 1.0,
+      "errors": 0,
+      "avg_duration_ms": 45692
+    },
+    "simplify": {
+      "evals": 3,
+      "assertions": 12,
+      "passed": 11,
+      "pass_rate": 0.9166666666666666,
+      "errors": 0,
+      "avg_duration_ms": 36108
+    },
+    "teach-impeccable": {
+      "evals": 1,
+      "assertions": 3,
+      "passed": 3,
+      "pass_rate": 1.0,
+      "errors": 0,
+      "avg_duration_ms": 41699
+    },
+    "tracker": {
+      "evals": 2,
+      "assertions": 10,
+      "passed": 10,
+      "pass_rate": 1.0,
+      "errors": 0,
+      "avg_duration_ms": 21901
+    },
+    "update": {
+      "evals": 1,
+      "assertions": 4,
+      "passed": 4,
+      "pass_rate": 1.0,
+      "errors": 0,
+      "avg_duration_ms": 22770
+    },
+    "verify": {
+      "evals": 4,
+      "assertions": 16,
+      "passed": 9,
+      "pass_rate": 0.5625,
+      "errors": 0,
+      "avg_duration_ms": 36086
+    },
+    "verify-ui": {
+      "evals": 2,
+      "assertions": 8,
+      "passed": 8,
+      "pass_rate": 1.0,
+      "errors": 0,
+      "avg_duration_ms": 31353
+    }
+  }
+}

@@ -1,14 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
+
+interface DataTableField {
+  key: string;
+  label: string;
+  sortable?: boolean;
+  renderCell?: (value: unknown, row: Record<string, unknown>) => ReactNode;
+}
 
 interface DataTableProps {
   data: Array<Record<string, unknown>>;
-  fields: Array<{
-    key: string;
-    label: string;
-    sortable?: boolean;
-  }>;
+  fields: Array<DataTableField>;
   pageSize?: number;
   onRowClick?: (row: Record<string, unknown>) => void;
 }
@@ -56,24 +59,24 @@ export function DataTable({ data, fields, pageSize = 10, onRowClick }: DataTable
           placeholder="Search..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full max-w-sm px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full max-w-sm px-3 py-2 border border-input rounded-md text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
         />
       </div>
 
       <div className="border rounded-lg overflow-hidden">
         <table className="w-full">
           <thead>
-            <tr className="bg-gray-50 border-b">
+            <tr className="bg-primary/5 border-b dark:bg-primary/10">
               {fields.map((field) => (
                 <th
                   key={field.key}
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none"
+                  className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider cursor-pointer select-none hover:text-foreground transition-colors"
                   onClick={() => field.sortable !== false && handleSort(field.key)}
                 >
                   <div className="flex items-center gap-1">
                     {field.label}
                     {sortField === field.key && (
-                      <span className="text-gray-400">
+                      <span className="text-primary font-semibold">
                         {sortDirection === 'asc' ? '↑' : '↓'}
                       </span>
                     )}
@@ -85,7 +88,7 @@ export function DataTable({ data, fields, pageSize = 10, onRowClick }: DataTable
           <tbody>
             {paginatedData.length === 0 ? (
               <tr>
-                <td colSpan={fields.length} className="px-4 py-8 text-center text-gray-500">
+                <td colSpan={fields.length} className="px-4 py-8 text-center text-muted-foreground">
                   No results found
                 </td>
               </tr>
@@ -93,12 +96,14 @@ export function DataTable({ data, fields, pageSize = 10, onRowClick }: DataTable
               paginatedData.map((row, rowIndex) => (
                 <tr
                   key={rowIndex}
-                  className="border-b last:border-b-0 hover:bg-gray-50 cursor-pointer"
+                  className="border-b last:border-b-0 hover:bg-primary/5 cursor-pointer transition-colors"
                   onClick={() => onRowClick?.(row)}
                 >
                   {fields.map((field) => (
-                    <td key={field.key} className="px-4 py-3 text-sm text-gray-900">
-                      {String(row[field.key] ?? '')}
+                    <td key={field.key} className="px-4 py-3 text-sm text-foreground">
+                      {field.renderCell
+                        ? field.renderCell(row[field.key], row)
+                        : String(row[field.key] ?? '')}
                     </td>
                   ))}
                 </tr>
@@ -110,7 +115,7 @@ export function DataTable({ data, fields, pageSize = 10, onRowClick }: DataTable
 
       {totalPages > 1 && (
         <div className="flex items-center justify-between mt-4">
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-muted-foreground">
             Showing {startIndex + 1} to {Math.min(startIndex + pageSize, sortedData.length)} of{' '}
             {sortedData.length} results
           </div>
@@ -118,7 +123,7 @@ export function DataTable({ data, fields, pageSize = 10, onRowClick }: DataTable
             <button
               onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
               disabled={currentPage === 1}
-              className="px-3 py-1 text-sm border rounded-md disabled:opacity-50 hover:bg-gray-50"
+              className="px-3 py-1 text-sm border rounded-md disabled:opacity-50 hover:bg-primary/5 transition-colors"
             >
               Previous
             </button>
@@ -126,10 +131,10 @@ export function DataTable({ data, fields, pageSize = 10, onRowClick }: DataTable
               <button
                 key={page}
                 onClick={() => setCurrentPage(page)}
-                className={`px-3 py-1 text-sm border rounded-md ${
+                className={`px-3 py-1 text-sm border rounded-md transition-colors ${
                   currentPage === page
-                    ? 'bg-blue-600 text-white border-blue-600'
-                    : 'hover:bg-gray-50'
+                    ? 'bg-primary text-primary-foreground border-primary'
+                    : 'hover:bg-primary/5 hover:border-primary/30'
                 }`}
               >
                 {page}
@@ -138,7 +143,7 @@ export function DataTable({ data, fields, pageSize = 10, onRowClick }: DataTable
             <button
               onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
               disabled={currentPage === totalPages}
-              className="px-3 py-1 text-sm border rounded-md disabled:opacity-50 hover:bg-gray-50"
+              className="px-3 py-1 text-sm border rounded-md disabled:opacity-50 hover:bg-primary/5 transition-colors"
             >
               Next
             </button>

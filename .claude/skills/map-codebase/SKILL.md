@@ -83,11 +83,13 @@ Continue to spawn_agents.
 </step>
 
 <step name="spawn_agents">
-Spawn 4 parallel gsd-codebase-mapper agents.
+Spawn all 4 parallel gsd-codebase-mapper agents **in a single message**.
 
-Use Task tool with `subagent_type="gsd-codebase-mapper"`, `model="{mapper_model}"`, and `run_in_background=true` for parallel execution.
+Use Task tool with `subagent_type="gsd-codebase-mapper"`, `model="{mapper_model}"`, and **`run_in_background=true`** for parallel execution. All 4 Task calls MUST be in the same response so they run simultaneously.
 
 **CRITICAL:** Use the dedicated `gsd-codebase-mapper` agent, NOT `Explore`. The mapper agent writes documents directly.
+
+**Lean orchestrator principle:** Do NOT read agent output documents back into your context. You only need the confirmation messages (file paths + line counts). The agents write directly to disk — there is no need to transfer document contents through the orchestrator.
 
 **Agent 1: Tech Focus**
 
@@ -213,7 +215,7 @@ Continue to scan_for_secrets.
 </step>
 
 <step name="scan_for_secrets">
-**CRITICAL SECURITY CHECK:** Scan output files for accidentally leaked secrets before committing.
+**CRITICAL SECURITY CHECK — do not skip this step.** Scan output files for accidentally leaked secrets before committing.
 
 Run secret pattern detection:
 
