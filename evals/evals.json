@@ -208,6 +208,28 @@
       ]
     },
     {
+      "id": 17,
+      "command": "audit",
+      "prompt": "run an audit on this project — check accessibility, performance, theming, and responsive design",
+      "expected_output": "Should detect multiple categories of issues: accessibility (missing ARIA roles on sidebar, toast, comment-card), performance (layout thrashing in chart-widget, client waterfall in page.tsx), design anti-patterns (AI slop in metric-card), responsive (fixed 280px sidebar, 800px min-width on users page), and theming (missing dark mode variable for surface-elevated).",
+      "files": [
+        "evals/fixtures/nextjs-app-deep/src/components/sidebar.tsx",
+        "evals/fixtures/nextjs-app-deep/src/components/metric-card.tsx",
+        "evals/fixtures/nextjs-app-deep/src/components/chart-widget.tsx",
+        "evals/fixtures/nextjs-app-deep/src/components/notification-toast.tsx",
+        "evals/fixtures/nextjs-app-deep/src/components/data-table.tsx",
+        "evals/fixtures/nextjs-app-deep/src/app/page.tsx",
+        "evals/fixtures/nextjs-app-deep/src/app/globals.css",
+        "evals/fixtures/nextjs-app-deep/CLAUDE.md"
+      ],
+      "assertions": [
+        {"text": "Detects missing ARIA roles (navigation, alert, aria-sort, aria-current)", "type": "behavioral"},
+        {"text": "Detects performance issues (layout thrashing, client waterfall)", "type": "behavioral"},
+        {"text": "Detects AI slop anti-patterns (gradient text, glassmorphism)", "type": "behavioral"},
+        {"text": "Detects responsive issues (fixed pixel widths)", "type": "behavioral"}
+      ]
+    },
+    {
       "id": 18,
       "command": "critique",
       "prompt": "critique the dashboard page. it's at src/app/dashboard/page.tsx",
@@ -528,6 +550,23 @@
       ]
     },
     {
+      "id": 42,
+      "command": "critique",
+      "prompt": "critique this metric card component from a design perspective",
+      "expected_output": "Should identify AI slop tells: gradient text effect, glassmorphism backdrop-blur, oversized text-5xl hero numbers, decorative SVG blobs. Should recommend simpler, data-focused design that lets the numbers speak.",
+      "files": [
+        "evals/fixtures/nextjs-app-deep/src/components/metric-card.tsx",
+        "evals/fixtures/nextjs-app-deep/src/components/ui/card.tsx",
+        "evals/fixtures/nextjs-app-deep/.planning/DESIGN.md",
+        "evals/fixtures/nextjs-app-deep/CLAUDE.md"
+      ],
+      "assertions": [
+        {"text": "Identifies gradient text as AI slop anti-pattern", "type": "behavioral"},
+        {"text": "Identifies glassmorphism (backdrop-blur) as overdesigned", "type": "behavioral"},
+        {"text": "Recommends simpler presentation focused on data clarity", "type": "output"}
+      ]
+    },
+    {
       "id": 43,
       "command": "add-todo",
       "prompt": "add-todo The modal z-index is wrong on the billing page, it shows behind the sidebar",
@@ -791,15 +830,15 @@
       "prompt": "Build the auth plan at .planning/phases/01-auth/01-01-PLAN.md. It has 3 tasks — JWT auth middleware, refresh token rotation (both backend, independent), and a login form that depends on both.",
       "expected_output": "Should detect GSD mode, find the plan, identify 2 waves (wave 1: 2 parallel backend tasks, wave 2: 1 frontend task). Dispatch general-purpose subagents with Next.js performance rules in prompts (waterfall avoidance, bundle awareness). Spec gates run per wave. Design gates (critique → polish → normalize) run for the frontend login form task. Simplify pass runs after all waves. Then invoke /review which runs quality review (code-reviewer agent), security scan (4 parallel agents), TS strictness check (any usage in diff), gate decision, and promote. SUMMARY.md generated with correct frontmatter. PR title follows conventional commit format.",
       "files": [
-        "evals/fixtures/nextjs-app-basic/next.config.js",
-        "evals/fixtures/nextjs-app-basic/tsconfig.json",
-        "evals/fixtures/nextjs-app-basic/playwright.config.ts",
-        "evals/fixtures/nextjs-app-basic/.planning/PROJECT.md",
-        "evals/fixtures/nextjs-app-basic/.planning/STATE.md",
-        "evals/fixtures/nextjs-app-basic/.planning/ROADMAP.md",
-        "evals/fixtures/nextjs-app-basic/.planning/DESIGN.md",
-        "evals/fixtures/nextjs-app-basic/CLAUDE.md",
-        "evals/fixtures/plans/auth-plan.md"
+        "evals/fixtures/nextjs-app-deep/next.config.ts",
+        "evals/fixtures/nextjs-app-deep/tsconfig.json",
+        "evals/fixtures/nextjs-app-deep/playwright.config.ts",
+        "evals/fixtures/nextjs-app-deep/.planning/PROJECT.md",
+        "evals/fixtures/nextjs-app-deep/.planning/STATE.md",
+        "evals/fixtures/nextjs-app-deep/.planning/ROADMAP.md",
+        "evals/fixtures/nextjs-app-deep/.planning/DESIGN.md",
+        "evals/fixtures/nextjs-app-deep/CLAUDE.md",
+        "evals/fixtures/nextjs-app-deep/.planning/phases/01-auth/01-01-PLAN.md"
       ],
       "assertions": [
         {"text": "Loads Next.js performance rules into subagent prompts (references waterfall or bundle patterns)", "type": "behavioral"},
@@ -825,16 +864,17 @@
       "prompt": "Execute the API refactor plan at .planning/phases/02-api/02-01-PLAN.md",
       "expected_output": "Should build the API refactor plan. During /review, security scan finds SQL injection via string concatenation (CRITICAL) and hardcoded JWT secret (CRITICAL) in existing code. CRITICAL findings BLOCK promotion. Fix agent is dispatched to remediate CRITICAL findings (parameterized queries, env-based secrets). After fix, re-scan verifies remediation. MEDIUM findings (missing CORS) are logged but do not block. Promotion proceeds after re-scan passes.",
       "files": [
-        "evals/fixtures/nextjs-app-security-issues/next.config.js",
-        "evals/fixtures/nextjs-app-security-issues/tsconfig.json",
-        "evals/fixtures/nextjs-app-security-issues/.planning/PROJECT.md",
-        "evals/fixtures/nextjs-app-security-issues/.planning/STATE.md",
-        "evals/fixtures/nextjs-app-security-issues/src/app/api/users/route.ts",
-        "evals/fixtures/nextjs-app-security-issues/src/app/api/data/route.ts",
-        "evals/fixtures/nextjs-app-security-issues/src/lib/auth.ts",
-        "evals/fixtures/nextjs-app-security-issues/.env.example",
-        "evals/fixtures/nextjs-app-security-issues/src/components/comment.tsx",
-        "evals/fixtures/plans/api-refactor-plan.md"
+        "evals/fixtures/nextjs-app-deep/next.config.ts",
+        "evals/fixtures/nextjs-app-deep/tsconfig.json",
+        "evals/fixtures/nextjs-app-deep/.planning/PROJECT.md",
+        "evals/fixtures/nextjs-app-deep/.planning/STATE.md",
+        "evals/fixtures/nextjs-app-deep/src/app/api/users/route.ts",
+        "evals/fixtures/nextjs-app-deep/src/app/api/data/route.ts",
+        "evals/fixtures/nextjs-app-deep/src/lib/auth.ts",
+        "evals/fixtures/nextjs-app-deep/.env.example",
+        "evals/fixtures/nextjs-app-deep/src/components/comment-card.tsx",
+        "evals/fixtures/nextjs-app-deep/src/lib/api.ts",
+        "evals/fixtures/nextjs-app-deep/src/app/api/comments/route.ts"
       ],
       "assertions": [
         {"text": "Security scan dispatches 4 parallel agents", "type": "behavioral"},
@@ -854,14 +894,14 @@
       "prompt": "Build the dashboard plan at .planning/phases/02-dashboard/02-01-PLAN.md",
       "expected_output": "Should identify 2 waves. Wave 1 is the component task (no Playwright involvement) — subagent prompt should NOT include Playwright guidance. Wave 2 is the Playwright test task — subagent detects *.spec.* files in task and loads Playwright guidance (Page Object Model, locator strategies, auto-waiting). Spec gates run per wave. /review runs after both waves. SUMMARY.md notes Playwright tests written.",
       "files": [
-        "evals/fixtures/nextjs-app-basic/next.config.js",
-        "evals/fixtures/nextjs-app-basic/tsconfig.json",
-        "evals/fixtures/nextjs-app-basic/playwright.config.ts",
-        "evals/fixtures/nextjs-app-basic/.planning/PROJECT.md",
-        "evals/fixtures/nextjs-app-basic/.planning/STATE.md",
-        "evals/fixtures/nextjs-app-basic/.planning/DESIGN.md",
-        "evals/fixtures/nextjs-app-basic/CLAUDE.md",
-        "evals/fixtures/plans/dashboard-plan.md"
+        "evals/fixtures/nextjs-app-deep/next.config.ts",
+        "evals/fixtures/nextjs-app-deep/tsconfig.json",
+        "evals/fixtures/nextjs-app-deep/playwright.config.ts",
+        "evals/fixtures/nextjs-app-deep/.planning/PROJECT.md",
+        "evals/fixtures/nextjs-app-deep/.planning/STATE.md",
+        "evals/fixtures/nextjs-app-deep/.planning/DESIGN.md",
+        "evals/fixtures/nextjs-app-deep/CLAUDE.md",
+        "evals/fixtures/nextjs-app-deep/.planning/phases/02-dashboard/02-01-PLAN.md"
       ],
       "assertions": [
         {"text": "Wave 1 subagent prompt does NOT include Playwright guidance", "type": "guard"},
@@ -879,16 +919,16 @@
       "prompt": "Build the auth plan at .planning/phases/01-auth/01-01-PLAN.md",
       "expected_output": "Should build the auth plan. During spec gate, the gate catches any usage in the subagent output (e.g., function params typed as any). This is flagged as BLOCKING — not advisory. Fix agent replaces any with specific types (unknown + type guards, or concrete interface types). Fix happens before the next wave starts. as any assertions are also rejected. Suggests unknown or proper type guard as alternatives.",
       "files": [
-        "evals/fixtures/nextjs-app-typescript-issues/next.config.js",
-        "evals/fixtures/nextjs-app-typescript-issues/tsconfig.json",
-        "evals/fixtures/nextjs-app-typescript-issues/.planning/PROJECT.md",
-        "evals/fixtures/nextjs-app-typescript-issues/.planning/STATE.md",
-        "evals/fixtures/nextjs-app-typescript-issues/src/lib/api.ts",
-        "evals/fixtures/nextjs-app-typescript-issues/src/components/form.tsx",
-        "evals/fixtures/nextjs-app-typescript-issues/src/types/index.ts",
-        "evals/fixtures/nextjs-app-typescript-issues/src/hooks/useAuth.ts",
-        "evals/fixtures/nextjs-app-typescript-issues/CLAUDE.md",
-        "evals/fixtures/plans/auth-plan.md"
+        "evals/fixtures/nextjs-app-deep/next.config.ts",
+        "evals/fixtures/nextjs-app-deep/tsconfig.json",
+        "evals/fixtures/nextjs-app-deep/.planning/PROJECT.md",
+        "evals/fixtures/nextjs-app-deep/.planning/STATE.md",
+        "evals/fixtures/nextjs-app-deep/src/lib/api.ts",
+        "evals/fixtures/nextjs-app-deep/src/components/user-form.tsx",
+        "evals/fixtures/nextjs-app-deep/src/types/index.ts",
+        "evals/fixtures/nextjs-app-deep/src/hooks/use-auth.ts",
+        "evals/fixtures/nextjs-app-deep/CLAUDE.md",
+        "evals/fixtures/nextjs-app-deep/.planning/phases/01-auth/01-01-PLAN.md"
       ],
       "assertions": [
         {"text": "Spec gate checks for any type usage in subagent output", "type": "behavioral"},
@@ -906,11 +946,11 @@
       "prompt": "The user profile page crashes when the user has no avatar — TypeError: Cannot read properties of null (reading 'url'). It's in src/components/profile.tsx",
       "expected_output": "Should triage as MODERATE (single component, one subsystem). Invokes systematic debugging to locate null reference in profile.tsx (accessing avatar.url when avatar is null). TDD approach: writes failing test first reproducing the null avatar case, then fixes with optional chaining or null check, confirms test passes. Frontend check reads DESIGN.md for fallback avatar styling. Simplify runs before /review. /review runs quality review on the fix diff, security scan on changed files, TS strictness check. Fix commit uses fix(profile): prefix. Does NOT fix unrelated pre-existing issues.",
       "files": [
-        "evals/fixtures/nextjs-app-basic/next.config.js",
-        "evals/fixtures/nextjs-app-basic/tsconfig.json",
-        "evals/fixtures/nextjs-app-basic/.planning/PROJECT.md",
-        "evals/fixtures/nextjs-app-basic/.planning/DESIGN.md",
-        "evals/fixtures/nextjs-app-basic/CLAUDE.md"
+        "evals/fixtures/nextjs-app-deep/next.config.ts",
+        "evals/fixtures/nextjs-app-deep/tsconfig.json",
+        "evals/fixtures/nextjs-app-deep/.planning/PROJECT.md",
+        "evals/fixtures/nextjs-app-deep/.planning/DESIGN.md",
+        "evals/fixtures/nextjs-app-deep/CLAUDE.md"
       ],
       "assertions": [
         {"text": "Triages as MODERATE (2-4 files, one subsystem)", "type": "behavioral"},
@@ -932,10 +972,11 @@
       "prompt": "Refactor the auth module to extract token management into a separate service. src/lib/auth.ts currently handles JWT signing, verification, session management, and refresh token rotation — split token concerns out into src/lib/token-service.ts",
       "expected_output": "Should scope with LSP findReferences to map blast radius (all files importing from auth.ts). Captures baseline test suite (must be GREEN). Plans atomic steps ordered safest-first (create new file, move functions, update imports, remove old code). Executes with tests green at every step — reverts immediately if tests go red. Simplify pass after completion. /review runs quality review (behavior preservation focus), security scan (extracted auth service), TS strictness check, and if Next.js files touched, perf patterns. Atomic commits with refactor(auth): prefix.",
       "files": [
-        "evals/fixtures/nextjs-app-basic/next.config.js",
-        "evals/fixtures/nextjs-app-basic/tsconfig.json",
-        "evals/fixtures/nextjs-app-basic/.planning/PROJECT.md",
-        "evals/fixtures/nextjs-app-basic/CLAUDE.md"
+        "evals/fixtures/nextjs-app-deep/next.config.ts",
+        "evals/fixtures/nextjs-app-deep/tsconfig.json",
+        "evals/fixtures/nextjs-app-deep/.planning/PROJECT.md",
+        "evals/fixtures/nextjs-app-deep/CLAUDE.md",
+        "evals/fixtures/nextjs-app-deep/src/lib/auth.ts"
       ],
       "assertions": [
         {"text": "Uses LSP findReferences to scope blast radius of auth.ts", "type": "behavioral"},
@@ -957,12 +998,15 @@
       "prompt": "Scan the whole codebase for security issues",
       "expected_output": "Should scope the full codebase and dispatch exactly 4 parallel scanning agents. Agent findings: SQL injection via string concatenation in api/users/route.ts (CRITICAL), XSS via dangerouslySetInnerHTML in comment.tsx (CRITICAL), hardcoded JWT secret in auth.ts (CRITICAL), session stored in localStorage (HIGH), .env.example with real-looking API keys (CRITICAL), missing CORS on data route (MEDIUM), no auth check on data route (HIGH). Report has file:line references, findings grouped by severity then category. Overlapping findings from different agents are deduplicated.",
       "files": [
-        "evals/fixtures/nextjs-app-security-issues/src/app/api/users/route.ts",
-        "evals/fixtures/nextjs-app-security-issues/src/app/api/data/route.ts",
-        "evals/fixtures/nextjs-app-security-issues/src/components/comment.tsx",
-        "evals/fixtures/nextjs-app-security-issues/src/lib/auth.ts",
-        "evals/fixtures/nextjs-app-security-issues/.env.example",
-        "evals/fixtures/nextjs-app-security-issues/.planning/PROJECT.md"
+        "evals/fixtures/nextjs-app-deep/src/app/api/users/route.ts",
+        "evals/fixtures/nextjs-app-deep/src/app/api/data/route.ts",
+        "evals/fixtures/nextjs-app-deep/src/components/comment-card.tsx",
+        "evals/fixtures/nextjs-app-deep/src/lib/auth.ts",
+        "evals/fixtures/nextjs-app-deep/.env.example",
+        "evals/fixtures/nextjs-app-deep/.planning/PROJECT.md",
+        "evals/fixtures/nextjs-app-deep/src/app/api/comments/route.ts",
+        "evals/fixtures/nextjs-app-deep/src/app/api/auth/login/route.ts",
+        "evals/fixtures/nextjs-app-deep/src/app/api/auth/refresh/route.ts"
       ],
       "assertions": [
         {"text": "Dispatches exactly 4 parallel scanning agents", "type": "behavioral"},
@@ -983,10 +1027,10 @@
       "prompt": "Review my changes before creating a PR",
       "expected_output": "Should run the full /review pipeline: code quality review first (code-reviewer agent), then security scan (4 parallel agents), then TS strictness check (any usage in diff). Gate decision aggregates all findings. If Next.js project detected, includes perf patterns in review. Review report includes quality score, security findings, and TS strictness results. Presents promotion options (PR/merge/keep/discard from finishing-a-development-branch). PR title enforces conventional commit format.",
       "files": [
-        "evals/fixtures/nextjs-app-basic/next.config.js",
-        "evals/fixtures/nextjs-app-basic/tsconfig.json",
-        "evals/fixtures/nextjs-app-basic/.planning/PROJECT.md",
-        "evals/fixtures/nextjs-app-basic/CLAUDE.md"
+        "evals/fixtures/nextjs-app-deep/next.config.ts",
+        "evals/fixtures/nextjs-app-deep/tsconfig.json",
+        "evals/fixtures/nextjs-app-deep/.planning/PROJECT.md",
+        "evals/fixtures/nextjs-app-deep/CLAUDE.md"
       ],
       "assertions": [
         {"text": "Quality review runs first (code-reviewer agent)", "type": "ordering"},
@@ -1034,13 +1078,13 @@
       "prompt": "Plan and build adding user settings page with a dark mode toggle. The project already has a ThemeProvider and uses Tailwind dark: prefix.",
       "expected_output": "Should run /plan-work first: skips research (dark mode toggle is well-known pattern), brainstorms design options (toggle placement, persistence strategy, system preference detection), discusses with user, derives must_haves with user-facing truths, creates PLAN.md with proper frontmatter. Then /build: loads Next.js perf rules, dispatches subagents, spec gate per wave, design gates (critique → polish → normalize) for frontend components. Design gates run after spec gates. Simplify before /review. /review runs full pipeline (quality + security + TS strictness). SUMMARY.md generated with must_haves verification. PR with conventional commit title.",
       "files": [
-        "evals/fixtures/nextjs-app-basic/next.config.js",
-        "evals/fixtures/nextjs-app-basic/tsconfig.json",
-        "evals/fixtures/nextjs-app-basic/.planning/PROJECT.md",
-        "evals/fixtures/nextjs-app-basic/.planning/STATE.md",
-        "evals/fixtures/nextjs-app-basic/.planning/ROADMAP.md",
-        "evals/fixtures/nextjs-app-basic/.planning/DESIGN.md",
-        "evals/fixtures/nextjs-app-basic/CLAUDE.md"
+        "evals/fixtures/nextjs-app-deep/next.config.ts",
+        "evals/fixtures/nextjs-app-deep/tsconfig.json",
+        "evals/fixtures/nextjs-app-deep/.planning/PROJECT.md",
+        "evals/fixtures/nextjs-app-deep/.planning/STATE.md",
+        "evals/fixtures/nextjs-app-deep/.planning/ROADMAP.md",
+        "evals/fixtures/nextjs-app-deep/.planning/DESIGN.md",
+        "evals/fixtures/nextjs-app-deep/CLAUDE.md"
       ],
       "assertions": [
         {"text": "Skips research for well-known pattern (dark mode toggle)", "type": "behavioral"},
@@ -1066,15 +1110,16 @@
       "prompt": "API returns 500 on /api/users and /api/billing simultaneously, and the dashboard shows stale data. Three independent failures.",
       "expected_output": "Should triage as PARALLEL (3+ independent failures across different subsystems). Dispatches parallel gsd-debugger agents — one per failing subsystem (users API, billing API, dashboard staleness). Each debugger uses scientific method (hypothesis → test → conclude). TDD fix per root cause. Simplify after all fixes. /review security scan catches SQL injection in /api/users route (CRITICAL). BLOCKS on CRITICAL. Fix agent addresses SQL injection. Re-scan after security fix. SUMMARY.md notes all three subsystem fixes plus security remediation.",
       "files": [
-        "evals/fixtures/nextjs-app-security-issues/next.config.js",
-        "evals/fixtures/nextjs-app-security-issues/tsconfig.json",
-        "evals/fixtures/nextjs-app-security-issues/.planning/PROJECT.md",
-        "evals/fixtures/nextjs-app-security-issues/.planning/STATE.md",
-        "evals/fixtures/nextjs-app-security-issues/src/app/api/users/route.ts",
-        "evals/fixtures/nextjs-app-security-issues/src/app/api/data/route.ts",
-        "evals/fixtures/nextjs-app-security-issues/src/lib/auth.ts",
-        "evals/fixtures/nextjs-app-security-issues/src/components/comment.tsx",
-        "evals/fixtures/nextjs-app-security-issues/CLAUDE.md"
+        "evals/fixtures/nextjs-app-deep/next.config.ts",
+        "evals/fixtures/nextjs-app-deep/tsconfig.json",
+        "evals/fixtures/nextjs-app-deep/.planning/PROJECT.md",
+        "evals/fixtures/nextjs-app-deep/.planning/STATE.md",
+        "evals/fixtures/nextjs-app-deep/src/app/api/users/route.ts",
+        "evals/fixtures/nextjs-app-deep/src/app/api/data/route.ts",
+        "evals/fixtures/nextjs-app-deep/src/lib/auth.ts",
+        "evals/fixtures/nextjs-app-deep/src/components/comment-card.tsx",
+        "evals/fixtures/nextjs-app-deep/CLAUDE.md",
+        "evals/fixtures/nextjs-app-deep/src/app/api/comments/route.ts"
       ],
       "assertions": [
         {"text": "Triages as PARALLEL (3+ independent failures)", "type": "behavioral"},
@@ -1088,6 +1133,307 @@
         {"text": "Re-scan after security fix before promoting", "type": "ordering"},
         {"text": "SUMMARY.md notes all three subsystem fixes plus security remediation", "type": "output"},
         {"text": "Does NOT invoke requesting-code-review directly", "type": "guard"}
+      ]
+    },
+    {
+      "id": 75,
+      "command": "normalize",
+      "prompt": "normalize this project's components to use the design system consistently",
+      "expected_output": "Should detect that user-form.tsx uses raw HTML inputs/buttons instead of shadcn Input/Button components, sidebar uses hard-coded hex colors instead of CSS variables, and login page duplicates validation instead of using shared validators.",
+      "files": [
+        "evals/fixtures/nextjs-app-deep/src/components/user-form.tsx",
+        "evals/fixtures/nextjs-app-deep/src/components/sidebar.tsx",
+        "evals/fixtures/nextjs-app-deep/src/components/ui/input.tsx",
+        "evals/fixtures/nextjs-app-deep/src/components/ui/button.tsx",
+        "evals/fixtures/nextjs-app-deep/src/app/login/page.tsx",
+        "evals/fixtures/nextjs-app-deep/CLAUDE.md"
+      ],
+      "assertions": [
+        {"text": "Detects raw HTML inputs in user-form.tsx that should use shadcn Input", "type": "behavioral"},
+        {"text": "Detects hard-coded color values in sidebar that should use CSS variables", "type": "behavioral"},
+        {"text": "Detects raw <a> tags in sidebar that should use Next.js Link", "type": "behavioral"}
+      ]
+    },
+    {
+      "id": 76,
+      "command": "optimize",
+      "prompt": "optimize performance in this dashboard app",
+      "expected_output": "Should detect client-side waterfall in page.tsx (sequential useEffect fetches should be parallel server-side), layout thrashing in chart-widget (reading offsetWidth in loop), missing Suspense boundaries, unoptimized images in user-avatar (raw img instead of next/image), and search input in data-table triggering full re-renders without debounce.",
+      "files": [
+        "evals/fixtures/nextjs-app-deep/src/app/page.tsx",
+        "evals/fixtures/nextjs-app-deep/src/components/chart-widget.tsx",
+        "evals/fixtures/nextjs-app-deep/src/components/data-table.tsx",
+        "evals/fixtures/nextjs-app-deep/src/components/user-avatar.tsx",
+        "evals/fixtures/nextjs-app-deep/src/hooks/use-debounce.ts",
+        "evals/fixtures/nextjs-app-deep/CLAUDE.md"
+      ],
+      "assertions": [
+        {"text": "Detects client-side waterfall (sequential fetches in useEffect)", "type": "behavioral"},
+        {"text": "Detects layout thrashing (offsetWidth reads in loop)", "type": "behavioral"},
+        {"text": "Detects missing debounce on data-table search despite hook existing", "type": "behavioral"}
+      ]
+    },
+    {
+      "id": 77,
+      "command": "harden",
+      "prompt": "harden the user-facing components for edge cases and error handling",
+      "expected_output": "Should detect missing error state rendering in user-form, missing keyboard dismiss on notification-toast, toast stacking without limit, generic error messages in login page, hard-coded English strings (i18n concern), no empty state for users page, and missing loading states.",
+      "files": [
+        "evals/fixtures/nextjs-app-deep/src/components/user-form.tsx",
+        "evals/fixtures/nextjs-app-deep/src/components/notification-toast.tsx",
+        "evals/fixtures/nextjs-app-deep/src/app/login/page.tsx",
+        "evals/fixtures/nextjs-app-deep/src/app/users/page.tsx",
+        "evals/fixtures/nextjs-app-deep/CLAUDE.md"
+      ],
+      "assertions": [
+        {"text": "Detects missing error states in user-form (validates but doesn't show errors)", "type": "behavioral"},
+        {"text": "Detects missing keyboard dismiss and auto-dismiss on toasts", "type": "behavioral"},
+        {"text": "Detects hard-coded strings as i18n concern", "type": "behavioral"}
+      ]
+    },
+    {
+      "id": 78,
+      "command": "refactor",
+      "prompt": "refactor this codebase — there's a 180-line component and a kitchen sink utility file that need breaking up",
+      "expected_output": "Should identify data-table.tsx as a god component (180+ lines mixing search, sort, pagination, rendering) and recommend splitting. Should identify utils.ts as kitchen-sink (cn() plus 5 unrelated functions) and recommend extracting. Should identify duplicated fetch pattern in api.ts and recommend shared wrapper.",
+      "files": [
+        "evals/fixtures/nextjs-app-deep/src/components/data-table.tsx",
+        "evals/fixtures/nextjs-app-deep/src/lib/utils.ts",
+        "evals/fixtures/nextjs-app-deep/src/lib/api.ts",
+        "evals/fixtures/nextjs-app-deep/src/lib/validators.ts",
+        "evals/fixtures/nextjs-app-deep/src/components/user-form.tsx",
+        "evals/fixtures/nextjs-app-deep/src/app/login/page.tsx",
+        "evals/fixtures/nextjs-app-deep/CLAUDE.md"
+      ],
+      "assertions": [
+        {"text": "Identifies data-table as god component needing decomposition", "type": "behavioral"},
+        {"text": "Identifies utils.ts as kitchen-sink needing extraction", "type": "behavioral"},
+        {"text": "Identifies duplicated validation in user-form and login page", "type": "behavioral"}
+      ]
+    },
+    {
+      "id": 79,
+      "command": "fix",
+      "prompt": "the data-table test is failing, can you fix it?",
+      "expected_output": "Should diagnose the prop interface mismatch: data-table.test.tsx passes `columns` prop but the DataTable component expects `fields`. Should fix the test to use the correct prop name, not change the component interface. Should follow TDD discipline.",
+      "files": [
+        "evals/fixtures/nextjs-app-deep/src/__tests__/data-table.test.tsx",
+        "evals/fixtures/nextjs-app-deep/src/components/data-table.tsx",
+        "evals/fixtures/nextjs-app-deep/.planning/todos/todo-003.md",
+        "evals/fixtures/nextjs-app-deep/CLAUDE.md"
+      ],
+      "assertions": [
+        {"text": "Diagnoses columns→fields prop rename as root cause", "type": "behavioral"},
+        {"text": "Fixes the test, not the component interface", "type": "behavioral"},
+        {"text": "References or resolves todo-003 about this regression", "type": "behavioral"}
+      ]
+    },
+    {
+      "id": 80,
+      "command": "polish",
+      "prompt": "polish the components in this dashboard for shipping quality",
+      "expected_output": "Should detect spacing/alignment inconsistencies, missing focus states, inconsistent border-radius usage, hard-coded z-index values (z-[9999] on toast), and color inconsistencies between components using design tokens vs hard-coded values.",
+      "files": [
+        "evals/fixtures/nextjs-app-deep/src/components/sidebar.tsx",
+        "evals/fixtures/nextjs-app-deep/src/components/notification-toast.tsx",
+        "evals/fixtures/nextjs-app-deep/src/components/data-table.tsx",
+        "evals/fixtures/nextjs-app-deep/src/components/user-form.tsx",
+        "evals/fixtures/nextjs-app-deep/src/app/settings/page.tsx",
+        "evals/fixtures/nextjs-app-deep/.planning/DESIGN.md",
+        "evals/fixtures/nextjs-app-deep/CLAUDE.md"
+      ],
+      "assertions": [
+        {"text": "Detects hard-coded z-[9999] on toast", "type": "behavioral"},
+        {"text": "Detects inconsistent use of design tokens vs hard-coded colors", "type": "behavioral"},
+        {"text": "Fixes spacing and alignment issues", "type": "output"}
+      ]
+    },
+    {
+      "id": 81,
+      "command": "extract",
+      "prompt": "find duplicated patterns and extract them into shared components or utilities",
+      "expected_output": "Should detect duplicated email validation in validators.ts, user-form.tsx, and login/page.tsx. Should detect that user-form bypasses existing shadcn components. Should detect duplicated fetch+error pattern in api.ts.",
+      "files": [
+        "evals/fixtures/nextjs-app-deep/src/lib/validators.ts",
+        "evals/fixtures/nextjs-app-deep/src/components/user-form.tsx",
+        "evals/fixtures/nextjs-app-deep/src/app/login/page.tsx",
+        "evals/fixtures/nextjs-app-deep/src/lib/api.ts",
+        "evals/fixtures/nextjs-app-deep/src/components/ui/input.tsx",
+        "evals/fixtures/nextjs-app-deep/src/components/ui/button.tsx",
+        "evals/fixtures/nextjs-app-deep/CLAUDE.md"
+      ],
+      "assertions": [
+        {"text": "Detects duplicated email validation across 3 files", "type": "behavioral"},
+        {"text": "Detects duplicated fetch pattern in api.ts", "type": "behavioral"},
+        {"text": "Recommends extracting shared validation utility", "type": "output"}
+      ]
+    },
+    {
+      "id": 82,
+      "command": "adapt",
+      "prompt": "make this dashboard work on mobile and tablet devices",
+      "expected_output": "Should detect fixed 280px sidebar width, min-w-[800px] on users page, and lack of responsive breakpoints. Should recommend hamburger menu for mobile sidebar, responsive table layout, and fluid widths.",
+      "files": [
+        "evals/fixtures/nextjs-app-deep/src/components/sidebar.tsx",
+        "evals/fixtures/nextjs-app-deep/src/app/users/page.tsx",
+        "evals/fixtures/nextjs-app-deep/src/app/settings/page.tsx",
+        "evals/fixtures/nextjs-app-deep/src/components/data-table.tsx",
+        "evals/fixtures/nextjs-app-deep/CLAUDE.md"
+      ],
+      "assertions": [
+        {"text": "Detects fixed 280px sidebar width as non-responsive", "type": "behavioral"},
+        {"text": "Detects min-w-[800px] on users page as mobile-hostile", "type": "behavioral"},
+        {"text": "Recommends hamburger/overlay pattern for mobile navigation", "type": "output"}
+      ]
+    },
+    {
+      "id": 83,
+      "command": "playwright-testing",
+      "prompt": "review the e2e tests and suggest improvements following Playwright best practices",
+      "expected_output": "Should detect CSS selector anti-patterns (.email-input, .btn-primary, .text-red-600), recommend role-based or test-id locators, suggest Page Object Model pattern, and identify missing error state test coverage.",
+      "files": [
+        "evals/fixtures/nextjs-app-deep/e2e/login.spec.ts",
+        "evals/fixtures/nextjs-app-deep/playwright.config.ts",
+        "evals/fixtures/nextjs-app-deep/src/app/login/page.tsx",
+        "evals/fixtures/nextjs-app-deep/CLAUDE.md"
+      ],
+      "assertions": [
+        {"text": "Detects CSS selector usage (.email-input, .btn-primary) as anti-pattern", "type": "behavioral"},
+        {"text": "Recommends role-based locators (getByRole, getByLabel)", "type": "output"},
+        {"text": "Recommends Page Object Model pattern", "type": "output"}
+      ]
+    },
+    {
+      "id": 84,
+      "command": "progress",
+      "prompt": "where are we on this project? what's done and what's remaining?",
+      "expected_output": "Should read STATE.md and ROADMAP.md, report Phase 01 (Auth) is COMPLETE with all requirements satisfied, Phase 02 (Dashboard) is IN_PROGRESS with task 1 done and task 2 in-progress, Phases 03-04 are PLANNED. Should summarize overall progress as ~25-30% complete.",
+      "files": [
+        "evals/fixtures/nextjs-app-deep/.planning/STATE.md",
+        "evals/fixtures/nextjs-app-deep/.planning/ROADMAP.md",
+        "evals/fixtures/nextjs-app-deep/.planning/PROJECT.md",
+        "evals/fixtures/nextjs-app-deep/.planning/phases/01-auth/01-01-SUMMARY.md",
+        "evals/fixtures/nextjs-app-deep/.planning/phases/02-dashboard/02-01-PLAN.md",
+        "evals/fixtures/nextjs-app-deep/CLAUDE.md"
+      ],
+      "assertions": [
+        {"text": "Correctly identifies Phase 01 as COMPLETE", "type": "behavioral"},
+        {"text": "Correctly identifies Phase 02 as IN_PROGRESS with task detail", "type": "behavioral"},
+        {"text": "Reports overall project progress percentage", "type": "output"}
+      ]
+    },
+    {
+      "id": 85,
+      "command": "resume-work",
+      "prompt": "I'm coming back to this project after a break, where was I?",
+      "expected_output": "Should restore context from STATE.md showing Phase 02 in-progress, identify 02-01 plan with task 2 in-progress (widget system), mention pending todos (rate limiting, fetch wrapper, data-table regression), and suggest next action.",
+      "files": [
+        "evals/fixtures/nextjs-app-deep/.planning/STATE.md",
+        "evals/fixtures/nextjs-app-deep/.planning/ROADMAP.md",
+        "evals/fixtures/nextjs-app-deep/.planning/phases/02-dashboard/02-01-PLAN.md",
+        "evals/fixtures/nextjs-app-deep/.planning/todos/todo-001.md",
+        "evals/fixtures/nextjs-app-deep/.planning/todos/todo-002.md",
+        "evals/fixtures/nextjs-app-deep/.planning/todos/todo-003.md",
+        "evals/fixtures/nextjs-app-deep/CLAUDE.md"
+      ],
+      "assertions": [
+        {"text": "Identifies Phase 02 task 2 as the current work in progress", "type": "behavioral"},
+        {"text": "Mentions pending todos", "type": "behavioral"},
+        {"text": "Suggests concrete next action (continue task 2 or fix regression)", "type": "output"}
+      ]
+    },
+    {
+      "id": 86,
+      "command": "verify",
+      "prompt": "verify that Phase 01 (auth) was completed correctly",
+      "expected_output": "Should compare 01-01-PLAN.md requirements against 01-01-SUMMARY.md evidence, check that claimed files exist, verify R-001/R-002/R-003 are covered, and note any gaps (e.g., auth.test.ts only tests happy path, hardcoded JWT secret is a security issue in the 'completed' phase).",
+      "files": [
+        "evals/fixtures/nextjs-app-deep/.planning/phases/01-auth/01-01-PLAN.md",
+        "evals/fixtures/nextjs-app-deep/.planning/phases/01-auth/01-01-SUMMARY.md",
+        "evals/fixtures/nextjs-app-deep/.planning/ROADMAP.md",
+        "evals/fixtures/nextjs-app-deep/src/lib/auth.ts",
+        "evals/fixtures/nextjs-app-deep/src/__tests__/auth.test.ts",
+        "evals/fixtures/nextjs-app-deep/CLAUDE.md"
+      ],
+      "assertions": [
+        {"text": "Compares PLAN requirements against SUMMARY evidence", "type": "behavioral"},
+        {"text": "Verifies claimed artifacts exist on disk", "type": "behavioral"},
+        {"text": "Notes security concern in completed auth implementation", "type": "behavioral"}
+      ]
+    },
+    {
+      "id": 87,
+      "command": "health",
+      "prompt": "check the health of this project's planning directory",
+      "expected_output": "Should validate .planning/ structure, confirm PROJECT.md/STATE.md/ROADMAP.md exist and are consistent, check that phase directories have proper PLAN/SUMMARY pairing (01-auth has both, 02-dashboard has PLAN only), verify todos are valid, and report overall health status.",
+      "files": [
+        "evals/fixtures/nextjs-app-deep/.planning/PROJECT.md",
+        "evals/fixtures/nextjs-app-deep/.planning/STATE.md",
+        "evals/fixtures/nextjs-app-deep/.planning/ROADMAP.md",
+        "evals/fixtures/nextjs-app-deep/.planning/DESIGN.md",
+        "evals/fixtures/nextjs-app-deep/.planning/todos/todo-001.md",
+        "evals/fixtures/nextjs-app-deep/.planning/todos/todo-002.md",
+        "evals/fixtures/nextjs-app-deep/.planning/todos/todo-003.md",
+        "evals/fixtures/nextjs-app-deep/.planning/phases/01-auth/01-01-PLAN.md",
+        "evals/fixtures/nextjs-app-deep/.planning/phases/01-auth/01-01-SUMMARY.md",
+        "evals/fixtures/nextjs-app-deep/.planning/phases/02-dashboard/02-01-PLAN.md"
+      ],
+      "assertions": [
+        {"text": "Validates all required .planning/ files exist", "type": "behavioral"},
+        {"text": "Checks PLAN/SUMMARY pairing per phase", "type": "behavioral"},
+        {"text": "Reports overall health status", "type": "output"}
+      ]
+    },
+    {
+      "id": 88,
+      "command": "check-todos",
+      "prompt": "what todos do I have pending?",
+      "expected_output": "Should list 3 todos: todo-001 (rate limiting, pending, high priority, security), todo-002 (fetch wrapper, pending, medium, refactor), todo-003 (data-table regression, in-progress, high, bug). Should categorize by priority and suggest which to tackle first.",
+      "files": [
+        "evals/fixtures/nextjs-app-deep/.planning/todos/todo-001.md",
+        "evals/fixtures/nextjs-app-deep/.planning/todos/todo-002.md",
+        "evals/fixtures/nextjs-app-deep/.planning/todos/todo-003.md",
+        "evals/fixtures/nextjs-app-deep/.planning/STATE.md",
+        "evals/fixtures/nextjs-app-deep/CLAUDE.md"
+      ],
+      "assertions": [
+        {"text": "Lists all 3 todos with correct status and priority", "type": "behavioral"},
+        {"text": "Identifies todo-001 and todo-003 as high priority", "type": "behavioral"},
+        {"text": "Suggests action order based on priority", "type": "output"}
+      ]
+    },
+    {
+      "id": 89,
+      "command": "onboard",
+      "prompt": "the dashboard page has no empty state or loading experience, can you improve the onboarding?",
+      "expected_output": "Should detect that page.tsx shows generic 'Loading...' text with no skeleton, has no empty state when data is null/empty, and provides no first-time user guidance. Should recommend skeleton loaders, empty state illustrations with CTAs, and progressive disclosure.",
+      "files": [
+        "evals/fixtures/nextjs-app-deep/src/app/page.tsx",
+        "evals/fixtures/nextjs-app-deep/src/app/users/page.tsx",
+        "evals/fixtures/nextjs-app-deep/src/components/data-table.tsx",
+        "evals/fixtures/nextjs-app-deep/.planning/DESIGN.md",
+        "evals/fixtures/nextjs-app-deep/CLAUDE.md"
+      ],
+      "assertions": [
+        {"text": "Detects missing skeleton/loading states", "type": "behavioral"},
+        {"text": "Detects missing empty states for zero-data scenarios", "type": "behavioral"},
+        {"text": "Recommends specific empty state patterns", "type": "output"}
+      ]
+    },
+    {
+      "id": 90,
+      "command": "clarify",
+      "prompt": "improve the error messages and microcopy on the login page",
+      "expected_output": "Should detect generic 'Something went wrong' error that doesn't help users, identify that validation messages could be more helpful (e.g., 'Please fill in all fields' is vague), and suggest more actionable, specific error copy.",
+      "files": [
+        "evals/fixtures/nextjs-app-deep/src/app/login/page.tsx",
+        "evals/fixtures/nextjs-app-deep/src/components/user-form.tsx",
+        "evals/fixtures/nextjs-app-deep/CLAUDE.md"
+      ],
+      "assertions": [
+        {"text": "Identifies 'Something went wrong' as unhelpful generic error", "type": "behavioral"},
+        {"text": "Suggests more specific, actionable error messages", "type": "output"},
+        {"text": "Improves form field labels or placeholder text", "type": "output"}
       ]
     }
   ]
