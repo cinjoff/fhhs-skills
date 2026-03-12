@@ -5,7 +5,7 @@
       "id": 1,
       "command": "build",
       "prompt": "ok i just finished planning phase 13 for my saas app. there's a PLAN.md at .planning/phases/13-auth/13-01-PLAN.md with 3 tasks — two backend (JWT auth + refresh tokens) and one frontend (login form). the backend tasks are independent but the frontend depends on both. execute it",
-      "expected_output": "Should detect GSD mode, find the plan, identify 2 waves (wave 1: 2 parallel backend tasks, wave 2: 1 frontend task), dispatch general-purpose subagents (not gsd-executor), include TDD directives (from internal skills/test-driven-development/) for backend tasks and frontend-design directives (from internal skills/frontend-design/) for the login form, run design gates (/critique then /polish) after frontend task, generate SUMMARY.md, update GSD state, and invoke /review for pre-promotion quality + security + TS strictness checks.",
+      "expected_output": "Should detect GSD mode, find the plan, identify 2 waves (wave 1: 2 parallel backend tasks, wave 2: 1 frontend task), dispatch general-purpose subagents (not gsd-executor), include TDD directives (from internal skills/test-driven-development/) for backend tasks and frontend-design directives (from internal skills/frontend-design/) for the login form, run design gates (/critique then /polish) after frontend task, generate SUMMARY.md, update GSD state, and invoke /review --quick for post-build quality checks.",
       "files": [],
       "assertions": [
         {"text": "Identifies 2 waves from task dependencies", "type": "behavioral"},
@@ -13,7 +13,7 @@
         {"text": "Includes TDD directives in subagent prompts", "type": "behavioral"},
         {"text": "Runs design gates for frontend task", "type": "behavioral"},
         {"text": "Generates SUMMARY.md", "type": "output"},
-        {"text": "Invokes /review for pre-promotion checks (not requesting-code-review directly)", "type": "behavioral"},
+        {"text": "Invokes /review --quick for post-build quality checks (not requesting-code-review directly)", "type": "behavioral"},
         {"text": "Does NOT invoke requesting-code-review or finishing-a-development-branch directly", "type": "guard"}
       ]
     },
@@ -149,7 +149,7 @@
       "id": 12,
       "command": "build",
       "prompt": "execute the plan at .planning/phases/05-onboarding/05-02-PLAN.md. the plan has a task with type checkpoint:human-verify for reviewing the welcome screen visually",
-      "expected_output": "Should find the plan, analyze waves, dispatch subagents for non-checkpoint tasks, and when reaching the checkpoint:human-verify task, the subagent should STOP and return structured state (what was built, verification steps, URLs/commands, expected behavior). Orchestrator should present this to user and WAIT before continuing. Should NOT auto-proceed past the checkpoint. After checkpoint passes, invokes /review for pre-promotion quality and security checks.",
+      "expected_output": "Should find the plan, analyze waves, dispatch subagents for non-checkpoint tasks, and when reaching the checkpoint:human-verify task, the subagent should STOP and return structured state (what was built, verification steps, URLs/commands, expected behavior). Orchestrator should present this to user and WAIT before continuing. Should NOT auto-proceed past the checkpoint. After checkpoint passes, invokes /review --quick for post-build quality checks.",
       "files": [],
       "assertions": [
         {"text": "Stops at checkpoint:human-verify", "type": "guard"},
@@ -845,7 +845,7 @@
       "id": 63,
       "command": "build",
       "prompt": "Build the auth plan at .planning/phases/01-auth/01-01-PLAN.md. It has 3 tasks — JWT auth middleware, refresh token rotation (both backend, independent), and a login form that depends on both.",
-      "expected_output": "Should detect GSD mode, find the plan, identify 2 waves (wave 1: 2 parallel backend tasks, wave 2: 1 frontend task). Dispatch general-purpose subagents with Next.js performance rules in prompts (waterfall avoidance, bundle awareness). Spec gates run per wave. Design gates (critique → polish → normalize) run for the frontend login form task. Simplify pass runs after all waves. Then invoke /review which runs quality review (code-reviewer agent), security scan (4 parallel agents), TS strictness check (any usage in diff), gate decision, and promote. SUMMARY.md generated with correct frontmatter. PR title follows conventional commit format.",
+      "expected_output": "Should detect GSD mode, find the plan, identify 2 waves (wave 1: 2 parallel backend tasks, wave 2: 1 frontend task). Dispatch general-purpose subagents with Next.js performance rules in prompts (waterfall avoidance, bundle awareness). Spec gates run per wave. Design gates (critique → polish → normalize) run for the frontend login form task. Simplify pass runs after all waves. Then invoke /review --quick for post-build quality checks (code-reviewer agent). SUMMARY.md generated with correct frontmatter. PR title follows conventional commit format.",
       "files": [
         "evals/fixtures/nextjs-app-deep/next.config.ts",
         "evals/fixtures/nextjs-app-deep/tsconfig.json",
@@ -2093,7 +2093,7 @@
       "id": 130,
       "command": "build",
       "prompt": "I just finished planning phase 2, build it, then verify and tell me progress",
-      "expected_output": "Should execute a lifecycle chain: first invoke /build for 02-01-PLAN.md, then on completion invoke /verify for phase 2 deliverables, then invoke /progress showing updated state. Each step must complete before the next starts. /build should invoke /review internally as part of pre-promotion checks. Final /progress output should show Phase 02 further along than before (plan executed, summary generated).",
+      "expected_output": "Should execute a lifecycle chain: first invoke /build for 02-01-PLAN.md, then on completion invoke /verify for phase 2 deliverables, then invoke /progress showing updated state. Each step must complete before the next starts. /build should invoke /review --quick internally as post-build quality check. Final /progress output should show Phase 02 further along than before (plan executed, summary generated).",
       "files": [
         "evals/fixtures/nextjs-app-deep/.planning/PROJECT.md",
         "evals/fixtures/nextjs-app-deep/.planning/STATE.md",
@@ -2109,7 +2109,7 @@
         {"text": "Invokes /build for 02-01-PLAN.md first", "type": "ordering"},
         {"text": "Invokes /verify for phase 2 after build completes", "type": "ordering"},
         {"text": "Invokes /progress after verify completes", "type": "ordering"},
-        {"text": "/build invokes /review internally for pre-promotion checks", "type": "behavioral"},
+        {"text": "/build invokes /review --quick internally for post-build quality checks", "type": "behavioral"},
         {"text": "Each step completes before the next starts (sequential chain)", "type": "ordering"},
         {"text": "Final progress output shows Phase 02 further along", "type": "output"},
         {"text": "Does NOT skip any step in the chain", "type": "guard"}
