@@ -1690,6 +1690,276 @@
         {"text": "Gate output is PASS (clean)", "type": "output"},
         {"text": "Does NOT fabricate or hallucinate vulnerabilities", "type": "guard"}
       ]
+    },
+    {
+      "id": 106,
+      "command": "tracker",
+      "prompt": "show me the project tracker dashboard",
+      "expected_output": "Should detect .planning/ directory is present, read PROJECT.md, ROADMAP.md, STATE.md. Should launch tracker dashboard showing all phases with progress bars, current phase highlighted, todo counts per phase, and overall project completion percentage. Should display blockers from CONCERNS.md if any.",
+      "files": [],
+      "assertions": [
+        {"text": "Reads PROJECT.md, ROADMAP.md, STATE.md from .planning/", "type": "behavioral"},
+        {"text": "Shows phases with progress bars", "type": "output"},
+        {"text": "Highlights current phase from STATE.md", "type": "output"},
+        {"text": "Displays todo counts per phase", "type": "output"},
+        {"text": "Shows overall project completion percentage", "type": "output"}
+      ]
+    },
+    {
+      "id": 107,
+      "command": "tracker",
+      "prompt": "show me the tracker",
+      "expected_output": "Should detect that .planning/ directory does not exist (no GSD project initialized). Should report that no project is found and suggest running /new-project to initialize one. Should NOT crash or show empty dashboard.",
+      "files": [],
+      "assertions": [
+        {"text": "Detects missing .planning/ directory", "type": "behavioral"},
+        {"text": "Reports no project found", "type": "output"},
+        {"text": "Suggests /new-project to initialize", "type": "output"},
+        {"text": "Does NOT crash or show empty dashboard", "type": "guard"},
+        {"text": "Does NOT attempt to read non-existent STATE.md", "type": "guard"}
+      ]
+    },
+    {
+      "id": 108,
+      "command": "colorize",
+      "prompt": "add some color to the settings page, it's too monochromatic",
+      "expected_output": "Should read the settings page component and analyze current color usage. Should read DESIGN.md for design system context (brand colors, palette). Should identify monochromatic areas and add strategic accent colors — section headers, active states, status indicators. Should maintain accessibility contrast ratios. Should not over-saturate.",
+      "files": [
+        "evals/fixtures/nextjs-app-deep/src/app/settings/page.tsx"
+      ],
+      "assertions": [
+        {"text": "Reads settings page and analyzes current color usage", "type": "behavioral"},
+        {"text": "Reads DESIGN.md for design system context", "type": "behavioral"},
+        {"text": "Adds strategic accent colors to monochromatic areas", "type": "output"},
+        {"text": "Maintains accessibility contrast ratios", "type": "behavioral"},
+        {"text": "Does NOT over-saturate or add colors indiscriminately", "type": "guard"}
+      ]
+    },
+    {
+      "id": 109,
+      "command": "colorize",
+      "prompt": "colorize the data table",
+      "expected_output": "Should read the data-table component and identify areas that benefit from color: status badges, row highlights for different states, header accents. Should add meaningful color (status-based, not decorative). Should maintain readability and not distract from data. Should use design system tokens if available.",
+      "files": [
+        "evals/fixtures/nextjs-app-deep/src/components/data-table.tsx"
+      ],
+      "assertions": [
+        {"text": "Reads data-table component and identifies colorizable areas", "type": "behavioral"},
+        {"text": "Adds color to status badges and row highlights", "type": "output"},
+        {"text": "Uses meaningful color (status-based, not random decorative)", "type": "behavioral"},
+        {"text": "Maintains data readability — color supports, not distracts", "type": "guard"},
+        {"text": "References design system tokens if available", "type": "behavioral"}
+      ]
+    },
+    {
+      "id": 110,
+      "command": "bolder",
+      "prompt": "make the landing page more visually impactful",
+      "expected_output": "Should read page.tsx and analyze visual hierarchy. Should amplify contrast, increase font weight/size on key headings, add emphasis to CTAs, strengthen section separation. Should make the page feel more confident and impactful without introducing AI slop patterns (gratuitous gradients, glassmorphism, blur effects).",
+      "files": [
+        "evals/fixtures/nextjs-app-deep/src/app/page.tsx"
+      ],
+      "assertions": [
+        {"text": "Reads page.tsx and analyzes visual hierarchy", "type": "behavioral"},
+        {"text": "Increases contrast and heading emphasis", "type": "output"},
+        {"text": "Strengthens CTA visual weight", "type": "output"},
+        {"text": "Does NOT introduce AI slop (gratuitous gradients, glassmorphism)", "type": "guard"},
+        {"text": "Improves section separation and visual rhythm", "type": "output"}
+      ]
+    },
+    {
+      "id": 111,
+      "command": "bolder",
+      "prompt": "bolder the metric cards",
+      "expected_output": "Should read metric-card.tsx and detect existing AI slop patterns (gradient text, backdrop-blur, SVG blobs, glassmorphism). Should NOT amplify these anti-patterns. Should flag the existing slop and suggest cleaning it up first. Should recommend /quieter to remove the slop before applying /bolder. Bold should mean confident design, not more visual noise.",
+      "files": [
+        "evals/fixtures/nextjs-app-deep/src/components/metric-card.tsx"
+      ],
+      "assertions": [
+        {"text": "Reads metric-card.tsx and detects AI slop patterns", "type": "behavioral"},
+        {"text": "Does NOT amplify existing gradients/glassmorphism/blur", "type": "guard"},
+        {"text": "Flags anti-patterns and suggests cleanup first", "type": "output"},
+        {"text": "Recommends /quieter before applying /bolder", "type": "output"},
+        {"text": "Distinguishes bold design from visual noise", "type": "behavioral"}
+      ]
+    },
+    {
+      "id": 112,
+      "command": "quieter",
+      "prompt": "tone down the metric card, it's too flashy",
+      "expected_output": "Should read metric-card.tsx and detect AI slop: gradient text, backdrop-blur, SVG decorative blobs, glassmorphism effects. Should systematically remove these anti-patterns. Should replace with clean, simple design — solid backgrounds, clear typography, proper spacing. Result should be quieter and more professional.",
+      "files": [
+        "evals/fixtures/nextjs-app-deep/src/components/metric-card.tsx"
+      ],
+      "assertions": [
+        {"text": "Detects AI slop patterns (gradient text, backdrop-blur, SVG blobs)", "type": "behavioral"},
+        {"text": "Removes gradient text and replaces with solid color", "type": "output"},
+        {"text": "Removes backdrop-blur and glassmorphism effects", "type": "output"},
+        {"text": "Simplifies to clean design with solid backgrounds", "type": "output"},
+        {"text": "Does NOT strip all styling — maintains proper spacing and typography", "type": "guard"}
+      ]
+    },
+    {
+      "id": 113,
+      "command": "quieter",
+      "prompt": "the notification toast is too aggressive, quiet it down",
+      "expected_output": "Should read notification-toast.tsx and identify overly aggressive patterns: intense colors, large size, excessive animation, attention-grabbing effects. Should tone down to a subtle, non-intrusive notification — softer colors, smaller footprint, gentler entrance/exit animations. Should maintain visibility and function while reducing visual aggression.",
+      "files": [
+        "evals/fixtures/nextjs-app-deep/src/components/notification-toast.tsx"
+      ],
+      "assertions": [
+        {"text": "Reads notification-toast.tsx and identifies aggressive styling", "type": "behavioral"},
+        {"text": "Reduces color intensity and visual weight", "type": "output"},
+        {"text": "Softens animations (gentler entrance/exit)", "type": "output"},
+        {"text": "Maintains toast visibility and functional readability", "type": "guard"},
+        {"text": "Does NOT remove the toast entirely or make it invisible", "type": "guard"}
+      ]
+    },
+    {
+      "id": 114,
+      "command": "delight",
+      "prompt": "add moments of delight to the dashboard",
+      "expected_output": "Should read dashboard page and components. Should add micro-interactions (hover effects, click feedback), subtle animations (staggered entrance, number counting), personality touches (friendly empty states, contextual tooltips). Should enhance without degrading performance. Animations should respect prefers-reduced-motion.",
+      "files": [
+        "evals/fixtures/nextjs-app-deep/src/app/page.tsx",
+        "evals/fixtures/nextjs-app-deep/src/components/metric-card.tsx",
+        "evals/fixtures/nextjs-app-deep/src/components/chart-widget.tsx"
+      ],
+      "assertions": [
+        {"text": "Adds micro-interactions (hover effects, click feedback)", "type": "output"},
+        {"text": "Adds subtle entrance animations (staggered, counting)", "type": "output"},
+        {"text": "Respects prefers-reduced-motion", "type": "behavioral"},
+        {"text": "Does NOT degrade performance with heavy animations", "type": "guard"},
+        {"text": "Adds personality touches (friendly copy, contextual details)", "type": "output"}
+      ]
+    },
+    {
+      "id": 115,
+      "command": "delight",
+      "prompt": "add delight to the empty state on the users page",
+      "expected_output": "Should read users page and identify the empty state rendering path. Should enhance the empty state with an illustration or tasteful animation, friendly copy, and a clear CTA. Should make the empty state feel intentional, not like a broken page. Should NOT add purely decorative noise — delight should serve the user experience.",
+      "files": [
+        "evals/fixtures/nextjs-app-deep/src/app/users/page.tsx"
+      ],
+      "assertions": [
+        {"text": "Identifies empty state rendering path in users page", "type": "behavioral"},
+        {"text": "Adds illustration or tasteful animation to empty state", "type": "output"},
+        {"text": "Includes friendly copy and clear CTA", "type": "output"},
+        {"text": "Empty state feels intentional, not broken", "type": "behavioral"},
+        {"text": "Does NOT add purely decorative noise without purpose", "type": "guard"}
+      ]
+    },
+    {
+      "id": 116,
+      "command": "fix",
+      "prompt": "add a new button to the header for notifications",
+      "expected_output": "Should recognize this is NOT a bug — it's a feature request. Should NOT proceed with TDD triage (no failing test to write, no bug to reproduce). Should redirect the user to /quick for a small addition or /plan-work for a planned feature. Should explain why /fix is the wrong tool for this task.",
+      "files": [],
+      "assertions": [
+        {"text": "Recognizes this is a feature request, not a bug", "type": "behavioral"},
+        {"text": "Does NOT proceed with TDD triage", "type": "guard"},
+        {"text": "Does NOT write a failing test for a non-bug", "type": "guard"},
+        {"text": "Redirects to /quick or /plan-work", "type": "output"},
+        {"text": "Explains why /fix is not the right command", "type": "output"}
+      ]
+    },
+    {
+      "id": 117,
+      "command": "build",
+      "prompt": "build the plan at .planning/phases/03-dashboard/03-01-PLAN.md",
+      "expected_output": "Should read the plan file and find that <tasks></tasks> is empty (zero tasks defined). Should refuse to build because there's nothing to execute. Should report that the plan has no tasks and suggest the user add tasks to the plan first. Should NOT dispatch any subagents or create waves from an empty task list.",
+      "files": [],
+      "assertions": [
+        {"text": "Detects empty <tasks></tasks> in plan file", "type": "behavioral"},
+        {"text": "Refuses to build with zero tasks", "type": "behavioral"},
+        {"text": "Reports plan has no tasks and suggests adding them", "type": "output"},
+        {"text": "Does NOT dispatch subagents for empty plan", "type": "guard"},
+        {"text": "Does NOT create waves from empty task list", "type": "guard"}
+      ]
+    },
+    {
+      "id": 118,
+      "command": "polish",
+      "prompt": "polish src/lib/auth.ts",
+      "expected_output": "Should recognize that src/lib/auth.ts is a pure backend file (no UI, no components, no styling). Should note that /polish is design-focused (visual refinement, spacing, typography, interactions). Should either proceed with code-level polish (naming, structure, readability) or suggest /simplify or /refactor as better tools for backend code cleanup. Should NOT apply frontend design patterns to backend code.",
+      "files": [],
+      "assertions": [
+        {"text": "Recognizes backend-only scope (no UI components)", "type": "behavioral"},
+        {"text": "Notes that /polish is design-focused", "type": "output"},
+        {"text": "Suggests /simplify or /refactor as alternatives for backend", "type": "output"},
+        {"text": "Does NOT apply visual/design patterns to backend code", "type": "guard"},
+        {"text": "Handles gracefully without crashing on non-UI file", "type": "guard"}
+      ]
+    },
+    {
+      "id": 119,
+      "command": "build",
+      "prompt": "build the plan — it has 2 waves. wave 1 has 2 tasks and wave 2 has 1 task that depends on wave 1",
+      "expected_output": "Should execute wave 1 (2 parallel tasks). When spec gate fails on wave 1 output (tests fail or quality issues), should HALT and NOT dispatch wave 2. Should report spec gate failure with details. Should allow user to fix wave 1 issues before retrying. Should NOT execute wave 2 with known spec issues from wave 1.",
+      "files": [],
+      "assertions": [
+        {"text": "Executes wave 1 tasks in parallel", "type": "behavioral"},
+        {"text": "Runs spec gate on wave 1 output", "type": "behavioral"},
+        {"text": "Halts wave 2 dispatch on wave 1 spec failure", "type": "guard"},
+        {"text": "Reports spec gate failure with details", "type": "output"},
+        {"text": "Does NOT execute wave 2 with known spec issues in wave 1", "type": "guard"}
+      ]
+    },
+    {
+      "id": 120,
+      "command": "build",
+      "prompt": "build the plan — all waves completed, running /review now",
+      "expected_output": "Should complete all waves and invoke /review. When /review gate decision is BLOCK (e.g., security CRITICAL or test failures), should NOT mark the phase as complete in STATE.md. Should report the block reason clearly. Should offer a fix-and-retry path (fix the issues, then re-run /review). Should NOT update STATE.md to mark phase done while review is blocked.",
+      "files": [],
+      "assertions": [
+        {"text": "Invokes /review after all waves complete", "type": "behavioral"},
+        {"text": "Does NOT mark phase complete in STATE.md when review BLOCKS", "type": "guard"},
+        {"text": "Reports block reason clearly", "type": "output"},
+        {"text": "Offers fix-and-retry path", "type": "output"},
+        {"text": "Does NOT update STATE.md to phase-done while blocked", "type": "guard"}
+      ]
+    },
+    {
+      "id": 121,
+      "command": "resume-work",
+      "prompt": "picking up where I left off",
+      "expected_output": "Should read STATE.md and find it references phase 5 as current_phase. Should scan .planning/phases/ and discover only phases 1-2 exist on disk. Should detect the mismatch (STATE.md points to non-existent phase). Should report the state corruption clearly. Should suggest /health --repair to fix the drift. Should NOT silently proceed as if phase 5 exists.",
+      "files": [],
+      "assertions": [
+        {"text": "Reads STATE.md and finds phase 5 reference", "type": "behavioral"},
+        {"text": "Detects mismatch between STATE.md and actual phases on disk", "type": "behavioral"},
+        {"text": "Reports state corruption clearly to user", "type": "output"},
+        {"text": "Suggests /health --repair", "type": "output"},
+        {"text": "Does NOT silently proceed with non-existent phase", "type": "guard"}
+      ]
+    },
+    {
+      "id": 122,
+      "command": "progress",
+      "prompt": "show me the project progress",
+      "expected_output": "Should attempt to read STATE.md and find it missing. Should detect that PROJECT.md and ROADMAP.md exist (partial .planning/ state). Should handle gracefully — not crash or throw unhandled errors. Should report that STATE.md is missing and project state is incomplete. Should suggest /health --repair to regenerate state or manually create STATE.md.",
+      "files": [],
+      "assertions": [
+        {"text": "Detects STATE.md is missing", "type": "behavioral"},
+        {"text": "Detects PROJECT.md and ROADMAP.md are present", "type": "behavioral"},
+        {"text": "Does NOT crash or throw unhandled errors", "type": "guard"},
+        {"text": "Reports incomplete state and suggests repair", "type": "output"},
+        {"text": "Suggests /health --repair or manual STATE.md creation", "type": "output"}
+      ]
+    },
+    {
+      "id": 123,
+      "command": "build",
+      "prompt": "build phase 3 — the plan is at .planning/phases/03-dashboard/03-01-PLAN.md",
+      "expected_output": "Should read STATE.md and find current_phase disagrees with the phase being built (e.g., STATE.md says phase 1 is current but user wants to build phase 3). Should detect the state drift and warn the user. Should ask whether to update STATE.md to reflect phase 3 or abort the build. Should NOT silently proceed with mismatched state. Should NOT overwrite STATE.md without user confirmation.",
+      "files": [],
+      "assertions": [
+        {"text": "Reads STATE.md and detects current_phase mismatch", "type": "behavioral"},
+        {"text": "Warns user about state drift", "type": "output"},
+        {"text": "Asks whether to update STATE.md or abort", "type": "behavioral"},
+        {"text": "Does NOT silently proceed with mismatched state", "type": "guard"},
+        {"text": "Does NOT overwrite STATE.md without user confirmation", "type": "guard"}
+      ]
     }
   ]
 }
