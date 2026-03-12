@@ -808,6 +808,7 @@
         {"text": "/review runs quality → security → gate → promote in sequence", "type": "ordering"},
         {"text": "Dispatches code-reviewer agent for quality review", "type": "behavioral"},
         {"text": "Dispatches 4 parallel agents for security scan", "type": "behavioral"},
+        {"text": "/review runs evidence verification (tests, build, lint with fresh output and exit codes) before gate decision", "type": "behavioral"},
         {"text": "Checks for any usage in diff (TS strictness)", "type": "behavioral"},
         {"text": "Generates SUMMARY.md with correct frontmatter", "type": "output"},
         {"text": "PR title follows type(scope): summary format", "type": "output"},
@@ -990,6 +991,7 @@
       "assertions": [
         {"text": "Quality review runs first (code-reviewer agent)", "type": "ordering"},
         {"text": "Security scan runs second (4 parallel agents)", "type": "ordering"},
+        {"text": "Runs evidence verification (tests, build, lint with fresh output and exit codes) before gate decision", "type": "behavioral"},
         {"text": "Gate decision aggregates quality + security + TS strictness results", "type": "ordering"},
         {"text": "Checks diff for any usage (TS strictness)", "type": "behavioral"},
         {"text": "Detects Next.js project and includes perf patterns in review", "type": "behavioral"},
