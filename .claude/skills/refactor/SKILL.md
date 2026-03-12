@@ -78,24 +78,9 @@ Report progress after each commit.
 
 ---
 
-## Step 5: Review
+## Step 5: Simplify
 
-Dispatch review via `skills/requesting-code-review/` with **`subagent_type: "code-reviewer"`** (specialized agent).
-
-Two review focuses:
-1. **Behavior preservation:** "Is behavior unchanged?" — test suite is the evidence. All tests that passed before must still pass.
-2. **Structural quality:** "Is the code actually better?" — readability, cohesion, coupling, naming clarity.
-
-If refactoring touches frontend files (`.tsx`, `.css`, component files), add a third focus:
-3. **Design consistency:** "Does the restructured code maintain design consistency per `.planning/DESIGN.md`?"
-
-Fix issues. Tests must remain GREEN after fixes.
-
----
-
-## Step 5b: Simplify
-
-After review fixes, invoke `skills/simplify/` on the refactoring diff. Refactoring often introduces new abstractions or moves code around — simplify catches:
+After execution, invoke `skills/simplify/` on the refactoring diff. Refactoring often introduces new abstractions or moves code around — simplify catches:
 
 - Extracted utilities that duplicate existing ones elsewhere in the codebase
 - Restructured code with missed efficiency opportunities (sequential → parallel, redundant reads)
@@ -105,18 +90,18 @@ Fix issues. Tests must remain GREEN (iron law still applies). Commit: `refactor(
 
 ---
 
-## Step 6: Verify
+## Step 6: Pre-Promotion Review
 
-Invoke `skills/verification-before-completion/`:
-- Run FULL test suite (not just affected area) — check exit code
-- Verify no behavior changes escaped characterization tests
-- Only claim complete with evidence
+After simplify pass, invoke `skills/review/`. It handles:
+- Quality review (behavior preservation + structural quality + design consistency)
+- Security scan on changed files
+- Evidence verification (full test suite — iron law compliance proof)
+- TypeScript strictness check
+- Promotion (PR/merge/keep/discard with conventional commit title)
 
----
+**Context for /review:** Refactoring scope, characterization tests baseline, iron law compliance evidence.
 
-## Step 7: Complete
-
-If on a feature branch, invoke `skills/finishing-a-development-branch/`.
+If /review reports BLOCKED findings: fix them (tests must remain GREEN — iron law still applies), then re-invoke /review.
 
 Generate SUMMARY.md with refactoring steps, commit hashes, before/after metrics, test evidence.
 Update STATE.md: note refactoring completed, structural changes made.

@@ -48,6 +48,10 @@ Invoke `skills/test-driven-development/`. Follow completely:
 - **GREEN:** Minimal fix
 - **REFACTOR:** Cleanup
 
+If the bug is in frontend code and the project uses Playwright (check for `playwright.config.*`), write the failing test using Playwright patterns from `skills/playwright-testing/`. Use proper locators (`getByRole`, `getByLabel`, `getByTestId`) over CSS selectors.
+
+When writing tests or fixes in TypeScript, follow TypeScript strictness rules: no `any`, use proper type guards, exhaustive switches.
+
 For SIMPLE triage: the failing test captures the bug directly (cause already known).
 
 **Deferred items:** During investigation and fixing, you will often discover adjacent issues (pre-existing warnings, unrelated bugs, improvement opportunities). Do NOT fix them — log to `{phase_dir}/deferred-items.md`:
@@ -69,41 +73,22 @@ If the fix touches `.tsx`, `.css`, components, or styles:
 
 ---
 
-## Step 4: Quick Spec Review
+## Step 4: Pre-Promotion Review
 
-Verify the fix addresses the right problem:
+**For MODERATE+ fixes:** Invoke `skills/simplify/` first on the fix diff (multi-file fixes often introduce duplicated patterns or miss existing utilities), then invoke `skills/review/`.
 
-**For ALL depths (including SIMPLE):**
-1. Does the fix address the **root cause**, not just the symptom?
+**For SIMPLE fixes:** Invoke `skills/review/` directly (skip simplify — single-file fixes don't benefit from a reuse/efficiency pass).
 
-**For MODERATE and PARALLEL, also check:**
-2. Does the failing test from Step 2 actually reproduce the **reported** bug (not a different one)?
-3. Are there other callers/consumers of the changed code that could be affected? Use LSP `findReferences` on every modified function/export to verify no downstream breakage.
+`skills/review/` handles:
+- Quality check (verifies fix addresses root cause, not just symptom)
+- Security scan on changed files
+- Evidence verification (tests, build, lint — fresh output with exit codes)
+- TypeScript strictness check
+- Promotion (PR/merge/keep/discard with conventional commit title)
 
-If any answer is "no" or "unsure", investigate before proceeding to verification.
+**Context for /review:** Root cause, fix applied, test added, triage depth.
 
----
-
-## Step 4b: Simplify (MODERATE+ only)
-
-**Skip for SIMPLE fixes** — they're typically single-file and don't benefit from a reuse/efficiency pass.
-
-For MODERATE and PARALLEL fixes that touched multiple files, invoke `skills/simplify/` on the fix diff. Multi-file fixes often introduce duplicated patterns or miss existing utilities. Fix issues, then commit: `refactor(fix): simplify pass`
-
----
-
-## Step 5: Verify
-
-Invoke `skills/verification-before-completion/`. Follow completely:
-- Run all verification commands fresh
-- Read full output, check exit codes
-- Only claim fixed with evidence
-
----
-
-## Step 6: Complete
-
-If on a feature branch and fix is standalone, invoke `skills/finishing-a-development-branch/`.
+If /review reports BLOCKED findings: fix them, then re-invoke /review.
 
 Generate lightweight SUMMARY.md in the phase directory:
 

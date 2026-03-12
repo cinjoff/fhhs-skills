@@ -15,8 +15,8 @@ You are a **lean orchestrator**. Stay under 15% context usage. Delegate all heav
 > **Execution pipeline — fresh subagents for tasks, specialized agents for review:**
 > Task execution: **`general-purpose`** subagents with structured prompt from `references/implementer-prompt.md` (co-located with this skill). Fresh context per task, no GSD state overhead.
 > Spec gates: **`code-reviewer`** agent after each wave — adversarial spec verification using `references/spec-gate-prompt.md` (co-located with this skill).
-> Quality review: **`code-reviewer`** agent at end — code quality, security, architecture.
-> Simplify: `skills/simplify/` after quality review — code reuse, efficiency, hygiene.
+> Simplify: `skills/simplify/` after all waves — code reuse, efficiency, hygiene.
+> Pre-promotion: `skills/review/` at end — orchestrates quality review, security scan, evidence verification, TS strictness, and promotion.
 > Integration check: **`gsd-integration-checker`** background agent for multi-phase wiring.
 > Phase verification: **`gsd-verifier`** agent for goal-backward verification.
 > Do not use `gsd-executor` or `gsd-planner` — their state management conflicts with this orchestrator.
@@ -120,7 +120,7 @@ Once all tasks are accounted for (completed, or explicitly skipped with user sig
 
 **After each wave completes and passes spot-check, run a spec gate before starting the next wave.**
 
-This catches spec deviations before dependent waves build on wrong foundations. Run for ALL waves including the final wave — the quality review in Step 8 focuses on code quality, not spec compliance.
+This catches spec deviations before dependent waves build on wrong foundations. Run for ALL waves including the final wave — the pre-promotion review in Step 9 focuses on code quality and security, not spec compliance.
 
 ### Dispatch spec reviewer
 
@@ -195,7 +195,7 @@ Uses design quality commands (`/critique`, `/polish`, `/normalize`) and `skills/
 
 ### Step 4b: Collect integration check results
 
-**If a background integration check was dispatched:** collect its results now. Integration findings feed into Step 8 (quality review). If critical wiring issues found (orphaned exports, broken data flows), flag to user before proceeding.
+**If a background integration check was dispatched:** collect its results now. Integration findings feed into Step 9 (pre-promotion review). If critical wiring issues found (orphaned exports, broken data flows), flag to user before proceeding.
 
 ---
 
@@ -277,33 +277,9 @@ Write `{phase}-VERIFICATION.md` with truth table, artifacts, key links, requirem
 
 ---
 
-## Step 8: Quality Review
+## Step 8: Simplify
 
-After all tasks complete, dispatch a quality review. Spec compliance was verified per-wave in Step 3b — this review focuses on code quality and cross-task consistency.
-
-### Dispatch quality reviewer
-
-Use `skills/requesting-code-review/` with **`subagent_type: "code-reviewer"`** (specialized agent).
-
-**Scope:** Full implementation diff from plan start to now.
-**Focus areas:**
-- Code quality: naming, structure, error handling, DRY
-- Security: injection, auth bypass, data exposure
-- Architecture: separation of concerns, scalability
-- Test quality: tests verify behavior not mocks, edge cases covered
-- Cross-task consistency: shared patterns, naming conventions, type alignment
-
-**Integration findings:** If Step 4b produced integration check results, include them in the reviewer prompt. The quality reviewer should verify that flagged wiring issues were addressed or explain why they're acceptable.
-
-### Handle results
-
-Fix any Critical or Important issues from the review. Minor issues are noted but don't block.
-
----
-
-## Step 8b: Simplify
-
-After quality review fixes are applied, invoke `skills/simplify/` on the implementation diff. This catches complementary issues the quality reviewer doesn't focus on:
+After all tasks complete (including spec gates and design gates), invoke `skills/simplify/` on the implementation diff. This catches:
 
 - **Code reuse**: newly written code that duplicates existing utilities or helpers
 - **Efficiency**: redundant computations, missed concurrency, N+1 patterns, hot-path bloat
@@ -315,24 +291,25 @@ It runs 3 parallel review agents (reuse, quality, efficiency) on the git diff, t
 
 ---
 
-## Step 9: Verify
+## Step 9: Pre-Promotion Review
 
-Invoke `skills/verification-before-completion/` — follow it completely. This means:
-- Run all verification commands fresh (tests, types, linter)
-- Read full output, check exit codes
-- Only claim completion with evidence
+Invoke `skills/review/` — it orchestrates:
+- Code quality review (code-reviewer agent on full implementation diff)
+- Security scan (parallel OWASP scanning on changed files)
+- Evidence verification (tests, build, lint — fresh output with exit codes)
+- TypeScript strictness check (no `any` in diff)
+- Gate decision (blocks on CRITICAL/Important, warns on rest)
+- Promotion (PR creation with conventional commit title, or merge/keep/discard)
 
-If this was frontend work, suggest running `/verify-ui` for visual verification.
+**Context for /review:** Pass the plan's `must_haves.truths` and the SUMMARY.md path so the reviewer can verify against original intent. If Step 4b produced integration check results, pass those as well.
 
----
+If /review reports BLOCKED findings: fix them (dispatch fix agents or handle directly), then re-invoke /review.
 
-## Step 10: Complete
-
-Invoke `skills/finishing-a-development-branch/` — it handles merge/PR/keep/discard options and worktree cleanup.
+**NOTE:** GSD state updates already happened in Step 6. /review does NOT touch STATE.md or ROADMAP.md.
 
 **GSD completion (if GSD active):**
 
-Update STATE.md with final session info. Keep STATE.md under 150 lines.
+After /review completes promotion, update STATE.md with final session info. Keep STATE.md under 150 lines.
 
 Route based on phase status:
 

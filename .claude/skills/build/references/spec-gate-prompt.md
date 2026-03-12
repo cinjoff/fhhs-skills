@@ -62,6 +62,11 @@ optimistic. You MUST verify everything independently by reading the actual code.
 - State defined but never rendered
 - API routes defined but never fetched from
 
+**TypeScript strictness:**
+- Any use of `any` type (including implicit via missing annotations)
+- Type assertions (`as`) that could be replaced with type guards
+- Non-exhaustive switch statements on union types
+
 **Wrong behavior:**
 - Code runs but produces wrong output
 - Logic errors in conditionals or data flow
