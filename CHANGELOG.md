@@ -5,6 +5,26 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.13.0] - 2026-03-13
+
+### Added
+- **`/fh:review`** — pre-promotion code review workflow with quality, architecture, security, and goal verification
+- **`/fh:secure`** — OWASP Top 10 security scanner integrated into composite skills
+- **Playwright Best Practices skill** — upstream adoption with `playwright-testing` skill for test guidance
+- **Vercel React Best Practices skill** — upstream `nextjs-perf` skill for React/Next.js performance patterns
+- **LLM grader** — semantic assertion engine for evals with flexible matching
+- **Deep eval fixtures** — full Next.js app fixture with planted issues for thorough eval coverage
+- **36 new evals** — skill-specific evals 106-130 and fixture-backed high-value flow tests
+
+### Changed
+- **Core loop skills streamlined** — improved context management, review pipeline, and subagent efficiency
+- **Review and secure wired into composites** — `/fh:build` and other composites now run review and security gates
+
+### Fixed
+- **LLM grader index mapping** — corrected grader artifact handling and index alignment
+- **Eval accuracy** — fixed eval 83 command, updated 4 evals for post-build review, added evidence verification assertions
+- **`/secure` scan scope** — corrected scope targeting and eval invocability
+
 ## [1.12.5] - 2026-03-11
 
 ### Fixed
