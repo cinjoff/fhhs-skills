@@ -195,6 +195,13 @@ No changes. (Template variables adopted from upstream v1.2.0.)
 | 17 | Report template forked to `references/report-template.md` (was `templates/`) | Consistent with plugin shipping boundary — all runtime files in skills/{skill}/ |
 | 18 | Issue taxonomy forked to `references/issue-taxonomy.md` | Verbatim fork, co-located in references/ for runtime access |
 
+### Cross-cutting pattern integration
+| # | Change | Rationale |
+|---|--------|-----------|
+| 1 | Added anti-drift rule to `/fh:fix` Step 1 (Triage) | Prevents strategy escalation mid-fix — once SIMPLE/MODERATE/PARALLEL/COMPLEX is chosen, commit fully. Adjacent issues go to `.planning/todos/` |
+| 2 | Added QA delegation prompt to `/fh:verify-ui` Step 1 | On feature branches, suggests `/fh:qa` for diff-aware testing instead of manual visual verification |
+| 3 | Added video recording for critical bugs in `/fh:verify-ui` Step 2 | Uses `agent-browser record start/stop` to capture reproducible evidence for critical visual bugs |
+
 ### review enhancements (from review/checklist.md)
 (patches to be documented during Plan 03)
 

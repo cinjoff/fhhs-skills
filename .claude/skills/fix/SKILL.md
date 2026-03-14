@@ -33,6 +33,8 @@ Quickly assess bug depth before choosing strategy. Spend <5% context.
 | 3+ independent failures | **PARALLEL** | Debugger agent per subsystem | "Multiple independent failures. Dispatching parallel debug agents." |
 | Unclear cause, needs hypotheses | **COMPLEX** | Persistent debug session | "Sustained investigation needed. Starting persistent debug session." |
 
+**Anti-drift rule:** Once a triage strategy is selected (SIMPLE/MODERATE/PARALLEL/COMPLEX), commit fully. Do not escalate to a higher strategy mid-fix unless new evidence proves the initial assessment wrong. Do not fix adjacent issues — log them to `.planning/todos/` instead.
+
 Execute the chosen path:
 - **SIMPLE:** Skip to Step 2 — cause is clear from triage.
 - **MODERATE:** Invoke `skills/systematic-debugging/`. Follow completely. Then Step 2.

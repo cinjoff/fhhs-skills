@@ -19,6 +19,8 @@ lsof -i :3000 -i :5173 -i :4321 -i :8080 -P -n 2>/dev/null | grep LISTEN | head 
 
 If not running, start it with `pnpm dev` (or the project's dev command) in the background and wait for ready.
 
+**QA delegation:** If on a feature branch (not main), suggest: "You're on a feature branch. Would you like diff-aware QA testing (`/fh:qa`) instead of manual verification? /fh:qa auto-detects affected routes from your git diff."
+
 ---
 
 ## Step 2: Capture Screenshots
@@ -62,6 +64,8 @@ agent-browser screenshot /tmp/verify-ui-desktop.png
 ```
 
 Read each screenshot image to visually inspect the UI.
+
+**Video evidence for critical bugs:** If a CRITICAL visual bug is found, record a video: `agent-browser record start ./evidence.webm`, reproduce the bug, `agent-browser record stop`. Attach the recording path to the report.
 
 ---
 
