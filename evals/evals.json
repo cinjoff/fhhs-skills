@@ -4178,6 +4178,275 @@
       "scenario_requires": [
         "gsd_project"
       ]
+    },
+    {
+      "id": 131,
+      "command": "plan-review",
+      "prompt": "Review this plan — I just finished /plan-work and have a PLAN.md at .planning/phases/03-billing/03-01-PLAN.md for adding Stripe subscription billing. It has 4 tasks across backend and frontend.",
+      "expected_output": "Should run pre-review system audit (git log, git diff main, stash list), then enter Step 0 Nuclear Scope Challenge — challenge whether this is the right problem, check must_haves truths, map existing code leverage, produce dream state mapping. Must present three mode options: SCOPE EXPANSION, HOLD SCOPE, SCOPE REDUCTION with context-dependent default. Must AskUserQuestion for mode selection before proceeding to review sections.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Runs pre-review system audit before Step 0 (git log, git diff, stash list)",
+          "type": "ordering"
+        },
+        {
+          "text": "Challenges whether this is the right problem to solve (premise challenge)",
+          "type": "behavioral"
+        },
+        {
+          "text": "Presents SCOPE EXPANSION, HOLD SCOPE, and SCOPE REDUCTION mode options",
+          "type": "output"
+        },
+        {
+          "text": "AskUserQuestion for mode selection before proceeding to review sections",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT start implementation or make code changes",
+          "type": "guard"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ]
+    },
+    {
+      "id": 132,
+      "command": "plan-review",
+      "prompt": "I chose HOLD SCOPE for the billing plan review. Proceed with the review sections.",
+      "expected_output": "Should commit to HOLD SCOPE mode and proceed through review sections in order: Architecture Review (Section 1), then Error & Rescue Map (Section 2) with a complete table naming specific error types (TimeoutError, RateLimitError, ParseError, etc.), rescue status, rescue action, and user-visible impact for every method/codepath that can fail. Must produce the Error/Rescue Map table with named exceptions — not generic 'handle errors'. Must AskUserQuestion after each section before proceeding.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Commits to HOLD SCOPE mode without silently drifting to another mode",
+          "type": "behavioral"
+        },
+        {
+          "text": "Produces Error/Rescue Map table with named exception types (not generic 'handle errors')",
+          "type": "output"
+        },
+        {
+          "text": "Error/Rescue Map includes METHOD/CODEPATH, ERROR TYPE, RESCUED status, RESCUE ACTION, and USER SEES columns",
+          "type": "output"
+        },
+        {
+          "text": "Flags unrescued errors as CRITICAL GAP",
+          "type": "behavioral"
+        },
+        {
+          "text": "AskUserQuestion after each section before proceeding to the next",
+          "type": "ordering"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ]
+    },
+    {
+      "id": 133,
+      "command": "plan-review",
+      "prompt": "Review the auth plan at .planning/phases/04-auth/04-01-PLAN.md — it adds JWT auth, refresh tokens, and a login form. Three architectural issues and a security concern need to be raised.",
+      "expected_output": "Should raise each issue as a separate AskUserQuestion call — one issue per question, never batched. Each question must present 2-3 concrete lettered options (A, B, C), state the recommended option FIRST with a directive ('Do B. Here's why:'), and explain why that option over others. Must use numbered issues with lettered options (e.g., '1A', '1B'). No yes/no questions. No batching multiple issues into one question.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "One issue per AskUserQuestion call — never batches multiple issues into one question",
+          "type": "behavioral"
+        },
+        {
+          "text": "Each question presents 2-3 concrete lettered options (A, B, C)",
+          "type": "output"
+        },
+        {
+          "text": "Leads with recommendation as a directive ('Do B. Here's why:') not tentative suggestion",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT ask yes/no questions — always provides lettered alternatives",
+          "type": "guard"
+        },
+        {
+          "text": "Labels issues with NUMBER + LETTER format (e.g., '1A', '1B', '2A')",
+          "type": "output"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ]
+    },
+    {
+      "id": 134,
+      "command": "qa",
+      "prompt": "qa",
+      "expected_output": "Should detect feature branch automatically and enter diff-aware mode. Must analyze git diff (git diff main...HEAD --name-only, git log main..HEAD --oneline) to identify changed files, then map changed files to affected pages/routes (controller files to URL paths, component files to pages, model files to pages that use them). Must detect running app on local dev ports and test each affected page/route with screenshots and console checks.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects feature branch and automatically enters diff-aware mode",
+          "type": "behavioral"
+        },
+        {
+          "text": "Reads git diff to identify changed files (git diff main...HEAD --name-only)",
+          "type": "behavioral"
+        },
+        {
+          "text": "Maps changed files to affected pages/routes for targeted testing",
+          "type": "behavioral"
+        },
+        {
+          "text": "Tests each affected page with screenshot evidence",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT test unrelated pages outside the diff scope",
+          "type": "guard"
+        }
+      ],
+      "scenario_requires": [
+        "feature_branch"
+      ]
+    },
+    {
+      "id": 135,
+      "command": "qa",
+      "prompt": "/fh:qa --quick https://myapp.localhost:3000",
+      "expected_output": "Should run quick mode: 30-second smoke test visiting homepage plus top 5 navigation targets. Must check page loads, console errors, and broken links at each page. Should NOT run per-page exploration checklist or detailed issue documentation. Must produce health score at the end. Should complete within the 30-second scope constraint.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Enters quick mode — visits homepage plus top navigation targets only",
+          "type": "behavioral"
+        },
+        {
+          "text": "Checks page loads, console errors, and broken links",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT run detailed per-page exploration checklist in quick mode",
+          "type": "guard"
+        },
+        {
+          "text": "Produces health score in output",
+          "type": "output"
+        },
+        {
+          "text": "Scopes testing to 30-second smoke test constraint",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 136,
+      "command": "qa",
+      "prompt": "qa the staging site at https://staging.myapp.com — full mode, give me the report",
+      "expected_output": "Should run full QA mode producing a structured report with weighted health score. Health score must include category breakdown with individual scores for: Console (15%), Links (10%), Visual (10%), Functional (20%), UX (15%), Performance (10%), Content (5%), Accessibility (15%). Final score is the weighted average. Report must include severity counts, top 3 things to fix, and console health summary.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Produces weighted health score with category breakdown",
+          "type": "output"
+        },
+        {
+          "text": "Health score includes category weights (Console 15%, Functional 20%, Accessibility 15%, etc.)",
+          "type": "output"
+        },
+        {
+          "text": "Report includes top 3 things to fix section",
+          "type": "output"
+        },
+        {
+          "text": "Report includes severity counts and console health summary",
+          "type": "output"
+        },
+        {
+          "text": "Writes report to .planning/qa-reports/ directory",
+          "type": "output"
+        }
+      ]
+    },
+    {
+      "id": 137,
+      "command": "qa",
+      "prompt": "qa my local app at http://localhost:3000 — check the dashboard and settings pages",
+      "expected_output": "Should use agent-browser CLI commands (agent-browser open, agent-browser snapshot, agent-browser screenshot, agent-browser console, agent-browser click, agent-browser fill) for all browser interactions. Must NOT use $B, playwright, puppeteer, or any custom browser binary. All browser commands must use --session flag for isolated sessions. Must use agent-browser snapshot -i for finding interactive elements.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Uses agent-browser CLI for all browser interactions (open, snapshot, screenshot, click, fill)",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT use $B, playwright, puppeteer, or custom browser binary",
+          "type": "guard"
+        },
+        {
+          "text": "Uses --session flag for isolated browser sessions",
+          "type": "behavioral"
+        },
+        {
+          "text": "Uses agent-browser snapshot -i for finding interactive elements",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 138,
+      "command": "review",
+      "prompt": "review my changes — I touched auth middleware, two API routes, and the user settings page",
+      "expected_output": "Should run the full /review pipeline including the production safety checklist. Code quality agent (Agent 1) must reference skills/review/references/production-safety-checklist.md for the two-pass safety review. The agent must honor the checklist's explicit suppressions section to reduce noise on known-safe patterns. Security scan (Agent 2) runs separately. Gate decision aggregates all findings including production safety results.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Code quality agent references production-safety-checklist.md for two-pass safety review",
+          "type": "behavioral"
+        },
+        {
+          "text": "Honors the production safety checklist's explicit suppressions to reduce noise",
+          "type": "behavioral"
+        },
+        {
+          "text": "Gate decision includes production safety checklist results alongside quality and security findings",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT duplicate security scan concerns already covered by Agent 2",
+          "type": "guard"
+        },
+        {
+          "text": "Review report surfaces production safety findings in the output",
+          "type": "output"
+        }
+      ]
+    },
+    {
+      "id": 139,
+      "command": "plan-work",
+      "prompt": "plan adding WebSocket real-time notifications to the dashboard. Users should see live updates when team members post comments or complete tasks. We use Next.js with a Node backend.",
+      "expected_output": "Should reach Step 3 (Discuss Implementation) and produce a Failure Modes Registry table with columns: CODEPATH, FAILURE MODE, RESCUED?, TEST?, USER SEES?, LOGGED?. Must map failure modes for WebSocket-specific concerns (connection drop, reconnection, stale state, message ordering, backpressure). Any row with RESCUED=N, TEST=N, USER SEES=Silent must be flagged as CRITICAL GAP. Failure modes from the registry should be included as must_haves.truths in Step 4.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Step 3 produces Failure Modes Registry table with CODEPATH, FAILURE MODE, RESCUED?, TEST?, USER SEES?, LOGGED? columns",
+          "type": "output"
+        },
+        {
+          "text": "Failure Modes Registry covers WebSocket-specific concerns (connection drop, reconnection, stale state)",
+          "type": "behavioral"
+        },
+        {
+          "text": "Flags rows with RESCUED=N, TEST=N, USER SEES=Silent as CRITICAL GAP",
+          "type": "behavioral"
+        },
+        {
+          "text": "Failure modes from registry are included as must_haves.truths in Step 4",
+          "type": "ordering"
+        },
+        {
+          "text": "Step 3 discussion runs before Step 4 must_haves extraction",
+          "type": "ordering"
+        }
+      ]
     }
   ]
 }
