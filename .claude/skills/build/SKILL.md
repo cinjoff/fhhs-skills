@@ -121,6 +121,8 @@ Options:
 ```
 Do not proceed to the next wave until blocked tasks are resolved or explicitly skipped.
 
+**AskUserQuestion discipline:** When presenting findings that need user decisions, present one issue per question with 2-3 lettered options. Lead with recommendation and WHY.
+
 **"interrupted — what should I do next" (or similar stuck state):** The subagent paused waiting for input it can't receive. Read its last output to understand what confused it. Options:
 - Re-dispatch with a revised prompt that removes the ambiguity or provides the missing context
 - If the task spec itself is ambiguous, clarify with the user and re-dispatch
@@ -344,6 +346,9 @@ If the review surfaces issues:
 - **BLOCK** findings → fix before continuing
 - **WARN** findings → report to user, continue if they approve
 
+**Frontend QA routing:** If the build involved frontend changes (`.tsx`, `.css`, `.html` files), suggest:
+"Frontend changes detected. Run `/fh:qa` for diff-aware browser testing, or `/fh:verify-ui` for design critique."
+
 After the review, report what was built:
 - Tasks completed, commits made, key files created/modified
 - Design gates: ran / skipped (with reason)
@@ -383,3 +388,13 @@ If user prefers to skip the branch finishing (more work planned), report what wa
   - New files -> STRUCTURE.md
   - API work -> ARCHITECTURE.md
   - Tests -> TESTING.md
+
+---
+
+## Context Pressure Priority
+
+If context is running low, prioritize in this order:
+
+Step 3 (execute waves) > Step 3b (spec gate) > Step 7 (phase completion) > Step 5 (self-check) > Step 8 (simplify) > Step 9 (post-build review) > Step 4 (design gates) > Step 6 (GSD state).
+
+Never skip Step 3 or Step 3b.
