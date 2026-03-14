@@ -153,6 +153,23 @@ No changes.
 ### adapt, bolder, quieter, extract, colorize, audit, clarify, onboard, optimize, delight
 No changes. (Template variables adopted from upstream v1.2.0.)
 
+## gstack (forked from v0.3.3)
+
+### plan-review (from plan-ceo-review)
+(patches to be documented during Plan 02)
+
+### qa (from qa)
+(patches to be documented during Plan 02)
+
+### review enhancements (from review/checklist.md)
+(patches to be documented during Plan 03)
+
+### plan-work enhancements (from plan-eng-review)
+(patches to be documented during Plan 03)
+
+### release enhancements (from ship)
+(patches to be documented during Plan 03)
+
 ## GSD (forked from v1.22.4)
 
 ### new-project (workflow)
