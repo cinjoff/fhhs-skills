@@ -85,14 +85,14 @@ Forked skills:
 
 | Skill | Used by | Status |
 |-------|---------|--------|
-| plan-ceo-review | /fh:plan-review (new) | To fork |
-| plan-eng-review | /fh:plan-work (enhance) | To absorb |
-| review/checklist.md | /fh:review (enhance) | To absorb |
-| ship | /release (enhance) | To absorb |
-| qa | /fh:qa (new) | To fork |
+| plan-ceo-review | /fh:plan-review (new) | Forked |
+| plan-eng-review | /fh:plan-work (enhance) | Absorbed |
+| review/checklist.md | /fh:review (enhance) | Absorbed |
+| ship | /release (enhance) | Absorbed |
+| qa | /fh:qa (new) | Forked |
 | browse | SKIP (using agent-browser) | — |
 | retro | SKIP (user decision) | — |
-| setup-browser-cookies | Absorbed into /fh:qa | To absorb |
+| setup-browser-cookies | Absorbed into /fh:qa | Absorbed |
 | gstack-upgrade | SKIP (plugin marketplace) | — |
 
 Upstream snapshot: `upstream/gstack-0.3.3/`

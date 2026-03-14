@@ -203,13 +203,41 @@ No changes. (Template variables adopted from upstream v1.2.0.)
 | 3 | Added video recording for critical bugs in `/fh:verify-ui` Step 2 | Uses `agent-browser record start/stop` to capture reproducible evidence for critical visual bugs |
 
 ### review enhancements (from review/checklist.md)
-(patches to be documented during Plan 03)
+| # | Change | Rationale |
+|---|--------|-----------|
+| 1 | Extracted checklist into `skills/review/references/production-safety-checklist.md` (was inline in gstack `review/checklist.md`) | Subagent in Step 2 reads it as a separate reference file — cleaner separation |
+| 2 | Removed Rails-specific examples (`sanitize_sql_array`, `ActiveRecord`, `.includes()`, `rescue RecordNotUnique`, `.html_safe`, `raw()`, `SecureRandom`, `index_by`, `bin/test-lane`) | Framework-agnostic — uses generic equivalents (parameterized queries, ORM safe interpolation, `.trim()`, `URI.parse`) |
+| 3 | Added explicit suppressions section with 9 rules (eval tuning, harmless no-ops, redundancy-for-readability, etc.) | Reduces false positives from overzealous review — gstack original had these but less comprehensively |
+| 4 | Removed Greptile triage integration (`greptile-triage.md`) | Greptile not used in fhhs-skills |
+| 5 | Removed `/ship` gate classification section | Review gating handled by `/fh:review` Step 8, not the checklist itself |
+| 6 | Integrated checklist into `/fh:review` Step 2 Agent 1 dispatch (two-pass safety review) | Checklist is now a subagent reference, not a standalone review flow |
+| 7 | Added "Note: The production safety checklist has an explicit suppressions section — the subagent must honor it" | Ensures subagent reads and respects suppressions |
 
 ### plan-work enhancements (from plan-eng-review)
-(patches to be documented during Plan 03)
+| # | Change | Rationale |
+|---|--------|-----------|
+| 1 | Absorbed eng-review's diagram requirements into Step 3 as "mandatory ASCII diagram" per gray area | gstack required diagrams in a separate review skill; fhhs integrates them into the planning step itself |
+| 2 | Added lightweight Error/Rescue Map (ERM) table in Step 3 per discussed gray area | Adapted from plan-eng-review's failure mode analysis — produces ERM during planning, not as a post-hoc review finding |
+| 3 | Added Failure Modes Registry table in Step 3 (CODEPATH / FAILURE MODE / RESCUED? / TEST? / USER SEES? / LOGGED?) | Adapted from plan-eng-review Section 1 "realistic production failure scenario" — rows with all N's = critical gap |
+| 4 | Added "Scope commitment rule" in Step 3: once gray areas are selected, commit fully — no lobbying for different areas | Adapted from plan-eng-review's "CRITICAL: If I do not select SCOPE REDUCTION, respect that decision fully" |
+| 5 | Added must_haves.truths integration with Failure Modes Registry — rescued failure modes become truths | Links failure analysis to verification — each rescued failure mode must be testable |
+| 6 | Removed plan-eng-review's 4-section interactive review flow (Architecture / Code Quality / Tests / Performance) | `/fh:plan-review` handles the interactive review; `/fh:plan-work` focuses on producing the plan |
+| 7 | Removed TODOS.md updates section | Deferred work tracked via `/fh:add-todo` instead |
+| 8 | Removed gstack update check preamble | No gstack binary dependency |
+| 9 | Added priority hierarchy note: Step 3 (diagrams + failure modes) is second priority after Step 0 | Ensures diagrams/ERMs survive context pressure |
 
 ### release enhancements (from ship)
-(patches to be documented during Plan 03)
+| # | Change | Rationale |
+|---|--------|-----------|
+| 1 | Added Step 0 pre-ship validation gate (branch check, merge main, test suite, quick review) | Adapted from gstack /ship Steps 1-3.5 — validates before any version work |
+| 2 | Added `/fh:review --quick` as pre-ship gate in Step 0d | gstack used inline checklist review; fhhs delegates to the existing review skill |
+| 3 | Added bisectable commits option in Step 5 (infra → models → controllers → tests → VERSION) | Adapted from gstack /ship Step 6 commit ordering and splitting rules |
+| 4 | Added auto-detect test runner table (npm/bun/cargo/pytest/make) | gstack hardcoded `bin/test-lane` + `npm run test`; fhhs is framework-agnostic |
+| 5 | Removed gstack-specific steps: eval suites (Step 3.25), Greptile triage (Step 3.75), 4-digit VERSION format | Not applicable — fhhs uses semver, no Greptile, no eval infrastructure |
+| 6 | Removed fully-automated non-interactive philosophy | `/release` is interactive (user confirms version bump, changelog, bisect choice) — safer for a plugin used across many projects |
+| 7 | Added dual-file version bump requirement (plugin.json + marketplace.json) | fhhs-specific: both files must agree or `/fh:update` breaks |
+| 8 | Added GitHub Release creation step with install/update instructions | gstack /ship created a PR; fhhs /release creates a tagged GitHub Release |
+| 9 | Removed gstack update check preamble | No gstack binary dependency |
 
 ## GSD (forked from v1.22.4)
 
