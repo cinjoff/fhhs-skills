@@ -159,7 +159,26 @@ No changes. (Template variables adopted from upstream v1.2.0.)
 (patches to be documented during Plan 02)
 
 ### qa (from qa)
-(patches to be documented during Plan 02)
+| # | Change | Rationale |
+|---|--------|-----------|
+| 1 | Replaced all `$B` browse commands with `agent-browser` CLI equivalents | agent-browser (Vercel) is the browser backend for fhhs — no compiled Bun binary needed |
+| 2 | Command mapping: `$B snapshot -i` -> `agent-browser snapshot -i`, `$B goto` -> `agent-browser open`, `$B screenshot` -> `agent-browser screenshot`, `$B console` -> `agent-browser console`, `$B click` -> `agent-browser click`, `$B text` -> `agent-browser get text` | Direct CLI translation for agent-browser |
+| 3 | Added agent-browser features: `set device` (responsive), `set media dark` (dark mode), `network requests --filter` (API verification), `record start/stop` (video evidence) | Capabilities agent-browser provides that gstack browse lacked |
+| 4 | Added `--session qa-{branch}` for browser session isolation | Prevents session bleeding between QA runs on different branches |
+| 5 | Added auth state save/load workflow (`state save`/`state load`) | Replaces gstack's cookie-import from real browsers — agent-browser manages sessions differently |
+| 6 | Output path: `.gstack/qa-reports/` -> `.planning/qa-reports/` | GSD convention — all planning artifacts live in .planning/ |
+| 7 | Report template: added `Browser backend` and `Session` metadata fields, added `diff-aware` mode option | Reflects agent-browser backend and session isolation |
+| 8 | Added `allowed-tools` frontmatter: `Bash(agent-browser:*)`, Read, Write, Grep, Glob, AskUserQuestion | Plugin skill format — scoped Bash to agent-browser commands |
+| 9 | Added dark mode testing step in per-page exploration checklist | agent-browser's `set media dark` enables this natively |
+| 10 | Added network/API verification step in exploration checklist | agent-browser's `network requests --filter` enables API health checks |
+| 11 | Added `.planning/DESIGN.md` reference for design evaluation | Integration with /fh:teach-impeccable design context |
+| 12 | Removed gstack binary setup, update check preamble, Bun build instructions | Not applicable — agent-browser is installed via npm globally |
+| 13 | Removed cookie-import from real browsers | agent-browser handles sessions via state save/load, not browser cookie import |
+| 14 | Removed `$B links` command (no direct equivalent) | Use `snapshot -i` to discover navigation elements instead |
+| 15 | Removed `$B viewport` command, replaced with `agent-browser set device` | Device presets are more ergonomic than raw viewport dimensions |
+| 16 | Moved per-page exploration checklist to dedicated `references/exploration-checklist.md` | Expanded with dark mode, network, and auth boundary checks — too large for inline |
+| 17 | Report template forked to `references/report-template.md` (was `templates/`) | Consistent with plugin shipping boundary — all runtime files in skills/{skill}/ |
+| 18 | Issue taxonomy forked to `references/issue-taxonomy.md` | Verbatim fork, co-located in references/ for runtime access |
 
 ### review enhancements (from review/checklist.md)
 (patches to be documented during Plan 03)
