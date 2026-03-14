@@ -156,7 +156,22 @@ No changes. (Template variables adopted from upstream v1.2.0.)
 ## gstack (forked from v0.3.3)
 
 ### plan-review (from plan-ceo-review)
-(patches to be documented during Plan 02)
+| # | Change | Rationale |
+|---|--------|-----------|
+| 1 | Renamed `plan-ceo-review` → `plan-review` | Cleaner name; "CEO" framing replaced with "founder-level challenge" in description |
+| 2 | Removed gstack-upgrade check preamble | No gstack binary dependency in fhhs-skills |
+| 3 | Output path: findings go to `.planning/designs/` | GSD convention — all planning artifacts live in .planning/ |
+| 4 | Taste calibration reads `.planning/DESIGN.md` instead of discovering patterns | Leverages existing design context from `/fh:teach-impeccable` |
+| 5 | Reduced from 10 review sections to 6 (Architecture, Error/Rescue, Security, Data Flow, Tests, Long-Term Trajectory) | Observability, Deployment, Performance, Code Quality covered by `/fh:review`, `/fh:build`, and other skills |
+| 6 | Added "Challenge against must_haves" step (0B) | Plans from `/fh:plan-work` include must_haves — review should challenge their truths |
+| 7 | Added workflow position note: run between `/fh:plan-work` and `/fh:build` | Integrates into existing plan-work flow |
+| 8 | Added ERM extension note in Section 2 | If `/fh:plan-work` already produced a lightweight ERM, extend it rather than starting from scratch |
+| 9 | Removed Rails-specific examples (ActiveRecord, Faraday, rescue StandardError) | Framework-agnostic — uses generic error type names |
+| 10 | Removed Greptile references | Not used in fhhs-skills |
+| 11 | Removed TODOS.md updates section from required outputs | Deferred work tracked via `/fh:add-todo` instead |
+| 12 | Removed Observability/Deploy/Performance mode additions from mode quick reference | Sections removed — keeps reference table aligned with actual sections |
+| 13 | `allowed-tools`: uses `mcp__conductor__AskUserQuestion` | fhhs convention for MCP tool references |
+| 14 | Added lean orchestrator pattern (stay under 20% context) | Interactive skill needs headroom for back-and-forth |
 
 ### qa (from qa)
 | # | Change | Rationale |
