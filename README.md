@@ -20,6 +20,7 @@ Run `/reload-plugins` after installing so the new commands are available in your
 ```
 /fh:new-project    set up a project with structure and tracking
 /plan-work         design a feature before building it
+/plan-review       challenge the plan before committing to build
 /build             execute the plan with parallel workers and quality gates
 /review            code quality, security, verification, and branch promotion
 ```
@@ -35,7 +36,7 @@ When you come back to an existing project:
 
 **Building a feature:**
 ```
-/plan-work  ->  /build  ->  /review
+/plan-work  ->  /plan-review  ->  /build  ->  /review
 ```
 
 **Fixing a bug:**
@@ -62,7 +63,9 @@ When you come back to an existing project:
 |---------|-------------|
 | `/fh:new-project` | Set up a project with vision, tech stack, design language, and roadmap |
 | `/plan-work` | Brainstorm, research, and produce an execution-ready plan |
+| `/plan-review` | Founder-level plan challenge — rethink scope, find the 10-star product |
 | `/build` | Execute a plan with parallel subagents, TDD, design gates, and verification |
+| `/qa` | Systematic QA testing with agent-browser backend |
 | `/review` | Code quality, security scan, verification, and branch promotion |
 
 </details>
@@ -156,13 +159,14 @@ Each command is an orchestrator. It reads project state, decides which skills an
 +----------------------------------+
 ```
 
-The underlying skills and agents come from six open-source projects:
+The underlying skills and agents come from seven open-source projects:
 
 | Source | What it provides |
 |--------|-----------------|
 | [Superpowers](https://github.com/obra/superpowers) | Engineering discipline — TDD, verification, debugging, brainstorming |
 | [Impeccable](https://github.com/pbakaus/impeccable) | Design quality — critique, polish, normalize, harden, animate, audit |
 | [GSD](https://github.com/gsd-build/get-shit-done) | Project orchestration — planning, execution, verification, integration |
+| [gstack](https://github.com/garrytan/gstack) | Production safety — plan review, QA, anti-drift, context pressure |
 | [feature-dev](https://github.com/anthropics/claude-code-plugin-examples) | Code intelligence — exploration, architecture, review |
 | [Next.js Best Practices](https://github.com/anthropics/claude-code-plugin-examples) | React/Next.js performance optimization (Vercel Engineering) |
 | [Playwright Best Practices](https://github.com/anthropics/claude-code-plugin-examples) | End-to-end testing patterns |
@@ -238,8 +242,18 @@ Executes plans through waves of parallel subagents with quality gates between th
 |  +-------------+  +-------------+  +-------------+            |
 +----------------------------+----------------------------------+
                              |
++- PRODUCTION SAFETY --------+----------------------------------+
+|                                                               |
+|  Production safety checklist (gstack-derived):                |
+|  - Data migration risks                                       |
+|  - Breaking API changes                                       |
+|  - Feature flag coverage                                      |
+|  - Rollback plan                                              |
+|                                                               |
++----------------------------+----------------------------------+
+                             |
                              v
-                        /review
+                        /review  (or /qa for frontend)
 ```
 
 ## `/review` — Pre-Promotion Gate
@@ -397,7 +411,10 @@ Shared terminal step for `/build`, `/fix`, and `/refactor`.
 |                                                                |
 |  Output: PLAN.md with waves, dependencies, must-haves          |
 |                                                                |
-+---------------------------------------------------------------+
++----------------------------+----------------------------------+
+                             |
+                             v
+                     /plan-review → /build
 ```
 
 ## `/quick` — Lightweight Task Runner
