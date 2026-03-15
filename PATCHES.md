@@ -153,6 +153,92 @@ No changes.
 ### adapt, bolder, quieter, extract, colorize, audit, clarify, onboard, optimize, delight
 No changes. (Template variables adopted from upstream v1.2.0.)
 
+## gstack (forked from v0.3.3)
+
+### plan-review (from plan-ceo-review)
+| # | Change | Rationale |
+|---|--------|-----------|
+| 1 | Renamed `plan-ceo-review` → `plan-review` | Cleaner name; "CEO" framing replaced with "founder-level challenge" in description |
+| 2 | Removed gstack-upgrade check preamble | No gstack binary dependency in fhhs-skills |
+| 3 | Output path: findings go to `.planning/designs/` | GSD convention — all planning artifacts live in .planning/ |
+| 4 | Taste calibration reads `.planning/DESIGN.md` instead of discovering patterns | Leverages existing design context from `/fh:teach-impeccable` |
+| 5 | Reduced from 10 review sections to 6 (Architecture, Error/Rescue, Security, Data Flow, Tests, Long-Term Trajectory) | Observability, Deployment, Performance, Code Quality covered by `/fh:review`, `/fh:build`, and other skills |
+| 6 | Added "Challenge against must_haves" step (0B) | Plans from `/fh:plan-work` include must_haves — review should challenge their truths |
+| 7 | Added workflow position note: run between `/fh:plan-work` and `/fh:build` | Integrates into existing plan-work flow |
+| 8 | Added ERM extension note in Section 2 | If `/fh:plan-work` already produced a lightweight ERM, extend it rather than starting from scratch |
+| 9 | Removed Rails-specific examples (ActiveRecord, Faraday, rescue StandardError) | Framework-agnostic — uses generic error type names |
+| 10 | Removed Greptile references | Not used in fhhs-skills |
+| 11 | Removed TODOS.md updates section from required outputs | Deferred work tracked via `/fh:add-todo` instead |
+| 12 | Removed Observability/Deploy/Performance mode additions from mode quick reference | Sections removed — keeps reference table aligned with actual sections |
+| 13 | `allowed-tools`: uses `mcp__conductor__AskUserQuestion` | fhhs convention for MCP tool references |
+| 14 | Added lean orchestrator pattern (stay under 20% context) | Interactive skill needs headroom for back-and-forth |
+
+### qa (from qa)
+| # | Change | Rationale |
+|---|--------|-----------|
+| 1 | Replaced all `$B` browse commands with `agent-browser` CLI equivalents | agent-browser (Vercel) is the browser backend for fhhs — no compiled Bun binary needed |
+| 2 | Command mapping: `$B snapshot -i` -> `agent-browser snapshot -i`, `$B goto` -> `agent-browser open`, `$B screenshot` -> `agent-browser screenshot`, `$B console` -> `agent-browser console`, `$B click` -> `agent-browser click`, `$B text` -> `agent-browser get text` | Direct CLI translation for agent-browser |
+| 3 | Added agent-browser features: `set device` (responsive), `set media dark` (dark mode), `network requests --filter` (API verification), `record start/stop` (video evidence) | Capabilities agent-browser provides that gstack browse lacked |
+| 4 | Added `--session qa-{branch}` for browser session isolation | Prevents session bleeding between QA runs on different branches |
+| 5 | Added auth state save/load workflow (`state save`/`state load`) | Replaces gstack's cookie-import from real browsers — agent-browser manages sessions differently |
+| 6 | Output path: `.gstack/qa-reports/` -> `.planning/qa-reports/` | GSD convention — all planning artifacts live in .planning/ |
+| 7 | Report template: added `Browser backend` and `Session` metadata fields, added `diff-aware` mode option | Reflects agent-browser backend and session isolation |
+| 8 | Added `allowed-tools` frontmatter: `Bash(agent-browser:*)`, Read, Write, Grep, Glob, AskUserQuestion | Plugin skill format — scoped Bash to agent-browser commands |
+| 9 | Added dark mode testing step in per-page exploration checklist | agent-browser's `set media dark` enables this natively |
+| 10 | Added network/API verification step in exploration checklist | agent-browser's `network requests --filter` enables API health checks |
+| 11 | Added `.planning/DESIGN.md` reference for design evaluation | Integration with /fh:teach-impeccable design context |
+| 12 | Removed gstack binary setup, update check preamble, Bun build instructions | Not applicable — agent-browser is installed via npm globally |
+| 13 | Removed cookie-import from real browsers | agent-browser handles sessions via state save/load, not browser cookie import |
+| 14 | Removed `$B links` command (no direct equivalent) | Use `snapshot -i` to discover navigation elements instead |
+| 15 | Removed `$B viewport` command, replaced with `agent-browser set device` | Device presets are more ergonomic than raw viewport dimensions |
+| 16 | Moved per-page exploration checklist to dedicated `references/exploration-checklist.md` | Expanded with dark mode, network, and auth boundary checks — too large for inline |
+| 17 | Report template forked to `references/report-template.md` (was `templates/`) | Consistent with plugin shipping boundary — all runtime files in skills/{skill}/ |
+| 18 | Issue taxonomy forked to `references/issue-taxonomy.md` | Verbatim fork, co-located in references/ for runtime access |
+
+### Cross-cutting pattern integration
+| # | Change | Rationale |
+|---|--------|-----------|
+| 1 | Added anti-drift rule to `/fh:fix` Step 1 (Triage) | Prevents strategy escalation mid-fix — once SIMPLE/MODERATE/PARALLEL/COMPLEX is chosen, commit fully. Adjacent issues go to `.planning/todos/` |
+| 2 | Added QA delegation prompt to `/fh:verify-ui` Step 1 | On feature branches, suggests `/fh:qa` for diff-aware testing instead of manual visual verification |
+| 3 | Added video recording for critical bugs in `/fh:verify-ui` Step 2 | Uses `agent-browser record start/stop` to capture reproducible evidence for critical visual bugs |
+
+### review enhancements (from review/checklist.md)
+| # | Change | Rationale |
+|---|--------|-----------|
+| 1 | Extracted checklist into `skills/review/references/production-safety-checklist.md` (was inline in gstack `review/checklist.md`) | Subagent in Step 2 reads it as a separate reference file — cleaner separation |
+| 2 | Removed Rails-specific examples (`sanitize_sql_array`, `ActiveRecord`, `.includes()`, `rescue RecordNotUnique`, `.html_safe`, `raw()`, `SecureRandom`, `index_by`, `bin/test-lane`) | Framework-agnostic — uses generic equivalents (parameterized queries, ORM safe interpolation, `.trim()`, `URI.parse`) |
+| 3 | Added explicit suppressions section with 9 rules (eval tuning, harmless no-ops, redundancy-for-readability, etc.) | Reduces false positives from overzealous review — gstack original had these but less comprehensively |
+| 4 | Removed Greptile triage integration (`greptile-triage.md`) | Greptile not used in fhhs-skills |
+| 5 | Removed `/ship` gate classification section | Review gating handled by `/fh:review` Step 8, not the checklist itself |
+| 6 | Integrated checklist into `/fh:review` Step 2 Agent 1 dispatch (two-pass safety review) | Checklist is now a subagent reference, not a standalone review flow |
+| 7 | Added "Note: The production safety checklist has an explicit suppressions section — the subagent must honor it" | Ensures subagent reads and respects suppressions |
+
+### plan-work enhancements (from plan-eng-review)
+| # | Change | Rationale |
+|---|--------|-----------|
+| 1 | Absorbed eng-review's diagram requirements into Step 3 as "mandatory ASCII diagram" per gray area | gstack required diagrams in a separate review skill; fhhs integrates them into the planning step itself |
+| 2 | Added lightweight Error/Rescue Map (ERM) table in Step 3 per discussed gray area | Adapted from plan-eng-review's failure mode analysis — produces ERM during planning, not as a post-hoc review finding |
+| 3 | Added Failure Modes Registry table in Step 3 (CODEPATH / FAILURE MODE / RESCUED? / TEST? / USER SEES? / LOGGED?) | Adapted from plan-eng-review Section 1 "realistic production failure scenario" — rows with all N's = critical gap |
+| 4 | Added "Scope commitment rule" in Step 3: once gray areas are selected, commit fully — no lobbying for different areas | Adapted from plan-eng-review's "CRITICAL: If I do not select SCOPE REDUCTION, respect that decision fully" |
+| 5 | Added must_haves.truths integration with Failure Modes Registry — rescued failure modes become truths | Links failure analysis to verification — each rescued failure mode must be testable |
+| 6 | Removed plan-eng-review's 4-section interactive review flow (Architecture / Code Quality / Tests / Performance) | `/fh:plan-review` handles the interactive review; `/fh:plan-work` focuses on producing the plan |
+| 7 | Removed TODOS.md updates section | Deferred work tracked via `/fh:add-todo` instead |
+| 8 | Removed gstack update check preamble | No gstack binary dependency |
+| 9 | Added priority hierarchy note: Step 3 (diagrams + failure modes) is second priority after Step 0 | Ensures diagrams/ERMs survive context pressure |
+
+### release enhancements (from ship)
+| # | Change | Rationale |
+|---|--------|-----------|
+| 1 | Added Step 0 pre-ship validation gate (branch check, merge main, test suite, quick review) | Adapted from gstack /ship Steps 1-3.5 — validates before any version work |
+| 2 | Added `/fh:review --quick` as pre-ship gate in Step 0d | gstack used inline checklist review; fhhs delegates to the existing review skill |
+| 3 | Added bisectable commits option in Step 5 (infra → models → controllers → tests → VERSION) | Adapted from gstack /ship Step 6 commit ordering and splitting rules |
+| 4 | Added auto-detect test runner table (npm/bun/cargo/pytest/make) | gstack hardcoded `bin/test-lane` + `npm run test`; fhhs is framework-agnostic |
+| 5 | Removed gstack-specific steps: eval suites (Step 3.25), Greptile triage (Step 3.75), 4-digit VERSION format | Not applicable — fhhs uses semver, no Greptile, no eval infrastructure |
+| 6 | Removed fully-automated non-interactive philosophy | `/release` is interactive (user confirms version bump, changelog, bisect choice) — safer for a plugin used across many projects |
+| 7 | Added dual-file version bump requirement (plugin.json + marketplace.json) | fhhs-specific: both files must agree or `/fh:update` breaks |
+| 8 | Added GitHub Release creation step with install/update instructions | gstack /ship created a PR; fhhs /release creates a tagged GitHub Release |
+| 9 | Removed gstack update check preamble | No gstack binary dependency |
+
 ## GSD (forked from v1.22.4)
 
 ### new-project (workflow)

@@ -8,6 +8,58 @@ $ARGUMENTS
 
 ---
 
+## Step 0: Pre-ship Validation
+
+Run these checks before anything else. If any check fails, STOP and report — do not proceed to Step 1.
+
+### 0a. Branch check
+
+```bash
+BRANCH=$(git branch --show-current)
+if [ "$BRANCH" = "main" ]; then
+  echo "ABORT: You are on main. Release from a feature branch."
+  exit 1
+fi
+echo "Branch: $BRANCH"
+```
+
+### 0b. Merge origin/main
+
+Ensure the branch is current with main before validating:
+
+```bash
+git fetch origin main && git merge origin/main --no-edit
+```
+
+**If there are merge conflicts:** STOP and show the conflicts. Do not proceed until resolved.
+
+### 0c. Run test suite
+
+Auto-detect the test runner and execute:
+
+| Detect                        | Command         |
+|-------------------------------|-----------------|
+| `package.json` has `test`     | `npm test`      |
+| `bun.lockb` exists            | `bun test`      |
+| `Cargo.toml` exists           | `cargo test`    |
+| `pytest.ini` / `pyproject.toml` with pytest | `pytest` |
+| `Makefile` has `test` target  | `make test`     |
+| Fallback                      | skip with note  |
+
+**If tests fail:** STOP, show the failures, do not proceed.
+
+### 0d. Quick review
+
+Run `/fh:review --quick` against the current diff (unless the user already ran a review this session).
+
+**If CRITICAL findings:** STOP, show the findings, and suggest fixes. Do not proceed until the user resolves or acknowledges each critical item.
+
+**If only non-critical findings or no findings:** Note them and continue.
+
+> Pre-ship validation and bisectable commits adapted from gstack /ship (v0.3.3).
+
+---
+
 ## Step 1: Gather Changes
 
 ```bash
@@ -131,6 +183,34 @@ Use the Edit tool to update all three files.
 ---
 
 ## Step 5: Commit, Tag, Push
+
+### Bisectable commits (optional)
+
+If the branch has mixed changes (infra + features + docs), offer to split into bisectable commits:
+
+```yaml
+AskUserQuestion:
+  question: "This branch has mixed changes. Split into bisectable commits?"
+  header: "Bisectable commits"
+  options:
+    - label: "Yes — split into logical commits"
+      description: "Infrastructure/config → models/services → controllers/views → tests → VERSION+CHANGELOG"
+    - label: "No — single release commit"
+      description: "Commit everything together"
+```
+
+**If "Yes":** Split changes into ordered commits, each independently valid (builds and passes tests):
+1. **Infrastructure/config** — migrations, config changes, route additions
+2. **Models/services** — new models, services, concerns (with their tests)
+3. **Controllers/views** — controllers, views, JS/React components (with their tests)
+4. **Tests** — standalone test additions or fixes
+5. **VERSION + CHANGELOG** — always last
+
+Each commit message: `<type>: <summary>` (feat/fix/chore/refactor/docs). Only the final VERSION+CHANGELOG commit gets the release tag.
+
+**If "No" or the diff is small (< 50 lines across < 4 files):** Use a single commit as below.
+
+### Commit and push
 
 ```bash
 cd /Users/konstantin/Documents/github.nosync/fhhs-skills

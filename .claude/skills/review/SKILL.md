@@ -50,9 +50,11 @@ Based on mode, dispatch parallel subagents. Each agent receives ONLY the diff + 
 
 **Agent 1 — Code Quality + Architecture** (`subagent_type: "code-reviewer"`)
 - Prompt: `skills/review/references/review-prompt.md`
+- Also include: `skills/review/references/production-safety-checklist.md` (two-pass safety review)
 - Input: full diff (`git diff $BASE_BRANCH..HEAD`)
 - Covers: naming, structure, error handling, DRY, complexity, test quality, cross-file consistency, dependency direction, separation of concerns, abstraction quality, API design, cross-cutting concerns
 - If Next.js: include `skills/nextjs-perf/` criteria
+- **Note:** The production safety checklist has an explicit suppressions section — the subagent must honor it to reduce noise.
 
 **Agent 2 — Security Scan** (4 parallel sub-scanners, `subagent_type: "general-purpose"`)
 - Checklist: `skills/secure/references/owasp-checklist.md` (do NOT duplicate — reference from secure/)
@@ -255,3 +257,7 @@ Derive the type and scope from the diff analysis. Present options:
 - Merge to main
 - Keep branch (more work planned)
 - Discard
+
+---
+
+*Production safety checklist adapted from gstack review/checklist.md (v0.3.3).*

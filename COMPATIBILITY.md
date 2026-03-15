@@ -79,6 +79,24 @@ Forked skill and command:
 
 Upstream snapshot preserved at `upstream/claude-md-management-1.0.0/`.
 
+## gstack — v0.3.3 — [repo](https://github.com/garrytan/gstack)
+
+Forked skills:
+
+| Skill | Used by | Status |
+|-------|---------|--------|
+| plan-ceo-review | /fh:plan-review (new) | Forked |
+| plan-eng-review | /fh:plan-work (enhance) | Absorbed |
+| review/checklist.md | /fh:review (enhance) | Absorbed |
+| ship | /release (enhance) | Absorbed |
+| qa | /fh:qa (new) | Forked |
+| browse | SKIP (using agent-browser) | — |
+| retro | SKIP (user decision) | — |
+| setup-browser-cookies | Absorbed into /fh:qa | Absorbed |
+| gstack-upgrade | SKIP (plugin marketplace) | — |
+
+Upstream snapshot: `upstream/gstack-0.3.3/`
+
 ## GSD (Get Shit Done) — v1.22.4 — [repo](https://github.com/gsd-build/get-shit-done)
 
 GSD commands and agents are forked into `commands/` and `skills/` respectively. GSD CLI (`gsd-tools.cjs`) is bundled in `bin/` and symlinked to `$HOME/.claude/get-shit-done/bin/` during `/setup`.

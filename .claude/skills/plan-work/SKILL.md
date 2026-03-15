@@ -75,7 +75,25 @@ Resolve implementation gray areas before planning:
 2. **Identify 3-4 gray areas** specific to this phase — layout choices, data flow decisions, error handling approaches, integration patterns
 3. **Ask user** which gray areas to discuss (don't discuss all — let user prioritize)
 4. **Deep-dive** selected areas — present options with trade-offs, get user decisions
-5. **Lock decisions** in `.planning/phases/{phase}/{phase}-CONTEXT.md` with "Design Decisions" section
+5. **For each gray area discussed, produce:**
+   - **Mandatory ASCII diagram** showing the system/data flow for that area
+   - **Lightweight Error/Rescue Map** table (3-5 rows for the gray areas discussed):
+
+     | OPERATION | ERROR | NAMED EXCEPTION | RESCUE ACTION | USER SEES |
+     |-----------|-------|-----------------|---------------|-----------|
+
+     > This is a lightweight ERM scoped to the discussed gray areas. If the user runs `/fh:plan-review` afterward, it will produce a comprehensive ERM across the entire plan and extend this one.
+
+   - **Failure Modes Registry**:
+
+     | CODEPATH | FAILURE MODE | RESCUED? | TEST? | USER SEES? | LOGGED? |
+     |----------|--------------|----------|-------|------------|---------|
+
+     Any row with all N's = **CRITICAL GAP** that must be addressed in the plan.
+
+6. **Lock decisions** in `.planning/phases/{phase}/{phase}-CONTEXT.md` with "Design Decisions" section
+
+**Scope commitment rule:** Once the user selects which gray areas to discuss, commit fully to that selection. Do not lobby for different areas or silently expand scope.
 
 These locked decisions are fed to subagents during `/build` execution — they prevent re-deciding things downstream.
 
@@ -87,6 +105,8 @@ From the approved design, extract the **must_haves** — these drive the plan an
 
 **Truths (3-5):**
 Extract observable, user-facing statements of what must be true when the work is complete. These are NOT implementation details. They describe user-visible states, outcomes, or behaviors.
+
+Include failure modes from the Failure Modes Registry (Step 3) as must_haves.truths — each rescued failure mode should have a corresponding truth.
 
 Good: "A user visiting /settings sees their current plan and can upgrade."
 Bad: "The SettingsModule imports BillingService."
@@ -220,3 +240,13 @@ After plan approval:
 2. **Continue planning** — Plan more phases before building. Useful for planning ahead across multiple phases before executing any.
 
 Default to option 1 unless the user indicates they want to keep planning.
+
+---
+
+## Priority Hierarchy
+
+If context pressure is high: **Step 0** (phase matching) > **Step 3** (diagrams + failure modes) > **Step 5** (plan creation) > **Step 4** (must_haves) > **Step 2** (brainstorm) > **Step 1** (research). Never skip Step 0 or Step 5.
+
+---
+
+_Eng review patterns adapted from gstack plan-eng-review (v0.3.3)_
