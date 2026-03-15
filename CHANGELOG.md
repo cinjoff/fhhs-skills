@@ -5,6 +5,22 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.14.0] - 2026-03-15
+
+### Added
+- **gstack upstream** — verbatim snapshot of gstack v0.3.3 in `upstream/` for diff tracking and compatibility
+- **`/plan-review`** — founder-level plan challenge with 10-star problem-solving patterns, forked from gstack's plan-ceo-review
+- **`/qa`** — systematic QA testing with agent-browser backend, issue taxonomy, and exploration checklist
+- **Production safety checklist** — data migration risks, breaking API changes, feature flags, and rollback plans integrated into `/review`
+- **Evals for gstack-derived skills** — evaluation coverage for plan-review, qa, and production safety patterns
+
+### Changed
+- **`/plan-work`** — enhanced with engineering review patterns from gstack
+- **`/build`** — adds context pressure management and QA routing for frontend work
+- **`/fix`** — anti-drift patterns to prevent scope creep during debugging
+- **`/verify-ui`** — QA routing for visual verification handoffs
+- **README** — updated with gstack as 7th upstream source, plan-review/qa in workflow diagrams
+
 ## [1.13.0] - 2026-03-13
 
 ### Added
