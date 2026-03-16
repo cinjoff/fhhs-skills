@@ -81,7 +81,7 @@ If the platform is `windows`, skip the Homebrew step — Windows uses its own in
 Check all tools:
 
 ```bash
-for cmd in node npm git gh vercel typescript-language-server; do
+for cmd in node npm git gh typescript-language-server; do
   if command -v "$cmd" >/dev/null 2>&1; then
     VERSION=$("$cmd" --version 2>/dev/null | head -1)
     echo "OK $cmd $VERSION"
@@ -100,9 +100,10 @@ Present results using status symbols:
 | npm                        | ✓ v10.8.0           |
 | git                        | ✓ v2.45.0           |
 | gh                         | ✗ MISSING (optional) |
-| vercel                     | ✗ MISSING (optional) |
 | typescript-language-server  | ✗ MISSING            |
 ```
+
+> Vercel CLI is not needed at setup time — it will be checked during `/fh:new-project` when setting up deployment.
 
 If everything is `✓`, skip to Step 3.
 
@@ -116,7 +117,6 @@ If everything is `✓`, skip to Step 3.
 # Install only what's missing — skip any that are already OK
 brew install node       # provides node + npm
 brew install gh         # GitHub CLI
-brew install vercel-cli # Vercel CLI (or: npm i -g vercel)
 ```
 
 **Windows:**
@@ -132,8 +132,7 @@ Windows detected. Install these tools using their official installers:
 
   1. Node.js (node + npm):  https://nodejs.org — LTS installer
   2. GitHub CLI (gh):       winget install GitHub.cli
-  3. Vercel CLI:            npm install -g vercel
-  4. Git (if missing):      winget install Git.Git
+  3. Git (if missing):      winget install Git.Git
 
 ──────────────────────────────────────────────────────────────
 → Restart your terminal and run /fh:setup again after installing
@@ -224,16 +223,21 @@ If `NOT_INSTALLED`:
 claude plugin install typescript-lsp@claude-plugins-official
 ```
 
-If the `claude` CLI command is not available (running inside Claude Code rather than from terminal), tell the user:
+If `claude plugin install` fails or is not available (e.g. running inside Conductor or a non-interactive environment where `/plugin` slash commands don't work), tell the user:
 
 ```
 ╔══════════════════════════════════════════════════════════════╗
 ║  CHECKPOINT: Action Required                                 ║
 ╚══════════════════════════════════════════════════════════════╝
 
-The LSP plugin needs to be installed from the terminal:
+The LSP plugin needs to be installed from your terminal (not
+from inside Claude Code). Open a separate terminal and run:
 
   claude plugin install typescript-lsp@claude-plugins-official
+
+Note: If you're using Conductor, /plugin commands are not
+available — you must use the `claude plugin` CLI from a
+regular terminal instead.
 
 ──────────────────────────────────────────────────────────────
 → Run the command above in your terminal, then type "done"
@@ -501,7 +505,7 @@ If installed, display:
 
     {
       "scripts": {
-        "setup": "npm install && ln -s \"$CONDUCTOR_ROOT_PATH/.env\" .env",
+        "setup": "npm install && cp \"$CONDUCTOR_ROOT_PATH/.env.local\" .env.local 2>/dev/null; true",
         "run": "npm run dev -- --port $CONDUCTOR_PORT"
       }
     }
@@ -543,7 +547,6 @@ Then present the status table and next steps as regular markdown text:
 | npm                        | ✓ {version}              |
 | git                        | ✓ {version}              |
 | GitHub CLI (gh)            | ✓ {version} / ○ optional |
-| Vercel CLI                 | ✓ {version} / ○ optional |
 | TypeScript LSP             | ✓ {version}              |
 | LSP Plugin                 | ✓ installed              |
 | LSP Enabled (env)          | ✓ CLAUDE_CODE_ENABLE_LSP=1 |
