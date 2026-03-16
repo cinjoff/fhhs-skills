@@ -5,6 +5,15 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.14.1] - 2026-03-16
+
+### Changed
+- **Vercel project setup** — creates `vercel.json` with framework preset before linking, ensuring correct build config before the Next.js scaffold exists
+- **Vercel GitHub integration** — documents Vercel GitHub App as a prerequisite for auto-deployments, with clear one-time setup instructions
+- **Conductor workspace scripts** — uses `cp` instead of `ln -s` for `.env` files, since symlinks break in git worktrees
+- **Plugin install guidance** — adds terminal CLI fallback (`claude plugin`) for Conductor and headless environments where `/plugin` commands aren't available
+- **Setup prerequisites** — removes Vercel CLI from setup; defers to `/fh:new-project` where it's actually needed
+
 ## [1.14.0] - 2026-03-15
 
 ### Added
