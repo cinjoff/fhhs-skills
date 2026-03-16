@@ -173,19 +173,66 @@ Check `vercel` availability:
 command -v vercel >/dev/null 2>&1 && echo "OK" || echo "MISSING"
 ```
 
-If `vercel` is MISSING: show a warning and skip to Step 7. The user can run `npm install -g vercel && vercel login` to enable this later.
+If `vercel` is MISSING, install it:
 
-Link the project to Vercel (creates a new project if one doesn't exist):
+```bash
+npm install -g vercel
+```
+
+If install fails, show a warning and skip to Step 7.
+
+Check if the user is logged in to Vercel:
+
+```bash
+vercel whoami 2>/dev/null && echo "LOGGED_IN" || echo "NOT_LOGGED_IN"
+```
+
+If `NOT_LOGGED_IN`, run `vercel login` and follow the prompts.
+
+**Create a `vercel.json` with the framework preset BEFORE linking.** This ensures Vercel creates the project with the correct build settings regardless of whether the Next.js scaffold exists yet:
+
+```bash
+cat > vercel.json << 'EOF'
+{
+  "framework": "nextjs"
+}
+EOF
+```
+
+> Adapt the `"framework"` value if the user chose a different stack in Step 2 (e.g. `"vite"`, `"remix"`, `null` for static).
+
+Now link the project to Vercel:
 
 ```bash
 vercel link --yes --project "$(basename "$(pwd)")"
 ```
 
-This writes `.vercel/project.json` with the project and org IDs.
+This writes `.vercel/project.json` with the project and org IDs, and Vercel will know to use the Next.js build preset.
 
 ### 6d: Connect GitHub to Vercel for auto-deployments
 
-Connect the GitHub repo to the Vercel project:
+The Vercel GitHub App must be installed on the user's GitHub account/org for auto-deployments to work. The CLI cannot do this — it requires a one-time browser action.
+
+```
+╔══════════════════════════════════════════════════════════════╗
+║  CHECKPOINT: One-time Vercel + GitHub setup                  ║
+╚══════════════════════════════════════════════════════════════╝
+
+For automatic deployments on push, the Vercel GitHub App needs
+to be installed on your GitHub account (one-time, covers all
+future repos):
+
+  1. Go to: https://vercel.com/integrations/github
+  2. Click "Add" and authorize for your GitHub account/org
+  3. Grant access to your repositories (all or selected)
+
+Already done? Skip this step.
+──────────────────────────────────────────────────────────────
+→ Type "done" when ready, or "skip" to set this up later
+──────────────────────────────────────────────────────────────
+```
+
+Once the GitHub App is installed, connect the repo:
 
 ```bash
 vercel git connect
@@ -193,21 +240,7 @@ vercel git connect
 
 If this succeeds, every push to `main` will trigger a Vercel deployment automatically.
 
-If `vercel git connect` fails or is unavailable, tell the user:
-
-```
-╔══════════════════════════════════════════════════════════════╗
-║  CHECKPOINT: One-time Vercel action needed                   ║
-╚══════════════════════════════════════════════════════════════╝
-
-To enable automatic GitHub → Vercel deployments:
-
-  1. Go to your Vercel project dashboard
-  2. Settings → Git → Connect Git Repository
-  3. Select: <repo-name>
-
-This only needs to be done once.
-```
+If `vercel git connect` fails (e.g. the GitHub App isn't installed yet), tell the user they can connect later from the Vercel dashboard: Settings → Git → Connect Git Repository.
 
 ---
 
@@ -228,25 +261,27 @@ If installed, create `conductor.json` in the project root with scripts tailored 
 ```json
 {
   "scripts": {
-    "setup": "npm install && [ -f \"$CONDUCTOR_ROOT_PATH/.env.local\" ] && ln -s \"$CONDUCTOR_ROOT_PATH/.env.local\" .env.local || true",
+    "setup": "npm install && [ -f \"$CONDUCTOR_ROOT_PATH/.env.local\" ] && cp \"$CONDUCTOR_ROOT_PATH/.env.local\" .env.local || true",
     "run": "npm run dev -- --port $CONDUCTOR_PORT"
   }
 }
 ```
 
+> **Why `cp` instead of `ln -s`?** Conductor workspaces are git worktrees. Symlinks into `$CONDUCTOR_ROOT_PATH` can break when the root's working tree changes. Copying is safer — the setup script runs each time a workspace starts, so the copy stays fresh.
+
 **For other common stacks** — adapt the scripts:
 
 | Stack | Setup script | Run script |
 |-------|-------------|------------|
-| Next.js | `npm install && ln -s "$CONDUCTOR_ROOT_PATH/.env.local" .env.local` | `npm run dev -- --port $CONDUCTOR_PORT` |
-| Rails | `bundle install && ln -s "$CONDUCTOR_ROOT_PATH/.env" .env` | `bin/rails server -p $CONDUCTOR_PORT` |
-| Django | `pip install -r requirements.txt && ln -s "$CONDUCTOR_ROOT_PATH/.env" .env` | `python manage.py runserver $CONDUCTOR_PORT` |
-| Phoenix | `mix deps.get && ln -s "$CONDUCTOR_ROOT_PATH/.env" .env` | `mix phx.server` (uses `PORT=$CONDUCTOR_PORT`) |
-| Vite | `npm install && ln -s "$CONDUCTOR_ROOT_PATH/.env" .env` | `npm run dev -- --port $CONDUCTOR_PORT` |
+| Next.js | `npm install && cp "$CONDUCTOR_ROOT_PATH/.env.local" .env.local 2>/dev/null; true` | `npm run dev -- --port $CONDUCTOR_PORT` |
+| Rails | `bundle install && cp "$CONDUCTOR_ROOT_PATH/.env" .env 2>/dev/null; true` | `bin/rails server -p $CONDUCTOR_PORT` |
+| Django | `pip install -r requirements.txt && cp "$CONDUCTOR_ROOT_PATH/.env" .env 2>/dev/null; true` | `python manage.py runserver $CONDUCTOR_PORT` |
+| Phoenix | `mix deps.get && cp "$CONDUCTOR_ROOT_PATH/.env" .env 2>/dev/null; true` | `mix phx.server` (uses `PORT=$CONDUCTOR_PORT`) |
+| Vite | `npm install && cp "$CONDUCTOR_ROOT_PATH/.env" .env 2>/dev/null; true` | `npm run dev -- --port $CONDUCTOR_PORT` |
 
 The setup script should:
-1. Install dependencies
-2. Symlink `.env` (or `.env.local`) from `$CONDUCTOR_ROOT_PATH` if it exists
+1. Install dependencies (`npm install` handles per-worktree `node_modules` correctly)
+2. Copy `.env` (or `.env.local`) from `$CONDUCTOR_ROOT_PATH` if it exists
 
 The run script should:
 1. Start the dev server using `$CONDUCTOR_PORT` for port assignment (each Conductor workspace gets a unique port range of 10)
@@ -286,7 +321,8 @@ Project initialized:
 - .project-tracker/         — visual dashboard (run /fh:tracker to launch)
 - conductor.json            — Conductor workspace scripts (if Conductor detected)
 - GitHub repo               — <repo-url> (private)
-- Vercel project            — linked (auto-deploys on push to main)
+- vercel.json               — framework preset configured
+- Vercel project            — linked (auto-deploys on push to main, if GitHub App installed)
 
 Next: run /fh:plan to plan your first phase (scaffolding and core setup).
 ```

@@ -4,6 +4,8 @@ A workflow plugin for [Claude Code](https://claude.com/claude-code) that combine
 
 ## Install
 
+**From Claude Code (interactive session):**
+
 ```
 /plugin marketplace add cinjoff/fhhs-skills
 /plugin install fh@fhhs-skills
@@ -11,7 +13,16 @@ A workflow plugin for [Claude Code](https://claude.com/claude-code) that combine
 /fh:setup
 ```
 
-Run `/reload-plugins` after installing so the new commands are available in your current session.
+**From terminal (Conductor or headless):**
+
+If you're running inside Conductor or another environment where `/plugin` commands aren't available, run these in your terminal instead:
+
+```bash
+claude plugin marketplace add cinjoff/fhhs-skills
+claude plugin install fh@fhhs-skills
+```
+
+Then start a Claude Code session and run `/fh:setup`.
 
 `/fh:setup` detects your platform (macOS, Linux, Windows) and walks you through installing dependencies: Node.js, GitHub CLI, TypeScript language server, and the TypeScript LSP plugin.
 
