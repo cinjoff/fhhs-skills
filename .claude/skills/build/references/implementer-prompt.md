@@ -46,12 +46,15 @@ and more accurate than grep.
 
 ## Task Progress Tracking
 
-Your parent task ID is `{TASK_ID}`. Update it when you start and finish.
+Your parent task ID is `{TASK_ID}` and your task name is `{TASK_NAME}`.
 
-At the very start: `TaskUpdate({TASK_ID}, status='in_progress')`
+At the very start: `TaskUpdate({TASK_ID}, status='in_progress', activeForm='Implementing: {TASK_NAME}')`
 
-For each major step in your work (write test, implement, verify), create a sub-task:
-`TaskCreate(subject='Step description', description='What this step does', activeForm='Doing X...')`
+For each major step in your work, create a sub-task with a concrete, descriptive subject:
+- Good: `TaskCreate(subject='Write failing test for auth middleware', activeForm='Writing auth test...')`
+- Good: `TaskCreate(subject='Implement JWT validation handler', activeForm='Implementing JWT handler...')`
+- Bad: `TaskCreate(subject='Step 1', activeForm='Working...')`
+
 Update sub-tasks to `in_progress` when starting and `completed` when done. This gives the user
 live visibility into your work.
 
@@ -80,6 +83,7 @@ Tests run in watch mode will hang the subagent indefinitely.
 Read `.planning/DESIGN.md` and apply `skills/frontend-design/` guidance.
 Add stable selectors for Playwright: `aria-label`, `id`, `role`, or `data-testid`
 on key interactive elements.
+If this task creates interactive UI (forms, navigation, auth flows) and the project has `playwright.config.*` but no E2E test is part of this task's scope, note in your report: 'This task creates interactive UI — consider adding E2E coverage in a follow-up task.'
 
 **Playwright** (if task files include `*.test.*`, `*.spec.*`, `playwright.config.*`, or `e2e/`):
 Read `skills/playwright-testing/` for Playwright-specific patterns. Follow its locator strategies,
