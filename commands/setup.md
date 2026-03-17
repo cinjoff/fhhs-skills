@@ -514,10 +514,11 @@ If installed, display:
     {
       "scripts": {
         "setup": "npm install && cp \"$CONDUCTOR_ROOT_PATH/.env.local\" .env.local 2>/dev/null; true",
-        "run": "npm run dev -- --port $CONDUCTOR_PORT"
+        "run": "npm run dev -- --port $CONDUCTOR_PORT",
+        "archive": "rm -rf \"$HOME/.claude/tasks/${CONDUCTOR_WORKSPACE_NAME}\" 2>/dev/null; true"
       },
       "env": {
-        "CLAUDE_CODE_TASK_LIST_ID": "$CONDUCTOR_WORKSPACE_NAME"
+        "CLAUDE_CODE_TASK_LIST_ID": "${CONDUCTOR_WORKSPACE_NAME}"
       }
     }
 ```

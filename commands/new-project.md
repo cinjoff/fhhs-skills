@@ -262,15 +262,18 @@ If installed, create `conductor.json` in the project root with scripts tailored 
 {
   "scripts": {
     "setup": "npm install && [ -f \"$CONDUCTOR_ROOT_PATH/.env.local\" ] && cp \"$CONDUCTOR_ROOT_PATH/.env.local\" .env.local || true",
-    "run": "npm run dev -- --port $CONDUCTOR_PORT"
+    "run": "npm run dev -- --port $CONDUCTOR_PORT",
+    "archive": "rm -rf \"$HOME/.claude/tasks/${CONDUCTOR_WORKSPACE_NAME}\" 2>/dev/null; true"
   },
   "env": {
-    "CLAUDE_CODE_TASK_LIST_ID": "$CONDUCTOR_WORKSPACE_NAME"
+    "CLAUDE_CODE_TASK_LIST_ID": "${CONDUCTOR_WORKSPACE_NAME}"
   }
 }
 ```
 
-> **Why `CLAUDE_CODE_TASK_LIST_ID`?** Each Conductor workspace gets its own task list so parallel workspaces don't pollute each other's task tracking. Using `$CONDUCTOR_WORKSPACE_NAME` gives each workspace a stable, human-readable ID. Agents within the same workspace share the task list — which is what we want for orchestrator + subagent visibility.
+> **Why `CLAUDE_CODE_TASK_LIST_ID`?** This env var tells Claude Code where to persist tasks (`~/.claude/tasks/{ID}/`). Each Conductor workspace gets its own task list so parallel workspaces don't pollute each other's tracking. Agents within the same workspace (orchestrator + subagents) share the list — which gives live visibility into sub-task progress.
+>
+> **Why `archive` cleans up?** Task lists persist at `~/.claude/tasks/{ID}/`. Without cleanup, old workspace task lists accumulate indefinitely. The archive script removes the directory when the workspace is torn down.
 
 > **Why `cp` instead of `ln -s`?** Conductor workspaces are git worktrees. Symlinks into `$CONDUCTOR_ROOT_PATH` can break when the root's working tree changes. Copying is safer — the setup script runs each time a workspace starts, so the copy stays fresh.
 
