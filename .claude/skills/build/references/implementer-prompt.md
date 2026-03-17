@@ -48,6 +48,8 @@ and more accurate than grep.
 
 Your parent task ID is `{TASK_ID}` and your task name is `{TASK_NAME}`.
 
+**If `{TASK_ID}` is empty, skip all TaskUpdate/TaskCreate calls in this section.**
+
 At the very start: `TaskUpdate({TASK_ID}, status='in_progress', activeForm='Implementing: {TASK_NAME}')`
 
 For each major step in your work, create a sub-task with a concrete, descriptive subject:

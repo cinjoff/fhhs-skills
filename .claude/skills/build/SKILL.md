@@ -45,6 +45,10 @@ Read only the plan frontmatter and task list — don't load all context files ye
 
 After finding the plan, set up native task tracking for visibility into build progress.
 
+### Graceful degradation
+
+Try creating the first task below. If TaskCreate fails or is unavailable, set `TASKS_AVAILABLE=false`, log "Task tracking unavailable, continuing with GSD tracking", and skip the rest of this step. All subsequent TaskUpdate calls throughout the build should be skipped when `TASKS_AVAILABLE=false`.
+
 ### Create tasks from plan
 
 Parse the plan's `<tasks>` block and create a native task for each plan task using TaskCreate:
@@ -67,10 +71,6 @@ Use `addBlockedBy` to express wave ordering:
 - Wave 2 tasks are blocked by all Wave 1 tasks
 - Spec gate for Wave N is blocked by all Wave N tasks
 - Wave N+1 tasks are blocked by Spec gate Wave N
-
-### Graceful degradation
-
-Try creating tasks. If TaskCreate fails or is unavailable, set `TASKS_AVAILABLE=false`, log "Task tracking unavailable, continuing with GSD tracking", and proceed. All subsequent TaskUpdate calls should be skipped when `TASKS_AVAILABLE=false`.
 
 Store the mapping of plan task index → native task ID for use in subsequent steps.
 
