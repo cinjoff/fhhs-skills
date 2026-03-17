@@ -18,7 +18,29 @@ You are a **lean orchestrator**. Your job is to coordinate, not to do heavy work
 
 ---
 
+## Step -1: Initialize Task Tracking
+
+Before beginning any planning work, create native tasks for all planning steps so progress is visible throughout the session.
+
+**Try creating tasks. If TaskCreate fails or is unavailable, set TASKS_AVAILABLE=false, log "Task tracking unavailable, continuing with GSD tracking", and proceed normally. All subsequent TaskUpdate calls should be skipped when TASKS_AVAILABLE=false.**
+
+If TaskCreate succeeds, create the following tasks in order and capture their IDs:
+
+1. **"Phase matching"** (activeForm: "Matching to phase")
+2. **"Research"** (activeForm: "Researching")
+3. **"Brainstorm design"** (activeForm: "Brainstorming")
+4. **"Discuss implementation"** (activeForm: "Discussing gray areas")
+5. **"Derive must_haves"** (activeForm: "Deriving must_haves")
+6. **"Create plan"** (activeForm: "Writing plan")
+7. **"Plan-check"** (activeForm: "Validating plan")
+
+Set up sequential dependencies: each task `addBlockedBy` the previous task's ID (task 2 blocked by task 1, task 3 blocked by task 2, etc.).
+
+---
+
 ## Step 0: Phase Matching
+
+> **Task tracking:** `TaskUpdate(phaseMatchingId, status="in_progress")` — skip if TASKS_AVAILABLE=false.
 
 Compare the user's `$ARGUMENTS` against existing phases in ROADMAP.md:
 
@@ -30,9 +52,13 @@ Compare the user's `$ARGUMENTS` against existing phases in ROADMAP.md:
 
 Once the target phase is determined, hold it — it determines the output path for PLAN.md in Step 3.
 
+> **Task tracking:** `TaskUpdate(phaseMatchingId, status="completed")` — skip if TASKS_AVAILABLE=false.
+
 ---
 
 ## Step 1: Research (if needed)
+
+> **Task tracking:** `TaskUpdate(researchId, status="in_progress")` — skip if TASKS_AVAILABLE=false.
 
 Check whether the user's request involves unfamiliar APIs, external services, library selection, or technical feasibility questions. If so, research before designing — it prevents brainstorming in a vacuum.
 
@@ -43,15 +69,19 @@ Spawn a Task agent with:
 - Instruction to use Firecrawl for web search and Context7 for library documentation
 - Instruction to write findings to `.planning/research/` with prescriptive recommendations, stack decisions, pitfalls, and code examples
 
-**If the feature uses well-known patterns**, skip this step and say so.
+**If the feature uses well-known patterns**, skip this step and say so. When skipping: `TaskUpdate(researchId, status="completed", metadata={skipped: true, reason: "Well-known patterns, no research needed"})` — skip if TASKS_AVAILABLE=false.
 
 If the user mentions wanting an isolated branch or worktree, set up a git worktree before continuing.
+
+> **Task tracking:** On completion: `TaskUpdate(researchId, status="completed")` — skip if TASKS_AVAILABLE=false.
 
 ---
 
 ## Step 2: Brainstorm
 
-**Skip if:** A phase-specific CONTEXT.md already exists AND a design doc for this topic already exists in `.planning/designs/`. The design was already approved — proceed to Step 3.
+> **Task tracking:** `TaskUpdate(brainstormId, status="in_progress")` — skip if TASKS_AVAILABLE=false.
+
+**Skip if:** A phase-specific CONTEXT.md already exists AND a design doc for this topic already exists in `.planning/designs/`. The design was already approved — proceed to Step 3. When skipping: `TaskUpdate(brainstormId, status="completed", metadata={skipped: true, reason: "Design already exists"})` — skip if TASKS_AVAILABLE=false.
 
 Invoke `skills/brainstorming/`. Follow it completely — it handles exploration, questions, design sections, and user approval.
 
@@ -63,15 +93,19 @@ Save approved design to `.planning/designs/YYYY-MM-DD-<topic>.md`.
 
 **Wait for user approval before continuing.**
 
+> **Task tracking:** `TaskUpdate(brainstormId, status="completed")` — skip if TASKS_AVAILABLE=false.
+
 ---
 
 ## Step 3: Discuss Implementation
 
-**Skip if:** A CONTEXT.md already exists for this phase (decisions already locked from a previous planning session).
+> **Task tracking:** `TaskUpdate(discussId, status="in_progress")` — skip if TASKS_AVAILABLE=false.
+
+**Skip if:** A CONTEXT.md already exists for this phase (decisions already locked from a previous planning session). When skipping: `TaskUpdate(discussId, status="completed", metadata={skipped: true, reason: "CONTEXT.md already locked"})` — skip if TASKS_AVAILABLE=false.
 
 Resolve implementation gray areas before planning:
 
-1. **Scout codebase** for reusable assets — existing components, utilities, patterns that could be leveraged. Use LSP `workspaceSymbol` to find relevant abstractions by name, and `findReferences` to see how existing patterns are used
+1. **Scout codebase** for reusable assets — existing components, utilities, patterns that could be leveraged. Use LSP `workspaceSymbol` to find relevant abstractions by name, and `findReferences` to see how existing patterns are used. Also check for `playwright.config.*` in the project root. If present, note it — frontend interactive features should consider E2E test tasks during planning.
 2. **Identify 3-4 gray areas** specific to this phase — layout choices, data flow decisions, error handling approaches, integration patterns
 3. **Ask user** which gray areas to discuss (don't discuss all — let user prioritize)
 4. **Deep-dive** selected areas — present options with trade-offs, get user decisions
@@ -97,9 +131,13 @@ Resolve implementation gray areas before planning:
 
 These locked decisions are fed to subagents during `/build` execution — they prevent re-deciding things downstream.
 
+> **Task tracking:** `TaskUpdate(discussId, status="completed")` — skip if TASKS_AVAILABLE=false.
+
 ---
 
 ## Step 4: Derive must_haves
+
+> **Task tracking:** `TaskUpdate(deriveMustHavesId, status="in_progress")` — skip if TASKS_AVAILABLE=false.
 
 From the approved design, extract the **must_haves** — these drive the plan and verify it when done.
 
@@ -127,9 +165,13 @@ Identify how artifacts connect to each other:
 
 Hold these must_haves — they feed directly into the PLAN.md frontmatter and the plan-check in Step 6.
 
+> **Task tracking:** `TaskUpdate(deriveMustHavesId, status="completed")` — skip if TASKS_AVAILABLE=false.
+
 ---
 
 ## Step 5: Create Plan
+
+> **Task tracking:** `TaskUpdate(createPlanId, status="in_progress")` — skip if TASKS_AVAILABLE=false.
 
 Write plans to `.planning/phases/XX-name/XX-NN-PLAN.md` using the target phase from Step 0.
 - Include full frontmatter (`phase`, `plan`, `requirements`)
@@ -202,9 +244,13 @@ requirements: []        # GSD only — requirement IDs from ROADMAP
 - Pick 1-2 relevant codebase docs per task (CONVENTIONS.md for style, STRUCTURE.md for file placement)
 - If GSD and CONTEXT.md exists: honor locked decisions, exclude deferred ideas
 
+> **Task tracking:** `TaskUpdate(createPlanId, status="completed")` — skip if TASKS_AVAILABLE=false.
+
 ---
 
 ## Step 6: Plan-check (inline verification loop)
+
+> **Task tracking:** `TaskUpdate(planCheckId, status="in_progress")` — skip if TASKS_AVAILABLE=false.
 
 Before presenting the plan to the user, run this verification checklist. If any check fails, revise and recheck (max 3 iterations, then ask the user for guidance).
 
@@ -225,10 +271,14 @@ These catch schema issues (missing frontmatter fields, malformed tasks) automati
 4. **Scope sanity**: 2-3 tasks, 5-8 files in `files_modified`, plan body under 1500 words.
 5. **must_haves trace**: every truth in `must_haves.truths` maps to at least one task's `<done>` criteria. Every artifact in `must_haves.artifacts` appears in `files_modified`.
 6. **Context compliance** (GSD only): plan does not contradict locked decisions in CONTEXT.md; plan does not include work deferred in CONTEXT.md.
+7. **TDD coverage WARN**: For each task in the plan that creates or modifies `.ts`, `.js`, `.tsx`, `.jsx` files (excluding config, types-only, constants-only files): if the task involves business logic, state management, or data transformation and does NOT have `tdd="true"`, emit a WARN: 'Task N ({name}) modifies business logic but lacks tdd=true. Confirm this is intentional or add tdd=true.' Present the list of flagged tasks and ask the user to confirm or fix. This is advisory — do not block plan creation.
+8. **Playwright E2E WARN** (frontend only): If any task creates interactive UI (forms, auth flows, navigation, CRUD operations) and the project has `playwright.config.*`: check whether any task in the plan includes E2E test files (`e2e/*.spec.*` or `*.spec.*`). If no E2E test task exists, emit a WARN: 'Frontend interactive features planned but no E2E test task found. Add a Playwright test task, or confirm E2E coverage is not needed.' If the user wants a test task, create one referencing `skills/playwright-testing/`. This is advisory — do not block plan creation.
 
 If a check fails, state which check failed, revise the plan, and recheck. After 3 failed iterations, present what you have and ask the user to resolve the issue.
 
 **Present the plan to the user. Wait for approval.**
+
+> **Task tracking:** `TaskUpdate(planCheckId, status="completed")` — skip if TASKS_AVAILABLE=false.
 
 ---
 
@@ -236,10 +286,11 @@ If a check fails, state which check failed, revise the plan, and recheck. After 
 
 After plan approval:
 
-1. **`/build`** — Execute now. Fresh subagent per task, clean context, design gates auto-detected.
-2. **Continue planning** — Plan more phases before building. Useful for planning ahead across multiple phases before executing any.
+1. **`/fh:plan-review`** (recommended) — Challenge the plan before building. Catches failure modes, edge cases, and architectural issues. Three modes: SCOPE EXPANSION (dream big), HOLD SCOPE (maximum rigor), SCOPE REDUCTION (strip to essentials). Plan-review produces comprehensive error maps, security analysis, and edge case coverage that strengthen the plan before execution.
+2. **`/fh:build`** — Execute now. Skip review if the plan is straightforward or already reviewed.
+3. **Continue planning** — Plan more phases before building or reviewing.
 
-Default to option 1 unless the user indicates they want to keep planning.
+Default to option 1 unless the plan is trivially simple (1 task, well-known patterns).
 
 ---
 

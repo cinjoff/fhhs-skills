@@ -84,6 +84,27 @@ If not found: no output needed (don't report "no security issues" — it clutter
 - Logic errors in conditionals or data flow
 - Type mismatches that would fail at runtime
 
+## TDD Discipline Check (WARN only)
+
+For tasks marked `tdd="true"` in the task specs, check the git log for this wave:
+
+```bash
+git log --oneline {WAVE_START_SHA}..HEAD
+```
+
+Look at commit ordering for each TDD task:
+- Expected: `test(...)` commit appears BEFORE `feat(...)` commit (RED before GREEN)
+- Violation: `feat(...)` commit appears with no preceding `test(...)` commit
+
+If a violation is found, add a WARN (not BLOCKING) to the output:
+```
+WARN: TDD discipline — Task {name} has feat commit before test commit.
+      Expected RED-GREEN-REFACTOR order: test(...) → feat(...) → refactor(...)
+      This suggests implementation may have preceded the failing test.
+```
+
+This is advisory only. Do not add it to the BLOCKING issues count. Include it in a separate "Warnings" section of the output.
+
 ## Output Format
 
 ### If all tasks match spec:
@@ -112,6 +133,15 @@ Task {A}: {task name}
 
 Task {B}: ...
 ```
+
+### If warnings found (non-blocking):
+
+```
+Warnings:
+  WARN: {description}
+```
+
+Warnings appear after the PASS or BLOCKING verdict. They do not change the verdict.
 
 ## Scope Rules
 

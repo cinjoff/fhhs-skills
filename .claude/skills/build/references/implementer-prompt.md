@@ -44,6 +44,30 @@ documented assumptions, or return BLOCKED.
 usage before modifying, `hover` for type info, `documentSymbol` to scan file structure. Faster
 and more accurate than grep.
 
+## Task Progress Tracking
+
+Your parent task ID is `{TASK_ID}` and your task name is `{TASK_NAME}`.
+
+**If `{TASK_ID}` is empty, skip all TaskUpdate/TaskCreate calls in this section.**
+
+At the very start: `TaskUpdate({TASK_ID}, status='in_progress', activeForm='Implementing: {TASK_NAME}')`
+
+For each major step in your work, create a sub-task with a concrete, descriptive subject:
+- Good: `TaskCreate(subject='Write failing test for auth middleware', activeForm='Writing auth test...')`
+- Good: `TaskCreate(subject='Implement JWT validation handler', activeForm='Implementing JWT handler...')`
+- Bad: `TaskCreate(subject='Step 1', activeForm='Working...')`
+
+Update sub-tasks to `in_progress` when starting and `completed` when done. This gives the user
+live visibility into your work.
+
+When all work is done: mark all sub-tasks completed, then `TaskUpdate({TASK_ID}, status='completed')`
+
+If BLOCKED: keep {TASK_ID} as in_progress. Your orchestrator will handle status. Just report
+BLOCKED as you already do in the Report Format section.
+
+If TaskCreate/TaskUpdate fails or is unavailable, continue your work normally. Task tracking is
+optional — your implementation and report are what matter.
+
 ## Implementation Rules
 
 **TDD** (if task has `tdd="true"`):
@@ -61,6 +85,7 @@ Tests run in watch mode will hang the subagent indefinitely.
 Read `.planning/DESIGN.md` and apply `skills/frontend-design/` guidance.
 Add stable selectors for Playwright: `aria-label`, `id`, `role`, or `data-testid`
 on key interactive elements.
+If this task creates interactive UI (forms, navigation, auth flows) and the project has `playwright.config.*` but no E2E test is part of this task's scope, note in your report: 'This task creates interactive UI — consider adding E2E coverage in a follow-up task.'
 
 **Playwright** (if task files include `*.test.*`, `*.spec.*`, `playwright.config.*`, or `e2e/`):
 Read `skills/playwright-testing/` for Playwright-specific patterns. Follow its locator strategies,

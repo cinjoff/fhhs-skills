@@ -255,18 +255,22 @@ If not present, use the **Edit tool** to merge into settings.json:
 ```json
 {
   "env": {
-    "CLAUDE_CODE_ENABLE_LSP": "1"
+    "CLAUDE_CODE_ENABLE_LSP": "1",
+    "CLAUDE_CODE_ENABLE_TASKS": "true"
   }
 }
 ```
 
 Merge carefully — do NOT overwrite other `env` keys that may already exist.
 
+> **Why `CLAUDE_CODE_ENABLE_TASKS`?** Enables native task tracking used by `/fh:plan-work` and `/fh:build` for live progress visibility. Task list IDs are configured per-workspace via Conductor's `conductor.json` env block, or via `CLAUDE_CODE_TASK_LIST_ID` env var for non-Conductor setups.
+
 After writing:
 
 ```
 ✓ CLAUDE_CODE_ENABLE_LSP=1 set in ~/.claude/settings.json
-  → Restart Claude Code for LSP to activate
+✓ CLAUDE_CODE_ENABLE_TASKS=true set in ~/.claude/settings.json
+  → Restart Claude Code for changes to activate
 ```
 
 If already present and set to `"1"`:
@@ -501,12 +505,20 @@ If installed, display:
   │ $CONDUCTOR_DEFAULT_BRANCH  │ Default branch (usually main)    │
   └────────────────────────────┴──────────────────────────────────┘
 
+  Task tracking: Each workspace gets its own task list via
+  CLAUDE_CODE_TASK_LIST_ID in conductor.json env block.
+  /fh:new-project configures this automatically.
+
   If you have an existing project, create conductor.json manually:
 
     {
       "scripts": {
         "setup": "npm install && cp \"$CONDUCTOR_ROOT_PATH/.env.local\" .env.local 2>/dev/null; true",
-        "run": "npm run dev -- --port $CONDUCTOR_PORT"
+        "run": "npm run dev -- --port $CONDUCTOR_PORT",
+        "archive": "rm -rf \"$HOME/.claude/tasks/${CONDUCTOR_WORKSPACE_NAME}\" 2>/dev/null; true"
+      },
+      "env": {
+        "CLAUDE_CODE_TASK_LIST_ID": "${CONDUCTOR_WORKSPACE_NAME}"
       }
     }
 ```
