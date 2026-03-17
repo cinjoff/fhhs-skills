@@ -332,5 +332,5 @@ Project initialized:
 - vercel.json               — framework preset configured
 - Vercel project            — linked (auto-deploys on push to main, if GitHub App installed)
 
-Next: run /fh:plan to plan your first phase (scaffolding and core setup).
+Next: run /plan-work to plan your first phase (scaffolding and core setup).
 ```

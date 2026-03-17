@@ -5,6 +5,25 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.0] - 2026-03-17
+
+### Added
+- **Native task tracking in `/plan-work`** — creates tasks for all 7 planning steps upfront with live status updates as each step starts, completes, or is skipped
+- **Native task tracking in `/build`** — creates tasks from plan's `<tasks>` block with wave dependencies; subagents create sub-tasks for granular live progress via `{TASK_ID}` threading
+- **TDD coverage validation** — `/plan-work` WARNs when <30% of tasks mention tests, prompting test coverage before execution
+- **Playwright E2E advisory** — `/plan-work` WARNs for frontend projects without E2E test coverage in the plan
+- **TDD commit-order check** — spec gate WARNs when implementation commits precede test commits (TDD discipline)
+- **Workspace-scoped task lists** — `CLAUDE_CODE_TASK_LIST_ID` in `conductor.json` isolates task tracking per Conductor workspace; archive script cleans up
+- **Plan-review handoff** — `/plan-work` now suggests `/plan-review` at completion for plan challenge before build
+- **Sub-task visibility** — build subagents create their own sub-tasks (write test → implement → verify) visible in the parent task list
+- **Graceful task degradation** — if TaskCreate/TaskUpdate are unavailable, both workflows fall back to GSD-only tracking with a warning
+- **17 new evals** — coverage for task tracking, plan-review handoff, TDD enforcement, and Playwright prompting
+
+### Changed
+- **Task messaging** — all task updates include descriptive `activeForm` text (e.g., "Implementing auth middleware" not "Task 1 started")
+- **Implementer prompt** — adds Task Progress Tracking section with sub-task creation instructions and {TASK_ID} placeholder
+- **Spec gate prompt** — adds TDD commit-order verification as a WARN-level check
+
 ## [1.14.1] - 2026-03-16
 
 ### Changed

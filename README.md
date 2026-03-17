@@ -43,6 +43,25 @@ When you come back to an existing project:
 /progress       see where you are and what's next
 ```
 
+## Native Task Tracking
+
+Plan-work and build integrate with Claude Code's native task list for live progress visibility:
+
+```
+/plan-work creates tasks:          /build creates tasks from plan:
+  [~] Phase matching                 [~] Task 1: Add auth middleware
+  [ ] Research                          ├─ [~] Write failing test
+  [ ] Brainstorm                        ├─ [ ] Implement handler
+  [ ] Discuss implementation            ├─ [ ] Run verification
+  [ ] Derive must_haves              [ ] Task 2: Write tests
+  [ ] Create plan                    [ ] Spec gate Wave 1
+  [ ] Plan-check                     [ ] Simplify + review
+```
+
+Subagents create their own sub-tasks for granular progress. If task tools are unavailable, workflows degrade gracefully to GSD-only tracking.
+
+**Conductor users:** Each workspace gets its own task list via `CLAUDE_CODE_TASK_LIST_ID` in `conductor.json`, so parallel workspaces don't pollute each other's tracking.
+
 ## Typical Workflows
 
 **Building a feature:**
@@ -194,9 +213,10 @@ Executes plans through waves of parallel subagents with quality gates between th
  PLAN.md (from /plan-work)
       |
       v
-+- PARSE -------------------------------------------------------+
++- PARSE + TASK INIT -------------------------------------------+
 |  Read plan frontmatter                                         |
 |  Extract waves, dependencies, must-haves                       |
+|  Create native tasks from plan (TaskCreate per task + deps)    |
 +----------------------------+----------------------------------+
                              |
       +----------------------+---------------------+
@@ -207,7 +227,8 @@ Executes plans through waves of parallel subagents with quality gates between th
 |  Task B   |    |   Task D     |    |              |
 +-----+-----+    +------+-------+    +------+-------+
       |                  |                   |
-      |  Each task = fresh subagent with LSP
+      |  Each task = fresh subagent with LSP + task ID
+      |  Subagents create sub-tasks for live progress
       |
       |  Conditional skills per task:
       |  +---------------------------------------------+
@@ -220,6 +241,7 @@ Executes plans through waves of parallel subagents with quality gates between th
       v
 +- SPEC GATE ---------------------------------------------------+
 |  Code review: missing reqs, stubs, unwired code, TS strict    |
+|  TDD commit-order check: test commits before implementation   |
 |  Result: PASS → next wave  |  BLOCKING → fixes required       |
 +----------------------------+----------------------------------+
                              |
@@ -383,10 +405,17 @@ Shared terminal step for `/build`, `/fix`, and `/refactor`.
 
 ## `/plan-work` — Research, Design, Plan
 
+Native task tracking shows progress through each step in real-time.
+
 ```
  USER REQUEST + ROADMAP.md
       |
       v
++- TASK INIT ---------------------------------------------------+
+|  Create native tasks for all planning steps (TaskCreate × 7)  |
+|  Steps may be skipped (marked completed with skipped metadata) |
++----------------------------+----------------------------------+
+                             |
 +- PHASE MATCH -------------------------------------------------+
 |  Map request to roadmap phase                                  |
 +----------------------------+----------------------------------+
@@ -420,7 +449,17 @@ Shared terminal step for `/build`, `/fix`, and `/refactor`.
 |  - Artifacts (files + content markers)                         |
 |  - Key links (how artifacts connect)                           |
 |                                                                |
+|  TDD coverage validation: WARN if <30% tasks mention tests    |
+|  Playwright E2E advisory: WARN if frontend project lacks E2E  |
+|                                                                |
 |  Output: PLAN.md with waves, dependencies, must-haves          |
+|                                                                |
++----------------------------+----------------------------------+
+                             |
++- PLAN-CHECK + HANDOFF ----+----------------------------------+
+|                                                                |
+|  Verify plan structure, task spec quality                      |
+|  Suggest: "Run /plan-review to challenge this plan"            |
 |                                                                |
 +----------------------------+----------------------------------+
                              |
