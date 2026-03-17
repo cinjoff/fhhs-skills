@@ -263,9 +263,14 @@ If installed, create `conductor.json` in the project root with scripts tailored 
   "scripts": {
     "setup": "npm install && [ -f \"$CONDUCTOR_ROOT_PATH/.env.local\" ] && cp \"$CONDUCTOR_ROOT_PATH/.env.local\" .env.local || true",
     "run": "npm run dev -- --port $CONDUCTOR_PORT"
+  },
+  "env": {
+    "CLAUDE_CODE_TASK_LIST_ID": "$CONDUCTOR_WORKSPACE_NAME"
   }
 }
 ```
+
+> **Why `CLAUDE_CODE_TASK_LIST_ID`?** Each Conductor workspace gets its own task list so parallel workspaces don't pollute each other's task tracking. Using `$CONDUCTOR_WORKSPACE_NAME` gives each workspace a stable, human-readable ID. Agents within the same workspace share the task list — which is what we want for orchestrator + subagent visibility.
 
 > **Why `cp` instead of `ln -s`?** Conductor workspaces are git worktrees. Symlinks into `$CONDUCTOR_ROOT_PATH` can break when the root's working tree changes. Copying is safer — the setup script runs each time a workspace starts, so the copy stays fresh.
 
