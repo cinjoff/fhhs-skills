@@ -105,7 +105,7 @@ Save approved design to `.planning/designs/YYYY-MM-DD-<topic>.md`.
 
 Resolve implementation gray areas before planning:
 
-1. **Scout codebase** for reusable assets — existing components, utilities, patterns that could be leveraged. Use LSP `workspaceSymbol` to find relevant abstractions by name, and `findReferences` to see how existing patterns are used
+1. **Scout codebase** for reusable assets — existing components, utilities, patterns that could be leveraged. Use LSP `workspaceSymbol` to find relevant abstractions by name, and `findReferences` to see how existing patterns are used. Also check for `playwright.config.*` in the project root. If present, note it — frontend interactive features should consider E2E test tasks during planning.
 2. **Identify 3-4 gray areas** specific to this phase — layout choices, data flow decisions, error handling approaches, integration patterns
 3. **Ask user** which gray areas to discuss (don't discuss all — let user prioritize)
 4. **Deep-dive** selected areas — present options with trade-offs, get user decisions
@@ -271,6 +271,8 @@ These catch schema issues (missing frontmatter fields, malformed tasks) automati
 4. **Scope sanity**: 2-3 tasks, 5-8 files in `files_modified`, plan body under 1500 words.
 5. **must_haves trace**: every truth in `must_haves.truths` maps to at least one task's `<done>` criteria. Every artifact in `must_haves.artifacts` appears in `files_modified`.
 6. **Context compliance** (GSD only): plan does not contradict locked decisions in CONTEXT.md; plan does not include work deferred in CONTEXT.md.
+7. **TDD coverage WARN**: For each task in the plan that creates or modifies `.ts`, `.js`, `.tsx`, `.jsx` files (excluding config, types-only, constants-only files): if the task involves business logic, state management, or data transformation and does NOT have `tdd="true"`, emit a WARN: 'Task N ({name}) modifies business logic but lacks tdd=true. Confirm this is intentional or add tdd=true.' Present the list of flagged tasks and ask the user to confirm or fix. This is advisory — do not block plan creation.
+8. **Playwright E2E WARN** (frontend only): If any task creates interactive UI (forms, auth flows, navigation, CRUD operations) and the project has `playwright.config.*`: check whether any task in the plan includes E2E test files (`e2e/*.spec.*` or `*.spec.*`). If no E2E test task exists, emit a WARN: 'Frontend interactive features planned but no E2E test task found. Add a Playwright test task, or confirm E2E coverage is not needed.' If the user wants a test task, create one referencing `skills/playwright-testing/`. This is advisory — do not block plan creation.
 
 If a check fails, state which check failed, revise the plan, and recheck. After 3 failed iterations, present what you have and ask the user to resolve the issue.
 
