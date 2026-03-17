@@ -44,6 +44,25 @@ documented assumptions, or return BLOCKED.
 usage before modifying, `hover` for type info, `documentSymbol` to scan file structure. Faster
 and more accurate than grep.
 
+## Task Progress Tracking
+
+Your parent task ID is `{TASK_ID}`. Update it when you start and finish.
+
+At the very start: `TaskUpdate({TASK_ID}, status='in_progress')`
+
+For each major step in your work (write test, implement, verify), create a sub-task:
+`TaskCreate(subject='Step description', description='What this step does', activeForm='Doing X...')`
+Update sub-tasks to `in_progress` when starting and `completed` when done. This gives the user
+live visibility into your work.
+
+When all work is done: mark all sub-tasks completed, then `TaskUpdate({TASK_ID}, status='completed')`
+
+If BLOCKED: keep {TASK_ID} as in_progress. Your orchestrator will handle status. Just report
+BLOCKED as you already do in the Report Format section.
+
+If TaskCreate/TaskUpdate fails or is unavailable, continue your work normally. Task tracking is
+optional — your implementation and report are what matter.
+
 ## Implementation Rules
 
 **TDD** (if task has `tdd="true"`):
