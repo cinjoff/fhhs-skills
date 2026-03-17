@@ -41,6 +41,41 @@ Read only the plan frontmatter and task list — don't load all context files ye
 
 ---
 
+## Step 1b: Initialize Task Tracking
+
+After finding the plan, set up native task tracking for visibility into build progress.
+
+### Create tasks from plan
+
+Parse the plan's `<tasks>` block and create a native task for each plan task using TaskCreate:
+- **subject:** task name from `<name>`
+- **description:** task's `<done>` criteria
+- **metadata:** `{wave: N, phase: "XX-name", plan: NN, taskIndex: N}`
+- **activeForm:** derived from task name (e.g., "Implementing auth middleware")
+
+### Create pipeline stage tasks
+
+Also create tasks for pipeline stages that run after wave execution:
+- "Spec gate Wave N" — one per wave
+- "Design gates" (if applicable based on visual change expectations)
+- "Self-check + SUMMARY"
+- "GSD state updates"
+
+### Set up wave dependencies
+
+Use `addBlockedBy` to express wave ordering:
+- Wave 2 tasks are blocked by all Wave 1 tasks
+- Spec gate for Wave N is blocked by all Wave N tasks
+- Wave N+1 tasks are blocked by Spec gate Wave N
+
+### Graceful degradation
+
+Try creating tasks. If TaskCreate fails or is unavailable, set `TASKS_AVAILABLE=false`, log "Task tracking unavailable, continuing with GSD tracking", and proceed. All subsequent TaskUpdate calls should be skipped when `TASKS_AVAILABLE=false`.
+
+Store the mapping of plan task index → native task ID for use in subsequent steps.
+
+---
+
 ## Step 2: Analyze Waves
 
 Group tasks by their `wave` number (or dependency order if no waves specified):
@@ -72,6 +107,7 @@ Use the structured template at `references/implementer-prompt.md`. Fill its plac
 - `{DESIGN_MD_CONTENT}` — For frontend tasks only: include `.planning/DESIGN.md` content (small, ~30 lines).
 - `{PHASE_DIR}` — Path to `.planning/phases/{phase}/` for deferred items logging.
 - `{TASK_NAME}` — Task identifier for deferred items format.
+- `{TASK_ID}` — The native task ID for this task (from Step 1b). Subagents can use this ID for sub-task tracking via TaskCreate/TaskUpdate. Pass empty string if `TASKS_AVAILABLE=false`.
 
 The template includes all behavioral directives (TDD, frontend, commits, YAGNI), deviation rules 1-4, guardrails (analysis paralysis, scope boundary, deferred items), self-review checklist, and structured report format.
 
@@ -102,6 +138,14 @@ This replaces per-subagent skill directory scanning. Each subagent sees the full
 ### Checkpoint protocol
 
 If a task has `type="checkpoint:*"`, read `references/checkpoint-protocol.md` (co-located with this skill) for the full protocol. It covers checkpoint types (human-verify, decision, human-action), return format, auto-mode behavior, standard mode continuation, and authentication gate handling.
+
+### Task status updates (if TASKS_AVAILABLE)
+
+**Before dispatching** each subagent: `TaskUpdate(taskId, status: "in_progress", activeForm: "Implementing {task name}")`.
+
+**After subagent returns successfully:** `TaskUpdate(taskId, status: "completed")`.
+
+**If subagent reports BLOCKED:** `TaskUpdate(taskId, status: "in_progress", metadata: {blocked: true, blocker: "reason"})`. Then propagate: for all tasks in subsequent waves that depend on this task (via the wave dependency chain from Step 1b), call `TaskUpdate(dependentTaskId, addBlockedBy: [taskId])`.
 
 **For independent tasks in the same wave:** dispatch subagents in parallel.
 **For sequential waves:** wait for all tasks in current wave before starting next.
@@ -149,6 +193,8 @@ This catches spec deviations before dependent waves build on wrong foundations. 
 
 ### Dispatch spec reviewer
 
+If `TASKS_AVAILABLE`, update the spec gate task: `TaskUpdate(specGateTaskId, status: "in_progress", activeForm: "Running spec gate Wave N")`.
+
 Use the template at `references/spec-gate-prompt.md` with **`subagent_type: "code-reviewer"`** (specialized agent). Fill placeholders:
 
 - `{WAVE_NUMBER}` — Current wave number
@@ -174,7 +220,7 @@ These rules are also in the implementer-prompt template so subagents should catc
 
 ### Handle results
 
-**PASS:** Update `WAVE_START_SHA=$WAVE_END_SHA`. Continue to next wave.
+**PASS:** Update `WAVE_START_SHA=$WAVE_END_SHA`. If `TASKS_AVAILABLE`, update the spec gate task: `TaskUpdate(specGateTaskId, status: "completed")`. Continue to next wave.
 
 **BLOCKING:** For each blocking issue:
 1. Dispatch a fix agent (`general-purpose`) with: the spec reviewer's finding + original task spec + current code
@@ -210,6 +256,8 @@ Calculate visual change ratio:
 **Trigger design gates when:** visual ratio > 40% AND visual file count >= 3
 **Skip when:** ratio is low (backend-heavy build) or only 1-2 visual files touched (minor tweaks)
 
+If `TASKS_AVAILABLE` and a "Design gates" task was created, update it: `TaskUpdate(designGateTaskId, status: "in_progress", activeForm: "Running design gates")` when triggered, or `TaskUpdate(designGateTaskId, status: "completed", metadata: {skipped: true})` when skipped.
+
 When triggered, run the design pipeline (critique → polish → normalize) below.
 When skipped, note: "Design gates skipped (N/M files visual). Run /critique or /polish manually if needed."
 
@@ -232,6 +280,8 @@ Dispatch subagent to invoke `/normalize` against the design system.
 Commit: `style({phase}-{plan}): normalize to design system`
 Skip if no design system defined.
 
+After all design gate sub-steps complete, if `TASKS_AVAILABLE`: `TaskUpdate(designGateTaskId, status: "completed")`.
+
 ### Consider Harden and Animate (optional)
 Suggest (don't auto-run) based on the work:
 - `/harden` — if forms, user input, error states, or i18n concerns
@@ -247,6 +297,8 @@ Uses design quality commands (`/critique`, `/polish`, `/normalize`) and `skills/
 ---
 
 ## Step 5: Self-Check + Generate SUMMARY.md
+
+If `TASKS_AVAILABLE`, update the "Self-check + SUMMARY" pipeline task: `TaskUpdate(selfCheckTaskId, status: "in_progress", activeForm: "Running self-check and generating SUMMARY")`.
 
 ### Self-check
 
@@ -270,13 +322,19 @@ Read `references/summary-template.md` (co-located with this skill) for the full 
 
 **Commit:** `docs({phase}-{plan}): complete {description}`
 
+If `TASKS_AVAILABLE`: `TaskUpdate(selfCheckTaskId, status: "completed")`.
+
 ---
 
 ## Step 6: GSD State Updates
 
 **Skip this step if not in GSD mode.**
 
+If `TASKS_AVAILABLE`, update the "GSD state updates" pipeline task: `TaskUpdate(gsdStateTaskId, status: "in_progress", activeForm: "Updating GSD state")`.
+
 After SUMMARY.md is committed, read `references/gsd-state-updates.md` (co-located with this skill) and run all state update commands. This covers: advance-plan, update-progress, record-metric, add-decision, record-session, and roadmap update.
+
+If `TASKS_AVAILABLE`: `TaskUpdate(gsdStateTaskId, status: "completed")`. If GSD mode was skipped: `TaskUpdate(gsdStateTaskId, status: "completed", metadata: {skipped: true})`.
 
 ---
 
