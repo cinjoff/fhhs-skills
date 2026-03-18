@@ -131,11 +131,23 @@ AskUserQuestion:
 
 **If "Yes, update now":**
 
+Run these two commands in order. Both are required.
+
+**Step 4a — Refresh the marketplace index** so Claude Code sees the latest version:
+
+```bash
+claude marketplace update
+```
+
+> **IMPORTANT:** The correct command is `claude marketplace update`. There is NO `claude marketplace refresh` command — that does not exist and will fail.
+
+**Step 4b — Update the plugin:**
+
 ```bash
 claude plugin update fh@fhhs-skills
 ```
 
-Clear the update indicator from the statusline:
+**Step 4c — Clear the update indicator** from the statusline:
 
 ```bash
 rm -f "$HOME/.claude/cache/fhhs-update-check.json"
