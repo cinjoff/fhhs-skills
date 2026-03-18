@@ -458,7 +458,121 @@ After writing settings.json:
 
 ---
 
-## Step 6: Conductor Configuration
+## Step 6: claude-mem (Persistent Memory)
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ FHHS ► PERSISTENT MEMORY (claude-mem)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+[claude-mem](https://github.com/thedotmack/claude-mem) automatically captures session context (tool usage, decisions, file changes) and reinjects relevant history into future sessions. It complements the curated MEMORY.md with zero-effort session-to-session continuity.
+
+### 6a: Check if claude-mem is already installed
+
+```bash
+node -e "
+  var fs = require('fs'), path = require('path');
+  var p = path.join(require('os').homedir(), '.claude/plugins/installed_plugins.json');
+  try {
+    var data = JSON.parse(fs.readFileSync(p, 'utf8'));
+    var plugins = data.plugins || {};
+    console.log(plugins['claude-mem@thedotmack'] || plugins['claude-mem'] ? 'INSTALLED' : 'NOT_INSTALLED');
+  } catch(e) { console.log('NOT_INSTALLED'); }
+"
+```
+
+If `INSTALLED`:
+
+```
+✓ claude-mem already installed
+```
+
+Skip to Step 6c.
+
+### 6b: Install claude-mem
+
+```
+◆ Installing claude-mem plugin...
+```
+
+```bash
+claude plugin marketplace add thedotmack/claude-mem
+```
+
+```bash
+claude plugin install claude-mem
+```
+
+If `claude plugin` fails (e.g. running inside Conductor or a non-interactive environment), tell the user:
+
+```
+╔══════════════════════════════════════════════════════════════╗
+║  CHECKPOINT: Action Required                                 ║
+╚══════════════════════════════════════════════════════════════╝
+
+Plugin install commands are not available in this environment.
+Open a separate terminal and run:
+
+  claude plugin marketplace add thedotmack/claude-mem
+  claude plugin install claude-mem
+
+Then restart Claude Code for hooks to activate.
+
+──────────────────────────────────────────────────────────────
+→ Run the commands above in your terminal, then type "done"
+──────────────────────────────────────────────────────────────
+```
+
+On success:
+
+```
+✓ claude-mem installed
+  → Restart Claude Code for hooks to activate
+```
+
+### 6c: Recommend lean configuration
+
+claude-mem's defaults inject 50 observations from 10 sessions at startup. When running alongside fhhs-skills (which also consumes context for skills, hooks, and GSD state), these defaults can eat too much of the context window.
+
+Display the recommended settings:
+
+```
+◆ Recommended claude-mem settings for fhhs-skills users
+
+  Open the claude-mem dashboard at http://localhost:37777
+  and adjust these settings (or edit ~/.claude-mem/settings.json):
+
+  ┌─────────────────────────────────────┬─────────┬─────────────┐
+  │ Setting                             │ Default │ Recommended │
+  ├─────────────────────────────────────┼─────────┼─────────────┤
+  │ CONTEXT_OBSERVATIONS                │ 50      │ 25          │
+  │ CONTEXT_SESSION_COUNT               │ 10      │ 5           │
+  │ CONTEXT_FULL_COUNT                  │ 5       │ 2           │
+  │ CONTEXT_FULL_FIELD                  │ —       │ facts       │
+  │ FOLDER_CLAUDEMD_ENABLED             │ true    │ false       │
+  │ CONTEXT_SHOW_LAST_SUMMARY           │ true    │ false       │
+  │ CONTEXT_SHOW_LAST_MESSAGE           │ true    │ false       │
+  └─────────────────────────────────────┴─────────┴─────────────┘
+
+  Why: fhhs-skills already uses context for GSD state, skill
+  loading, and subagent prompts. Lower observation counts prevent
+  token competition. "facts" mode is more concise than "narrative".
+  Disable auto-CLAUDE.md generation — fhhs-skills manages its own.
+
+  These are suggestions — adjust based on your experience.
+  The dashboard at localhost:37777 shows token usage in real time.
+```
+
+After displaying:
+
+```
+✓ claude-mem configuration guidance provided
+```
+
+---
+
+## Step 7: Conductor Configuration
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -468,7 +582,7 @@ After writing settings.json:
 
 [Conductor](https://conductor.build) lets you run multiple Claude Code agents in parallel workspaces. Each workspace gets a copy of your git files plus isolated setup/run scripts. This step checks whether Conductor is installed and reminds the user to configure it per-project.
 
-### 6a: Detect Conductor
+### 7a: Detect Conductor
 
 ```bash
 # Check if the Conductor app exists
@@ -483,9 +597,9 @@ If `NOT_INSTALLED`:
   Download from https://conductor.build if interested.
 ```
 
-Skip to Step 7.
+Skip to Step 8.
 
-### 6b: Conductor awareness
+### 7b: Conductor awareness
 
 If installed, display:
 
@@ -531,7 +645,7 @@ If installed, display:
 
 ---
 
-## Step 7: Summary
+## Step 8: Summary
 
 Display the summary banner as **direct text output** (not via Bash — Bash output gets collapsed by Claude Code and users won't see it). Output this exactly:
 
@@ -570,6 +684,7 @@ Then present the status table and next steps as regular markdown text:
 | LSP Enabled (env)          | ✓ CLAUDE_CODE_ENABLE_LSP=1 |
 | CLI Tools                  | ✓ linked                 |
 | Hooks                      | ✓ statusline + update check + context monitor |
+| claude-mem                 | ✓ installed / ○ skipped (optional)       |
 | Conductor                  | ✓ detected / ○ not installed (optional) |
 
 ───────────────────────────────────────────────────────────────
