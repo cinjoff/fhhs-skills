@@ -261,17 +261,19 @@ If installed, create `conductor.json` in the project root with scripts tailored 
 ```json
 {
   "scripts": {
-    "setup": "npm install && [ -f \"$CONDUCTOR_ROOT_PATH/.env.local\" ] && cp \"$CONDUCTOR_ROOT_PATH/.env.local\" .env.local || true",
+    "setup": "npm install && [ -f \"$CONDUCTOR_ROOT_PATH/.env.local\" ] && cp \"$CONDUCTOR_ROOT_PATH/.env.local\" .env.local || true; node -e \"var fs=require('fs'),f='.claude/settings.json',s={};try{s=JSON.parse(fs.readFileSync(f,'utf8'))}catch{}s.env=Object.assign(s.env||{},{CLAUDE_CODE_TASK_LIST_ID:process.env.CONDUCTOR_WORKSPACE_NAME||'default'});fs.writeFileSync(f,JSON.stringify(s,null,2)+'\\n')\"",
     "run": "npm run dev -- --port $CONDUCTOR_PORT",
     "archive": "rm -rf \"$HOME/.claude/tasks/${CONDUCTOR_WORKSPACE_NAME}\" 2>/dev/null; true"
   },
   "env": {
-    "CLAUDE_CODE_TASK_LIST_ID": "${CONDUCTOR_WORKSPACE_NAME}"
+    "CLAUDE_CODE_ENABLE_TASKS": "true"
   }
 }
 ```
 
-> **Why `CLAUDE_CODE_TASK_LIST_ID`?** This env var tells Claude Code where to persist tasks (`~/.claude/tasks/{ID}/`). Each Conductor workspace gets its own task list so parallel workspaces don't pollute each other's tracking. Agents within the same workspace (orchestrator + subagents) share the list — which gives live visibility into sub-task progress.
+> **Why `CLAUDE_CODE_TASK_LIST_ID` in the setup script?** Conductor's `env` block does not interpolate shell variables like `${CONDUCTOR_WORKSPACE_NAME}` — it passes them as literal strings. The setup script runs in a shell where `$CONDUCTOR_WORKSPACE_NAME` resolves correctly, and writes the value into `.claude/settings.json` so Claude Code picks it up. Each workspace gets its own task list so parallel workspaces don't pollute each other's tracking.
+>
+> **Why `CLAUDE_CODE_ENABLE_TASKS` in env?** This is a static value (no interpolation needed), so the `env` block works fine. It enables native task tracking used by `/fh:plan-work` and `/fh:build`.
 >
 > **Why `archive` cleans up?** Task lists persist at `~/.claude/tasks/{ID}/`. Without cleanup, old workspace task lists accumulate indefinitely. The archive script removes the directory when the workspace is torn down.
 
