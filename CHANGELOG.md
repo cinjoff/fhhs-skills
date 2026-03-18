@@ -5,6 +5,11 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.3] - 2026-03-18
+
+### Fixed
+- **/fh:update** — adds explicit `claude marketplace update` step before plugin update, preventing agents from using non-existent `claude marketplace refresh` command
+
 ## [1.15.2] - 2026-03-18
 
 ### Fixed
