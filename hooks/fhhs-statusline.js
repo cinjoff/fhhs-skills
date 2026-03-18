@@ -56,26 +56,55 @@ process.stdin.on('end', () => {
       }
     }
 
-    // Current task from todos
+    // Current task — check native tasks first, then fall back to legacy todos
     let task = '';
     const homeDir = os.homedir();
     const claudeDir = process.env.CLAUDE_CONFIG_DIR || path.join(homeDir, '.claude');
-    const todosDir = path.join(claudeDir, 'todos');
-    if (session && fs.existsSync(todosDir)) {
-      try {
-        const files = fs.readdirSync(todosDir)
-          .filter(f => f.startsWith(session) && f.includes('-agent-') && f.endsWith('.json'))
-          .map(f => ({ name: f, mtime: fs.statSync(path.join(todosDir, f)).mtime }))
-          .sort((a, b) => b.mtime - a.mtime);
 
-        if (files.length > 0) {
-          try {
-            const todos = JSON.parse(fs.readFileSync(path.join(todosDir, files[0].name), 'utf8'));
-            const inProgress = todos.find(t => t.status === 'in_progress');
-            if (inProgress) task = inProgress.activeForm || '';
-          } catch (e) {}
-        }
-      } catch (e) {}
+    // Native tasks: stored in ~/.claude/tasks/{TASK_LIST_ID}/ as numbered JSON files
+    const taskListId = process.env.CLAUDE_CODE_TASK_LIST_ID;
+    if (taskListId) {
+      const tasksDir = path.join(claudeDir, 'tasks', taskListId);
+      if (fs.existsSync(tasksDir)) {
+        try {
+          const files = fs.readdirSync(tasksDir)
+            .filter(f => f.endsWith('.json'))
+            .sort((a, b) => {
+              const na = parseInt(a), nb = parseInt(b);
+              return (isNaN(nb) ? 0 : nb) - (isNaN(na) ? 0 : na);
+            });
+          for (const f of files) {
+            try {
+              const t = JSON.parse(fs.readFileSync(path.join(tasksDir, f), 'utf8'));
+              if (t.status === 'in_progress') {
+                task = t.activeForm || t.subject || '';
+                break;
+              }
+            } catch (e) {}
+          }
+        } catch (e) {}
+      }
+    }
+
+    // Fallback: legacy todos (session-scoped agent todo files)
+    if (!task) {
+      const todosDir = path.join(claudeDir, 'todos');
+      if (session && fs.existsSync(todosDir)) {
+        try {
+          const files = fs.readdirSync(todosDir)
+            .filter(f => f.startsWith(session) && f.includes('-agent-') && f.endsWith('.json'))
+            .map(f => ({ name: f, mtime: fs.statSync(path.join(todosDir, f)).mtime }))
+            .sort((a, b) => b.mtime - a.mtime);
+
+          if (files.length > 0) {
+            try {
+              const todos = JSON.parse(fs.readFileSync(path.join(todosDir, files[0].name), 'utf8'));
+              const inProgress = todos.find(t => t.status === 'in_progress');
+              if (inProgress) task = inProgress.activeForm || '';
+            } catch (e) {}
+          }
+        } catch (e) {}
+      }
     }
 
     // fhhs-skills update available?
