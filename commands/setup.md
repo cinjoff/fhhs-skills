@@ -263,7 +263,7 @@ If not present, use the **Edit tool** to merge into settings.json:
 
 Merge carefully — do NOT overwrite other `env` keys that may already exist.
 
-> **Why `CLAUDE_CODE_ENABLE_TASKS`?** Enables native task tracking used by `/fh:plan-work` and `/fh:build` for live progress visibility. Task list IDs are configured per-workspace via Conductor's `conductor.json` env block, or via `CLAUDE_CODE_TASK_LIST_ID` env var for non-Conductor setups.
+> **Why `CLAUDE_CODE_ENABLE_TASKS`?** Enables native task tracking used by `/fh:plan-work` and `/fh:build` for live progress visibility. Task list IDs are configured per-workspace via Conductor's setup script (which writes `CLAUDE_CODE_TASK_LIST_ID` into `.claude/settings.json`), or via `CLAUDE_CODE_TASK_LIST_ID` env var for non-Conductor setups.
 
 After writing:
 
@@ -505,22 +505,28 @@ If installed, display:
   │ $CONDUCTOR_DEFAULT_BRANCH  │ Default branch (usually main)    │
   └────────────────────────────┴──────────────────────────────────┘
 
-  Task tracking: Each workspace gets its own task list via
-  CLAUDE_CODE_TASK_LIST_ID in conductor.json env block.
+  Task tracking: Each workspace gets its own task list via the
+  setup script, which writes CLAUDE_CODE_TASK_LIST_ID into
+  .claude/settings.json using the workspace name.
   /fh:new-project configures this automatically.
 
   If you have an existing project, create conductor.json manually:
 
     {
       "scripts": {
-        "setup": "npm install && cp \"$CONDUCTOR_ROOT_PATH/.env.local\" .env.local 2>/dev/null; true",
+        "setup": "npm install && cp \"$CONDUCTOR_ROOT_PATH/.env.local\" .env.local 2>/dev/null; true; node -e \"var fs=require('fs'),f='.claude/settings.json',s={};try{s=JSON.parse(fs.readFileSync(f,'utf8'))}catch{}s.env=Object.assign(s.env||{},{CLAUDE_CODE_TASK_LIST_ID:process.env.CONDUCTOR_WORKSPACE_NAME||'default'});fs.writeFileSync(f,JSON.stringify(s,null,2)+'\\n')\"",
         "run": "npm run dev -- --port $CONDUCTOR_PORT",
         "archive": "rm -rf \"$HOME/.claude/tasks/${CONDUCTOR_WORKSPACE_NAME}\" 2>/dev/null; true"
       },
       "env": {
-        "CLAUDE_CODE_TASK_LIST_ID": "${CONDUCTOR_WORKSPACE_NAME}"
+        "CLAUDE_CODE_ENABLE_TASKS": "true"
       }
     }
+
+  Note: CLAUDE_CODE_TASK_LIST_ID must be set via the setup script
+  (not the env block) because Conductor does not interpolate shell
+  variables in env values. The setup script has access to
+  $CONDUCTOR_WORKSPACE_NAME and writes it to .claude/settings.json.
 ```
 
 ---
