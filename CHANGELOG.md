@@ -5,6 +5,12 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.1] - 2026-03-18
+
+### Fixed
+- **Conductor task list ID** — `CLAUDE_CODE_TASK_LIST_ID` now set via setup script instead of `env` block, since Conductor doesn't interpolate shell variables in env values
+- **Native tasks enabled** — `CLAUDE_CODE_ENABLE_TASKS=true` added to conductor.json `env` block for automatic enablement in new workspaces
+
 ## [1.15.0] - 2026-03-17
 
 ### Added
