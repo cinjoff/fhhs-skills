@@ -5,6 +5,14 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.17.0] - 2026-03-19
+
+### Added
+- **`/fh:sync-upstream` skill** — checks all 8 upstream repos for updates, shows changelogs, classifies patch compatibility, and guides intelligent reapplication with doc updates
+
+### Changed
+- **Upstream management** — replaces old `update-upstream` command (5 upstreams, report-only) with full 8-upstream skill including apply workflow and upstream registry
+
 ## [1.16.0] - 2026-03-19
 
 ### Added
