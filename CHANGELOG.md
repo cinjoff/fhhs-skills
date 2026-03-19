@@ -5,6 +5,11 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.16.0] - 2026-03-19
+
+### Added
+- **claude-mem in `/fh:setup`** — setup now installs claude-mem plugin automatically for persistent session memory across conversations
+
 ## [1.15.3] - 2026-03-18
 
 ### Fixed
