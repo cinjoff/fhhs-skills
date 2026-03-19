@@ -212,7 +212,7 @@ The **simplify** skill (`skills/simplify/SKILL.md`) is an original creation that
 
 ### Upstream Snapshots
 
-The `upstream/` directory holds **verbatim, unmodified copies** of each upstream at the forked version. These are never edited. They serve as diff baselines when checking for upstream updates via `/update-upstream`.
+The `upstream/` directory holds **verbatim, unmodified copies** of each upstream at the forked version. These are never edited. They serve as diff baselines when checking for upstream updates via `/fh:sync-upstream`.
 
 ### Patch Tracking
 
@@ -229,7 +229,7 @@ This enables:
 ### Update Workflow
 
 ```
-/update-upstream [superpowers|impeccable|gsd|feature-dev] [version]
+/fh:sync-upstream [name|all]
   1. Download new upstream version to temp dir
   2. Diff upstream/{name}-{old}/ vs new version
   3. Cross-reference changed files against PATCHES.md
@@ -312,6 +312,6 @@ To incorporate a new upstream project:
 3. Apply necessary adaptations (path references, GSD integration, namespace)
 4. Document every change in `PATCHES.md` with rationale
 5. Add to `COMPATIBILITY.md` upstream attribution table
-6. Update `/update-upstream` to handle the new source
+6. Update upstream registry in `skills/sync-upstream/references/upstream-registry.md`
 7. Update `/skills-guide` command reference
 8. Run evals
