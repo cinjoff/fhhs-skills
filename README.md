@@ -24,7 +24,7 @@ claude plugin install fh@fhhs-skills
 
 Then start a Claude Code session and run `/fh:setup`.
 
-`/fh:setup` detects your platform (macOS, Linux, Windows) and walks you through installing dependencies: Node.js, GitHub CLI, TypeScript language server, and the TypeScript LSP plugin.
+`/fh:setup` detects your platform (macOS, Linux, Windows) and walks you through installing dependencies: Node.js, GitHub CLI, TypeScript language server, TypeScript LSP plugin, and shadcn/ui skills for component-aware agents.
 
 ## Quick Start
 

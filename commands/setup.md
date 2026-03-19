@@ -572,13 +572,66 @@ After displaying:
 
 ---
 
-## Step 7: Conductor Configuration
+## Step 7: shadcn Skills
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ FHHS ► SHADCN SKILLS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+[shadcn/skills](https://ui.shadcn.com/docs/skills) gives coding agents the context they need to work with shadcn/ui components, Radix and Base UI primitives, the shadcn CLI, and registry workflows. Agents make fewer mistakes and produce code that matches your design system.
+
+### 7a: Check if shadcn skills are already installed
+
+```bash
+[ -d ".skills/shadcn" ] || [ -d "skills/shadcn" ] && echo "INSTALLED" || echo "NOT_INSTALLED"
+```
+
+If `INSTALLED`:
+
+```
+✓ shadcn skills already installed
+```
+
+Skip to Step 8.
+
+### 7b: Install shadcn skills
+
+```
+◆ Installing shadcn/ui skills for coding agents...
+```
+
+```bash
+npx skills add shadcn/ui
+```
+
+On success:
+
+```
+✓ shadcn skills installed
+  → Agents now have context for shadcn/ui components, CLI, and registry
+```
+
+If the install fails (e.g. network issue, npx not available), show a warning but don't block setup:
+
+```
+⚠ Could not install shadcn skills automatically.
+  You can install them manually later:
+
+    npx skills add shadcn/ui
+```
+
+---
+
+## Step 8: Conductor Configuration
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  FHHS ► CONDUCTOR
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
+
 
 [Conductor](https://conductor.build) lets you run multiple Claude Code agents in parallel workspaces. Each workspace gets a copy of your git files plus isolated setup/run scripts. This step checks whether Conductor is installed and reminds the user to configure it per-project.
 
@@ -597,7 +650,7 @@ If `NOT_INSTALLED`:
   Download from https://conductor.build if interested.
 ```
 
-Skip to Step 8.
+Skip to Step 9.
 
 ### 7b: Conductor awareness
 
@@ -645,7 +698,7 @@ If installed, display:
 
 ---
 
-## Step 8: Summary
+## Step 9: Summary
 
 Display the summary banner as **direct text output** (not via Bash — Bash output gets collapsed by Claude Code and users won't see it). Output this exactly:
 
@@ -685,6 +738,7 @@ Then present the status table and next steps as regular markdown text:
 | CLI Tools                  | ✓ linked                 |
 | Hooks                      | ✓ statusline + update check + context monitor |
 | claude-mem                 | ✓ installed / ○ skipped (optional)       |
+| shadcn skills              | ✓ installed / ⚠ manual install needed    |
 | Conductor                  | ✓ detected / ○ not installed (optional) |
 
 ───────────────────────────────────────────────────────────────

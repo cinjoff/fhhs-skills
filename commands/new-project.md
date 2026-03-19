@@ -36,12 +36,321 @@ Present the default stack:
 > These are defaults — override any of them.
 
 Ask: **"Need user authentication or a database?"**
-- Yes → add Supabase to the stack
-- No → skip
+- Yes → add Supabase to the stack, proceed to Step 2c after 2b
+- No → skip Step 2c entirely
 
 Ask: **"Any changes to the default stack?"**
 
 Lock the final tech stack decisions. These go into PROJECT.md.
+
+### 2b: shadcn/ui Preset
+
+If the tech stack includes Shadcn/ui (the default), offer the user a chance to configure their design system preset:
+
+```
+╔══════════════════════════════════════════════════════════════╗
+║  OPTIONAL: Custom shadcn/ui Preset                           ║
+╚══════════════════════════════════════════════════════════════╝
+
+You can design a custom shadcn/ui preset — colors, theme, fonts,
+radius — all in one config code.
+
+  1. Open https://ui.shadcn.com/create
+  2. Customize your design system and preview it live
+  3. Copy the preset code (e.g. "a1Dg5eFl")
+  4. Paste it here
+
+Or press Enter to use defaults.
+
+──────────────────────────────────────────────────────────────
+→ Preset code (or Enter to skip):
+──────────────────────────────────────────────────────────────
+```
+
+**If the user provides a preset code:**
+- Save it for use during Phase 1 scaffolding: `npx shadcn@latest init --preset <CODE>`
+- Note: The preset's icon library setting will be overridden — we always use **Phosphor Icons** regardless of what the preset specifies. After init, verify and fix the icon library if needed.
+
+**If the user skips (presses Enter):**
+- Phase 1 will run `npx shadcn@latest init` with default settings
+- Phosphor Icons will still be configured as the icon library
+
+**Store the preset decision** in `.planning/PROJECT.md` under the tech stack section, e.g.:
+```
+- shadcn/ui preset: a1Dg5eFl (custom) — Phosphor Icons enforced
+```
+or:
+```
+- shadcn/ui preset: default — Phosphor Icons
+```
+
+**Icon library enforcement:** Regardless of preset, the project always uses Phosphor Icons. After `shadcn init` runs in Phase 1, check `components.json` (or the shadcn config file) and ensure the icon library is set to `phosphor`. If the preset specified a different icon pack (e.g. Lucide), override it. Add a note in Phase 1 requirements:
+
+```
+After shadcn init: verify components.json uses Phosphor Icons.
+If preset specified a different icon library, switch to phosphor:
+  npx shadcn@latest add phosphor-icons
+```
+
+### 2c: Supabase Project Setup
+
+**Skip this step entirely if the user said no to auth/database in Step 2.**
+
+This step creates a Supabase project, configures auth, email templates, and redirect URLs — fully automated from the CLI. No dashboard visits required.
+
+#### 2c-i: Install and authenticate Supabase CLI
+
+```bash
+command -v supabase >/dev/null 2>&1 && echo "OK $(supabase --version 2>/dev/null)" || echo "MISSING"
+```
+
+If `MISSING`:
+
+```bash
+brew install supabase/tap/supabase
+```
+
+On Windows: `npx supabase` (runs without global install).
+
+Check login status:
+
+```bash
+supabase projects list 2>/dev/null && echo "LOGGED_IN" || echo "NOT_LOGGED_IN"
+```
+
+If `NOT_LOGGED_IN`:
+
+```
+◆ Log in to Supabase (opens browser)...
+```
+
+```bash
+supabase login
+```
+
+#### 2c-ii: Create Supabase project
+
+List available orgs so the user can pick:
+
+```bash
+supabase orgs list
+```
+
+Then create the project:
+
+```bash
+supabase projects create "<project-name>" --org-id <org-id> --region <region>
+```
+
+The CLI will prompt for a database password if not provided. **Save this password** — it's needed for `supabase link`.
+
+After creation, get the project ref:
+
+```bash
+supabase projects list
+```
+
+Find the newly created project and note the `REF` column (20-char alphanumeric string).
+
+#### 2c-iii: Initialize and link
+
+```bash
+supabase init
+supabase link --project-ref <ref>
+```
+
+`supabase init` creates exactly two files:
+- `supabase/config.toml` — project configuration (auth, API, storage, etc.)
+- `supabase/.gitignore` — excludes `.branches`, `.temp`, `.env.keys`
+
+It does **not** create `migrations/`, `templates/`, or `seed.sql` — those are created as needed below.
+
+#### 2c-iv: Configure auth in config.toml
+
+Read the generated `supabase/config.toml` using the **Read tool**, then use **Edit tool** to update these sections. The file already has these sections with defaults — update them in place, don't duplicate.
+
+**`[auth]` section** — update `site_url` and add `additional_redirect_urls`:
+
+```toml
+[auth]
+site_url = "http://localhost:3000"
+additional_redirect_urls = [
+  "http://localhost:3000/**",
+  "https://<project-name>.vercel.app/**",
+  "https://*-<vercel-user>.vercel.app/**"
+]
+```
+
+**Redirect URL details:**
+- `http://localhost:3000/**` — local dev
+- `https://<project-name>.vercel.app/**` — production Vercel domain (use the actual project name from Step 1)
+- `https://*-<vercel-user>.vercel.app/**` — Vercel preview deployments (run `vercel whoami` to get the username, or ask the user)
+- If the user has a custom domain planned, ask and add it too
+
+**`[auth.email]` section** — update defaults:
+
+```toml
+[auth.email]
+enable_signup = true
+enable_confirmations = true
+double_confirm_changes = true
+max_frequency = "60s"
+otp_length = 6
+otp_expiry = 3600
+```
+
+> The default config has `enable_confirmations = false` and `max_frequency = "1s"` — both need updating. Email confirmation should be on for production. 60s rate limit prevents abuse.
+
+**Email template sections** — these are commented out in the default config. Uncomment and set:
+
+```toml
+[auth.email.template.confirmation]
+subject = "Confirm your email"
+content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.recovery]
+subject = "Reset your password"
+content_path = "./supabase/templates/recovery.html"
+
+[auth.email.template.magic_link]
+subject = "Your sign-in link"
+content_path = "./supabase/templates/magic_link.html"
+
+[auth.email.template.email_change]
+subject = "Confirm your email change"
+content_path = "./supabase/templates/email_change.html"
+```
+
+> `content_path` is relative to the **project root** (not `supabase/`), so paths start with `./supabase/templates/`.
+
+#### 2c-v: Scaffold email templates
+
+Create `supabase/templates/` with clean, minimal email templates. These use Go template variables that Supabase replaces at send time. Inline styles ensure rendering across all email clients.
+
+**`supabase/templates/confirmation.html`:**
+```html
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 20px; color: #1a1a1a;">
+  <h2 style="margin: 0 0 16px;">Confirm your email</h2>
+  <p style="line-height: 1.6; color: #4a4a4a;">Click the button below to confirm your email address.</p>
+  <a href="{{ .ConfirmationURL }}" style="display: inline-block; margin: 24px 0; padding: 12px 32px; background: #171717; color: #fff; text-decoration: none; border-radius: 6px; font-weight: 500;">Confirm email</a>
+  <p style="font-size: 13px; color: #888;">If you didn't create an account, ignore this email.</p>
+</body>
+</html>
+```
+
+**`supabase/templates/recovery.html`:**
+```html
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 20px; color: #1a1a1a;">
+  <h2 style="margin: 0 0 16px;">Reset your password</h2>
+  <p style="line-height: 1.6; color: #4a4a4a;">Click the button below to reset your password.</p>
+  <a href="{{ .ConfirmationURL }}" style="display: inline-block; margin: 24px 0; padding: 12px 32px; background: #171717; color: #fff; text-decoration: none; border-radius: 6px; font-weight: 500;">Reset password</a>
+  <p style="font-size: 13px; color: #888;">If you didn't request a password reset, ignore this email.</p>
+</body>
+</html>
+```
+
+**`supabase/templates/magic_link.html`:**
+```html
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 20px; color: #1a1a1a;">
+  <h2 style="margin: 0 0 16px;">Your sign-in link</h2>
+  <p style="line-height: 1.6; color: #4a4a4a;">Click the button below to sign in.</p>
+  <a href="{{ .ConfirmationURL }}" style="display: inline-block; margin: 24px 0; padding: 12px 32px; background: #171717; color: #fff; text-decoration: none; border-radius: 6px; font-weight: 500;">Sign in</a>
+  <p style="font-size: 13px; color: #888;">If you didn't request this link, ignore this email.</p>
+</body>
+</html>
+```
+
+**`supabase/templates/email_change.html`:**
+```html
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 20px; color: #1a1a1a;">
+  <h2 style="margin: 0 0 16px;">Confirm your new email</h2>
+  <p style="line-height: 1.6; color: #4a4a4a;">Click the button below to confirm changing your email to {{ .NewEmail }}.</p>
+  <a href="{{ .ConfirmationURL }}" style="display: inline-block; margin: 24px 0; padding: 12px 32px; background: #171717; color: #fff; text-decoration: none; border-radius: 6px; font-weight: 500;">Confirm email change</a>
+  <p style="font-size: 13px; color: #888;">If you didn't request this change, ignore this email.</p>
+</body>
+</html>
+```
+
+#### 2c-vi: Get API keys from CLI
+
+```bash
+supabase projects api-keys --project-ref <ref>
+```
+
+This returns the project's API keys. Extract:
+- **Project URL:** `https://<ref>.supabase.co`
+- **anon / publishable key:** the key labeled `anon` (starts with `eyJ...`)
+
+> The project URL follows a fixed pattern: `https://<ref>.supabase.co` — construct it from the ref directly.
+
+#### 2c-vii: Write environment variables
+
+Add to `.env.local` (create if it doesn't exist, merge if it does):
+
+```
+NEXT_PUBLIC_SUPABASE_URL=https://<ref>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-key-from-api-keys>
+```
+
+#### 2c-viii: Push config to remote
+
+```bash
+supabase config push
+```
+
+This pushes auth settings, redirect URLs, and email template contents to the remote project. The CLI reads the HTML files from `content_path`, inlines their content, and sends it to the Supabase API. It shows a diff before applying — confirm with `y`.
+
+If `config push` fails because the project is still initializing (just created), wait a few seconds and retry.
+
+Display confirmation:
+
+```
+✓ Supabase project created and linked (ref: <ref>)
+✓ Auth configured (email signup + confirmation enabled)
+✓ Email templates pushed (confirmation, recovery, magic link, email change)
+✓ Redirect URLs set (localhost + Vercel production + preview)
+✓ API keys written to .env.local
+```
+
+#### Phase 1 requirements for Supabase
+
+Note the following in `.planning/REQUIREMENTS.md` for Phase 1 scaffolding:
+
+```
+Supabase integration (Phase 1):
+  npm install @supabase/supabase-js @supabase/ssr
+
+  Scaffold:
+    - lib/supabase/client.ts     — browser client (createBrowserClient)
+    - lib/supabase/server.ts     — server client (createServerClient with cookies)
+    - middleware.ts               — refresh auth session on every request
+    - app/auth/callback/route.ts  — code exchange for OAuth/magic-link/email confirm
+
+  Critical: middleware.ts must use supabase.auth.getUser() (NOT getSession())
+  to validate tokens server-side. getSession() does not revalidate with the
+  auth server and is unsafe for server-side checks.
+
+  Migrations: use `supabase migration new <name>` to create, `supabase db push`
+  to deploy to remote. Migrations live in supabase/migrations/ (auto-created
+  by the migration command).
+```
+
+Record in `.planning/PROJECT.md` under tech stack:
+```
+- Supabase: auth + database (project ref: <ref>, region: <region>)
+```
 
 ---
 
@@ -67,7 +376,7 @@ Invoke `/fh:revise-claude-md init` — this uses the `skills/claude-md-improver/
 
 Pass it:
 - Project name and description (from Step 1)
-- Tech stack (from Step 2)
+- Tech stack (from Step 2), including whether Supabase is in the stack
 - Whether `.planning/DESIGN.md` was created (from Step 3)
 
 The template ensures CLAUDE.md includes: tech stack, commands adapted to the chosen framework, architecture, code style with conventional commits, testing conventions, planning state reference, and design system reference.
@@ -87,6 +396,12 @@ Derive requirements from the vision in Step 1. Create:
 - `.planning/config.json` — GSD workflow settings
 
 **Phase 1 must always be "Project scaffolding and core setup"** — this is where the actual Next.js project gets created, dependencies installed, and base configuration applied.
+
+**shadcn/ui initialization in Phase 1:**
+- If a preset code was provided in Step 2b: `npx shadcn@latest init --preset <CODE>`
+- If no preset: `npx shadcn@latest init` with defaults
+- After init, enforce Phosphor Icons as the icon library (override any preset icon selection)
+- Include these steps in the Phase 1 plan within REQUIREMENTS.md
 
 **Set up project-local GSD symlink and initialize:**
 ```bash
@@ -312,6 +627,9 @@ If installed, create `conductor.json` in the project root with scripts tailored 
     "SENTRY_LOCAL": "true",
     "NEXT_PUBLIC_SENTRY_LOCAL": "true"
   }
+  // If Supabase is in the stack, the setup script already copies .env.local
+  // from $CONDUCTOR_ROOT_PATH, which contains NEXT_PUBLIC_SUPABASE_URL and
+  // NEXT_PUBLIC_SUPABASE_ANON_KEY. No need to duplicate them in the env block.
 }
 ```
 
@@ -376,6 +694,8 @@ Project initialized:
 - lib/sentry-local.ts       — local error tracking (Sentry SDK → SQLite)
 - lib/sentry-local-query.mjs — error query CLI for agents
 - .sentry-local/             — error store (gitignored, per-worktree)
+- supabase/config.toml      — auth, redirects, email templates (if Supabase)
+- supabase/templates/        — signup/recovery/magic-link emails (if Supabase)
 - conductor.json            — Conductor workspace scripts (if Conductor detected)
 - GitHub repo               — <repo-url> (private)
 - vercel.json               — framework preset configured
