@@ -5,6 +5,18 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.19.0] - 2026-03-20
+
+### Added
+- **shadcn/ui skills in `/fh:setup`** — installs `shadcn/ui` skills (`npx skills add shadcn/ui`) giving agents context for components, CLI, and registry workflows
+- **shadcn/ui preset support in `/fh:new-project`** — optional Step 2b prompts users to design a custom preset at shadcn/create and paste the code; Phosphor Icons enforced regardless of preset
+- **Supabase CLI automation in `/fh:new-project`** — full Step 2c automates project creation, auth config (email confirmations, redirect URLs for Vercel), email template scaffolding, API key retrieval, and config push — zero dashboard visits required
+- **Supabase email templates** — scaffolds clean, minimal HTML templates for confirmation, recovery, magic link, and email change with Go template variables and inline styles
+
+### Changed
+- **`/fh:setup` summary** — adds shadcn skills row to the completion status table
+- **`/fh:new-project` Phase 1 requirements** — includes shadcn init with preset, Phosphor Icons enforcement, Supabase SSR scaffolding (`@supabase/ssr`, middleware, callback route), and `getUser()` security note
+
 ## [1.18.0] - 2026-03-19
 
 ### Added
