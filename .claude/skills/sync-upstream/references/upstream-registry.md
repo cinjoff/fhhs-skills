@@ -13,7 +13,7 @@ versions, diff changes, and guide patch reapplication.
 | `version_source` | How to detect latest: `release` (gh releases/latest), `tag` (gh tags), `commit` (gh commits on default branch) |
 | `monorepo_path` | Subdirectory within the repo to extract (blank = whole repo) |
 | `compare_paths` | Which subdirectories to diff between old and new snapshots |
-| `forked_to` | Our skill/agent/command paths forked from this upstream |
+| `forked_to` | Our skill/agent/command paths forked from this upstream. Path prefixes: `skills/` = `skills/` (root), `agents/` = `agents/` (root), `commands/` = `commands/` (root, shipped), `.claude/commands/` = `.claude/commands/` (maintainer-local) |
 
 ## Registry
 
@@ -26,7 +26,7 @@ versions, diff changes, and guide patch reapplication.
 | version_source | `release` |
 | monorepo_path | |
 | compare_paths | `skills/`, `agents/` |
-| forked_to | `skills/brainstorming`, `skills/test-driven-development`, `skills/systematic-debugging`, `skills/dispatching-parallel-agents`, `skills/verification-before-completion`, `skills/requesting-code-review`, `skills/finishing-a-development-branch`, `skills/using-superpowers`, `skills/using-git-worktrees`, `skills/writing-skills`, `skills/simplify`, `skills/executing-plans`, `skills/subagent-driven-development`, `skills/writing-plans` |
+| forked_to | `skills/brainstorming`, `skills/test-driven-development`, `skills/systematic-debugging`, `skills/dispatching-parallel-agents`, `skills/verification-before-completion`, `skills/requesting-code-review`, `skills/receiving-code-review`, `skills/finishing-a-development-branch`, `skills/using-superpowers`, `skills/using-git-worktrees`, `skills/writing-skills`, `skills/simplify`, `skills/executing-plans`, `skills/subagent-driven-development`, `skills/writing-plans` |
 
 ### impeccable
 
@@ -37,7 +37,7 @@ versions, diff changes, and guide patch reapplication.
 | version_source | `release` |
 | monorepo_path | |
 | compare_paths | `source/skills/` |
-| forked_to | `skills/frontend-design`, `commands/critique`, `commands/polish`, `commands/normalize`, `commands/harden`, `commands/animate`, `commands/teach-impeccable`, `commands/distill`, `commands/adapt`, `commands/bolder`, `commands/quieter`, `commands/extract`, `commands/colorize`, `commands/audit`, `commands/clarify`, `commands/onboard`, `commands/optimize`, `commands/delight` |
+| forked_to | `skills/frontend-design`, `skills/critique`, `skills/polish`, `skills/normalize`, `skills/harden`, `skills/animate`, `skills/teach-impeccable`, `skills/distill`, `skills/adapt`, `skills/bolder`, `skills/quieter`, `skills/extract`, `skills/colorize`, `skills/audit`, `skills/clarify`, `skills/onboard`, `skills/optimize`, `skills/delight` |
 
 ### gsd
 
@@ -48,7 +48,7 @@ versions, diff changes, and guide patch reapplication.
 | version_source | `release` |
 | monorepo_path | |
 | compare_paths | `workflows/`, `agents/`, `references/`, `templates/` |
-| forked_to | `skills/build`, `skills/fix`, `skills/plan-work`, `skills/progress`, `skills/quick`, `skills/review`, `skills/verify`, `skills/resume-work`, `skills/map-codebase`, `skills/add-todo`, `skills/check-todos`, `skills/tracker`, `skills/gsd-executor` (agent), `skills/gsd-planner` (agent), `skills/gsd-verifier` (agent), `skills/gsd-roadmapper` (agent), `skills/gsd-debugger` (agent), `skills/gsd-codebase-mapper` (agent), `skills/gsd-integration-checker` (agent), `skills/gsd-nyquist-auditor` (agent), `skills/gsd-phase-researcher` (agent), `skills/gsd-plan-checker` (agent), `skills/gsd-project-researcher` (agent), `skills/gsd-research-synthesizer` (agent), `commands/new-project`, `commands/discuss-phase`, `commands/add-phase`, `commands/remove-phase`, `commands/insert-phase`, `commands/validate-phase`, `commands/list-phase-assumptions`, `commands/complete-milestone`, `commands/new-milestone`, `commands/audit-milestone`, `commands/plan-milestone-gaps`, `commands/pause-work`, `commands/set-profile`, `commands/add-tests`, `commands/cleanup`, `commands/release`, `commands/update-gsd` |
+| forked_to | `skills/build`, `skills/fix`, `skills/plan-work`, `skills/progress`, `skills/quick`, `skills/review`, `skills/verify`, `skills/resume-work`, `skills/map-codebase`, `skills/add-todo`, `skills/check-todos`, `skills/tracker`, `agents/gsd-executor`, `agents/gsd-planner`, `agents/gsd-verifier`, `agents/gsd-roadmapper`, `agents/gsd-debugger`, `agents/gsd-codebase-mapper`, `agents/gsd-integration-checker`, `agents/gsd-nyquist-auditor`, `agents/gsd-phase-researcher`, `agents/gsd-plan-checker`, `agents/gsd-project-researcher`, `agents/gsd-research-synthesizer`, `commands/new-project`, `.claude/commands/discuss-phase`, `.claude/commands/add-phase`, `.claude/commands/remove-phase`, `.claude/commands/insert-phase`, `.claude/commands/validate-phase`, `.claude/commands/list-phase-assumptions`, `.claude/commands/complete-milestone`, `.claude/commands/new-milestone`, `.claude/commands/audit-milestone`, `.claude/commands/plan-milestone-gaps`, `.claude/commands/pause-work`, `.claude/commands/set-profile`, `.claude/commands/add-tests`, `.claude/commands/cleanup`, `.claude/commands/release`, `.claude/commands/update-gsd` |
 
 ### gstack
 
@@ -59,7 +59,7 @@ versions, diff changes, and guide patch reapplication.
 | version_source | `release` |
 | monorepo_path | |
 | compare_paths | `plan-ceo-review/`, `plan-eng-review/`, `review/`, `qa/`, `ship/` |
-| forked_to | `skills/plan-review`, `skills/qa`, `skills/review` (checklist absorbed), `skills/plan-work` (eng-review absorbed), `commands/release` (ship absorbed) |
+| forked_to | `skills/plan-review`, `skills/qa`, `skills/review` (checklist absorbed), `skills/plan-work` (eng-review absorbed), `.claude/commands/release` (ship absorbed) |
 
 ### feature-dev
 
