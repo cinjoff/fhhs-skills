@@ -5,6 +5,14 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.18.0] - 2026-03-19
+
+### Added
+- **Post-update reconciliation in `/fh:update`** — after updating, automatically re-applies machine-level setup (symlinks, hooks, env vars) from `setup.md`, detects missing project features from `new-project.md` and offers them in plain language, and shows actionable tips about new skills and workflow changes derived from the changelog
+
+### Changed
+- **`/fh:update` Step 3 format** — replaces release-notes bullet summaries with actionable tips grouped into "New skills" and "Workflow changes", telling users what to do differently rather than what changed
+
 ## [1.17.1] - 2026-03-19
 
 ### Fixed
