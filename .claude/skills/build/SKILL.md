@@ -183,6 +183,22 @@ Once all tasks are accounted for (completed, or explicitly skipped with user sig
 
 (GSD state updates happen once in Step 6, not per-wave. Don't edit STATE.md during execution.)
 
+### After-wave error check
+
+If `.sentry-local/events.db` exists, check for errors that appeared during wave execution:
+
+```bash
+node lib/sentry-local-query.mjs recent --minutes 5
+```
+
+If new errors appeared:
+- **Runtime errors during build** — these may indicate the just-built code has issues
+- Surface the errors to the orchestrator: "N new runtime errors detected during Wave X execution"
+- Include in the wave report alongside spot-check results
+- These errors inform the spec gate — if the code runs but produces errors, that's a spec concern
+
+If the query script or db doesn't exist, skip silently.
+
 ---
 
 ## Step 3b: Per-Wave Spec Gate

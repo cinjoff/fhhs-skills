@@ -113,6 +113,48 @@ Mention the tracker in the Step 7 handoff output — the user can run `/fh:track
 
 ---
 
+## Step 5b: Observability Setup
+
+Scaffold local Sentry-compatible error tracking. This captures browser and server errors to a local SQLite store that agents can query during debugging.
+
+### Dependencies
+
+Add to the project's package.json (these will be installed in Phase 1 when npm install runs):
+
+Note in `.planning/REQUIREMENTS.md` that Phase 1 scaffolding must include:
+```
+npm install @sentry/browser @sentry/node @sentry/core better-sqlite3
+npm install -D @types/better-sqlite3
+```
+
+### Scaffold files
+
+Create the following files using the templates documented in the `/fh:observability` skill (Section 2: Scaffolded Files Reference). Read that skill for the complete file contents.
+
+1. **`lib/sentry-local.ts`** — SQLite-backed Sentry transport + init helpers
+2. **`lib/sentry-local-query.mjs`** — CLI query tool for agents
+3. **`app/api/sentry-local/route.ts`** — browser envelope receiver (tunnel endpoint)
+4. **`instrumentation.ts`** — Next.js server-side Sentry init
+5. **`.sentry-local/.gitignore`** — contains `*` (exclude db from git)
+
+### Environment setup
+
+Add to `.env.local` (or create it):
+```
+SENTRY_LOCAL=true
+NEXT_PUBLIC_SENTRY_LOCAL=true
+```
+
+### Client-side init
+
+Note in the Phase 1 plan that `app/layout.tsx` needs to call `initSentryClient()` from `lib/sentry-local`. This happens during scaffolding, not here — we just create the library files.
+
+### Conductor integration
+
+If `conductor.json` is being created (Step 7), add `SENTRY_LOCAL` and `NEXT_PUBLIC_SENTRY_LOCAL` to the env block — see Step 7.
+
+---
+
 ## Step 6: Infrastructure Setup
 
 Set up GitHub and Vercel so the project is ready for deployment from day one.
@@ -266,7 +308,9 @@ If installed, create `conductor.json` in the project root with scripts tailored 
     "archive": "rm -rf \"$HOME/.claude/tasks/${CONDUCTOR_WORKSPACE_NAME}\" 2>/dev/null; true"
   },
   "env": {
-    "CLAUDE_CODE_ENABLE_TASKS": "true"
+    "CLAUDE_CODE_ENABLE_TASKS": "true",
+    "SENTRY_LOCAL": "true",
+    "NEXT_PUBLIC_SENTRY_LOCAL": "true"
   }
 }
 ```
@@ -329,10 +373,15 @@ Project initialized:
 - .planning/config.json     — workflow settings
 - CLAUDE.md                 — project conventions
 - .project-tracker/         — visual dashboard (run /fh:tracker to launch)
+- lib/sentry-local.ts       — local error tracking (Sentry SDK → SQLite)
+- lib/sentry-local-query.mjs — error query CLI for agents
+- .sentry-local/             — error store (gitignored, per-worktree)
 - conductor.json            — Conductor workspace scripts (if Conductor detected)
 - GitHub repo               — <repo-url> (private)
 - vercel.json               — framework preset configured
 - Vercel project            — linked (auto-deploys on push to main, if GitHub App installed)
+
+Error tracking is active in dev by default. Run `node lib/sentry-local-query.mjs recent` to see captured errors, or let `/fh:fix` query them automatically.
 
 Next: run /plan-work to plan your first phase (scaffolding and core setup).
 ```
