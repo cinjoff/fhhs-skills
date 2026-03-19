@@ -14,6 +14,31 @@ This command runs in a single context by default. Escalates to parallel agents w
 
 ---
 
+## Step 0: Check Runtime Errors
+
+Before triaging from code alone, check if the local error store has runtime context.
+
+1. Check if `.sentry-local/events.db` exists:
+```bash
+[ -f ".sentry-local/events.db" ] && echo "STORE_EXISTS" || echo "NO_STORE"
+```
+
+2. If `STORE_EXISTS`, query recent errors:
+```bash
+node lib/sentry-local-query.mjs recent --minutes 60
+```
+
+3. Use the results to inform triage:
+   - If errors match the reported bug → use the stack trace, breadcrumbs, and request context as starting evidence
+   - If errors show a pattern (same error repeating) → note the frequency
+   - If no recent errors → proceed to Step 1 with code-only analysis
+
+4. If `NO_STORE`: skip this step silently. The project may not have observability set up.
+
+This step should consume <2% context. Don't deep-dive the errors yet — just surface them as input to triage.
+
+---
+
 ## Step 1: Triage
 
 Quickly assess bug depth before choosing strategy. Spend <5% context.
