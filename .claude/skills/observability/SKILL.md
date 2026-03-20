@@ -76,10 +76,20 @@ SQLite-backed Sentry transport and initialization helpers.
 **`createLocalSentryStore()`** — returns an `OfflineStore` backed by SQLite:
 - Uses `better-sqlite3` with WAL mode + 5s `busy_timeout`
 - Auto-creates `.sentry-local/events.db` and tables on first call
-- `push(envelope)` — serialize envelope, parse out event fields (event_id, timestamp, level, message, exception, breadcrumbs, tags, request, contexts), INSERT into events table + store raw envelope
-- `unshift(envelope)` — same as push (order doesn't matter for local store)
-- `shift()` — return oldest envelope (for replay to real Sentry later)
+- **Type signatures use `Envelope` from `@sentry/core`** (not `Uint8Array`) — `makeOfflineTransport` passes parsed `Envelope` objects
+- `push(envelope: Envelope)` — call `serializeEnvelope(envelope)` to get bytes, then `extractEventFields(bytes)` to parse out event fields, INSERT into events table + store raw bytes as BLOB
+- `unshift(envelope: Envelope)` — same as push (order doesn't matter for local store)
+- `shift(): Envelope | undefined` — read oldest row, `parseEnvelope()` the stored bytes back to `Envelope`, DELETE the row
 - Auto-prune: DELETE events older than 7 days on every 100th write
+- **Imports needed:** `import { parseEnvelope, serializeEnvelope } from "@sentry/core"; import type { Envelope } from "@sentry/core";`
+
+**`extractEventFields(envelope: Uint8Array)`** — parses serialized envelope bytes to extract event data:
+- Decodes bytes to text, splits on newline
+- **CRITICAL: Skip line 0 (envelope header)** — it contains `event_id` and `sent_at` but NO event data. Matching on `event_id` alone will hit the header first and produce `(no message)` for every error
+- Extract `event_id` from the header (line 0) as a fallback, then scan remaining lines
+- Skip item headers like `{"type":"event"}` — they lack event payload fields
+- Match event payload lines by checking for `obj.platform || obj.exception || obj.message || obj.level` (NOT `obj.event_id`)
+- Use `obj.event_id || envelopeEventId` to get the event ID (prefer payload, fall back to header)
 
 **`initSentryServer()`** — wraps `Sentry.init()` for server:
 - If `SENTRY_LOCAL=true`: use `makeOfflineTransport(makeNodeTransport)` with `createStore: createLocalSentryStore`, `shouldStore: () => true`
@@ -133,8 +143,9 @@ Browser envelope receiver (tunnel endpoint).
 
 - POST handler that receives Sentry envelope from browser tunnel
 - Guards with `SENTRY_LOCAL !== 'true'` → return 404
-- Imports `parseEnvelope` from `@sentry/core` + store from `lib/sentry-local`
-- Parses envelope body, extracts events, stores in SQLite
+- Reads body as `ArrayBuffer`, converts to `Uint8Array`
+- Calls `parseEnvelope(new Uint8Array(body))` from `@sentry/core` to get an `Envelope` object
+- Passes the `Envelope` to `store.push(envelope)` — the store handles serialization internally
 - Returns 200 (Sentry SDK expects this)
 - try/catch everything — never crashes the API route
 
