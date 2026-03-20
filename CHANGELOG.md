@@ -5,6 +5,11 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.20.1] - 2026-03-20
+
+### Fixed
+- **Observability skill docs** — corrects envelope type signatures (`Envelope` not `Uint8Array`), documents `extractEventFields` parser, and fixes tunnel endpoint description
+
 ## [1.20.0] - 2026-03-20
 
 ### Changed
