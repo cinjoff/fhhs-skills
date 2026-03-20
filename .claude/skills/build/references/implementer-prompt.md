@@ -22,6 +22,11 @@ If a skill looks relevant to your task, read its full SKILL.md for detailed guid
 Only deep-read skills that are clearly relevant — don't read all of them.
 
 {CLAUDE_MD_SECTIONS}
+
+### Locked Decisions & Scope Boundary
+
+The following decisions are locked — do not contradict them. "NOT in scope" items must not be implemented.
+
 {DESIGN_DECISIONS}
 
 ## Before You Begin

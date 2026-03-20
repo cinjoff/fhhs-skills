@@ -160,7 +160,7 @@ No changes. (Template variables adopted from upstream v1.2.0.)
 |---|--------|-----------|
 | 1 | Renamed `plan-ceo-review` → `plan-review` | Cleaner name; "CEO" framing replaced with "founder-level challenge" in description |
 | 2 | Removed gstack-upgrade check preamble | No gstack binary dependency in fhhs-skills |
-| 3 | Output path: findings go to `.planning/designs/` | GSD convention — all planning artifacts live in .planning/ |
+| 3 | Output: actionable findings feed back into PLAN.md (`must_haves.truths` with `[review]` prefix) and CONTEXT.md (review decisions + deferred scope); lightweight human-reference summary to `.planning/designs/review-*.md` | Closes the feedback loop — `/build` already reads PLAN.md + CONTEXT.md, so review findings are now prescriptive, not advisory-only |
 | 4 | Taste calibration reads `.planning/DESIGN.md` instead of discovering patterns | Leverages existing design context from `/fh:teach-impeccable` |
 | 5 | Reduced from 10 review sections to 6 (Architecture, Error/Rescue, Security, Data Flow, Tests, Long-Term Trajectory) | Observability, Deployment, Performance, Code Quality covered by `/fh:review`, `/fh:build`, and other skills |
 | 6 | Added "Challenge against must_haves" step (0B) | Plans from `/fh:plan-work` include must_haves — review should challenge their truths |
