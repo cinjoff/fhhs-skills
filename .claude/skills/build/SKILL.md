@@ -103,7 +103,7 @@ Use the structured template at `references/implementer-prompt.md`. Fill its plac
 
 - `{TASK_TEXT}` — Full task content (files, action, verify, done). Copy the text, don't reference the plan file.
 - `{CLAUDE_MD_SECTIONS}` — Relevant sections from CLAUDE.md for this task type (UI work → CONVENTIONS.md + DESIGN.md; new files → STRUCTURE.md; API work → ARCHITECTURE.md; tests → TESTING.md).
-- `{DESIGN_DECISIONS}` — If `.planning/phases/{phase}/{phase}-CONTEXT.md` exists, include the "Design Decisions" section. These are locked — subagents must not contradict them.
+- `{DESIGN_DECISIONS}` — If `.planning/phases/{phase}/{phase}-CONTEXT.md` exists, include the "Design Decisions" and "Review Decisions" sections. These are locked — subagents must not contradict them. Also include the "NOT in scope" section as a scope boundary — subagents must not implement deferred items listed there.
 - `{DESIGN_MD_CONTENT}` — For frontend tasks only: include `.planning/DESIGN.md` content (small, ~30 lines).
 - `{PHASE_DIR}` — Path to `.planning/phases/{phase}/` for deferred items logging.
 - `{TASK_NAME}` — Task identifier for deferred items format.
@@ -279,7 +279,7 @@ When skipped, note: "Design gates skipped (N/M files visual). Run /critique or /
 
 After all waves complete (including spec gates) and BEFORE self-check, run the design quality pipeline:
 
-**Context for all design gate subagents:** If `.planning/phases/{phase}/{phase}-CONTEXT.md` exists, include its "Design Decisions" section. These are locked design choices that critique/polish/normalize must respect.
+**Context for all design gate subagents:** If `.planning/phases/{phase}/{phase}-CONTEXT.md` exists, include its "Design Decisions" and "Review Decisions" sections. These are locked design choices that critique/polish/normalize must respect.
 
 ### Critique
 Dispatch subagent to invoke `/critique` on modified frontend files.

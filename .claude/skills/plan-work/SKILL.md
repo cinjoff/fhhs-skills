@@ -116,7 +116,7 @@ Resolve implementation gray areas before planning:
      | OPERATION | ERROR | NAMED EXCEPTION | RESCUE ACTION | USER SEES |
      |-----------|-------|-----------------|---------------|-----------|
 
-     > This is a lightweight ERM scoped to the discussed gray areas. If the user runs `/fh:plan-review` afterward, it will produce a comprehensive ERM across the entire plan and extend this one.
+     > This is a lightweight ERM scoped to the discussed gray areas. If the user runs `/fh:plan-review` afterward, it will produce a comprehensive ERM across the entire plan, extending this one, and feed CRITICAL GAPs back into PLAN.md as `[review]` truths.
 
    - **Failure Modes Registry**:
 
@@ -286,7 +286,7 @@ If a check fails, state which check failed, revise the plan, and recheck. After 
 
 After plan approval:
 
-1. **`/fh:plan-review`** (recommended) — Challenge the plan before building. Catches failure modes, edge cases, and architectural issues. Three modes: SCOPE EXPANSION (dream big), HOLD SCOPE (maximum rigor), SCOPE REDUCTION (strip to essentials). Plan-review produces comprehensive error maps, security analysis, and edge case coverage that strengthen the plan before execution.
+1. **`/fh:plan-review`** (recommended) — Challenge the plan before building. Catches failure modes, edge cases, and architectural issues. Three modes: SCOPE EXPANSION (dream big), HOLD SCOPE (maximum rigor), SCOPE REDUCTION (strip to essentials). **Feedback loop:** plan-review feeds findings back into PLAN.md (`must_haves.truths` with `[review]` prefix) and CONTEXT.md (review decisions + deferred scope). After plan-review completes, `/fh:build` automatically picks up the strengthened plan — no manual merging needed.
 2. **`/fh:build`** — Execute now. Skip review if the plan is straightforward or already reviewed.
 3. **Continue planning** — Plan more phases before building or reviewing.
 

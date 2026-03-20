@@ -340,37 +340,66 @@ Every AskUserQuestion MUST: (1) present 2-3 concrete lettered options, (2) state
 
 ---
 
-## Required Outputs
+## Required Outputs — Feed Back Into Plan Artifacts
 
-All findings go to `.planning/designs/`.
+Plan-review findings must flow back into the artifacts that `/fh:build` already reads. Do NOT write a standalone document to `.planning/designs/` — that path is not consumed by downstream skills.
 
-### "NOT in scope" section
-List work considered and explicitly deferred, with one-line rationale each.
+### Step A: Update PLAN.md `must_haves`
 
-### "What already exists" section
-List existing code/flows that partially solve sub-problems and whether the plan reuses them.
+After all review sections are complete, update the PLAN.md that was reviewed:
 
-### "Dream state delta" section
-Where this plan leaves us relative to the 12-month ideal.
+1. **Append new truths** to `must_haves.truths` from:
+   - Each CRITICAL GAP row in the Failure Modes Registry (rescued failure → observable truth)
+   - Each High-severity security finding (mitigation → observable truth)
+   - Each unhandled edge case the user chose to address
+2. **Append new artifacts** to `must_haves.artifacts` if the review identified files that must be created/modified (e.g., new test files for uncovered paths)
+3. **Append new key_links** if the review identified missing wiring between artifacts
+
+Format new truths with a `[review]` prefix so the executor and verifier can distinguish plan-original from review-added truths:
+```yaml
+truths:
+  - "Original truth from plan-work"
+  - "[review] TimeoutError on ExampleService.call() is rescued with retry + user message"
+```
+
+### Step B: Update CONTEXT.md
+
+Append to `.planning/phases/{phase}/{phase}-CONTEXT.md` (create the section if missing):
+
+**"Review Decisions" section** — Architecture and implementation decisions made during AskUserQuestion exchanges. Same format as "Design Decisions" — these are locked for `/build` subagents.
+
+**"NOT in scope" section** — Work considered and explicitly deferred during review, with one-line rationale each. The `/build` executor uses this as a scope boundary — subagents must not implement deferred items.
+
+### Step C: Human-Reference Summary
+
+Write a lightweight summary to `.planning/designs/review-YYYY-MM-DD-<topic>.md` for audit trail. This file is for **human reference only** — no downstream skill reads it. Include:
+
+- Mode selected
+- Completion summary table (below)
+- Diagrams produced during review
+- "What already exists" — existing code/flows that partially solve sub-problems
+- "Dream state delta" — where this plan leaves us relative to 12-month ideal
 
 ### Error & Rescue Registry (from Section 2)
-Complete table of every method that can fail, every error type, rescued status, rescue action, user impact.
+Complete table of every method that can fail, every error type, rescued status, rescue action, user impact. **Actionable findings (CRITICAL GAPs) must also appear as truths in PLAN.md per Step A.**
 
 ### Failure Modes Registry
 ```
   CODEPATH | FAILURE MODE   | RESCUED? | TEST? | USER SEES?     | LOGGED?
   ---------|----------------|----------|-------|----------------|--------
 ```
-Any row with RESCUED=N, TEST=N, USER SEES=Silent → **CRITICAL GAP**.
+Any row with RESCUED=N, TEST=N, USER SEES=Silent → **CRITICAL GAP** → must become a `[review]` truth in PLAN.md.
 
 ### Delight Opportunities (EXPANSION mode only)
-Identify at least 5 "bonus chunk" opportunities (<30 min each) that would make users think "oh nice, they thought of that." Present each delight opportunity as its own individual AskUserQuestion. Never batch them. For each one, describe what it is, why it would delight users, and effort estimate. Then present options: **A)** Add to plan backlog **B)** Skip **C)** Build it now in this PR.
+Identify at least 5 "bonus chunk" opportunities (<30 min each) that would make users think "oh nice, they thought of that." Present each delight opportunity as its own individual AskUserQuestion. Never batch them. For each one, describe what it is, why it would delight users, and effort estimate. Then present options: **A)** Add to plan backlog **B)** Skip **C)** Build it now in this PR. Items added to backlog go into CONTEXT.md "NOT in scope" with rationale "delight opportunity — deferred."
 
 ### Diagrams (mandatory, produce all that apply)
 1. System architecture
 2. Data flow (including shadow paths)
 3. State machine
 4. Error flow
+
+Include diagrams in both the PLAN.md `<context>` block (so executors see them) and the human-reference summary.
 
 ### Completion Summary
 ```
@@ -387,11 +416,10 @@ Identify at least 5 "bonus chunk" opportunities (<30 min each) that would make u
   | Section 5  (Tests)   | Diagram produced, ___ gaps                  |
   | Section 6  (Future)  | Reversibility: _/5, debt items: ___         |
   +--------------------------------------------------------------------+
-  | NOT in scope         | written (___ items)                          |
-  | What already exists  | written                                     |
-  | Dream state delta    | written                                     |
-  | Error/rescue registry| ___ methods, ___ CRITICAL GAPS              |
-  | Failure modes        | ___ total, ___ CRITICAL GAPS                |
+  | PLAN.md updated      | ___ truths added, ___ artifacts added        |
+  | CONTEXT.md updated   | ___ decisions locked, ___ items deferred     |
+  | Error/rescue registry| ___ methods, ___ CRITICAL GAPS → PLAN.md    |
+  | Failure modes        | ___ total, ___ CRITICAL GAPS → PLAN.md      |
   | Delight opportunities| ___ identified (EXPANSION only)             |
   | Diagrams produced    | ___ (list types)                            |
   | Unresolved decisions | ___ (listed below)                          |

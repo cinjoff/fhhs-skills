@@ -5,6 +5,12 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.20.0] - 2026-03-20
+
+### Changed
+- **`/fh:plan-review` feedback loop** — review findings now feed back into PLAN.md (`must_haves.truths` with `[review]` prefix) and CONTEXT.md (review decisions + deferred scope) instead of writing a disconnected file to `.planning/designs/`; `/fh:build` automatically picks up the strengthened plan
+- **`/fh:build` subagent context** — implementer prompt includes "Locked Decisions & Scope Boundary" framing so subagents respect review decisions and deferred scope from CONTEXT.md
+
 ## [1.19.0] - 2026-03-20
 
 ### Added
