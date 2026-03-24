@@ -1,6 +1,6 @@
 ---
 name: fix
-description: Auto-triage and fix bugs with TDD discipline. Use when the user reports a bug, error, test failure, broken behavior, or says 'fix', 'debug', 'something is wrong', 'this broke', or 'not working'. Handles simple single-file fixes through complex multi-subsystem failures.
+description: Fix a bug. Finds the root cause, writes a test, and patches it.
 user-invokable: true
 ---
 

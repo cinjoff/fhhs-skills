@@ -1,10 +1,6 @@
 ---
 name: plan-review
-description: |
-  Founder-level plan challenge. Rethink the problem, find the 10-star product,
-  challenge premises, expand scope when it creates a better product. Three modes:
-  SCOPE EXPANSION (dream big), HOLD SCOPE (maximum rigor), SCOPE REDUCTION
-  (strip to essentials).
+description: Stress-test a plan. Challenges assumptions and looks for blind spots before you commit.
 user-invokable: true
 allowed-tools:
   - Read

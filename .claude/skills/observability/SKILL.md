@@ -1,6 +1,6 @@
 ---
 name: observability
-description: Query the local Sentry error store (.sentry-local/events.db) for runtime errors, stack traces, and breadcrumbs. Use when debugging, investigating errors, or checking runtime health.
+description: Check for runtime errors in your local Sentry store. Useful when something broke in the app.
 user-invokable: true
 ---
 

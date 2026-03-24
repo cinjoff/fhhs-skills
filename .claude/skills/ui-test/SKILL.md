@@ -1,6 +1,6 @@
 ---
 name: ui-test
-description: Visual verification and QA testing of frontend work. Use when the user says 'check the UI', 'does it look right', 'visual check', 'screenshot', 'qa', 'test this site', 'find bugs', or 'dogfood'. Default mode captures screenshots and runs design critique. Use --qa for systematic functional testing.
+description: Take screenshots and check if the UI looks right. Use --qa for thorough functional testing.
 user-invokable: true
 ---
 

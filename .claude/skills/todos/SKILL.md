@@ -1,6 +1,6 @@
 ---
 name: todos
-description: Manage project todos. With arguments, captures a new todo. Without arguments, reviews pending todos. Use when the user says 'todo', 'add todo', 'check todos', 'remember this', 'note this for later', 'pending items', or 'what todos do I have'.
+description: Track things to do. Add a todo with arguments, or review pending ones without.
 user-invokable: true
 ---
 

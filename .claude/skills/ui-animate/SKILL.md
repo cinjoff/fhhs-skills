@@ -1,6 +1,6 @@
 ---
 name: ui-animate
-description: Review a feature and enhance it with purposeful animations, micro-interactions, and motion effects that improve usability and delight.
+description: Add animations and transitions that make the interface feel polished and alive.
 user-invokable: true
 ---
 

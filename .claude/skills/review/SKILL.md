@@ -1,6 +1,6 @@
 ---
 name: review
-description: Comprehensive code analysis — code quality, architecture, security, goal verification, and gap analysis. Use when the user says 'review', 'review my changes', 'is this ready', 'check my work', 'code review', or wants deep scrutiny before promoting. Also available as --quick for fast pre-commit checks.
+description: Code review. Checks quality, security, and whether the code actually achieves the goal. Use --quick for a fast check.
 user-invokable: true
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: plan-work
-description: Plan a feature before building it. Brainstorm, research, and produce an execution-ready PLAN.md. Use when the user says 'plan', 'design this feature', 'figure out how to build', 'spec this out', or wants to think before coding.
+description: Plan before you build. Researches the problem and produces a step-by-step plan.
 user-invokable: true
 ---
 

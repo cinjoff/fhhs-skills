@@ -1,6 +1,6 @@
 ---
 name: map-codebase
-description: Analyze codebase structure with parallel agents, producing structured documents in .planning/codebase/. Use when the user says 'map codebase', 'analyze codebase', 'understand the code', or needs architecture documentation.
+description: Explore and document how your codebase is structured.
 user-invokable: true
 ---
 

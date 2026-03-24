@@ -1,6 +1,6 @@
 ---
 name: research
-description: Investigate a topic with web search and docs, producing GSD-compatible research output. Use when the user says 'research', 'investigate', 'look into', 'what are the options for', 'how does X work', or needs technical feasibility analysis before planning.
+description: Look into a topic. Searches the web and docs, then writes up what it found.
 user-invokable: true
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: build
-description: Execute an existing plan with fresh subagents, TDD, design gates, and verification. Use when the user says 'build', 'execute the plan', 'run the plan', 'implement this', or has a PLAN.md ready to execute.
+description: Execute a plan — turns your PLAN.md into working code with tests and quality checks.
 user-invokable: true
 ---
 

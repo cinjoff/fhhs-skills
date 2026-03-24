@@ -1,6 +1,6 @@
 ---
 name: ui-redesign
-description: Change art direction and design context for your project. Updates .planning/DESIGN.md with new design guidelines, visual references, and brand direction. Use when the user says 'redesign', 'change the look', 'new art direction', 'update design system', or 'restyle'.
+description: Change the look and feel of your project. Updates your design guidelines and direction.
 user-invokable: true
 ---
 

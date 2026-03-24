@@ -1,6 +1,6 @@
 ---
 name: refactor
-description: Safe code restructuring with behavior preservation. Use when the user says 'refactor', 'restructure', 'reorganize', 'clean up this code', 'extract', 'rename', or 'move'. Not for bugs (/fix) or new features (/build). Tests must stay green at every step.
+description: Reorganize code without changing what it does. Keeps tests passing at every step.
 user-invokable: true
 ---
 

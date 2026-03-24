@@ -1,6 +1,6 @@
 ---
 name: ui-critique
-description: Evaluate design effectiveness from a UX perspective. Assesses visual hierarchy, information architecture, emotional resonance, and overall design quality with actionable feedback.
+description: Get design feedback — layout, readability, flow, and what to improve.
 user-invokable: true
 ---
 

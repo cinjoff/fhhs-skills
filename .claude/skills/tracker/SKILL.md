@@ -1,6 +1,6 @@
 ---
 name: tracker
-description: "Launch the project tracker dashboard. Use when the user says 'tracker', 'dashboard', 'show progress', or wants to see a visual project overview."
+description: Visual dashboard of your project's progress — phases, milestones, and status.
 user-invokable: true
 ---
 
