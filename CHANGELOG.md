@@ -5,6 +5,11 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.21.1] - 2026-03-25
+
+### Fixed
+- **Skills path broken after `.claude-plugin/` migration** — relative path in `plugin.json` was `./.claude/skills` instead of `../.claude/skills`, causing all `/fh:` skills to be invisible to Claude Code
+
 ## [1.21.0] - 2026-03-25
 
 ### Added
