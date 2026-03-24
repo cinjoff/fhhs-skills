@@ -5,6 +5,19 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.21.0] - 2026-03-25
+
+### Added
+- **Observability in `/review`** — queries local Sentry error store for runtime errors related to changed files, cross-references by basename, feeds matches to gap analysis, and adds WARN to the gate decision
+- **claude-mem in `/progress`** — pulls cross-session context via `timeline` and `smart_search` MCP tools, showing relevant observations from previous sessions (gracefully skips if plugin not installed)
+
+### Changed
+- **Skill surface reduced from 37 to 15 user-invokable skills** — design skills (adapt, bolder, quieter, distill, clarify, colorize, delight, extract, onboard, optimize) are now internal-only, auto-invoked by `/build` pipelines
+- **`ui-*` namespace** — animate→ui-animate, critique→ui-critique, qa→ui-test, teach-impeccable→ui-redesign for clearer grouping
+- **`/progress` absorbs `/resume-work`** — single entry point for session resumption and status; includes git state, integrity checks, and claude-mem context; works with and without GSD projects
+- **`/todos` replaces `/add-todo` + `/check-todos`** — unified todo management (with args = add, without = review)
+- **`/verify` and `/verify-ui` removed** — functionality merged into `/review --verify` and `/ui-test`
+
 ## [1.20.1] - 2026-03-20
 
 ### Fixed
