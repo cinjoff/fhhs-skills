@@ -201,7 +201,7 @@ directories — skills/, agents/, commands/, references/):
 
 - Read the file content and describe what it does
 - Suggest which composite commands could benefit from it
-- Ask user: fork now or note for later (via `/fh:add-todo`)?
+- Ask user: fork now or note for later (via `/fh:todos`)?
 
 ---
 

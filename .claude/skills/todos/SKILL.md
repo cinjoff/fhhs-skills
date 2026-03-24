@@ -37,7 +37,7 @@ Note existing areas from the todos array for consistency in infer_area step.
 
 <step name="extract_content">
 **With arguments:** Use as the title/focus.
-- `add-todo Add auth token refresh` → title = "Add auth token refresh"
+- `todos Add auth token refresh` → title = "Add auth token refresh"
 
 **Without arguments:** Analyze recent conversation to extract:
 - The specific problem, idea, or task discussed
@@ -150,7 +150,7 @@ Would you like to:
 
 1. Continue with current work
 2. Add another todo
-3. View all todos (check-todos)
+3. View all todos (/fh:todos)
 ```
 </step>
 
@@ -188,14 +188,14 @@ If `todo_count` is 0:
 ```
 No pending todos.
 
-Todos are captured during work sessions with add-todo.
+Todos are captured during work sessions with /fh:todos.
 
 ---
 
 Would you like to:
 
 1. Continue with current phase (progress)
-2. Add a todo now (add-todo)
+2. Add a todo now (/fh:todos <description>)
 ```
 
 Exit.
@@ -203,8 +203,8 @@ Exit.
 
 <step name="parse_filter">
 Check for area filter in arguments:
-- `check-todos` → show all
-- `check-todos api` → filter to area:api only
+- `todos` → show all
+- `todos api` → filter to area:api only
 </step>
 
 <step name="list_todos">
@@ -222,7 +222,7 @@ Pending Todos:
 ---
 
 Reply with a number to view details, or:
-- `check-todos [area]` to filter by area
+- `/fh:todos [area]` to filter by area
 - `q` to exit
 ```
 

@@ -195,7 +195,7 @@ CONTEXT: [checkmark if has_context | - if not]
 - [e.g. jq -r '.blockers[].text' from state-snapshot]
 
 ## Pending Todos
-- [count] pending -- check-todos to review
+- [count] pending -- /fh:todos to review
 
 ## Active Debug Sessions
 - [count] active -- debug to continue

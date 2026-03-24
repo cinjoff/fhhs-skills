@@ -12,16 +12,15 @@ Output ONLY the reference content below. Do NOT add project-specific analysis, g
 | Command | What it does |
 |---------|-------------|
 | `/fh:new-project` | Set up a project with vision, tech stack, design language, and roadmap |
-| `/fh:plan` | Brainstorm, research, and produce an execution-ready plan. Handles phase creation and placement automatically |
-| `/fh:build` | Execute a plan with parallel subagents, TDD, design gates, and verification. Handles milestone completion automatically |
-| `/fh:verify` | Goal-backward verification with truth tables and fresh evidence |
-| `/fh:verify-ui` | Visual verification with browser screenshots |
+| `/fh:plan-work` | Brainstorm, research, and produce an execution-ready plan |
+| `/fh:build` | Execute a plan with parallel subagents, TDD, design gates, and verification |
+| `/fh:review` | Code review — quality, security, goal verification, and gap analysis |
 
 ## Engineering
 
 | Command | What it does |
 |---------|-------------|
-| `/fh:fix` | Auto-triage and fix bugs with systematic debugging |
+| `/fh:fix` | Find and fix bugs with test-driven discipline |
 | `/fh:refactor` | Restructure code safely, tests green at every step |
 | `/fh:simplify` | Review code for reuse, quality, and efficiency |
 | `/fh:research` | Investigate a topic before planning |
@@ -30,20 +29,21 @@ Output ONLY the reference content below. Do NOT add project-specific analysis, g
 
 | Command | What it does |
 |---------|-------------|
-| `/fh:resume` | Redirects to /fh:progress |
 | `/fh:progress` | Check progress, restore context, and route to next action |
+| `/fh:resume-work` | Redirects to /fh:progress |
 
 ## Design Quality
 
 | Command | What it does |
 |---------|-------------|
-| `/fh:critique` | Evaluate visual hierarchy, information architecture, and design quality |
+| `/fh:ui-critique` | Evaluate visual hierarchy, information architecture, and design quality |
+| `/fh:ui-test` | Take screenshots and check if the UI looks right |
+| `/fh:ui-animate` | Purposeful motion and micro-interactions |
+| `/fh:ui-redesign` | Set up or change your project's design language |
 | `/fh:polish` | Fix alignment, spacing, consistency, and detail issues |
 | `/fh:normalize` | Match your design system and ensure consistency |
 | `/fh:harden` | Error handling, i18n, text overflow, edge cases |
-| `/fh:animate` | Purposeful motion and micro-interactions |
 | `/fh:audit` | Full accessibility, performance, theming, and responsive audit |
-| `/fh:teach-impeccable` | One-time setup for your project's design language |
 | `/fh:adapt` | Make designs work across screen sizes and platforms |
 | `/fh:bolder` | Amplify safe designs to be more visually interesting |
 | `/fh:quieter` | Tone down overly aggressive designs |
@@ -59,11 +59,9 @@ Output ONLY the reference content below. Do NOT add project-specific analysis, g
 
 | Command | What it does |
 |---------|-------------|
-| `/fh:quick` | Do a small task with tracking guarantees |
-| `/fh:add-todo` | Capture an idea or task for later |
-| `/fh:check-todos` | See pending todos and pick one |
+| `/fh:todos` | Manage project todos — add new or review pending |
 
-Phase management, milestone lifecycle, and test generation are handled automatically by `/fh:plan`, `/fh:build`, and `/fh:verify`.
+Phase management, milestone lifecycle, and test generation are handled automatically by `/fh:plan-work`, `/fh:build`, and `/fh:review`.
 
 ## Setup & Maintenance
 
@@ -79,8 +77,8 @@ Phase management, milestone lifecycle, and test generation are handled automatic
 ## Common Workflows
 
 ```
-First time:   /fh:setup → /fh:new-project → /fh:plan → /fh:build → /fh:verify
-Feature:      /fh:plan → /fh:build → /fh:verify → /fh:verify-ui
+First time:   /fh:setup → /fh:new-project → /fh:plan-work → /fh:build → /fh:review
+Feature:      /fh:plan-work → /fh:build → /fh:review → /fh:ui-test
 Bug fix:      /fh:fix
 Refactoring:  /fh:refactor (includes /fh:simplify automatically)
 Code cleanup: /fh:simplify (standalone, on any recent changes)
@@ -95,7 +93,7 @@ CLAUDE.md:    /fh:revise-claude-md (after sessions or /fh:revise-claude-md audit
 ├── PROJECT.md            # Project vision
 ├── ROADMAP.md            # Current phase breakdown
 ├── STATE.md              # Project memory & context
-├── DESIGN.md             # Design language (from /fh:teach-impeccable)
+├── DESIGN.md             # Design language (from /fh:ui-redesign)
 ├── config.json           # Workflow mode & gates
 ├── todos/                # Captured ideas and tasks
 ├── debug/                # Active debug sessions

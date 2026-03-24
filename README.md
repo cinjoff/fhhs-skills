@@ -279,7 +279,7 @@ Executes plans through waves of parallel subagents with quality gates between th
 +----------------------------+----------------------------------+
                              |
                              v
-                        /review  (or /qa for frontend)
+                        /review  (or /ui-test for frontend)
 ```
 
 ## `/review` — Pre-Promotion Gate

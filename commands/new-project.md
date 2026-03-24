@@ -356,7 +356,7 @@ Record in `.planning/PROJECT.md` under tech stack:
 
 ## Step 3: Design Framework
 
-Invoke `/fh:teach-impeccable`.
+Invoke `/fh:ui-redesign`.
 
 This runs the one-time design context setup:
 - Aesthetic direction (tone, style, differentiation)
@@ -364,9 +364,9 @@ This runs the one-time design context setup:
 - Typography and color decisions
 - Component patterns
 
-Output: `.planning/DESIGN.md` — referenced by all future `/fh:build` and `/fh:verify-ui` runs.
+Output: `.planning/DESIGN.md` — referenced by all future `/fh:build` and `/fh:ui-test` runs.
 
-If the user wants to skip this step and set up design later, allow it. They can always run `/fh:teach-impeccable` manually.
+If the user wants to skip this step and set up design later, allow it. They can always run `/fh:ui-redesign` manually.
 
 ---
 
