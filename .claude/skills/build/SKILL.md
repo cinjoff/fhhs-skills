@@ -274,15 +274,15 @@ Calculate visual change ratio:
 
 If `TASKS_AVAILABLE` and a "Design gates" task was created, update it: `TaskUpdate(designGateTaskId, status: "in_progress", activeForm: "Running design gates")` when triggered, or `TaskUpdate(designGateTaskId, status: "completed", metadata: {skipped: true})` when skipped.
 
-When triggered, run the design pipeline (critique → polish → normalize) below.
-When skipped, note: "Design gates skipped (N/M files visual). Run /critique manually if needed."
+When triggered, run the design pipeline (ui-critique → polish → normalize) below.
+When skipped, note: "Design gates skipped (N/M files visual). Run /ui-critique manually if needed."
 
 After all waves complete (including spec gates) and BEFORE self-check, run the design quality pipeline:
 
-**Context for all design gate subagents:** If `.planning/phases/{phase}/{phase}-CONTEXT.md` exists, include its "Design Decisions" and "Review Decisions" sections. These are locked design choices that critique/polish/normalize must respect.
+**Context for all design gate subagents:** If `.planning/phases/{phase}/{phase}-CONTEXT.md` exists, include its "Design Decisions" and "Review Decisions" sections. These are locked design choices that ui-critique/polish/normalize must respect.
 
 ### Critique
-Dispatch subagent to invoke `/critique` on modified frontend files.
+Dispatch subagent to invoke `/ui-critique` on modified frontend files.
 Input: file list + `.planning/DESIGN.md` + anti-pattern reference from `skills/frontend-design/`.
 Fix Critical and High issues. Commit: `style({phase}-{plan}): address design critique`
 
@@ -298,13 +298,12 @@ Skip if no design system defined.
 
 After all design gate sub-steps complete, if `TASKS_AVAILABLE`: `TaskUpdate(designGateTaskId, status: "completed")`.
 
-### Consider Harden and Animate (optional)
+### Consider Animate (optional)
 Suggest (don't auto-run) based on the work:
-- `/harden` — if forms, user input, error states, or i18n concerns
-- `/animate` — if transitions, state changes, or interaction-heavy elements
+- `/ui-animate` — if transitions, state changes, or interaction-heavy elements
 Ask user before proceeding.
 
-Uses design quality commands (`/critique`, `/polish`, `/normalize`) and `skills/frontend-design/` — all built into this plugin.
+Uses design quality commands (`/ui-critique`, `/polish`, `/normalize`) and `skills/frontend-design/` — all built into this plugin.
 
 ### Step 4b: Collect integration check results
 
@@ -421,7 +420,7 @@ If the review surfaces issues:
 - **WARN** findings → report to user, continue if they approve
 
 **Frontend QA routing:** If the build involved frontend changes (`.tsx`, `.css`, `.html` files), suggest:
-"Frontend changes detected. Run `/fh:qa` for diff-aware browser testing, or `/fh:verify-ui` for design critique."
+"Frontend changes detected. Run `/fh:ui-test` for visual verification, or `/fh:ui-test --qa` for diff-aware functional testing."
 
 After the review, report what was built:
 - Tasks completed, commits made, key files created/modified

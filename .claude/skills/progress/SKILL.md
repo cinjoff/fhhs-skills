@@ -1,7 +1,7 @@
 ---
 name: progress
 description: Check project progress, summarize recent work, and route to the next action. Use when the user says 'progress', 'where am I', 'what is next', 'status', or needs situational awareness before continuing work.
-user-invokable: true
+user-invokable: false
 ---
 
 <required_reading>

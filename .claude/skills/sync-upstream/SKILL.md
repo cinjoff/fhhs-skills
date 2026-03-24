@@ -4,7 +4,7 @@ description: |
   Check upstream repos for updates, show what changed, and guide patch reapplication.
   Use when the user says 'sync upstream', 'check upstream', 'update upstream',
   'new version of superpowers/impeccable/gsd', or wants to pull latest upstream changes.
-user-invokable: true
+user-invokable: false
 ---
 
 # Sync Upstream

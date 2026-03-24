@@ -1,7 +1,7 @@
 ---
 name: simplify
 description: Review changed code for reuse, quality, and efficiency. Use when the user says 'simplify', 'clean up this code', 'check for duplication', 'optimize this', or after completing a build/refactor/fix. Runs automatically as part of /build, /refactor, and /fix (MODERATE+) pipelines.
-user-invokable: true
+user-invokable: false
 ---
 
 Review changed code for reuse, quality, and efficiency, then fix any issues found.

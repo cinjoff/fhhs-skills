@@ -121,7 +121,7 @@ npm run lint 2>&1; echo "EXIT:$?"
 
 Record: test count, pass/fail, build exit code, lint exit code, raw output excerpts.
 
-**If frontend work** (`.tsx`/`.css` files changed): suggest `/fh:verify-ui` for visual verification but don't block on it.
+**If frontend work** (`.tsx`/`.css` files changed): suggest `/fh:ui-test` for visual verification but don't block on it.
 
 ---
 
