@@ -7,6 +7,6 @@
   },
   "repository": "https://github.com/cinjoff/fhhs-skills",
   "license": "MIT",
-  "skills": "./.claude/skills",
+  "skills": "../.claude/skills",
   "keywords": ["workflow", "tdd", "design", "project-management", "gsd", "skills", "commands"]
 }
