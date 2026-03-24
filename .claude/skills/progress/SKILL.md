@@ -1,7 +1,7 @@
 ---
 name: progress
 description: Check project progress, restore session context, and route to the next action. Use when the user says 'progress', 'where am I', 'what is next', 'status', 'resume', 'where was I', 'continue', 'pick up where I left off', or needs situational awareness before continuing work.
-user-invokable: false
+user-invokable: true
 ---
 
 <required_reading>
