@@ -39,8 +39,7 @@ Then start a Claude Code session and run `/fh:setup`.
 When you come back to an existing project:
 
 ```
-/resume-work    restore context and pick up where you left off
-/progress       see where you are and what's next
+/progress       restore context, check cross-session memory, and route to next action
 ```
 
 ## Native Task Tracking
@@ -81,7 +80,7 @@ Subagents create their own sub-tasks for granular progress. If task tools are un
 
 **Starting a new session:**
 ```
-/resume-work
+/progress
 ```
 
 ## Commands
@@ -95,8 +94,8 @@ Subagents create their own sub-tasks for granular progress. If task tools are un
 | `/plan-work` | Brainstorm, research, and produce an execution-ready plan |
 | `/plan-review` | Founder-level plan challenge — rethink scope, find the 10-star product |
 | `/build` | Execute a plan with parallel subagents, TDD, design gates, and verification |
-| `/qa` | Systematic QA testing with agent-browser backend |
-| `/review` | Code quality, security scan, verification, and branch promotion |
+| `/ui-test` | Visual verification and QA testing with agent-browser backend |
+| `/review` | Code quality, security scan, runtime error check, and branch promotion |
 
 </details>
 
@@ -117,23 +116,18 @@ Subagents create their own sub-tasks for granular progress. If task tools are un
 
 | Command | What it does |
 |---------|-------------|
-| `/critique` | Evaluate visual hierarchy, information architecture, and design quality |
+| `/ui-critique` | Evaluate visual hierarchy, information architecture, and design quality |
+| `/ui-animate` | Purposeful motion and micro-interactions |
+| `/ui-test` | Visual verification and QA testing |
+| `/ui-redesign` | Change art direction and design context |
 | `/polish` | Fix alignment, spacing, consistency, and detail issues |
 | `/normalize` | Match your design system and ensure consistency |
 | `/harden` | Error handling, i18n, text overflow, edge cases |
-| `/animate` | Purposeful motion and micro-interactions |
 | `/audit` | Full accessibility, performance, theming, and responsive audit |
-| `/teach-impeccable` | One-time setup for your project's design language |
-| `/adapt` | Make designs work across screen sizes and platforms |
-| `/bolder` | Amplify safe designs to be more visually interesting |
-| `/quieter` | Tone down overly aggressive designs |
-| `/distill` | Strip away unnecessary complexity |
-| `/clarify` | Improve confusing labels, errors, and microcopy |
-| `/colorize` | Add strategic color to monochromatic interfaces |
-| `/delight` | Add personality and moments of joy |
-| `/extract` | Pull reusable components into your design system |
-| `/onboard` | Design first-time user experiences and empty states |
-| `/optimize` | Improve loading speed, rendering, and bundle size |
+| `/secure` | OWASP Top 10 security vulnerability scan |
+| `/observability` | Query local Sentry error store for runtime errors |
+
+The following design skills are available as internal skills (auto-invoked by `/build` and other pipelines, not user-invokable): adapt, bolder, quieter, distill, clarify, colorize, delight, extract, onboard, optimize.
 
 </details>
 
@@ -142,12 +136,10 @@ Subagents create their own sub-tasks for granular progress. If task tools are un
 
 | Command | What it does |
 |---------|-------------|
-| `/resume-work` | Restore context and route to the right next action |
-| `/progress` | See where you are and what's next |
+| `/progress` | Restore context (git + claude-mem), check status, route to next action |
 | `/fh:tracker` | Launch the visual project dashboard (real-time web UI at localhost:3847) |
 | `/quick` | Do a small task with tracking guarantees |
-| `/add-todo` | Capture an idea or task for later |
-| `/check-todos` | See pending todos and pick one |
+| `/todos` | Manage project todos — add new or review pending |
 
 Phase management, milestone lifecycle, and test generation are handled automatically by `/plan-work`, `/build`, and `/review`.
 
@@ -297,13 +289,20 @@ Shared terminal step for `/build`, `/fix`, and `/refactor`.
 ```
 +- REVIEW ------------------------------------------------------+
 |                                                               |
-|  1. CODE QUALITY                                              |
+|  1. SCOPE + RUNTIME ERROR CHECK                               |
+|  +---------------------------------------------------+       |
+|  |  Diff range + file list                            |       |
+|  |  Query sentry local store (last 2hrs)              |       |
+|  |  Cross-reference errors against diff by basename   |       |
+|  +---------------------------------------------------+       |
+|                                                               |
+|  2. CODE QUALITY                                              |
 |  +---------------------------------------------------+       |
 |  |  Code review (+ Next.js perf criteria if relevant) |       |
 |  |  Severity: Critical > Important > Minor > Nit      |       |
 |  +---------------------------------------------------+       |
 |                                                               |
-|  2. SECURITY SCAN                                             |
+|  3. SECURITY SCAN                                             |
 |  +---------------------------------------------------+       |
 |  |  4 parallel agents — OWASP Top 10:                 |       |
 |  |  +----------+ +--------+ +------+ +--------+      |       |
@@ -313,21 +312,21 @@ Shared terminal step for `/build`, `/fix`, and `/refactor`.
 |  |  Gate: BLOCK (critical) / WARN (high) / PASS      |       |
 |  +---------------------------------------------------+       |
 |                                                               |
-|  3. EVIDENCE                                                  |
+|  4. EVIDENCE                                                  |
 |  +---------------------------------------------------+       |
 |  |  Run tests, build, lint — capture exit codes       |       |
 |  +---------------------------------------------------+       |
 |                                                               |
-|  4. TYPESCRIPT STRICTNESS                                     |
+|  5. TYPESCRIPT STRICTNESS                                     |
 |  +---------------------------------------------------+       |
 |  |  Grep diff for: `any`, `as` casts,                |       |
 |  |  non-exhaustive switches                           |       |
 |  +---------------------------------------------------+       |
 |                                                               |
-|  5. GATE DECISION                                             |
+|  6. GATE DECISION                                             |
 |  +---------------------------------------------------+       |
 |  |  BLOCK: critical issues or verification failures   |       |
-|  |  WARN:  high security findings                     |       |
+|  |  WARN:  runtime errors in changed files            |       |
 |  |  PASS:  otherwise → promote branch                 |       |
 |  +---------------------------------------------------+       |
 +---------------------------------------------------------------+
@@ -339,7 +338,12 @@ Shared terminal step for `/build`, `/fix`, and `/refactor`.
  BUG REPORT
       |
       v
-+- TRIAGE (via LSP) -------------------------------------------+
++- RUNTIME ERROR CHECK ----------------------------------------+
+|  Query sentry local store for matching errors (last 60min)   |
+|  Stack traces + breadcrumbs become starting evidence         |
++----------------------------+---------------------------------+
+                             |
++- TRIAGE (via LSP) ---------+---------------------------------+
 |                                                               |
 |  Trace the bug through code with go-to-definition,           |
 |  find-references, hover. Classify severity:                   |
