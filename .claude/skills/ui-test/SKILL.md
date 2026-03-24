@@ -1,24 +1,128 @@
 ---
-name: qa
-version: 1.0.0
-description: |
-  Systematically QA test a web application. Use when asked to "qa", "QA", "test this site",
-  "find bugs", "dogfood", or review quality. Four modes: diff-aware (automatic on feature
-  branches — analyzes git diff, identifies affected pages, tests them), full (systematic
-  exploration), quick (30-second smoke test), regression (compare against baseline). Produces
-  structured report with health score, screenshots, and repro steps.
-allowed-tools:
-  - Bash(agent-browser:*)
-  - Read
-  - Write
-  - Grep
-  - Glob
-  - AskUserQuestion
+name: ui-test
+description: Visual verification and QA testing of frontend work. Use when the user says 'check the UI', 'does it look right', 'visual check', 'screenshot', 'qa', 'test this site', 'find bugs', or 'dogfood'. Default mode captures screenshots and runs design critique. Use --qa for systematic functional testing.
+user-invokable: true
 ---
 
-<!-- Forked from gstack qa (v0.3.3). Browser backend: agent-browser (Vercel) -->
+Visual verification and QA testing of frontend work.
 
-# /qa: Systematic QA Testing
+Target to verify: $ARGUMENTS
+
+If `$ARGUMENTS` contains `--qa`, run **QA Mode** below. Otherwise, run **Visual Verification Mode**.
+
+---
+
+# Visual Verification Mode
+
+## Step 1: Ensure Dev Server
+
+Check if a dev server is running on a common port (3000, 5173, 4321, 8080):
+```bash
+lsof -i :3000 -i :5173 -i :4321 -i :8080 -P -n 2>/dev/null | grep LISTEN | head -5
+```
+
+If not running, start it with `pnpm dev` (or the project's dev command) in the background and wait for ready.
+
+---
+
+## Step 2: Capture Screenshots
+
+Requires `agent-browser` CLI.
+
+Check availability:
+```bash
+which agent-browser && echo "available" || echo "not-found"
+```
+
+If not installed, **stop and tell the user**: "agent-browser is required for visual verification. Install it with: `npm install -g agent-browser`" — do not proceed without it.
+
+Capture desktop, tablet, and mobile viewports:
+
+```bash
+# Desktop (1440x900)
+agent-browser open http://localhost:3000 --viewport 1440x900 --wait 3000
+agent-browser screenshot /tmp/ui-test-desktop.png
+
+# Tablet (768x1024)
+agent-browser open http://localhost:3000 --viewport 768x1024 --wait 2000
+agent-browser screenshot /tmp/ui-test-tablet.png
+
+# Mobile (375x812)
+agent-browser open http://localhost:3000 --viewport 375x812 --wait 2000
+agent-browser screenshot /tmp/ui-test-mobile.png
+
+# Accessibility snapshot
+agent-browser snapshot -c > /tmp/ui-test-a11y.txt
+```
+
+For authenticated pages, log in first:
+```bash
+agent-browser open http://localhost:3000/login --viewport 1440x900
+agent-browser fill 'input[type="email"]' "$TEST_USER_EMAIL"
+agent-browser fill 'input[type="password"]' "$TEST_USER_PASSWORD"
+agent-browser click 'button[type="submit"]'
+agent-browser open http://localhost:3000/protected --wait 5000
+agent-browser screenshot /tmp/ui-test-desktop.png
+```
+
+Read each screenshot image to visually inspect the UI.
+
+**Video evidence for critical bugs:** If a CRITICAL visual bug is found, record a video: `agent-browser record start ./evidence.webm`, reproduce the bug, `agent-browser record stop`. Attach the recording path to the report.
+
+---
+
+## Step 3: Console Health Check
+
+Check for runtime errors:
+```bash
+agent-browser eval "JSON.stringify(window.__consoleErrors || [])"
+```
+
+Evaluate:
+1. **Console errors** — any runtime errors? React errors? Failed API calls?
+2. **Console warnings** — deprecation warnings? Missing props?
+3. **Network errors** — failed requests? CORS issues?
+4. **Page errors** — unhandled exceptions?
+
+Flag anything concerning.
+
+---
+
+## Step 4: Design Critique
+
+Read the screenshots and the project's `.planning/DESIGN.md` for design context (if no DESIGN.md exists, evaluate against general web design principles). Evaluate:
+
+1. **Visual hierarchy** — most important content most prominent?
+2. **Typography** — correct fonts, scale, spacing per design system?
+3. **Color** — semantic usage, contrast (WCAG AA)?
+4. **Spacing** — consistent rhythm, sufficient whitespace, 8px grid?
+5. **Responsive** — layout works across all three breakpoints?
+6. **Accessibility** — from the a11y snapshot: proper heading hierarchy, labeled inputs, descriptive buttons?
+7. **No emoji in UI** — the project does not use standard emoji in the interface
+
+Report issues with severity: Critical / High / Medium / Low
+
+---
+
+## Step 5: Report
+
+Combine all results into a single report:
+
+### Visual Verification Report
+- **Console Health**: errors, warnings, network issues
+- **Screenshots**: reference captured files, note what each shows
+- **Design Quality**: severity-rated issues from critique
+- **Accessibility**: heading structure, labels, contrast
+- **Responsive**: issues at specific breakpoints
+- **Recommendation**: Ship / Fix critical first / Needs rework
+
+If GSD project is active and verifying a phase, update STATE.md with verification results.
+
+---
+
+# QA Mode (--qa flag)
+
+<!-- Forked from gstack qa (v0.3.3). Browser backend: agent-browser (Vercel) -->
 
 You are a QA engineer. Test web applications like a real user — click everything, fill every form, check every state. Produce a structured report with evidence.
 
@@ -122,7 +226,7 @@ Run full mode, then load `baseline.json` from a previous run. Diff: which issues
 
 1. Check agent-browser availability (see Setup above)
 2. Create output directories
-3. Copy report template from `qa/references/report-template.md` to output dir
+3. Copy report template from `ui-test/references/report-template.md` to output dir
 4. Start timer for duration tracking
 5. Initialize isolated browser session: `agent-browser --session "qa-${BRANCH}"`
 
@@ -185,7 +289,7 @@ agent-browser --session "qa-${BRANCH}" screenshot "$REPORT_DIR/screenshots/page-
 agent-browser --session "qa-${BRANCH}" console
 ```
 
-Then follow the **per-page exploration checklist** (see `qa/references/exploration-checklist.md`):
+Then follow the **per-page exploration checklist** (see `ui-test/references/exploration-checklist.md`):
 
 1. **Visual scan** — Look at the screenshot for layout issues
 2. **Interactive elements** — Click buttons, links, controls. Do they work?
@@ -252,7 +356,7 @@ agent-browser --session "qa-${BRANCH}" snapshot -i
 agent-browser --session "qa-${BRANCH}" screenshot "$REPORT_DIR/screenshots/issue-002.png"
 ```
 
-**Write each issue to the report immediately** using the template format from `qa/references/report-template.md`.
+**Write each issue to the report immediately** using the template format from `ui-test/references/report-template.md`.
 
 ### Phase 6: Wrap Up
 

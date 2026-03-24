@@ -755,7 +755,7 @@ Then present the status table and next steps as regular markdown text:
 
 **Also available:**
 - `/fh:help` — full command reference and architecture guide
-- `/fh:resume` — pick up an existing project with `.planning/`
+- `/fh:progress` — pick up an existing project with `.planning/`
 
 ───────────────────────────────────────────────────────────────
 ```

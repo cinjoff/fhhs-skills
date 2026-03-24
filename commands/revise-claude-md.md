@@ -100,7 +100,7 @@ Fill in:
 - **Architecture** — where src, components, pages, API routes, tests live (adapt to framework)
 - **Code Style** — project-specific conventions, plus `Conventional commits` and `Stage files individually`
 - **Testing** — adapt to chosen stack (Vitest, Jest, pytest, etc.)
-- **Planning** — always include: `Project state tracked in .planning/. Run /fh:resume to check status.` Plus design reference if `.planning/DESIGN.md` was created.
+- **Planning** — always include: `Project state tracked in .planning/. Run /fh:progress to check status.` Plus design reference if `.planning/DESIGN.md` was created.
 - **Gotchas** — leave empty or add framework-specific ones (e.g., "NEXT_PUBLIC_ vars must be set at build time")
 
 Keep under 40 lines. This file helps Claude navigate the project in all future sessions.

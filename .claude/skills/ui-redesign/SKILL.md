@@ -1,10 +1,10 @@
 ---
-name: teach-impeccable
-description: One-time setup that gathers design context for your project and saves it to .planning/DESIGN.md. Run once to establish persistent design guidelines.
+name: ui-redesign
+description: Change art direction and design context for your project. Updates .planning/DESIGN.md with new design guidelines, visual references, and brand direction. Use when the user says 'redesign', 'change the look', 'new art direction', 'update design system', or 'restyle'.
 user-invokable: true
 ---
 
-Gather design context for this project, then persist it for all future sessions.
+Review and update the art direction for this project. Can be used for initial setup or to change existing design direction.
 
 ## Step 1: Explore the Codebase
 
@@ -18,6 +18,8 @@ Before asking questions, thoroughly scan the project to discover what you can:
 - **Any style guides or brand documentation**
 
 Note what you've learned and what remains unclear.
+
+If `.planning/DESIGN.md` already exists, read it first and present the current art direction. Ask the user what they want to change before proceeding to questions.
 
 ## Step 2: Ask UX-Focused Questions
 
@@ -72,3 +74,5 @@ type: design-context
 Write this to `.planning/DESIGN.md`. If the file exists, append or update the Design Context section.
 
 Confirm completion and summarize the key design principles that will now guide all future work.
+
+Suggest running `/ui-critique` to evaluate existing UI against the updated art direction.
