@@ -41,6 +41,31 @@ Record: `BASE_BRANCH`, file list, project type, total lines changed.
 
 ---
 
+## Step 1.5: Runtime Error Check
+
+Check if the local error store has runtime errors related to the changed code.
+
+1. Check if `.sentry-local/events.db` exists:
+```bash
+[ -f ".sentry-local/events.db" ] && echo "STORE_EXISTS" || echo "NO_STORE"
+```
+
+2. If `STORE_EXISTS`, query recent errors:
+```bash
+node lib/sentry-local-query.mjs recent --minutes 120
+```
+
+3. Cross-reference errors against the diff file list from Step 1. Match on **basename** (e.g. `login.ts`), not full path — sentry stack traces use absolute paths while git diff uses relative paths.
+   - If errors reference files in the diff (by basename match) → flag as "Runtime errors in changed code" and pass to Agent 3 (Gap Analysis) as additional input
+   - If errors exist but don't match the diff → note in report as "Unrelated runtime errors detected (N)" but don't block
+   - If no errors → note "No runtime errors" in the report
+
+4. If `NO_STORE`: skip this step silently. Do not mention observability in the report.
+
+Budget: less than 2% context. Don't deep-dive errors — just surface file matches for the gap analysis agent.
+
+---
+
 ## Step 2: Dispatch Analysis (full and --quick modes)
 
 Based on mode, dispatch parallel subagents. Each agent receives ONLY the diff + its specific checklist — keep agent context lean.
@@ -156,6 +181,7 @@ Collect all findings from Steps 2-5. Deduplicate (same file:line across agents).
 | Goal verification | PASS / FAIL / PARTIAL |
 | Evidence (tests/build/lint) | PASS / FAIL |
 | TS strictness | Blocking (`any`) / Warning (`as`, switches) |
+| Runtime errors | CRITICAL (in changed files) / INFO (unrelated) |
 
 Sort: all blocking items first, then warnings, then informational.
 
@@ -209,6 +235,10 @@ Generate a structured report. For each finding above Minor/MEDIUM, include a **N
 - Type assertions (`as`): N instances
 - Non-exhaustive switches: N instances
 
+### Runtime Errors (if store exists)
+- In changed files: N errors (details passed to gap analysis)
+- Unrelated: N errors (INFO — not blocking)
+
 ### Gate Decision: PASS / WARN / BLOCK
 - [reasoning]
 
@@ -227,6 +257,7 @@ Generate a structured report. For each finding above Minor/MEDIUM, include a **N
 | Goal verification FAIL | **BLOCK** — must close gaps |
 | Evidence failures (tests/build/lint red) | **BLOCK** — must fix |
 | TypeScript `any` in new code | **BLOCK** — must replace with proper types |
+| Runtime errors in changed files | **WARN** — likely related to this work |
 | HIGH security findings | **WARN** — log in report, recommend fixing |
 | MEDIUM security + Minor code | **PASS** with notes |
 | Nitpick / LOW | **PASS** — note only |

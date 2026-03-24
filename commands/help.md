@@ -30,8 +30,8 @@ Output ONLY the reference content below. Do NOT add project-specific analysis, g
 
 | Command | What it does |
 |---------|-------------|
-| `/fh:resume` | Restore context and route to the right next action |
-| `/fh:progress` | See where you are and what's next |
+| `/fh:resume` | Redirects to /fh:progress |
+| `/fh:progress` | Check progress, restore context, and route to next action |
 
 ## Design Quality
 
@@ -84,7 +84,7 @@ Feature:      /fh:plan → /fh:build → /fh:verify → /fh:verify-ui
 Bug fix:      /fh:fix
 Refactoring:  /fh:refactor (includes /fh:simplify automatically)
 Code cleanup: /fh:simplify (standalone, on any recent changes)
-Resuming:     /fh:resume → (routes to next action)
+Resuming:     /fh:progress → (checks progress, routes to next action)
 CLAUDE.md:    /fh:revise-claude-md (after sessions or /fh:revise-claude-md audit)
 ```
 
