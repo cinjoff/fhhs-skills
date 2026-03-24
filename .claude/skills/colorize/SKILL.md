@@ -1,7 +1,7 @@
 ---
 name: colorize
 description: Add strategic color to features that are too monochromatic or lack visual interest. Makes interfaces more engaging and expressive.
-user-invokable: true
+user-invokable: false
 ---
 
 Strategically introduce color to designs that are too monochromatic, gray, or lacking in visual warmth and personality.

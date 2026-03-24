@@ -254,7 +254,7 @@ UAT.md exists with gaps (diagnosed issues). User needs to plan fixes.
 
 **Also available:**
 - `/build` — execute phase plans
-- `/verify` — run verification
+- `/review` — run review and verification
 
 ---
 ```
@@ -300,7 +300,7 @@ Read ROADMAP.md to get the next phase's name and goal.
 ---
 
 **Also available:**
-- `/verify {Z}` — verify before continuing
+- `/review` — review before continuing
 
 ---
 ```
@@ -320,14 +320,14 @@ All {N} phases finished!
 
 **Complete Milestone** — archive and prepare for next
 
-`/verify` — verify and complete the milestone
+`/review` — review and complete the milestone
 
 <sub>`/clear` first → fresh context window</sub>
 
 ---
 
 **Also available:**
-- `/verify` — verify before completing milestone
+- `/review` — review before completing milestone
 
 ---
 ```
@@ -366,7 +366,7 @@ Ready to plan the next milestone.
 - Phase complete but next phase not planned → offer `/plan-work`
 - All work complete → offer milestone completion
 - Blockers present → highlight before offering to continue
-- Handoff file exists → mention it, offer `/resume-work`
+- Handoff file exists → display handoff context directly
   </step>
 
 </process>

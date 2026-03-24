@@ -1,6 +1,6 @@
 ---
 name: review
-description: Comprehensive code analysis — code quality, architecture, security, goal verification, and gap analysis. Use when the user says 'review', 'review my changes', 'is this ready', 'check my work', 'code review', or wants deep scrutiny before promoting. Also available as a targeted pass with --quick or --verify flags.
+description: Comprehensive code analysis — code quality, architecture, security, goal verification, and gap analysis. Use when the user says 'review', 'review my changes', 'is this ready', 'check my work', 'code review', or wants deep scrutiny before promoting. Also available as --quick for fast pre-commit checks.
 user-invokable: true
 ---
 
@@ -19,8 +19,7 @@ You are a **lean orchestrator**. Stay under 15% context usage. Delegate all anal
 | Flag | What runs | When to use |
 |------|-----------|-------------|
 | *(default — full)* | All 9 steps | Deep scrutiny before promoting |
-| `--quick` | Steps 1, 4, 5, 6, 7, 8 (quality + TS + evidence only) | Fast pre-commit sanity check |
-| `--verify` | Steps 1, 3, 6, 7, 8 (goal verification only) | Check must_have truth tables |
+| `--quick` | Steps 1, 3, 4, 5, 6, 7, 8 (quality + goal verification + TS + evidence) | Fast pre-commit sanity check |
 
 ---
 
@@ -78,11 +77,9 @@ Based on mode, dispatch parallel subagents. Each agent receives ONLY the diff + 
 - Same as full mode Agent 1, but skip architecture deep-dive
 - Focus: naming, structure, error handling, test quality, cross-file consistency
 
-### --verify mode — skip Step 2 entirely.
-
 ---
 
-## Step 3: Goal Verification (full and --verify modes)
+## Step 3: Goal Verification (all modes)
 
 **Inline — no subagent.** Runs only if a `.planning/` directory exists with PLAN.md files in scope.
 

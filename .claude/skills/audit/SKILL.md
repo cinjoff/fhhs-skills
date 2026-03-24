@@ -1,7 +1,7 @@
 ---
 name: audit
 description: Perform comprehensive audit of interface quality across accessibility, performance, theming, and responsive design. Generates detailed report of issues with severity ratings and recommendations.
-user-invokable: true
+user-invokable: false
 ---
 
 Run systematic quality checks and generate a comprehensive audit report with prioritized issues and actionable recommendations. Don't fix issues - document them for other commands to address.

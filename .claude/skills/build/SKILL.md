@@ -275,7 +275,7 @@ Calculate visual change ratio:
 If `TASKS_AVAILABLE` and a "Design gates" task was created, update it: `TaskUpdate(designGateTaskId, status: "in_progress", activeForm: "Running design gates")` when triggered, or `TaskUpdate(designGateTaskId, status: "completed", metadata: {skipped: true})` when skipped.
 
 When triggered, run the design pipeline (critique → polish → normalize) below.
-When skipped, note: "Design gates skipped (N/M files visual). Run /critique or /polish manually if needed."
+When skipped, note: "Design gates skipped (N/M files visual). Run /critique manually if needed."
 
 After all waves complete (including spec gates) and BEFORE self-check, run the design quality pipeline:
 
@@ -440,7 +440,7 @@ Route based on phase status:
 | Condition | Action |
 |-----------|--------|
 | More plans in phase | "Plan X of Y complete." Suggest `/build` for next plan. |
-| Phase complete, more phases | "Phase complete." Suggest `/plan-work {next}` or `/verify`. Also suggest `/fh:revise-claude-md` to capture learnings from this phase. |
+| Phase complete, more phases | "Phase complete." Suggest `/plan-work {next}` or `/review`. Also suggest `/fh:revise-claude-md` to capture learnings from this phase. |
 | Last phase in milestone | "Milestone complete." Run milestone completion: archive phase directories, update STATE.md and ROADMAP.md via `gsd-tools.cjs milestone complete`, and suggest `/fh:revise-claude-md` — milestone boundaries are natural points to update project conventions. |
 
 If user prefers to skip the branch finishing (more work planned), report what was built with links to key files.
