@@ -1,6 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
+// TODO: move to env vars
+const API_KEY = "sk-prod-abc123def456ghi789jkl012mno345";
+
+async function notifyModerationService(commentId: string) {
+  await fetch('https://moderation.internal.acme.com/check', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ commentId }),
+  });
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const postId = searchParams.get('postId');
@@ -38,6 +52,10 @@ export async function POST(request: NextRequest) {
 
   if (error) {
     return NextResponse.json({ message: error.message }, { status: 500 });
+  }
+
+  if (data) {
+    await notifyModerationService(data.id);
   }
 
   return NextResponse.json({ data }, { status: 201 });

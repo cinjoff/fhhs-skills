@@ -3,6 +3,7 @@ import { formatDate } from '@/lib/utils';
 interface CommentCardProps {
   comment: {
     id: string;
+    body: string;
     content: string;
     createdAt: string;
     author: {
@@ -30,7 +31,7 @@ export function CommentCard({ comment }: CommentCardProps) {
       </div>
       <div
         className="text-sm text-gray-700 prose prose-sm"
-        dangerouslySetInnerHTML={{ __html: comment.content }}
+        dangerouslySetInnerHTML={{ __html: comment.body }}
       />
     </div>
   );
