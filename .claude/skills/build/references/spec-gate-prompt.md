@@ -42,6 +42,10 @@ optimistic. You MUST verify everything independently by reading the actual code.
 - Check that done criteria are genuinely met
 - Look for stubs, placeholders, and unwired code
 
+## Fallow Static Analysis (if provided)
+
+If the orchestrator has included Fallow output below, use it as ground truth for unwired code detection. Fallow has analyzed the full codebase import graph — its findings are definitive, not heuristic.
+
 ## What to Check
 
 **Missing requirements:**
@@ -57,10 +61,13 @@ optimistic. You MUST verify everything independently by reading the actual code.
 - Empty catch blocks, no-op callbacks
 
 **Unwired code:**
-- Files created but never imported
-- Functions defined but never called
-- State defined but never rendered
-- API routes defined but never fetched from
+- If Fallow output is provided: cite its unused-exports and unused-files findings for files in this wave's diff. These are definitive — the export/file is not imported anywhere in the codebase.
+- If Fallow output is NOT provided: fall back to manual inspection:
+  - Files created but never imported
+  - Functions defined but never called
+  - State defined but never rendered
+  - API routes defined but never fetched from
+- In both cases: check whether "unused" is intentional (public API for future waves) or a genuine bug (unwired code that should be connected).
 
 **TypeScript strictness:**
 - Any use of `any` type (including implicit via missing annotations)

@@ -51,63 +51,30 @@ upstream/playwright-best-practices-b4b0fd3c/
     └── websockets.md                             ← WebSocket testing
 ```
 
-## Capability Flow Diagram
+## Deep Capability Description
 
-```
-              PLAYWRIGHT-BEST-PRACTICES REFERENCE ARCHITECTURE
-
-  ┌─────────────────────────────────────────────────────────────────┐
-  │                    UPSTREAM-SKILL.md (master)                    │
-  │        Routes to appropriate reference based on context          │
-  └──────────────────────────┬──────────────────────────────────────┘
-                             │
-          ┌──────────────────┼──────────────────────┐
-          │                  │                      │
-  ┌───────┴───────┐  ┌──────┴──────┐  ┌────────────┴──────────────┐
-  │  FOUNDATIONS  │  │  PATTERNS   │  │  ADVANCED SCENARIOS       │
-  ├───────────────┤  ├─────────────┤  ├───────────────────────────┤
-  │ locators      │  │ page-object │  │ multi-user                │
-  │ assertions-   │  │ fixtures-   │  │ multi-context             │
-  │   waiting     │  │   hooks     │  │ iframes                   │
-  │ test-org      │  │ test-data   │  │ browser-extensions        │
-  │ annotations   │  │ global-     │  │ canvas-webgl              │
-  │ debugging     │  │   setup     │  │ electron                  │
-  └───────────────┘  │ component-  │  │ service-workers           │
-                     │   testing   │  │ websockets                │
-  ┌───────────────┐  └─────────────┘  │ clock-mocking             │
-  │  QUALITY      │                   └───────────────────────────┘
-  ├───────────────┤  ┌─────────────┐
-  │ flaky-tests   │  │  OPS/CI     │
-  │ error-testing │  ├─────────────┤
-  │ console-      │  │ ci-cd       │
-  │   errors      │  │ performance │
-  │ accessibility │  │ perf-testing│
-  │ security-     │  │ test-       │
-  │   testing     │  │   coverage  │
-  │ i18n          │  │ network-    │
-  └───────────────┘  │   advanced  │
-                     │ file-ops    │
-                     │ browser-    │
-                     │   apis      │
-                     │ third-party │
-                     │ mobile-     │
-                     │   testing   │
-                     └─────────────┘
-```
+| Skill | What It Actually Does | Value Proposition | fhhs Usage |
+|-------|----------------------|-------------------|------------|
+| **playwright-best-practices** | Activity-based reference guide with decision trees. For any Playwright testing scenario, routes to the appropriate reference guide. Covers foundations (locators, assertions, fixtures), patterns (POM, test data, global setup), quality (flaky tests, error testing, a11y, security), ops (CI/CD, performance, coverage), and advanced scenarios (multi-user, WebSocket, Canvas/WebGL, Electron, browser extensions). 35 individual reference files, each a comprehensive guide for its topic. | Eliminates guessing about test design. Battle-tested patterns for every Playwright scenario. The depth per topic is exceptional — not "how to use locators" but "which locator strategy for which situation, with tradeoffs." | **CONDITIONAL** — wired in `/fh:build` Step 3 (conditional context injection for interactive features), `/fh:fix` Step 2 (when fixing test issues), `/fh:plan-work` Step 6 (E2E test warning for interactive features). Distilled from 35 guides into compact `/fh:playwright-testing`. |
 
 ## Skills Table
 
-| Skill | SDLC Phase | Quality | Status | fhhs Equivalent | Notes |
-|-------|-----------|---------|--------|-----------------|-------|
-| playwright-best-practices | Testing | A | ✅ Forked | /fh:playwright-testing (distilled) | 35 reference guides distilled |
+| Skill | SDLC Phase | Quality | Pipeline Status | fhhs Equivalent | Notes |
+|-------|-----------|---------|----------------|-----------------|-------|
+| playwright-best-practices | Testing | A | ✅ **Conditional** | /fh:playwright-testing (distilled) | 35 guides → compact skill |
 
 ## Supporting Assets Table
 
 | Asset | Type | Used by | Status | Notes |
 |-------|------|---------|--------|-------|
-| references/ (35 files) | Reference | playwright-best-practices | ✅ Forked | Distilled into /fh:playwright-testing |
-| All 35 individual reference files | Reference | Contextual lookup | ✅ Forked | Condensed from full guides |
+| references/ (35 files) | Reference | playwright-best-practices | ✅ Distilled | Condensed into /fh:playwright-testing |
 
 ## Assessment
 
-playwright-best-practices is the deepest single-topic reference in the upstream catalog. Its 35 guides cover Playwright testing with exceptional thoroughness. In fhhs, it is distilled into /fh:playwright-testing — the full 35-file reference set is condensed into a more compact skill that retains the essential patterns while fitting within Claude's context constraints. The distillation is well-executed but means some advanced scenarios (Electron testing, browser extensions, Canvas/WebGL) are less thoroughly covered in the fhhs version. No integration gaps — the upstream is fully leveraged, just compressed.
+Fully integrated via distillation. The 35-file reference set is condensed into a compact skill that retains essential patterns while fitting within Claude's context constraints. Some advanced scenarios (Electron, browser extensions, Canvas/WebGL) are less thoroughly covered in the fhhs version, but these are niche and rarely needed.
+
+### Recommendations
+
+| Priority | Action | Impact |
+|----------|--------|--------|
+| **None** | No changes needed | Fully integrated via distillation |

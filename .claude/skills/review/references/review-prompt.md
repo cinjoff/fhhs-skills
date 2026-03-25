@@ -26,6 +26,7 @@ Review the full diff from branch base to HEAD. Focus on changes introduced in th
 ### DRY
 - Is there duplicated logic that should be extracted?
 - Are shared utilities used consistently?
+- If Fallow duplication data is available, cite exact duplicate locations rather than inferring from the diff
 
 ### Complexity
 - Are there overly complex conditionals that should be decomposed?
@@ -49,6 +50,7 @@ Review the full diff from branch base to HEAD. Focus on changes introduced in th
 ### Dependency Direction
 - Do dependencies flow in one direction (e.g., UI -> service -> data)?
 - Are there circular imports? Check for A imports B imports A patterns.
+- If Fallow data is available, circular dependency findings are definitive — cite them directly
 - Do lower-level modules depend on higher-level abstractions? (dependency inversion)
 
 ### Separation of Concerns
@@ -126,6 +128,24 @@ Only apply if the project uses Next.js (`next.config.*` present):
 - **Barrel imports:** `import { X } from '@/components'` patterns that pull entire module trees into client bundles
 - **Caching:** Are expensive computations wrapped in `React.cache` or LRU caches? Are `fetch` calls using appropriate Next.js caching strategies?
 - **Bundle size:** Are large libraries imported on the client side when a lighter alternative exists?
+
+---
+
+## Static Analysis Findings (if provided)
+
+If this section contains Fallow output, treat it as **ground truth** — these findings are deterministic, based on full codebase import graph analysis.
+
+### How to use Fallow data in your review:
+
+**Dead code (unused exports/files):** Flag as Important. Cite the exact export name and file from Fallow output. Note: some unused exports are intentional public API — check if the export is documented or in an `index.ts` barrel file before flagging.
+
+**Circular dependencies:** Flag as Important or Critical (depending on whether it causes runtime issues). Cite the exact cycle chain from Fallow output. Reference the "Dependency Direction" criteria above.
+
+**Code duplication:** Flag as Minor or Important (depending on duplication size). Cite exact file:line ranges from Fallow output. Reference the "DRY" criteria above.
+
+**Complexity hotspots:** Flag functions exceeding cyclomatic complexity 15 or cognitive complexity 20 as Important. Cite the exact metric from Fallow output. Reference the "Complexity" criteria above.
+
+If no Fallow data is provided, use your existing analysis approach for these areas.
 
 ---
 
