@@ -96,13 +96,30 @@ The complexity assessment from Step 0.5 determines the research path:
 
 ### Deep research path (complex tasks)
 
-When the complexity assessment suggests deep research, offer to spawn a `gsd-phase-researcher` subagent that produces a structured `.planning/research/YYYY-MM-DD-<topic>-RESEARCH.md` containing:
+When the complexity assessment suggests deep research, spawn a `gsd-phase-researcher` subagent:
+
+```
+Task(
+  prompt="Research Phase [X]: [name]. Goal: [phase goal].
+  <files_to_read>
+  .planning/phases/XX-name/XX-CONTEXT.md (if exists)
+  </files_to_read>
+  Phase requirements: [list from ROADMAP.md]
+  Write to: .planning/phases/XX-name/XX-RESEARCH.md",
+  subagent_type="gsd-phase-researcher",
+  description="Phase research"
+)
+```
+
+The agent produces a structured `.planning/phases/XX-name/XX-RESEARCH.md` containing:
 - Stack patterns and architecture approaches
 - Pitfalls and known failure modes
 - Code examples from authoritative sources
 - Prescriptive recommendations
 
-This is heavier than inline research but produces reusable artifacts that persist across sessions.
+After the agent completes, read the RESEARCH.md and carry its findings into Step 2 (Brainstorm).
+
+**Confidence gate:** After research completes, review the findings for confidence levels. If confidence is LOW on any critical finding (architectural choice, feasibility question, or key dependency), suggest escalating to deeper research (e.g., additional targeted web search, expert consultation) before proceeding to brainstorm.
 
 ### Codebase exploration path (unfamiliar codebase)
 
@@ -118,7 +135,7 @@ Announce "This needs technical research before design — researching first." De
 Spawn a Task agent with:
 - The specific research questions implied by the user's request
 - Instruction to use Firecrawl for web search and Context7 for library documentation
-- Instruction to write findings to `.planning/research/` with prescriptive recommendations, stack decisions, pitfalls, and code examples
+- Instruction to write findings to `.planning/phases/XX-name/XX-RESEARCH.md` with prescriptive recommendations, stack decisions, pitfalls, and code examples
 
 ### Skip research (simple tasks)
 
@@ -186,8 +203,16 @@ Resolve implementation gray areas before planning:
 
    Write these to CONTEXT.md using a clear three-section format:
 
+   > **CONTEXT.md Contract** — Canonical sections (source: bin/lib/commands.cjs):
+   > - `## Decisions` — all locked choices (consumers: plan-review reads+updates, build injects into subagents)
+   > - `## Discretion Areas` — bounds for executor decisions (consumers: build)
+   > - `## Deferred Ideas` — out of scope items (consumers: build as scope boundary)
+   > plan-review appends to Decisions with `[review]` prefix and to Deferred Ideas.
+   > Any rename MUST be mirrored in: plan-review (PRE-REVIEW + Step B),
+   > build (SKILL.md lines ~106, ~294), implementer-prompt.md, and bin/lib/commands.cjs.
+
    ```markdown
-   ## Locked Decisions
+   ## Decisions
    - [Decision]: [What was decided and why]
 
    ## Discretion Areas
