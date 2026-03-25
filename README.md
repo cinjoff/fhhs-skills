@@ -92,7 +92,7 @@ Subagents create their own sub-tasks for granular progress. If task tools are un
 |---------|-------------|
 | `/fh:new-project` | Set up a project with vision, tech stack, design language, and roadmap |
 | `/fh:plan-work` | Brainstorm, research, and produce an execution-ready plan |
-| `/fh:plan-review` | Founder-level plan challenge — rethink scope, find the 10-star product |
+| `/fh:plan-review` | Stress-test a plan — business alignment, architecture, code quality, tests, and performance |
 | `/fh:build` | Execute a plan with parallel subagents, TDD, design gates, and verification |
 | `/fh:ui-test` | Visual verification and QA testing with agent-browser backend |
 | `/fh:review` | Code quality, security scan, runtime error check, and branch promotion |
@@ -190,12 +190,18 @@ The underlying skills and agents come from seven open-source projects:
 | [Superpowers](https://github.com/obra/superpowers) | Engineering discipline — TDD, verification, debugging, brainstorming |
 | [Impeccable](https://github.com/pbakaus/impeccable) | Design quality — critique, polish, normalize, harden, animate, audit |
 | [GSD](https://github.com/gsd-build/get-shit-done) | Project orchestration — planning, execution, verification, integration |
-| [gstack](https://github.com/garrytan/gstack) | Production safety — plan review, QA, anti-drift, context pressure |
+| [gstack](https://github.com/garrytan/gstack) | Production safety — plan review (business + engineering), QA, anti-drift |
 | [feature-dev](https://github.com/anthropics/claude-code-plugin-examples) | Code intelligence — exploration, architecture, review |
 | [Next.js Best Practices](https://github.com/anthropics/claude-code-plugin-examples) | React/Next.js performance optimization (Vercel Engineering) |
 | [Playwright Best Practices](https://github.com/anthropics/claude-code-plugin-examples) | End-to-end testing patterns |
 
 All upstreams are forked and bundled. TypeScript Language Server provides code navigation (go-to-definition, find-references, rename) across all code-working commands. See [PATCHES.md](PATCHES.md) for modifications.
+
+### Optional: Fallow Static Analysis
+
+If [Fallow](https://docs.fallow.tools/) is installed (`npm install -g fallow`), `/fh:simplify`, `/fh:review`, and `/fh:build` (spec gate) automatically use it for deterministic dead-code detection, circular dependency analysis, code duplication, and complexity metrics. Fallow findings are injected into agent prompts as ground truth alongside the diff.
+
+When Fallow is not installed, all skills behave identically to before — no errors, no degraded output.
 
 ---
 
@@ -235,6 +241,7 @@ Executes plans through waves of parallel subagents with quality gates between th
       v
 +- SPEC GATE ---------------------------------------------------+
 |  Code review: missing reqs, stubs, unwired code, TS strict    |
+|  + fallow check for definitive unwired-code detection          |
 |  TDD commit-order check: test commits before implementation   |
 |  Result: PASS → next wave  |  BLOCKING → fixes required       |
 +----------------------------+----------------------------------+
@@ -252,21 +259,30 @@ Executes plans through waves of parallel subagents with quality gates between th
 |  +-----------+   +-----------+   +------------+               |
 |                                                               |
 |  Optional:                                                    |
-|  +-----------+   +-----------+                                |
-|  |  Harden   |   |  Animate  |                                |
-|  | Edge cases|   |  Motion   |                                |
-|  +-----------+   +-----------+                                |
+|  +-----------+   +-----------+   +-----------+                |
+|  |  Audit    |   |  Harden   |   |  Animate  |                |
+|  | a11y/perf |   | Edge cases|   |  Motion   |                |
+|  +-----------+   +-----------+   +-----------+                |
 +----------------------------+----------------------------------+
                              |
 +- SIMPLIFY -----------------+----------------------------------+
 |                                                               |
-|  3 parallel agents review the diff:                           |
+|  If fallow installed: run check + dupes + health               |
+|  Post-filter to diff files, inject as ground truth             |
+|                                                               |
+|  3 parallel agents review the diff (+ fallow data):           |
 |                                                               |
 |  +-------------+  +-------------+  +-------------+            |
 |  |    REUSE    |  |   QUALITY   |  | EFFICIENCY  |            |
 |  | Duplication |  | Naming, DRY |  | Performance |            |
-|  | extraction  |  | complexity  |  |             |            |
+|  | +fallow     |  | +complexity |  | +hotspots   |            |
+|  |  dupes      |  |  metrics    |  |             |            |
 |  +-------------+  +-------------+  +-------------+            |
++----------------------------+----------------------------------+
+                             |
++- VERIFICATION GATE --------+----------------------------------+
+|  Run test suite, build, lint — fresh evidence before claims    |
+|  No success claims without passing verification                |
 +----------------------------+----------------------------------+
                              |
 +- PRODUCTION SAFETY --------+----------------------------------+
@@ -295,6 +311,15 @@ Shared terminal step for `/build`, `/fix`, and `/refactor`.
 |  |  Diff range + file list                            |       |
 |  |  Query sentry local store (last 2hrs)              |       |
 |  |  Cross-reference errors against diff by basename   |       |
+|  +---------------------------------------------------+       |
+|                                                               |
+|  1.7 STATIC ANALYSIS (if fallow installed)                    |
+|  +---------------------------------------------------+       |
+|  |  fallow check → dead code, circular deps           |       |
+|  |  fallow dupes → code duplication                   |       |
+|  |  fallow health → complexity metrics                |       |
+|  |  Post-filter to diff files, cap 200 lines          |       |
+|  |  Inject as ground truth into review agents          |       |
 |  +---------------------------------------------------+       |
 |                                                               |
 |  2. CODE QUALITY                                              |
@@ -369,6 +394,10 @@ Shared terminal step for `/build`, `/fix`, and `/refactor`.
 |  Verify against project design language                       |
 +----------------------------+---------------------------------+
                              |
++- VERIFICATION GATE --------+--------------------------------+
+|  Run tests fresh — evidence before completion claims          |
++----------------------------+---------------------------------+
+                             |
                              v
                      MODERATE+: /simplify → /review
                      SIMPLE:    /review directly
@@ -426,6 +455,10 @@ Native task tracking shows progress through each step in real-time.
 |  Map request to roadmap phase                                  |
 +----------------------------+----------------------------------+
                              |
++- COMPLEXITY ASSESSMENT ----+----------------------------------+
+|  Gauge scope and risk to calibrate research + review depth     |
++----------------------------+----------------------------------+
+                             |
 +- RESEARCH (conditional) ---+----------------------------------+
 |                                                                |
 |  Web search or library docs lookup                             |
@@ -444,7 +477,7 @@ Native task tracking shows progress through each step in real-time.
 +- DISCUSS ------------------+----------------------------------+
 |                                                                |
 |  Identify 3–4 gray areas → ask user                            |
-|  Lock decisions in CONTEXT.md                                  |
+|  Lock decisions in CONTEXT.md (locked / discretion / deferred) |
 |                                                                |
 +----------------------------+----------------------------------+
                              |
@@ -465,12 +498,12 @@ Native task tracking shows progress through each step in real-time.
 +- PLAN-CHECK + HANDOFF ----+----------------------------------+
 |                                                                |
 |  Verify plan structure, task spec quality                      |
-|  Suggest: "Run /plan-review to challenge this plan"            |
+|  Default: run /plan-review before proceeding to /build         |
 |                                                                |
 +----------------------------+----------------------------------+
                              |
                              v
-                     /plan-review → /build
+                     /plan-review (default) → /build
 ```
 
 ## `/quick` — Lightweight Task Runner
