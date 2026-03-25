@@ -119,11 +119,13 @@ Upstream reference: `upstream/playwright-best-practices-b4b0fd3c/`
 
 ## Impeccable (forked from v1.2.0)
 
-### teach-impeccable
+### ui-branding (was teach-impeccable)
 | # | Change | Rationale |
 |---|--------|-----------|
 | 1 | Output: `{{config_file}}` → `.planning/DESIGN.md` | GSD convention — design context lives in .planning/ |
 | 2 | Added YAML frontmatter to output format | GSD file format consistency |
+| 3 | Forked into `.claude/skills/ui-branding/` (was only in upstream snapshot) | Shipping boundary — upstream snapshots aren't shipped with plugin install |
+| 4 | Renamed `teach-impeccable` → `ui-branding` | Clearer name; `fh:` prefix added per plugin naming convention |
 
 ### critique
 No changes. (Upstream v1.2.0 references now use `{{available_commands}}` and generic skill names — compatible with our setup.)
@@ -161,7 +163,7 @@ No changes. (Template variables adopted from upstream v1.2.0.)
 | 1 | Renamed `plan-ceo-review` → `plan-review` | Cleaner name; "CEO" framing replaced with "founder-level challenge" in description |
 | 2 | Removed gstack-upgrade check preamble | No gstack binary dependency in fhhs-skills |
 | 3 | Output: actionable findings feed back into PLAN.md (`must_haves.truths` with `[review]` prefix) and CONTEXT.md (review decisions + deferred scope); lightweight human-reference summary to `.planning/designs/review-*.md` | Closes the feedback loop — `/build` already reads PLAN.md + CONTEXT.md, so review findings are now prescriptive, not advisory-only |
-| 4 | Taste calibration reads `.planning/DESIGN.md` instead of discovering patterns | Leverages existing design context from `/fh:teach-impeccable` |
+| 4 | Taste calibration reads `.planning/DESIGN.md` instead of discovering patterns | Leverages existing design context from `/fh:ui-branding` |
 | 5 | Reduced from 10 review sections to 6 (Architecture, Error/Rescue, Security, Data Flow, Tests, Long-Term Trajectory) | Observability, Deployment, Performance, Code Quality covered by `/fh:review`, `/fh:build`, and other skills |
 | 6 | Added "Challenge against must_haves" step (0B) | Plans from `/fh:plan-work` include must_haves — review should challenge their truths |
 | 7 | Added workflow position note: run between `/fh:plan-work` and `/fh:build` | Integrates into existing plan-work flow |
@@ -186,7 +188,7 @@ No changes. (Template variables adopted from upstream v1.2.0.)
 | 8 | Added `allowed-tools` frontmatter: `Bash(agent-browser:*)`, Read, Write, Grep, Glob, AskUserQuestion | Plugin skill format — scoped Bash to agent-browser commands |
 | 9 | Added dark mode testing step in per-page exploration checklist | agent-browser's `set media dark` enables this natively |
 | 10 | Added network/API verification step in exploration checklist | agent-browser's `network requests --filter` enables API health checks |
-| 11 | Added `.planning/DESIGN.md` reference for design evaluation | Integration with /fh:teach-impeccable design context |
+| 11 | Added `.planning/DESIGN.md` reference for design evaluation | Integration with /fh:ui-branding design context |
 | 12 | Removed gstack binary setup, update check preamble, Bun build instructions | Not applicable — agent-browser is installed via npm globally |
 | 13 | Removed cookie-import from real browsers | agent-browser handles sessions via state save/load, not browser cookie import |
 | 14 | Removed `$B links` command (no direct equivalent) | Use `snapshot -i` to discover navigation elements instead |
@@ -291,7 +293,7 @@ No changes. (Template variables adopted from upstream v1.2.0.)
 | # | Change | Rationale |
 |---|--------|-----------|
 | 1 | Added `audit` and `init` modes alongside session learnings | Single command for all CLAUDE.md operations |
-| 2 | `init` mode uses `skills/claude-md-improver/references/templates.md` | `/new-project` Step 4 delegates to this for consistent CLAUDE.md generation |
+| 2 | `init` mode reads co-located `templates.md` (was `skills/claude-md-improver/references/templates.md`) | Shipping boundary fix — references/ at repo root aren't shipped with plugin install |
 | 3 | Added GSD project context detection in session learnings mode | Ensures updates respect `.planning/` structure |
 
 Upstream reference: `upstream/claude-md-management-1.0.0/`
