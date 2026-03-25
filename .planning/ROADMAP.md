@@ -19,11 +19,18 @@ phases: 6
 
 ## Phase 2: Upstream Sync & Patch Stability
 **Goal:** Upstream updates can be incorporated without breaking patched skills.
+**Status:** Complete
 
 - Upstream sync workflow documented and repeatable
 - PATCHES.md and COMPATIBILITY.md stay accurate after syncs
 - Eval suite catches regressions introduced by upstream changes
 - `/fh:sync-upstream` skill guides the process
+- Pre-sync validation (Step 0.5) checks forked paths, snapshots, PATCHES.md
+- Git checkpoint (Step 3.5) with --include-untracked before modifications
+- Post-sync regression detection (Step 4.5) with targeted eval runs
+- Registry has explicit eval_commands per upstream
+- Eval runner supports --commands filter for targeted runs
+- 6 sync-upstream evals covering validation and regression flows
 
 ## Phase 3: Upstream Capability Audit & Integration Planning
 **Goal:** All upstream capabilities are cataloged, quality-assessed, and gaps identified with integration recommendations.
