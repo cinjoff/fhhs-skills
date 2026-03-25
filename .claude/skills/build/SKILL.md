@@ -15,7 +15,7 @@ You are a **lean orchestrator**. Stay under 15% context usage. Delegate all heav
 > **Execution pipeline — fresh subagents for tasks, specialized agents for review:**
 > Task execution: **`general-purpose`** subagents with structured prompt from `references/implementer-prompt.md` (co-located with this skill). Fresh context per task, no GSD state overhead.
 > Spec gates: **`code-reviewer`** agent after each wave — adversarial spec verification using `references/spec-gate-prompt.md` (co-located with this skill).
-> Simplify: `skills/simplify/` after all waves — code reuse, efficiency, hygiene.
+> Simplify: `skills/simplify/PROMPT.md` after all waves — code reuse, efficiency, hygiene.
 > Integration check: **`gsd-integration-checker`** background agent for multi-phase wiring.
 > Phase verification: **`gsd-verifier`** agent for goal-backward verification.
 > Do not use `gsd-executor` or `gsd-planner` — their state management conflicts with this orchestrator.
@@ -95,7 +95,7 @@ AUTO_MODE=$(node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs config-get workfl
 
 ## Step 3: Execute Waves
 
-For each wave, dispatch **one subagent per task** using the Task tool with **`subagent_type: "general-purpose"`** (follow `skills/dispatching-parallel-agents/` for prompt quality when dispatching parallel tasks).
+For each wave, dispatch **one subagent per task** using the Task tool with **`subagent_type: "general-purpose"`** (follow `skills/dispatching-parallel-agents/PROMPT.md` for prompt quality when dispatching parallel tasks).
 
 ### Subagent prompt
 
@@ -112,8 +112,8 @@ Use the structured template at `references/implementer-prompt.md`. Fill its plac
 The template includes all behavioral directives (TDD, frontend, commits, YAGNI), deviation rules 1-4, guardrails (analysis paralysis, scope boundary, deferred items), self-review checklist, and structured report format.
 
 **Conditional context injection — verify the template activates these for each task:**
-- **Playwright:** If task `<files>` contain `*.spec.*`, `*.test.*`, `e2e/`, or `playwright.config.*`, the template directs subagents to read `skills/playwright-testing/` (POM, role-based locators, auto-waiting). Verify this context is relevant before dispatch — don't include Playwright weight for non-test tasks.
-- **Next.js perf:** If `next.config.*` exists in the project root, the template directs subagents to read `skills/nextjs-perf/` (waterfall avoidance, Suspense boundaries, barrel import awareness, caching). No action needed if the project doesn't use Next.js.
+- **Playwright:** If task `<files>` contain `*.spec.*`, `*.test.*`, `e2e/`, or `playwright.config.*`, the template directs subagents to read `.claude/skills/playwright-testing/PROMPT.md` (POM, role-based locators, auto-waiting). Verify this context is relevant before dispatch — don't include Playwright weight for non-test tasks.
+- **Next.js perf:** If `next.config.*` exists in the project root, the template directs subagents to read `.claude/skills/nextjs-perf/PROMPT.md` (waterfall avoidance, Suspense boundaries, barrel import awareness, caching). No action needed if the project doesn't use Next.js.
 - **TypeScript strictness:** The template includes inline TS rules for all TypeScript projects. These are enforced at the spec gate (Step 3b) — subagents should follow them during implementation.
 
 ### Skill context for subagents
@@ -283,7 +283,7 @@ After all waves complete (including spec gates) and BEFORE self-check, run the d
 
 ### Critique
 Dispatch subagent to invoke `/fh:ui-critique` on modified frontend files.
-Input: file list + `.planning/DESIGN.md` + anti-pattern reference from `skills/frontend-design/`.
+Input: file list + `.planning/DESIGN.md` + anti-pattern reference from `skills/frontend-design/PROMPT.md`.
 Fix Critical and High issues. Commit: `style({phase}-{plan}): address design critique`
 
 ### Polish
@@ -303,7 +303,7 @@ Suggest (don't auto-run) based on the work:
 - `/fh:ui-animate` — if transitions, state changes, or interaction-heavy elements
 Ask user before proceeding.
 
-Uses design quality commands (`/fh:ui-critique`, `/fh:polish`, `/fh:normalize`) and `skills/frontend-design/` — all built into this plugin.
+Uses design quality commands (`/fh:ui-critique`, `/fh:polish`, `/fh:normalize`) and `skills/frontend-design/PROMPT.md` — all built into this plugin.
 
 ### Step 4b: Collect integration check results
 
@@ -399,7 +399,7 @@ Write `{phase}-VERIFICATION.md` with truth table, artifacts, key links, requirem
 
 ## Step 8: Simplify
 
-After all tasks complete (including spec gates and design gates), invoke `skills/simplify/` on the implementation diff. This catches:
+After all tasks complete (including spec gates and design gates), read `skills/simplify/PROMPT.md` and follow it on the implementation diff. This catches:
 
 - **Code reuse**: newly written code that duplicates existing utilities or helpers
 - **Efficiency**: redundant computations, missed concurrency, N+1 patterns, hot-path bloat

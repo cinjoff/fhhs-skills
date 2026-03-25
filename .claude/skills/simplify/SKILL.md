@@ -17,6 +17,6 @@ What to simplify: $ARGUMENTS
 
 ## How It Works
 
-Invoke `skills/simplify/`. It runs 3 parallel review agents on the git diff — code reuse, code quality, and efficiency — then fixes issues directly.
+Read `skills/simplify/PROMPT.md` and follow it completely. It runs 3 parallel review agents on the git diff — code reuse, code quality, and efficiency — then fixes issues directly.
 
 Commit fixes: `refactor(scope): simplify pass`

@@ -62,7 +62,7 @@ Quickly assess bug depth before choosing strategy. Spend <5% context.
 
 Execute the chosen path:
 - **SIMPLE:** Skip to Step 2 — cause is clear from triage.
-- **MODERATE:** Invoke `skills/systematic-debugging/`. Follow completely. Then Step 2.
+- **MODERATE:** Read `skills/systematic-debugging/PROMPT.md` and follow it completely. Then Step 2.
 - **PARALLEL:** Dispatch one **`gsd-debugger`** agent per subsystem (specialized — scientific debugging with hypothesis tracking). Each agent gets: the specific failure, relevant files, and instruction to produce root cause + proposed fix. Collect results. Then Step 2 for each fix.
 - **COMPLEX:** Write triage findings to `.planning/debug/{issue-slug}.md` with: error message, files investigated, hypotheses formed, test results observed. Slug convention: `YYYY-MM-DD-{first-3-words-kebab}` (e.g., `2026-03-06-payment-timeout-error`). If slug exists, append `-2`. Then dispatch a `gsd-debugger` agent with the session file for sustained scientific investigation. If user says try anyway → MODERATE path.
 
@@ -72,12 +72,12 @@ Execute the chosen path:
 
 ## Step 2: TDD Fix
 
-Invoke `skills/test-driven-development/`. Follow completely:
+Read `skills/test-driven-development/PROMPT.md` and follow it completely:
 - **RED:** Write failing test proving the bug
 - **GREEN:** Minimal fix
 - **REFACTOR:** Cleanup
 
-If the bug is in frontend code and the project uses Playwright (check for `playwright.config.*`), write the failing test using Playwright patterns from `skills/playwright-testing/`. Follow the Page Object Model pattern for test structure and use role-based locators (`getByRole`, `getByLabel`) over CSS selectors. See `skills/playwright-testing/` for the full locator priority and assertion patterns.
+If the bug is in frontend code and the project uses Playwright (check for `playwright.config.*`), write the failing test using Playwright patterns from `.claude/skills/playwright-testing/PROMPT.md`. Follow the Page Object Model pattern for test structure and use role-based locators (`getByRole`, `getByLabel`) over CSS selectors. See `.claude/skills/playwright-testing/PROMPT.md` for the full locator priority and assertion patterns.
 
 **Breakpoint-specific verification:** If the fix targets a CSS/layout bug at a specific viewport or breakpoint, verify at that exact breakpoint. Resize to the target width (e.g., 768px for tablet, 375px for mobile) and confirm the layout is correct. If Playwright is available, use `page.setViewportSize()` in the test.
 
@@ -99,14 +99,14 @@ Commit: `fix: [root cause and what was wrong]`
 If the fix touches `.tsx`, `.css`, components, or styles:
 - Read `.planning/DESIGN.md` for design context
 - Quick check: does the fix maintain visual consistency?
-- Check against `skills/frontend-design/` anti-patterns — no generic cards, cyan-on-dark, purple gradients, or other AI slop introduced by the fix
+- Check against `skills/frontend-design/PROMPT.md` anti-patterns — no generic cards, cyan-on-dark, purple gradients, or other AI slop introduced by the fix
 - If significant UI change, suggest `/fh:ui-test`
 
 ---
 
 ## Step 4: Post-Fix Review
 
-**For MODERATE+ fixes:** Invoke `skills/simplify/` on the fix diff. Then suggest `/fh:review` for comprehensive analysis.
+**For MODERATE+ fixes:** Read `skills/simplify/PROMPT.md` and follow it on the fix diff. Then suggest `/fh:review` for comprehensive analysis.
 
 **For SIMPLE fixes:** Suggest `/fh:review --quick` for a fast quality check.
 

@@ -83,7 +83,7 @@ If the user mentions wanting an isolated branch or worktree, set up a git worktr
 
 **Skip if:** A phase-specific CONTEXT.md already exists AND a design doc for this topic already exists in `.planning/designs/`. The design was already approved — proceed to Step 3. When skipping: `TaskUpdate(brainstormId, status="completed", metadata={skipped: true, reason: "Design already exists"})` — skip if TASKS_AVAILABLE=false.
 
-Invoke `skills/brainstorming/`. Follow it completely — it handles exploration, questions, design sections, and user approval.
+Read `skills/brainstorming/PROMPT.md` and follow it completely — it handles exploration, questions, design sections, and user approval.
 
 If research was done in Step 1, feed the findings into the brainstorming context.
 
@@ -231,7 +231,7 @@ requirements: []        # GSD only — requirement IDs from ROADMAP
 
 - Scope each plan to **2-3 tasks** (keeps execution context under 50%)
 - Each task has: files, action, verify, done
-- Mark tasks `tdd="true"` when they involve logic, state, or behavior — the executor will follow `skills/test-driven-development/` for these
+- Mark tasks `tdd="true"` when they involve logic, state, or behavior — the executor will follow `skills/test-driven-development/PROMPT.md` for these
 - Set `wave` numbers for parallelization (independent tasks = same wave)
 - If frontend: add `type="checkpoint:human-verify"` for key visual moments
 - Reference only the specific source files each task needs (not the whole codebase)
@@ -272,7 +272,7 @@ These catch schema issues (missing frontmatter fields, malformed tasks) automati
 5. **must_haves trace**: every truth in `must_haves.truths` maps to at least one task's `<done>` criteria. Every artifact in `must_haves.artifacts` appears in `files_modified`.
 6. **Context compliance** (GSD only): plan does not contradict locked decisions in CONTEXT.md; plan does not include work deferred in CONTEXT.md.
 7. **TDD coverage WARN**: For each task in the plan that creates or modifies `.ts`, `.js`, `.tsx`, `.jsx` files (excluding config, types-only, constants-only files): if the task involves business logic, state management, or data transformation and does NOT have `tdd="true"`, emit a WARN: 'Task N ({name}) modifies business logic but lacks tdd=true. Confirm this is intentional or add tdd=true.' Present the list of flagged tasks and ask the user to confirm or fix. This is advisory — do not block plan creation.
-8. **Playwright E2E WARN** (frontend only): If any task creates interactive UI (forms, auth flows, navigation, CRUD operations) and the project has `playwright.config.*`: check whether any task in the plan includes E2E test files (`e2e/*.spec.*` or `*.spec.*`). If no E2E test task exists, emit a WARN: 'Frontend interactive features planned but no E2E test task found. Add a Playwright test task, or confirm E2E coverage is not needed.' If the user wants a test task, create one referencing `skills/playwright-testing/`. This is advisory — do not block plan creation.
+8. **Playwright E2E WARN** (frontend only): If any task creates interactive UI (forms, auth flows, navigation, CRUD operations) and the project has `playwright.config.*`: check whether any task in the plan includes E2E test files (`e2e/*.spec.*` or `*.spec.*`). If no E2E test task exists, emit a WARN: 'Frontend interactive features planned but no E2E test task found. Add a Playwright test task, or confirm E2E coverage is not needed.' If the user wants a test task, create one referencing `.claude/skills/playwright-testing/PROMPT.md`. This is advisory — do not block plan creation.
 
 If a check fails, state which check failed, revise the plan, and recheck. After 3 failed iterations, present what you have and ask the user to resolve the issue.
 
