@@ -3637,7 +3637,7 @@
       "id": 114,
       "command": "plan-work",
       "prompt": "plan adding role-based access control to the API routes. this touches auth middleware, 3 route handlers, and a new permissions table",
-      "expected_output": "After plan creation and plan-check, Step 7 handoff should recommend /fh:plan-review as the first option (before /fh:build). Should present three options: (1) /fh:plan-review recommended, (2) /fh:build for straightforward plans, (3) continue planning. Should default to plan-review since this is a non-trivial multi-file change.",
+      "expected_output": "After plan creation and plan-check, Step 7 handoff should recommend /fh:plan-review as the default for ALL plans. Should present three options: (1) /fh:plan-review as default, (2) /fh:build only for trivially obvious work (single-file rename, typo fix, config-only), (3) continue planning. Review is the default — only skip for trivially obvious work where risk of missed edge case is near zero.",
       "files": [],
       "assertions": [
         {
@@ -3649,7 +3649,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Defaults to plan-review for non-trivial plans",
+          "text": "Defaults to plan-review for ALL plans (only skip for trivially obvious work)",
           "type": "behavioral"
         },
         {
@@ -4111,11 +4111,11 @@
       "id": 130,
       "command": "plan-review",
       "prompt": "Review my plan for adding user roles and permissions to the dashboard",
-      "expected_output": "Should read the plan and challenge assumptions, identify failure modes and edge cases, produce an error and rescue map, produce structured review with numbered issues and lettered options, and ask user to select review mode.",
+      "expected_output": "Should read the plan and challenge assumptions (business alignment), identify failure modes and edge cases, produce an error and rescue map, AND run engineering rigor sections (architecture review, code quality, test coverage analysis, performance). Should produce structured review with numbered issues and lettered options covering both business and engineering lenses. Should ask user to select review mode before proceeding.",
       "files": [],
       "assertions": [
         {
-          "text": "Reads the plan and challenges key assumptions",
+          "text": "Reads the plan and challenges key assumptions (business alignment)",
           "type": "behavioral"
         },
         {
@@ -4124,6 +4124,10 @@
         },
         {
           "text": "Produces an error and rescue map for the plan",
+          "type": "behavioral"
+        },
+        {
+          "text": "Runs engineering rigor sections (architecture, code quality, tests, performance)",
           "type": "behavioral"
         },
         {
