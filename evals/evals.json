@@ -6036,6 +6036,107 @@
       "scenario_requires": [
         "gsd_project"
       ]
+    },
+    {
+      "id": 204,
+      "command": "build",
+      "prompt": "Build the user profile settings page. It has 3 tasks: settings form component, API integration, and validation logic. Execute the plan at .planning/phases/09-settings/09-01-PLAN.md",
+      "expected_output": "Should reference verification-before-completion in the build pipeline. Must run a verification gate with fresh evidence (e.g., tests pass, lint clean, app runs) BEFORE writing SUMMARY.md. The verification gate ensures claimed success is backed by actual proof, not just completing task steps.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "References verification-before-completion in the build pipeline",
+          "type": "behavioral"
+        },
+        {
+          "text": "Runs verification gate before writing SUMMARY",
+          "type": "behavioral"
+        },
+        {
+          "text": "Verification gate collects fresh evidence of success",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT claim success without running verification commands",
+          "type": "guard"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ]
+    },
+    {
+      "id": 205,
+      "command": "fix",
+      "prompt": "Fix the broken pagination in the search results page. Users report that clicking page 2 reloads page 1 instead.",
+      "expected_output": "Should reference verification-before-completion in the fix pipeline. Must run a verification gate confirming the fix actually resolves the issue before generating the summary. Verification should include running relevant tests or demonstrating the fix with fresh evidence, not just applying the code change.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "References verification-before-completion in the fix pipeline",
+          "type": "behavioral"
+        },
+        {
+          "text": "Runs verification gate before generating summary",
+          "type": "behavioral"
+        },
+        {
+          "text": "Verifies the fix with fresh evidence before claiming completion",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT generate summary without verification gate",
+          "type": "guard"
+        }
+      ]
+    },
+    {
+      "id": 206,
+      "command": "build",
+      "prompt": "Build the new dashboard landing page. It has 4 tasks: hero section with animated charts, responsive nav bar, data visualization widgets, and accessibility audit. Execute the plan at .planning/phases/11-dashboard/11-01-PLAN.md",
+      "expected_output": "Should suggest /fh:audit when frontend files are prominent in the build. The dashboard is frontend-heavy with UI components, accessibility concerns, and visual elements. Build should recommend running /fh:audit for accessibility and frontend quality checks after the build completes.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Suggests /fh:audit for frontend-heavy work",
+          "type": "behavioral"
+        },
+        {
+          "text": "Mentions accessibility as a reason for audit recommendation",
+          "type": "output"
+        },
+        {
+          "text": "Recognizes frontend-prominent work triggers audit suggestion",
+          "type": "behavioral"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ]
+    },
+    {
+      "id": 207,
+      "command": "build",
+      "prompt": "Build the production checkout flow. It has 5 tasks: payment form, order confirmation page, error handling with retry logic, production error boundaries, and deployment configuration. Execute the plan at .planning/phases/12-checkout/12-01-PLAN.md",
+      "expected_output": "Should suggest /fh:harden for production deployment scenarios. The checkout flow is production-critical with payment processing, error boundaries, and deployment config. Build should recommend running /fh:harden to ensure production resilience, error recovery, and robustness before shipping.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Suggests /fh:harden for production deployment work",
+          "type": "behavioral"
+        },
+        {
+          "text": "Mentions production resilience as a reason for harden recommendation",
+          "type": "output"
+        },
+        {
+          "text": "Recognizes production-critical work triggers harden suggestion",
+          "type": "behavioral"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ]
     }
   ]
 }
