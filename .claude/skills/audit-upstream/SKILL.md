@@ -1,6 +1,7 @@
 ---
-name: audit-upstream
+name: fh:audit-upstream
 description: "Use when evaluating upstream skill changes after sync, assessing integration opportunities, or maintaining the upstream capability index. Triggers on 'audit upstream', 'evaluate upstream', 'what changed upstream', 'integration opportunities', or after /fh:sync-upstream."
+user-invokable: true
 ---
 
 # Audit Upstream

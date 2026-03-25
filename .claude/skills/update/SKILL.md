@@ -137,9 +137,44 @@ AskUserQuestion:
 **If "Yes, update now":**
 
 ```bash
-# Refresh marketplace to ensure update pulls the latest version
+# Get current installed version before updating
+PREV_VERSION=$(python3 -c "
+import json, pathlib
+data = json.loads(pathlib.Path(pathlib.Path.home() / '.claude/plugins/installed_plugins.json').read_text())
+entry = data.get('plugins', {}).get('fh@fhhs-skills')
+print(entry[0].get('version', 'unknown') if entry else 'unknown')
+" 2>/dev/null)
+```
+
+```bash
+# Uninstall then reinstall to fully clear cached skill registrations.
+# A plain `claude plugin update` can leave stale metadata (gitCommitSha,
+# cached skill names) that prevents renamed or restructured skills from
+# appearing under the /fh: prefix.
+claude plugin uninstall fh@fhhs-skills --keep-data
 claude plugin marketplace update fhhs-skills 2>/dev/null
-claude plugin update fh@fhhs-skills
+claude plugin install fh@fhhs-skills
+```
+
+```bash
+# Remove old version caches that accumulate across updates
+INSTALL_PATH=$(python3 -c "
+import json, pathlib
+data = json.loads(pathlib.Path(pathlib.Path.home() / '.claude/plugins/installed_plugins.json').read_text())
+entry = data.get('plugins', {}).get('fh@fhhs-skills')
+print(entry[0].get('installPath', '') if entry else '')
+" 2>/dev/null)
+
+if [ -n "$INSTALL_PATH" ]; then
+  CACHE_DIR=$(dirname "$INSTALL_PATH")
+  CURRENT_VER=$(basename "$INSTALL_PATH")
+  for old_dir in "$CACHE_DIR"/*/; do
+    old_ver=$(basename "$old_dir")
+    if [ "$old_ver" != "$CURRENT_VER" ]; then
+      rm -rf "$old_dir"
+    fi
+  done
+fi
 ```
 
 Clear the update indicator from the statusline:
@@ -153,7 +188,7 @@ rm -f "$HOME/.claude/cache/fhhs-update-check.json"
 ```
 ## Updated
 
-**fhhs-skills** X.Y.Z → A.B.C
+**fhhs-skills** PREV_VERSION → A.B.C
 
 Restart Claude Code to use the new version.
 ```
