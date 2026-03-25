@@ -90,7 +90,7 @@ Subagents create their own sub-tasks for granular progress. If task tools are un
 
 | Command | What it does |
 |---------|-------------|
-| `/fh:new-project` | Set up a project with vision, tech stack, design language, domain research, and roadmap |
+| `/fh:new-project` | Set up a project with vision, tech stack, design language, domain research, and roadmap. Default stack uses the [fh-starter-project](https://github.com/cinjoff/fh-starter-project) template |
 | `/fh:plan-work` | Brainstorm, research, and produce an execution-ready plan |
 | `/fh:plan-review` | Stress-test a plan — business + engineering alignment, research verification, respect-but-flag for locked decisions |
 | `/fh:build` | Execute a plan with parallel subagents, TDD, design gates, and verification |

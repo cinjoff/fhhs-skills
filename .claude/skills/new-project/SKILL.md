@@ -45,6 +45,8 @@ Ask: **"Any changes to the default stack?"**
 
 Lock the final tech stack decisions. These go into PROJECT.md.
 
+**Track `uses_default_stack`:** If the user accepted the default stack as-is (no framework/tooling substitutions — adding Supabase doesn't count as a change), set `uses_default_stack = true`. This determines whether the starter template repo is used in Step 7.
+
 ---
 
 ## Step 3: Design Framework
@@ -166,7 +168,9 @@ Derive requirements from the vision in Step 1. Create:
 - `.planning/STATE.md` — Current position (phase 1, plan 0)
 - `.planning/config.json` — GSD workflow settings
 
-**Phase 1 must always be "Project scaffolding and core setup"** — this is where the actual Next.js project gets created, dependencies installed, and base configuration applied.
+**If `uses_default_stack` is true:** Phase 1 should be **"Core app setup"** — the starter template already provides scaffolding (Next.js, Tailwind, Shadcn/ui, project structure), so Phase 1 focuses on app-specific configuration: routes, layouts, data models, and integrating the chosen design direction.
+
+**If `uses_default_stack` is false:** Phase 1 must be **"Project scaffolding and core setup"** — this is where the actual project gets created, dependencies installed, and base configuration applied.
 
 **Set up GSD symlink and initialize:**
 
@@ -211,7 +215,55 @@ Commit: `docs: initialize project planning with GSD structure`
 
 Set up GitHub and Vercel so the project is ready for deployment from day one.
 
-### 7a: Initialize git and commit planning files
+### 7a: Create repo from starter template OR initialize git
+
+Check `gh` availability first (needed for both paths):
+
+```bash
+command -v gh >/dev/null 2>&1 && echo "OK" || echo "MISSING"
+```
+
+If `gh` is MISSING: show a warning and fall through to the manual git init path. The user can run `brew install gh && gh auth login` to enable this later.
+
+**If `uses_default_stack` is true AND `gh` is available:**
+
+Use the starter template repo. This creates a GitHub repo from the template, clones it, and gives you a fully scaffolded Next.js + Tailwind + Shadcn/ui project:
+
+```bash
+REPO_NAME="$(basename "$(pwd)")"
+# Create from template — this makes a new repo with the template's files (not a fork)
+gh repo create "$REPO_NAME" --template cinjoff/fh-starter-project --private --clone
+```
+
+If the current directory is empty, clone into it directly:
+
+```bash
+# Move cloned contents into current directory if needed
+if [ -d "$REPO_NAME" ] && [ "$REPO_NAME" != "$(basename "$(pwd)")" ]; then
+  mv "$REPO_NAME"/{.,}* . 2>/dev/null
+  rmdir "$REPO_NAME"
+fi
+```
+
+Report the repo URL. Then install dependencies:
+
+```bash
+npm install
+```
+
+Commit the planning files created in earlier steps on top of the template:
+
+```bash
+git add -A
+git commit -m "docs: initialize project planning with GSD structure"
+git push
+```
+
+Skip to **Step 7c** (Vercel linking).
+
+**If `uses_default_stack` is false OR `gh` is unavailable:**
+
+Fall back to manual initialization:
 
 ```bash
 git rev-parse --is-inside-work-tree 2>/dev/null && echo "GIT_OK" || echo "GIT_MISSING"
@@ -232,15 +284,9 @@ git commit -m "chore: initialize project with planning structure"
 
 If files are already committed (git was pre-existing), skip the commit.
 
-### 7b: Create GitHub repository
+### 7b: Create GitHub repository (non-template path only)
 
-Check `gh` availability:
-
-```bash
-command -v gh >/dev/null 2>&1 && echo "OK" || echo "MISSING"
-```
-
-If `gh` is MISSING: show a warning and skip to 6c. The user can run `brew install gh && gh auth login` to enable this later.
+**Skip this step if the repo was already created from the starter template in 7a.**
 
 Check if a remote already exists:
 
@@ -248,7 +294,7 @@ Check if a remote already exists:
 git remote get-url origin 2>/dev/null && echo "REMOTE_EXISTS" || echo "NO_REMOTE"
 ```
 
-If no remote exists, create the GitHub repo using the current folder name:
+If no remote exists and `gh` is available, create the GitHub repo:
 
 ```bash
 REPO_NAME="$(basename "$(pwd)")"
@@ -455,11 +501,12 @@ Project initialized:
 - .planning/config.json     — workflow settings
 - CLAUDE.md                 — project conventions
 - GitHub repo               — <repo-url> (private)
+- Starter template          — cinjoff/fh-starter-project (if default stack)
 - Vercel project            — linked (auto-deploys on push to main)
 - Supabase project          — <project-url> (if set up)
 - .env.local                — API keys configured (if Supabase)
 
-Next: run /fh:plan to plan your first phase (scaffolding and core setup).
+Next: run /fh:plan to plan your first phase.
 ```
 
 If Supabase was set up, add this reminder:
