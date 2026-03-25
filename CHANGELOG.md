@@ -9,6 +9,7 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 - **Skill names missing fh: prefix** — all 37 plugin skills now use the `fh:` prefix in their name field (e.g. `/fh:build`, `/fh:fix`, `/fh:plan-work`) so users can identify them as fh skills; updated all cross-references in skill content, README, SPEC, PATCHES, marketplace.json, and commands
+- **Eval suite overhaul** — fixes stale COMMAND_MAP (8 broken paths, 5 renamed skills, 13 dead entries), removes 28 out-of-scope evals, adds 17 new evals for undertested user-invokable skills (ui-redesign, observability, ui-animate, update, refactor, plan-review, map-codebase, tracker), enriches mock app fixture with intentional security vulnerabilities and additional test files, adds `verify_command_map.py` drift detection script
 
 ## [1.21.3] - 2026-03-25
 
