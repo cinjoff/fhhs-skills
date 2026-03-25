@@ -216,8 +216,25 @@ Each commit message: `<type>: <summary>` (feat/fix/chore/refactor/docs). Only th
 cd /Users/konstantin/Documents/github.nosync/fhhs-skills
 git add .claude-plugin/plugin.json .claude-plugin/marketplace.json CHANGELOG.md
 git commit -m "release: vA.B.C"
-git tag vA.B.C
-git push && git push --tags
+git push
+```
+
+### Merge to main, then tag
+
+**CRITICAL:** Tag must be on main AFTER the merge — not on the feature branch.
+If the tag points to a feature branch commit, Claude Code's plugin installer
+records a `gitCommitSha` that diverges from main's merge commit, causing stale
+skill registration on future updates.
+
+```bash
+cd /Users/konstantin/Documents/github.nosync/fhhs-skills
+# Merge via PR (preferred) or locally
+gh pr create --title "release: vA.B.C" --body "Version bump and changelog for vA.B.C" --base main
+gh pr merge --merge
+# Now tag the merge commit on main
+git fetch origin main
+git tag vA.B.C origin/main
+git push --tags
 ```
 
 ---
