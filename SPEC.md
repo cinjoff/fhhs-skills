@@ -13,7 +13,7 @@ The user installs one plugin and gets: planning, building, fixing, refactoring, 
 ```
 ┌─────────────────────────────────────────────────────┐
 │  Composite Commands (user-facing)                   │
-│  /plan-work  /build  /fix  /refactor  /verify  /resume-work │
+│  /plan-work  /build  /fix  /refactor  /verify  /progress │
 │  /simplify  /research  /fh:new-project  /verify-ui     │
 ├─────────────────────────────────────────────────────┤
 │  Design Commands (user-facing, also auto-invoked)   │
@@ -64,7 +64,6 @@ fhhs-skills/
 │   ├── fix/                     # Triage → debug → TDD fix
 │   ├── refactor/                # Scope → baseline → atomic refactor steps
 │   ├── verify/                  # Dual verification
-│   ├── resume-work/             # Context restore → routing
 │   ├── simplify/                # Code reuse/quality/efficiency
 │   ├── research/                # Web search → GSD output
 │   ├── progress/                # Status + routing
@@ -263,7 +262,7 @@ No auto-apply — the user decides what to merge.
 2. **Platform detection + prerequisites** — detect macOS/Linux/Windows, check for Homebrew, Node.js, npm, gh, vercel, git. Install missing tools via Homebrew (macOS/Linux) or present Windows-specific installer links
 3. **TypeScript LSP** — auto-detect and install `typescript-language-server` (npm) + `typescript-lsp` Claude plugin
 4. **GSD symlink** — auto-detect and create `$HOME/.claude/get-shit-done/bin/` → plugin's `bin/`
-5. **Summary + next steps** — status report of all tools, route to `/fh:new-project` or `/resume-work`
+5. **Summary + next steps** — status report of all tools, route to `/fh:new-project` or `/fh:progress`
 
 Each step checks current state before acting (idempotent). Running `/fh:setup` multiple times is safe.
 

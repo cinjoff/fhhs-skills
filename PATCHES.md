@@ -243,6 +243,11 @@ No changes. (Template variables adopted from upstream v1.2.0.)
 
 ## GSD (forked from v1.22.4)
 
+### resume-work → progress (merge)
+| # | Change | Rationale |
+|---|--------|-----------|
+| 1 | Merged `resume-work` skill into `progress` | Eliminated redundancy — both skills served overlapping purposes (context restore + status routing). `progress` now handles the combined workflow. |
+
 ### new-project (workflow)
 | # | Change | Rationale |
 |---|--------|-----------|
