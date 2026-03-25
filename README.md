@@ -90,9 +90,9 @@ Subagents create their own sub-tasks for granular progress. If task tools are un
 
 | Command | What it does |
 |---------|-------------|
-| `/fh:new-project` | Set up a project with vision, tech stack, design language, and roadmap |
+| `/fh:new-project` | Set up a project with vision, tech stack, design language, domain research, and roadmap |
 | `/fh:plan-work` | Brainstorm, research, and produce an execution-ready plan |
-| `/fh:plan-review` | Stress-test a plan — business alignment, architecture, code quality, tests, and performance |
+| `/fh:plan-review` | Stress-test a plan — business + engineering alignment, research verification, respect-but-flag for locked decisions |
 | `/fh:build` | Execute a plan with parallel subagents, TDD, design gates, and verification |
 | `/fh:ui-test` | Visual verification and QA testing with agent-browser backend |
 | `/fh:review` | Code quality, security scan, runtime error check, and branch promotion |
@@ -461,8 +461,11 @@ Native task tracking shows progress through each step in real-time.
                              |
 +- RESEARCH (conditional) ---+----------------------------------+
 |                                                                |
-|  Web search or library docs lookup                             |
-|  Output: RESEARCH.md with confidence tags (HIGH/MEDIUM/LOW)   |
+|  Complex: spawn gsd-phase-researcher agent                     |
+|  Medium: inline research subagent                              |
+|  Simple: skip                                                  |
+|  Output: XX-RESEARCH.md with confidence tags (HIGH/MEDIUM/LOW)|
+|  Confidence gate: LOW findings → suggest deeper research       |
 |                                                                |
 +----------------------------+----------------------------------+
                              |
@@ -477,7 +480,8 @@ Native task tracking shows progress through each step in real-time.
 +- DISCUSS ------------------+----------------------------------+
 |                                                                |
 |  Identify 3–4 gray areas → ask user                            |
-|  Lock decisions in CONTEXT.md (locked / discretion / deferred) |
+|  Lock decisions in CONTEXT.md (Decisions / Discretion Areas /  |
+|  Deferred Ideas) — 3 canonical sections                        |
 |                                                                |
 +----------------------------+----------------------------------+
                              |
