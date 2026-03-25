@@ -207,6 +207,18 @@ If the query script or db doesn't exist, skip silently.
 
 This catches spec deviations before dependent waves build on wrong foundations. Run for ALL waves including the final wave.
 
+### Fallow static analysis (if available)
+
+Before dispatching the spec-gate agent, run Fallow to provide ground truth data for unwired code detection:
+
+```bash
+if command -v fallow &>/dev/null; then
+  FALLOW_OUTPUT=$(fallow check --changed-since {WAVE_START_SHA} --format json --quiet 2>/dev/null) || FALLOW_OUTPUT=""
+fi
+```
+
+When dispatching the spec-gate agent, if `FALLOW_OUTPUT` is non-empty, include it in the agent prompt under a `## Fallow Static Analysis` section. If empty, omit the section entirely.
+
 ### Dispatch spec reviewer
 
 If `TASKS_AVAILABLE`, update the spec gate task: `TaskUpdate(specGateTaskId, status: "in_progress", activeForm: "Running spec gate Wave N")`.
@@ -305,6 +317,18 @@ Ask user before proceeding.
 
 Uses design quality commands (`/fh:ui-critique`, `/fh:polish`, `/fh:normalize`) and `skills/frontend-design/PROMPT.md` — all built into this plugin.
 
+### Consider Audit (frontend-heavy builds)
+If the build involved 5+ frontend files and the work is user-facing:
+Suggest `/fh:audit` for comprehensive quality checks (accessibility, performance, theming, responsive).
+"Frontend-heavy build detected. Run `/fh:audit` for a11y/perf/responsive quality check?"
+Don't auto-run — ask user before proceeding.
+
+### Consider Harden (production-bound frontend)
+If the build is for production deployment (not a prototype or internal tool):
+Suggest `/fh:harden` for production resilience (text overflow, i18n, RTL, network errors, edge cases).
+"Production-bound frontend work. Run `/fh:harden` for edge case resilience?"
+Don't auto-run — ask user before proceeding.
+
 ### Step 4b: Collect integration check results
 
 **If a background integration check was dispatched:** collect its results now. If critical wiring issues found (orphaned exports, broken data flows), flag to user before proceeding. Integration findings feed into Step 9 (post-build review).
@@ -314,6 +338,22 @@ Uses design quality commands (`/fh:ui-critique`, `/fh:polish`, `/fh:normalize`) 
 ## Step 5: Self-Check + Generate SUMMARY.md
 
 If `TASKS_AVAILABLE`, update the "Self-check + SUMMARY" pipeline task: `TaskUpdate(selfCheckTaskId, status: "in_progress", activeForm: "Running self-check and generating SUMMARY")`.
+
+### Verification gate
+
+Before claiming build success, read `skills/verification-before-completion/PROMPT.md`
+and follow its gate function:
+
+1. **IDENTIFY** verification commands for this build:
+   - Test suite: run the project's test command (from package.json or CLAUDE.md)
+   - Build check: if the project has a build step, run it
+   - Lint: if the project has a linter, run it
+2. **RUN** each command fresh and complete
+3. **READ** full output — check exit codes, count failures
+4. **VERIFY** all pass before proceeding to SUMMARY generation
+
+If any verification fails: flag in SUMMARY under "Issues Encountered" with the
+actual output. Do NOT claim the build succeeded if verification failed.
 
 ### Self-check
 

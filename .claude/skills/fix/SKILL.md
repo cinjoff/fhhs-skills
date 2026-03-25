@@ -106,6 +106,22 @@ If the fix touches `.tsx`, `.css`, components, or styles:
 
 ## Step 4: Post-Fix Review
 
+### Verification gate
+
+Before claiming the fix is complete, read `skills/verification-before-completion/PROMPT.md`
+and follow its gate function:
+
+1. **IDENTIFY** the verification command that proves the fix works:
+   - The test written in Step 2 must pass
+   - The original reproduction must no longer occur
+   - Related test suites must still pass (no regressions)
+2. **RUN** each command fresh
+3. **READ** full output — check exit code, count failures
+4. **VERIFY** the fix is confirmed before proceeding
+
+If verification fails: return to Step 2 and iterate. Do NOT proceed to review
+or summary if the fix isn't verified.
+
 **For MODERATE+ fixes:** Read `skills/simplify/PROMPT.md` and follow it on the fix diff. Then suggest `/fh:review` for comprehensive analysis.
 
 **For SIMPLE fixes:** Suggest `/fh:review --quick` for a fast quality check.
