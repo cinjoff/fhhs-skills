@@ -5,6 +5,21 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.22.0] - 2026-03-25
+
+### Added
+- **`/fh:ui-branding` skill** — one-time design context setup, forked from `teach-impeccable` into `.claude/skills/ui-branding/` (shipping boundary fix — upstream snapshots aren't shipped with plugin install)
+- **Supabase setup in `/fh:new-project`** — new Step 6e automates Supabase CLI login, project creation, API key retrieval, `.env.local` configuration, Vercel env sync, and security guardrails (RLS reminders, service_role key protection)
+- **Eval coverage expansion** — 40 new evals (IDs 135-174) covering 15 zero-coverage skills and strengthening 11 weak skills
+
+### Changed
+- **`teach-impeccable` → `ui-branding`** — renamed across SPEC, PATCHES, COMPATIBILITY, help skill, and README for clarity
+- **`revise-claude-md` co-located references** — `templates.md` and `update-guidelines.md` moved from repo-root `references/` into the skill directory (shipping boundary fix)
+- **GSD symlink setup improved** — `/fh:new-project` now verifies the global symlink exists and creates it if missing, instead of assuming `/fh:setup` was run
+
+### Fixed
+- **Eval suite overhaul** — fixes stale COMMAND_MAP (8 broken paths, 5 renamed skills, 13 dead entries), removes 28 out-of-scope evals, adds 17 new evals for undertested user-invokable skills
+
 ## [1.21.4] - 2026-03-25
 
 ### Fixed
