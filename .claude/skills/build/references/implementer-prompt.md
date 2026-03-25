@@ -23,9 +23,11 @@ Only deep-read skills that are clearly relevant — don't read all of them.
 
 {CLAUDE_MD_SECTIONS}
 
-### Locked Decisions & Scope Boundary
+### Decisions & Scope Boundary
 
-The following decisions are locked — do not contradict them. "NOT in scope" items must not be implemented.
+The following decisions are locked — do not contradict them.
+Discretion areas define bounds within which you may decide.
+"Deferred Ideas" items must not be implemented.
 
 {DESIGN_DECISIONS}
 
