@@ -5,6 +5,16 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.24.0] - 2026-03-26
+
+### Added
+- **Starter template for `/fh:new-project`** — default stack projects clone from [cinjoff/fh-starter-project](https://github.com/cinjoff/fh-starter-project) instead of starting from scratch; Phase 1 focuses on app-specific setup rather than scaffolding
+- **Fallow static analysis in `/fh:review`, `/fh:simplify`, `/fh:build`** — deterministic dead-code detection, circular dependency analysis, and code duplication when Fallow CLI is installed
+- **`/fh:audit-upstream` overhaul** — structured capability index with integration opportunity tracking
+
+### Changed
+- **`/fh:new-project` Phase 1 naming** — "Core app setup" when using starter template, "Project scaffolding and core setup" for custom stacks
+
 ## [1.23.0] - 2026-03-25
 
 ### Added

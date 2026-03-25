@@ -11,7 +11,7 @@
     {
       "name": "fh",
       "description": "fhhs-skills: Composite workflow skills unifying engineering discipline, design quality, and project tracking. Includes /fh:plan-work, /fh:build, /fh:fix, /fh:review, /fh:ui-critique, /fh:polish, and 30+ more commands.",
-      "version": "1.23.0",
+      "version": "1.24.0",
       "author": {
         "name": "Konstantin"
       },
