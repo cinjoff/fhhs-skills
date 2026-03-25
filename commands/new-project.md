@@ -703,5 +703,5 @@ Project initialized:
 
 Error tracking is active in dev by default. Run `node lib/sentry-local-query.mjs recent` to see captured errors, or let `/fh:fix` query them automatically.
 
-Next: run /plan-work to plan your first phase (scaffolding and core setup).
+Next: run /fh:plan-work to plan your first phase (scaffolding and core setup).
 ```

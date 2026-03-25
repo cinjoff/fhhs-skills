@@ -1,5 +1,5 @@
 ---
-name: clarify
+name: fh:clarify
 description: Improve unclear UX copy, error messages, microcopy, labels, and instructions. Makes interfaces easier to understand and use.
 user-invokable: false
 ---

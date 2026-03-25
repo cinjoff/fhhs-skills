@@ -1,5 +1,5 @@
 ---
-name: plan-work
+name: fh:plan-work
 description: Plan before you build. Researches the problem and produces a step-by-step plan.
 user-invokable: true
 ---
@@ -129,7 +129,7 @@ Resolve implementation gray areas before planning:
 
 **Scope commitment rule:** Once the user selects which gray areas to discuss, commit fully to that selection. Do not lobby for different areas or silently expand scope.
 
-These locked decisions are fed to subagents during `/build` execution — they prevent re-deciding things downstream.
+These locked decisions are fed to subagents during `/fh:build` execution — they prevent re-deciding things downstream.
 
 > **Task tracking:** `TaskUpdate(discussId, status="completed")` — skip if TASKS_AVAILABLE=false.
 

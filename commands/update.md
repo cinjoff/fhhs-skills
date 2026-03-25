@@ -110,7 +110,7 @@ Extract changelog entries between the installed and latest versions from the CHA
 ### New skills since your version
 
   /fh:plan-review — Challenge your plan before building
-  Run after /plan-work and before /build. Catches failure
+  Run after /fh:plan-work and before /fh:build. Catches failure
   modes, edge cases, and security gaps. Three modes:
   scope expansion, hold scope, scope reduction.
 
@@ -132,7 +132,7 @@ Extract changelog entries between the installed and latest versions from the CHA
 
   /fh:plan-work now suggests /fh:plan-review before /fh:build
   The handoff step recommends plan challenge for non-trivial
-  plans. You can still go straight to /build.
+  plans. You can still go straight to /fh:build.
 
   /fh:setup now installs claude-mem automatically
   Persistent session memory across conversations.

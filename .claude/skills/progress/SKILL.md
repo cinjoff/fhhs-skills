@@ -1,5 +1,5 @@
 ---
-name: progress
+name: fh:progress
 description: Where am I? Shows project status and what to do next. Also resumes previous sessions.
 user-invokable: true
 ---
@@ -282,7 +282,7 @@ Read its `<objective>` section.
 
 **{phase}-{plan}: [Plan Name]** -- [objective summary from PLAN.md]
 
-`/build`
+`/fh:build`
 
 <sub>`/clear` first -- fresh context window</sub>
 
@@ -305,7 +305,7 @@ Check if `{phase_num}-CONTEXT.md` exists in phase directory.
 **Phase {N}: {Name}** -- {Goal from ROADMAP.md}
 <sub>Context gathered, ready to plan</sub>
 
-`/plan-work`
+`/fh:plan-work`
 
 <sub>`/clear` first -- fresh context window</sub>
 
@@ -321,15 +321,15 @@ Check if `{phase_num}-CONTEXT.md` exists in phase directory.
 
 **Phase {N}: {Name}** -- {Goal from ROADMAP.md}
 
-`/plan-work {phase}` -- plan this phase (includes discussion and context gathering)
+`/fh:plan-work {phase}` -- plan this phase (includes discussion and context gathering)
 
 <sub>`/clear` first -- fresh context window</sub>
 
 ---
 
 **Also available:**
-- `/plan-work {phase}` -- plan directly
-- `/plan-work {phase}` -- start planning (surfaces assumptions during brainstorm)
+- `/fh:plan-work {phase}` -- plan directly
+- `/fh:plan-work {phase}` -- start planning (surfaces assumptions during brainstorm)
 
 ---
 ```
@@ -347,15 +347,15 @@ UAT.md exists with gaps (diagnosed issues). User needs to plan fixes.
 
 **{phase_num}-UAT.md** has {N} gaps requiring fixes.
 
-`/plan-work` -- plan fixes for the gaps
+`/fh:plan-work` -- plan fixes for the gaps
 
 <sub>`/clear` first -- fresh context window</sub>
 
 ---
 
 **Also available:**
-- `/build` -- execute phase plans
-- `/review` -- run review and verification
+- `/fh:build` -- execute phase plans
+- `/fh:review` -- run review and verification
 
 ---
 ```
@@ -394,14 +394,14 @@ Read ROADMAP.md to get the next phase's name and goal.
 
 **Phase {Z+1}: {Name}** -- {Goal from ROADMAP.md}
 
-`/plan-work {Z+1}` -- plan next phase (includes discussion and context gathering)
+`/fh:plan-work {Z+1}` -- plan next phase (includes discussion and context gathering)
 
 <sub>`/clear` first -- fresh context window</sub>
 
 ---
 
 **Also available:**
-- `/review` -- review before continuing
+- `/fh:review` -- review before continuing
 
 ---
 ```
@@ -421,14 +421,14 @@ All {N} phases finished!
 
 **Complete Milestone** -- archive and prepare for next
 
-`/review` -- review and complete the milestone
+`/fh:review` -- review and complete the milestone
 
 <sub>`/clear` first -- fresh context window</sub>
 
 ---
 
 **Also available:**
-- `/review` -- review before completing milestone
+- `/fh:review` -- review before completing milestone
 
 ---
 ```
@@ -452,7 +452,7 @@ Ready to plan the next milestone.
 
 **Start Next Milestone** -- questioning -> research -> requirements -> roadmap
 
-`/plan-work` -- plan the next milestone
+`/fh:plan-work` -- plan the next milestone
 
 <sub>`/clear` first -- fresh context window</sub>
 
@@ -464,7 +464,7 @@ Ready to plan the next milestone.
 <step name="edge_cases">
 **Handle edge cases:**
 
-- Phase complete but next phase not planned -> offer `/plan-work`
+- Phase complete but next phase not planned -> offer `/fh:plan-work`
 - All work complete -> offer milestone completion
 - Blockers present -> highlight before offering to continue
 - Handoff file exists -> display handoff context directly

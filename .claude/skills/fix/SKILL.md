@@ -1,5 +1,5 @@
 ---
-name: fix
+name: fh:fix
 description: Fix a bug. Finds the root cause, writes a test, and patches it.
 user-invokable: true
 ---
@@ -100,17 +100,17 @@ If the fix touches `.tsx`, `.css`, components, or styles:
 - Read `.planning/DESIGN.md` for design context
 - Quick check: does the fix maintain visual consistency?
 - Check against `skills/frontend-design/` anti-patterns — no generic cards, cyan-on-dark, purple gradients, or other AI slop introduced by the fix
-- If significant UI change, suggest `/ui-test`
+- If significant UI change, suggest `/fh:ui-test`
 
 ---
 
 ## Step 4: Post-Fix Review
 
-**For MODERATE+ fixes:** Invoke `skills/simplify/` on the fix diff. Then suggest `/review` for comprehensive analysis.
+**For MODERATE+ fixes:** Invoke `skills/simplify/` on the fix diff. Then suggest `/fh:review` for comprehensive analysis.
 
-**For SIMPLE fixes:** Suggest `/review --quick` for a fast quality check.
+**For SIMPLE fixes:** Suggest `/fh:review --quick` for a fast quality check.
 
-Do NOT auto-invoke /review. The user decides when to run analysis.
+Do NOT auto-invoke /fh:review. The user decides when to run analysis.
 
 Generate lightweight SUMMARY.md in the phase directory:
 

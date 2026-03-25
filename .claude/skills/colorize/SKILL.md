@@ -1,5 +1,5 @@
 ---
-name: colorize
+name: fh:colorize
 description: Add strategic color to features that are too monochromatic or lack visual interest. Makes interfaces more engaging and expressive.
 user-invokable: false
 ---

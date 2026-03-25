@@ -1,5 +1,5 @@
 ---
-name: tracker
+name: fh:tracker
 description: Visual dashboard of your project's progress — phases, milestones, and status.
 user-invokable: true
 ---

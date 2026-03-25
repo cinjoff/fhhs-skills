@@ -23,8 +23,8 @@ review each patch and reapply if still relevant.
 ### systematic-debugging
 | # | Change | Rationale |
 |---|--------|-----------|
-| 1 | Added `.planning/debug/` session file creation | Aligns with /fix COMPLEX path that seeds debug sessions |
-| 2 | Added slug convention: `YYYY-MM-DD-{first-3-words-kebab}` | Matches /fix debug file naming |
+| 1 | Added `.planning/debug/` session file creation | Aligns with /fh:fix COMPLEX path that seeds debug sessions |
+| 2 | Added slug convention: `YYYY-MM-DD-{first-3-words-kebab}` | Matches /fh:fix debug file naming |
 
 ### requesting-code-review
 | # | Change | Rationale |
@@ -251,7 +251,7 @@ No changes. (Template variables adopted from upstream v1.2.0.)
 | # | Change | Rationale |
 |---|--------|-----------|
 | 1 | Removed `gsd:` prefix from all command names | Cleaner namespace under fhhs-skills |
-| 2 | Commands that composites replace are not exposed | /plan replaces plan-phase, /build replaces execute-phase, etc. |
+| 2 | Commands that composites replace are not exposed | /fh:plan-work replaces plan-phase, /fh:build replaces execute-phase, etc. |
 
 ### Agents
 | # | Change | Rationale |

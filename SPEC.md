@@ -173,7 +173,7 @@ A composite command is a markdown file in `commands/` that defines a multi-step 
   ├── dispatches: general-purpose agents (task execution)
   ├── dispatches: code-reviewer agents (spec gates + quality review)
   ├── dispatches: gsd-integration-checker agent (cross-phase wiring)
-  ├── invokes: /critique, /polish, /normalize (design gates)
+  ├── invokes: /fh:ui-critique, /fh:polish, /fh:normalize (design gates)
   ├── invokes: skills/simplify/ (code cleanup)
   ├── invokes: skills/verification-before-completion/ (final verify)
   ├── invokes: skills/finishing-a-development-branch/ (merge/PR)

@@ -1,5 +1,5 @@
 ---
-name: research
+name: fh:research
 description: Look into a topic. Searches the web and docs, then writes up what it found.
 user-invokable: true
 ---

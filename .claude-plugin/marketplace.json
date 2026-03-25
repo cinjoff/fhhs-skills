@@ -10,7 +10,7 @@
   "plugins": [
     {
       "name": "fh",
-      "description": "fhhs-skills: Composite workflow skills unifying engineering discipline, design quality, and project tracking. Includes /plan-work, /build, /fix, /review, /ui-critique, /polish, and 30+ more commands.",
+      "description": "fhhs-skills: Composite workflow skills unifying engineering discipline, design quality, and project tracking. Includes /fh:plan-work, /fh:build, /fh:fix, /fh:review, /fh:ui-critique, /fh:polish, and 30+ more commands.",
       "version": "1.21.3",
       "author": {
         "name": "Konstantin"

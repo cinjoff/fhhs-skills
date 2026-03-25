@@ -1,5 +1,5 @@
 ---
-name: map-codebase
+name: fh:map-codebase
 description: Explore and document how your codebase is structured.
 user-invokable: true
 ---

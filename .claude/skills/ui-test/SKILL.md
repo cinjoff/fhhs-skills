@@ -1,5 +1,5 @@
 ---
-name: ui-test
+name: fh:ui-test
 description: Take screenshots and check if the UI looks right. Use --qa for thorough functional testing.
 user-invokable: true
 ---

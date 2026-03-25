@@ -1,6 +1,6 @@
 ---
-name: playwright-testing
-description: Playwright testing patterns and best practices. Provides guidance for writing, debugging, and maintaining Playwright tests. Not invoked directly — loaded conditionally by /build and /fix when test files are in scope.
+name: fh:playwright-testing
+description: Playwright testing patterns and best practices. Provides guidance for writing, debugging, and maintaining Playwright tests. Not invoked directly — loaded conditionally by /fh:build and /fh:fix when test files are in scope.
 user-invokable: false
 ---
 

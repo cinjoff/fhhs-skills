@@ -30,24 +30,24 @@ Then start a Claude Code session and run `/fh:setup`.
 
 ```
 /fh:new-project    set up a project with structure and tracking
-/plan-work         design a feature before building it
-/plan-review       challenge the plan before committing to build
-/build             execute the plan with parallel workers and quality gates
-/review            code quality, security, verification, and branch promotion
+/fh:plan-work      design a feature before building it
+/fh:plan-review    challenge the plan before committing to build
+/fh:build          execute the plan with parallel workers and quality gates
+/fh:review         code quality, security, verification, and branch promotion
 ```
 
 When you come back to an existing project:
 
 ```
-/progress       restore context, check cross-session memory, and route to next action
+/fh:progress    restore context, check cross-session memory, and route to next action
 ```
 
 ## Native Task Tracking
 
-Plan-work and build integrate with Claude Code's native task list for live progress visibility:
+`/fh:plan-work` and `/fh:build` integrate with Claude Code's native task list for live progress visibility:
 
 ```
-/plan-work creates tasks:          /build creates tasks from plan:
+/fh:plan-work creates tasks:       /fh:build creates tasks from plan:
   [~] Phase matching                 [~] Task 1: Add auth middleware
   [ ] Research                          ├─ [~] Write failing test
   [ ] Brainstorm                        ├─ [ ] Implement handler
@@ -65,22 +65,22 @@ Subagents create their own sub-tasks for granular progress. If task tools are un
 
 **Building a feature:**
 ```
-/plan-work  ->  /plan-review  ->  /build  ->  /review
+/fh:plan-work  ->  /fh:plan-review  ->  /fh:build  ->  /fh:review
 ```
 
 **Fixing a bug:**
 ```
-/fix
+/fh:fix
 ```
 
 **Refactoring:**
 ```
-/refactor  ->  /simplify
+/fh:refactor  ->  /fh:simplify
 ```
 
 **Starting a new session:**
 ```
-/progress
+/fh:progress
 ```
 
 ## Commands
@@ -91,11 +91,11 @@ Subagents create their own sub-tasks for granular progress. If task tools are un
 | Command | What it does |
 |---------|-------------|
 | `/fh:new-project` | Set up a project with vision, tech stack, design language, and roadmap |
-| `/plan-work` | Brainstorm, research, and produce an execution-ready plan |
-| `/plan-review` | Founder-level plan challenge — rethink scope, find the 10-star product |
-| `/build` | Execute a plan with parallel subagents, TDD, design gates, and verification |
-| `/ui-test` | Visual verification and QA testing with agent-browser backend |
-| `/review` | Code quality, security scan, runtime error check, and branch promotion |
+| `/fh:plan-work` | Brainstorm, research, and produce an execution-ready plan |
+| `/fh:plan-review` | Founder-level plan challenge — rethink scope, find the 10-star product |
+| `/fh:build` | Execute a plan with parallel subagents, TDD, design gates, and verification |
+| `/fh:ui-test` | Visual verification and QA testing with agent-browser backend |
+| `/fh:review` | Code quality, security scan, runtime error check, and branch promotion |
 
 </details>
 
@@ -104,10 +104,10 @@ Subagents create their own sub-tasks for granular progress. If task tools are un
 
 | Command | What it does |
 |---------|-------------|
-| `/fix` | Auto-triage and fix bugs with systematic debugging |
-| `/refactor` | Restructure code safely, tests green at every step |
-| `/simplify` | Review code for reuse, quality, and efficiency |
-| `/research` | Investigate a topic before planning |
+| `/fh:fix` | Auto-triage and fix bugs with systematic debugging |
+| `/fh:refactor` | Restructure code safely, tests green at every step |
+| `/fh:simplify` | Review code for reuse, quality, and efficiency |
+| `/fh:research` | Investigate a topic before planning |
 
 </details>
 
@@ -116,18 +116,18 @@ Subagents create their own sub-tasks for granular progress. If task tools are un
 
 | Command | What it does |
 |---------|-------------|
-| `/ui-critique` | Evaluate visual hierarchy, information architecture, and design quality |
-| `/ui-animate` | Purposeful motion and micro-interactions |
-| `/ui-test` | Visual verification and QA testing |
-| `/ui-redesign` | Change art direction and design context |
-| `/polish` | Fix alignment, spacing, consistency, and detail issues |
-| `/normalize` | Match your design system and ensure consistency |
-| `/harden` | Error handling, i18n, text overflow, edge cases |
-| `/audit` | Full accessibility, performance, theming, and responsive audit |
-| `/secure` | OWASP Top 10 security vulnerability scan |
-| `/observability` | Query local Sentry error store for runtime errors |
+| `/fh:ui-critique` | Evaluate visual hierarchy, information architecture, and design quality |
+| `/fh:ui-animate` | Purposeful motion and micro-interactions |
+| `/fh:ui-test` | Visual verification and QA testing |
+| `/fh:ui-redesign` | Change art direction and design context |
+| `/fh:polish` | Fix alignment, spacing, consistency, and detail issues |
+| `/fh:normalize` | Match your design system and ensure consistency |
+| `/fh:harden` | Error handling, i18n, text overflow, edge cases |
+| `/fh:audit` | Full accessibility, performance, theming, and responsive audit |
+| `/fh:secure` | OWASP Top 10 security vulnerability scan |
+| `/fh:observability` | Query local Sentry error store for runtime errors |
 
-The following design skills are available as internal skills (auto-invoked by `/build` and other pipelines, not user-invokable): adapt, bolder, quieter, distill, clarify, colorize, delight, extract, onboard, optimize.
+The following design skills are available as internal skills (auto-invoked by `/fh:build` and other pipelines, not user-invokable): adapt, bolder, quieter, distill, clarify, colorize, delight, extract, onboard, optimize.
 
 </details>
 
@@ -136,12 +136,12 @@ The following design skills are available as internal skills (auto-invoked by `/
 
 | Command | What it does |
 |---------|-------------|
-| `/progress` | Restore context (git + claude-mem), check status, route to next action |
+| `/fh:progress` | Restore context (git + claude-mem), check status, route to next action |
 | `/fh:tracker` | Launch the visual project dashboard (real-time web UI at localhost:3847) |
-| `/quick` | Do a small task with tracking guarantees |
-| `/todos` | Manage project todos — add new or review pending |
+| `/fh:quick` | Do a small task with tracking guarantees |
+| `/fh:todos` | Manage project todos — add new or review pending |
 
-Phase management, milestone lifecycle, and test generation are handled automatically by `/plan-work`, `/build`, and `/review`.
+Phase management, milestone lifecycle, and test generation are handled automatically by `/fh:plan-work`, `/fh:build`, and `/fh:review`.
 
 </details>
 
@@ -153,7 +153,7 @@ Phase management, milestone lifecycle, and test generation are handled automatic
 | `/fh:setup` | One-time setup after installing |
 | `/fh:settings` | Configure workflow preferences |
 | `/fh:health` | Check if your project files are in good shape |
-| `/map-codebase` | Analyze your codebase structure |
+| `/fh:map-codebase` | Analyze your codebase structure |
 | `/fh:revise-claude-md` | Update CLAUDE.md with learnings from the session |
 | `/fh:update` | Check for updates and install the latest version |
 | `/fh:sync-upstream` | Check upstreams for updates, sync changes, reapply patches |
