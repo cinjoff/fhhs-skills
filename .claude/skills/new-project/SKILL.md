@@ -10,7 +10,7 @@ $ARGUMENTS
 
 You are a **lean orchestrator**. Guide the user through setup, delegate heavy work to framework skills.
 
-> **Dependency check:** All tools are built into this plugin — engineering disciplines, design quality commands, GSD CLI (`gsd-tools.cjs`), and TypeScript LSP. GSD will be initialized per-project in Step 5.
+> **Dependency check:** All tools are built into this plugin — engineering disciplines, design quality commands, GSD CLI (`gsd-tools.cjs`), and TypeScript LSP. GSD will be initialized per-project in Step 6.
 
 ---
 
@@ -25,7 +25,7 @@ Delegate to the GSD new-project questioning flow. Ask the user one question at a
 5. **Constraints:** Timeline, team size, budget, technical constraints?
 6. **Success criteria:** How do you know it worked?
 
-Save answers — they feed into PROJECT.md in Step 5.
+Save answers — they feed into PROJECT.md in Step 6.
 
 ---
 
@@ -78,7 +78,85 @@ Keep it under 40 lines. Commit: `docs: initialize CLAUDE.md with project convent
 
 ---
 
-## Step 5: Requirements + Roadmap
+## Step 5: Domain Research (optional)
+
+Check whether the tech stack was **fully specified** in Step 2 (user explicitly chose all stack components) or left partially open (accepted defaults without discussion, said "figure it out", etc.). Track this as `stack_decided`.
+
+Ask the user:
+
+> **Research the domain ecosystem before defining requirements?** This discovers standard features, architecture patterns, and pitfalls for your project type.
+>
+> 1. Research first (Recommended)
+> 2. Skip research
+
+If the user chooses **Skip research** → jump to Step 6.
+
+If the user chooses **Research first:**
+
+```bash
+mkdir -p .planning/research
+```
+
+**Determine which dimensions to research:**
+- **Features** — always spawn (table stakes vs differentiators)
+- **Pitfalls** — always spawn (critical for roadmap quality)
+- **Stack** — only if `stack_decided` is false
+- **Architecture** — only if `stack_decided` is false
+
+**Spawn researchers in parallel:**
+
+```
+Task(prompt="Project Research — Features dimension for [domain].
+Project: [one-line description from Step 1]. Target users: [from Step 1]. Stack: [from Step 2].
+Discover table-stakes features users expect, differentiator opportunities, and anti-features to avoid.
+Write to: .planning/research/FEATURES.md",
+subagent_type="gsd-project-researcher", description="Features research")
+
+Task(prompt="Project Research — Pitfalls dimension for [domain].
+Project: [one-line description from Step 1]. Target users: [from Step 1]. Stack: [from Step 2].
+Discover common failure modes, technical pitfalls, and mistakes teams make building this type of project.
+Write to: .planning/research/PITFALLS.md",
+subagent_type="gsd-project-researcher", description="Pitfalls research")
+```
+
+**If `stack_decided` is false, also spawn:**
+
+```
+Task(prompt="Project Research — Stack dimension for [domain].
+Project: [one-line description from Step 1]. Requirements: [from Step 1].
+Evaluate framework and tooling options. Recommend a stack with trade-off analysis.
+Write to: .planning/research/STACK.md",
+subagent_type="gsd-project-researcher", description="Stack research")
+
+Task(prompt="Project Research — Architecture dimension for [domain].
+Project: [one-line description from Step 1]. Stack: [from Step 2].
+Recommend architecture patterns, data flow, and project structure for this domain.
+Write to: .planning/research/ARCHITECTURE.md",
+subagent_type="gsd-project-researcher", description="Architecture research")
+```
+
+**After all researchers complete, synthesize:**
+
+```
+Task(prompt="Synthesize research outputs into a unified summary.
+<files_to_read>
+.planning/research/FEATURES.md
+.planning/research/PITFALLS.md
+.planning/research/STACK.md (if exists)
+.planning/research/ARCHITECTURE.md (if exists)
+</files_to_read>
+Produce a concise summary with: key features to build, pitfalls to avoid, and (if researched) stack recommendation and architecture guidance.
+Write to: .planning/research/SUMMARY.md",
+subagent_type="gsd-research-synthesizer", description="Synthesize research")
+```
+
+Research complete. Proceed to Step 6.
+
+---
+
+## Step 6: Requirements + Roadmap
+
+**If `.planning/research/SUMMARY.md` exists** (created in Step 5), read it first. Use the research findings to inform requirements — incorporate discovered table-stakes features, avoid identified pitfalls, and align the roadmap phases with architecture guidance.
 
 Derive requirements from the vision in Step 1. Create:
 
@@ -129,11 +207,11 @@ Commit: `docs: initialize project planning with GSD structure`
 
 ---
 
-## Step 6: Infrastructure Setup
+## Step 7: Infrastructure Setup
 
 Set up GitHub and Vercel so the project is ready for deployment from day one.
 
-### 6a: Initialize git and commit planning files
+### 7a: Initialize git and commit planning files
 
 ```bash
 git rev-parse --is-inside-work-tree 2>/dev/null && echo "GIT_OK" || echo "GIT_MISSING"
@@ -154,7 +232,7 @@ git commit -m "chore: initialize project with planning structure"
 
 If files are already committed (git was pre-existing), skip the commit.
 
-### 6b: Create GitHub repository
+### 7b: Create GitHub repository
 
 Check `gh` availability:
 
@@ -181,7 +259,7 @@ This creates a private repo, sets `origin`, and pushes the initial commit. Repor
 
 If a remote already exists, skip creation but show the existing remote URL.
 
-### 6c: Create and link Vercel project
+### 7c: Create and link Vercel project
 
 Check `vercel` availability:
 
@@ -189,7 +267,7 @@ Check `vercel` availability:
 command -v vercel >/dev/null 2>&1 && echo "OK" || echo "MISSING"
 ```
 
-If `vercel` is MISSING: show a warning and skip to Step 7. The user can run `npm install -g vercel && vercel login` to enable this later.
+If `vercel` is MISSING: show a warning and skip to Step 8. The user can run `npm install -g vercel && vercel login` to enable this later.
 
 Link the project to Vercel (creates a new project if one doesn't exist):
 
@@ -199,7 +277,7 @@ vercel link --yes --project "$(basename "$(pwd)")"
 
 This writes `.vercel/project.json` with the project and org IDs.
 
-### 6d: Connect GitHub to Vercel for auto-deployments
+### 7d: Connect GitHub to Vercel for auto-deployments
 
 Connect the GitHub repo to the Vercel project:
 
@@ -225,9 +303,9 @@ To enable automatic GitHub → Vercel deployments:
 This only needs to be done once.
 ```
 
-### 6e: Set up Supabase (conditional)
+### 7e: Set up Supabase (conditional)
 
-**Only run this step if the user chose Supabase in Step 2.** If not, skip to Step 7.
+**Only run this step if the user chose Supabase in Step 2.** If not, skip to Step 8.
 
 Check `supabase` CLI availability:
 
@@ -363,7 +441,7 @@ Mark SUPABASE_SERVICE_ROLE_KEY as "Sensitive" in Vercel.
 
 ---
 
-## Step 7: Handoff
+## Step 8: Handoff
 
 Report to the user:
 
