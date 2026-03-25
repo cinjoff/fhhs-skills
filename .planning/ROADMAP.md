@@ -34,12 +34,15 @@ phases: 6
 
 ## Phase 3: Upstream Capability Audit & Integration Planning
 **Goal:** All upstream capabilities are cataloged, quality-assessed, and gaps identified with integration recommendations.
+**Status:** Complete
 
 - UPSTREAM-INDEX.md documents all 8 upstream sources with skill-level detail
 - Every upstream skill has quality rating (A-D) and integration status
-- Gap Registry identifies unused high-value capabilities with recommended approaches
+- Gap Registry identifies unused high-value capabilities with recommended approaches (G1-G11)
 - /fh:audit-upstream skill maintains the index after upstream syncs
 - SDLC coverage matrix shows where gaps exist across the development lifecycle
+- 8 per-source upstream catalog files in `.planning/upstream/`
+- 13 audit-upstream evals (IDs 181-193)
 
 ## Phase 4: User Experience & Onboarding
 **Goal:** Non-technical users can install and use the plugin without assistance.
