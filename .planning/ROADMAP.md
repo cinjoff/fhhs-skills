@@ -44,6 +44,16 @@ phases: 6
 - 8 per-source upstream catalog files in `.planning/upstream/`
 - 13 audit-upstream evals (IDs 181-193)
 
+## Phase 3.5: Pipeline Depth & Intelligence
+**Goal:** Plan-work and new-project pipelines intelligently assess task complexity and suggest appropriate depth — deeper research, decision-locking, and engineering review when warranted.
+**Status:** Planning
+
+- `/fh:plan-work` evaluates complexity and suggests deep research for unfamiliar domains
+- Decision-locking (CONTEXT.md locked/discretion/deferred) prevents cross-session drift
+- Engineering review mode complements existing CEO-style plan-review
+- `/fh:build` wires verification-before-completion into final steps
+- Upstream gap registry items G1-G5 addressed
+
 ## Phase 4: User Experience & Onboarding
 **Goal:** Non-technical users can install and use the plugin without assistance.
 
