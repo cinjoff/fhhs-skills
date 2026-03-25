@@ -14,6 +14,7 @@ versions, diff changes, and guide patch reapplication.
 | `monorepo_path` | Subdirectory within the repo to extract (blank = whole repo) |
 | `compare_paths` | Which subdirectories to diff between old and new snapshots |
 | `forked_to` | Our skill/agent/command paths forked from this upstream. Path prefixes: `skills/` = `skills/` (root), `agents/` = `agents/` (root), `commands/` = `commands/` (root, shipped), `.claude/commands/` = `.claude/commands/` (maintainer-local) |
+| `eval_commands` | Eval command names (from `run_all_evals.py` COMMAND_MAP) to run when this upstream is updated |
 
 ## Registry
 
@@ -27,6 +28,7 @@ versions, diff changes, and guide patch reapplication.
 | monorepo_path | |
 | compare_paths | `skills/`, `agents/` |
 | forked_to | `skills/brainstorming`, `skills/test-driven-development`, `skills/systematic-debugging`, `skills/dispatching-parallel-agents`, `skills/verification-before-completion`, `skills/requesting-code-review`, `skills/receiving-code-review`, `skills/finishing-a-development-branch`, `skills/using-superpowers`, `skills/using-git-worktrees`, `skills/writing-skills`, `skills/simplify`, `skills/executing-plans`, `skills/subagent-driven-development`, `skills/writing-plans` |
+| eval_commands | `build`, `plan-work`, `fix`, `refactor`, `review`, `simplify`, `quick` |
 
 ### impeccable
 
@@ -38,6 +40,7 @@ versions, diff changes, and guide patch reapplication.
 | monorepo_path | |
 | compare_paths | `source/skills/` |
 | forked_to | `skills/frontend-design`, `skills/ui-critique`, `skills/polish`, `skills/normalize`, `skills/harden`, `skills/ui-animate`, `skills/ui-redesign`, `skills/distill`, `skills/adapt`, `skills/bolder`, `skills/quieter`, `skills/extract`, `skills/colorize`, `skills/audit`, `skills/clarify`, `skills/onboard`, `skills/optimize`, `skills/delight` |
+| eval_commands | `polish`, `normalize`, `harden`, `adapt`, `ui-animate`, `ui-critique`, `ui-redesign`, `distill`, `bolder`, `quieter`, `extract`, `colorize`, `audit`, `clarify`, `onboard`, `optimize`, `delight` |
 
 ### gsd
 
@@ -49,6 +52,7 @@ versions, diff changes, and guide patch reapplication.
 | monorepo_path | |
 | compare_paths | `workflows/`, `agents/`, `references/`, `templates/` |
 | forked_to | `skills/build`, `skills/fix`, `skills/plan-work`, `skills/progress`, `skills/quick`, `skills/review`, `skills/map-codebase`, `skills/todos`, `skills/tracker`, `agents/gsd-executor`, `agents/gsd-planner`, `agents/gsd-verifier`, `agents/gsd-roadmapper`, `agents/gsd-debugger`, `agents/gsd-codebase-mapper`, `agents/gsd-integration-checker`, `agents/gsd-nyquist-auditor`, `agents/gsd-phase-researcher`, `agents/gsd-plan-checker`, `agents/gsd-project-researcher`, `agents/gsd-research-synthesizer`, `commands/new-project`, `.claude/commands/discuss-phase`, `.claude/commands/add-phase`, `.claude/commands/remove-phase`, `.claude/commands/insert-phase`, `.claude/commands/validate-phase`, `.claude/commands/list-phase-assumptions`, `.claude/commands/complete-milestone`, `.claude/commands/new-milestone`, `.claude/commands/audit-milestone`, `.claude/commands/plan-milestone-gaps`, `.claude/commands/pause-work`, `.claude/commands/set-profile`, `.claude/commands/add-tests`, `.claude/commands/cleanup`, `.claude/commands/release`, `.claude/commands/update-gsd` |
+| eval_commands | `build`, `fix`, `plan-work`, `progress`, `quick`, `review`, `map-codebase`, `todos`, `tracker` |
 
 ### gstack
 
@@ -60,6 +64,7 @@ versions, diff changes, and guide patch reapplication.
 | monorepo_path | |
 | compare_paths | `plan-ceo-review/`, `plan-eng-review/`, `review/`, `qa/`, `ship/` |
 | forked_to | `skills/plan-review`, `skills/ui-test`, `skills/review` (checklist absorbed), `skills/plan-work` (eng-review absorbed), `.claude/commands/release` (ship absorbed) |
+| eval_commands | `plan-review`, `ui-test`, `review` |
 
 ### feature-dev
 
@@ -71,6 +76,7 @@ versions, diff changes, and guide patch reapplication.
 | monorepo_path | `plugins/feature-dev` |
 | compare_paths | `agents/`, `commands/` |
 | forked_to | `agents/code-explorer`, `agents/code-architect`, `agents/code-reviewer` |
+| eval_commands | `review` |
 
 ### vercel-react
 
@@ -82,6 +88,7 @@ versions, diff changes, and guide patch reapplication.
 | monorepo_path | |
 | compare_paths | `.` |
 | forked_to | `skills/nextjs-perf` |
+| eval_commands | `nextjs-perf` |
 
 ### playwright
 
@@ -93,6 +100,7 @@ versions, diff changes, and guide patch reapplication.
 | monorepo_path | |
 | compare_paths | `.` |
 | forked_to | `skills/playwright-testing` |
+| eval_commands | `playwright-testing` |
 
 ### claude-md
 
@@ -104,3 +112,4 @@ versions, diff changes, and guide patch reapplication.
 | monorepo_path | `plugins/claude-md-management` |
 | compare_paths | `skills/`, `commands/` |
 | forked_to | `skills/claude-md-improver`, `commands/revise-claude-md` |
+| eval_commands | `revise-claude-md` |
