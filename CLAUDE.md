@@ -6,11 +6,13 @@ Claude Code plugin composing upstream skills (Superpowers, Impeccable, GSD) into
 
 - Markdown skills, JavaScript/Node.js tooling (bin/gsd-tools.cjs)
 - Plugin ships `.claude/skills/` only — co-locate all runtime-read files there
+- `plugin.json` must declare `"skills": "./.claude/skills/"` — Claude Code defaults to `skills/` at plugin root
 - Eval suite: 210+ evals in `evals/` with mock project fixtures
 
 ## Architecture
 
 - **User-facing skills:** `.claude/skills/{name}/SKILL.md` — invoked as `/fh:{name}`
+- **Maintainer commands:** `.claude/commands/{name}.md` — repo-local only, NOT shipped with plugin installs (release, sync-upstream, audit-upstream)
 - **Internal skills:** `skills/{name}/SKILL.md` — referenced by composites, not shipped
 - **Agents:** `agents/{name}.md` — subagent personas for Task tool dispatch
 - **References:** `references/` — shared templates and prompts
