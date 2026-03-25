@@ -86,6 +86,29 @@ Then read relevant project docs. Map:
 ### Retrospective Check
 Check the git log for this branch. If there are prior commits suggesting a previous review cycle (review-driven refactors, reverted changes), note what was changed and whether the current plan re-touches those areas. Be MORE aggressive reviewing areas that were previously problematic. Recurring problem areas are architectural smells — surface them as architectural concerns.
 
+### Load Phase Context
+Read `.planning/phases/{phase}/{phase}-CONTEXT.md` if it exists.
+This contains decisions from plan-work's discussion phase.
+
+**Respect-but-flag protocol for locked decisions:**
+- Default: respect decisions. Do NOT suggest alternatives.
+- Exception: if during review you find evidence that a decision causes
+  a problem (research contradicts it, architecture review reveals a flaw,
+  security concern), you MAY surface it as:
+  "Decision concern: [decision X] was locked in planning, but [evidence Y]
+  suggests reconsidering. Confirm or unlock for revision?"
+- Present as an AskUserQuestion with options: Keep decision / Revise.
+- If user keeps it, move on. Do not revisit.
+
+### Research Alignment Check
+Check if `.planning/phases/{phase}/{phase}-RESEARCH.md` exists.
+If it does, read it and verify during the review that:
+- The plan uses the recommended stack from research (or documents why not)
+- The plan addresses pitfalls identified in research (Common Pitfalls section)
+- The plan doesn't hand-roll solutions for problems listed in "Don't Hand-Roll"
+- LOW confidence findings from research are handled with appropriate caution
+If misalignment is found, surface it as an issue during Architecture Review (Section 1).
+
 ### Taste Calibration (EXPANSION mode only)
 Read `.planning/DESIGN.md` for the project's design context and taste references. Use it to calibrate your recommendations — align with established design language and patterns rather than discovering them from scratch.
 
@@ -173,6 +196,7 @@ Evaluate and diagram:
     * Error path (upstream call fails — what happens?)
 * State machines. ASCII diagram for every new stateful object. Include impossible/invalid transitions and what prevents them.
 * Coupling concerns. Which components are now coupled that weren't before? Is that coupling justified? Draw the before/after dependency graph.
+* Research alignment — if RESEARCH.md exists, does the plan follow its recommendations? Flag any deviation from recommended stack, ignored pitfalls, or hand-rolled solutions for solved problems.
 * Single points of failure. Map them.
 * Rollback posture. If this ships and immediately breaks, what's the rollback procedure? How long?
 
@@ -443,11 +467,18 @@ truths:
 
 ### Step B: Update CONTEXT.md
 
-Append to `.planning/phases/{phase}/{phase}-CONTEXT.md` (create the section if missing):
+Append to `.planning/phases/{phase}/{phase}-CONTEXT.md` (create section if missing):
 
-**"Review Decisions" section** — Architecture and implementation decisions made during AskUserQuestion exchanges. Same format as "Design Decisions" — these are locked for `/fh:build` subagents.
+**"Decisions" section** — Append new decisions made during review to the
+existing ## Decisions section. Prefix each with `[review]` so the source
+is traceable:
+  - [review] [Decision]: [What was decided and why]
 
-**"NOT in scope" section** — Work considered and explicitly deferred during review, with one-line rationale each. The `/fh:build` executor uses this as a scope boundary — subagents must not implement deferred items.
+If a decision was unlocked and revised via respect-but-flag, update the
+original entry in-place and add `[revised in review]` suffix.
+
+**"Deferred Ideas" section** — Append items considered and explicitly
+deferred during review, with one-line rationale each.
 
 ### Step C: Human-Reference Summary
 
@@ -470,7 +501,7 @@ Complete table of every method that can fail, every error type, rescued status, 
 Any row with RESCUED=N, TEST=N, USER SEES=Silent → **CRITICAL GAP** → must become a `[review]` truth in PLAN.md.
 
 ### Delight Opportunities (EXPANSION mode only)
-Identify at least 5 "bonus chunk" opportunities (<30 min each) that would make users think "oh nice, they thought of that." Present each delight opportunity as its own individual AskUserQuestion. Never batch them. For each one, describe what it is, why it would delight users, and effort estimate. Then present options: **A)** Add to plan backlog **B)** Skip **C)** Build it now in this PR. Items added to backlog go into CONTEXT.md "NOT in scope" with rationale "delight opportunity — deferred."
+Identify at least 5 "bonus chunk" opportunities (<30 min each) that would make users think "oh nice, they thought of that." Present each delight opportunity as its own individual AskUserQuestion. Never batch them. For each one, describe what it is, why it would delight users, and effort estimate. Then present options: **A)** Add to plan backlog **B)** Skip **C)** Build it now in this PR. Items added to backlog go into CONTEXT.md "Deferred Ideas" with rationale "delight opportunity — deferred."
 
 ### Test Diagram (mandatory, always produced)
 ASCII art diagram showing all new codepaths and their test coverage status. Produced during Section 9 (Engineering Test Review) and included here for reference. This is a required output in every review, not just engineering-focused ones.
