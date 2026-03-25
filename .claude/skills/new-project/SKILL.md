@@ -49,7 +49,7 @@ Lock the final tech stack decisions. These go into PROJECT.md.
 
 ## Step 3: Design Framework
 
-Invoke `/fh:teach-impeccable`.
+Invoke `/fh:ui-branding`.
 
 This runs the one-time design context setup:
 - Aesthetic direction (tone, style, differentiation)
@@ -59,20 +59,20 @@ This runs the one-time design context setup:
 
 Output: `.planning/DESIGN.md` — referenced by all future `/fh:build` and `/fh:verify-ui` runs.
 
-If the user wants to skip this step and set up design later, allow it. They can always run `/fh:teach-impeccable` manually.
+If the user wants to skip this step and set up design later, allow it. They can always run `/fh:ui-branding` manually.
 
 ---
 
 ## Step 4: CLAUDE.md Generation
 
-Invoke `/fh:revise-claude-md init` — this uses the `skills/claude-md-improver/references/templates.md` fhhs-skills project template to generate a high-quality CLAUDE.md from the context gathered in Steps 1-3.
+Invoke `/fh:revise-claude-md init` — this generates a high-quality CLAUDE.md from the context gathered in Steps 1-3 using the templates co-located in the `revise-claude-md` skill directory.
 
 Pass it:
 - Project name and description (from Step 1)
 - Tech stack (from Step 2)
 - Whether `.planning/DESIGN.md` was created (from Step 3)
 
-The template ensures CLAUDE.md includes: tech stack, commands adapted to the chosen framework, architecture, code style with conventional commits, testing conventions, planning state reference, and design system reference.
+The `/fh:revise-claude-md` skill's co-located `templates.md` has the fhhs-skills Project template. CLAUDE.md should include: tech stack, commands adapted to the chosen framework, architecture, code style with conventional commits, testing conventions, planning state reference, and design system reference.
 
 Keep it under 40 lines. Commit: `docs: initialize CLAUDE.md with project conventions`
 
@@ -90,17 +90,40 @@ Derive requirements from the vision in Step 1. Create:
 
 **Phase 1 must always be "Project scaffolding and core setup"** — this is where the actual Next.js project gets created, dependencies installed, and base configuration applied.
 
-**Set up project-local GSD symlink and initialize:**
+**Set up GSD symlink and initialize:**
+
+First, verify the global GSD symlink exists (created by `/fh:setup`):
+
 ```bash
-# Create project-local symlink to bundled GSD binary
+[ -f "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" ] && echo "GSD_OK" || echo "GSD_MISSING"
+```
+
+If `GSD_MISSING`: the user hasn't run `/fh:setup`. Create the global symlink now by detecting the plugin root and linking:
+
+```bash
+# Detect plugin root (dev checkout or installed cache)
+PLUGIN_ROOT=""
+if [ -f "$(pwd)/bin/gsd-tools.cjs" ]; then
+  PLUGIN_ROOT="$(pwd)"
+elif [ -d "$HOME/.claude/plugins/fh" ]; then
+  PLUGIN_ROOT="$HOME/.claude/plugins/fh"
+fi
+
+if [ -n "$PLUGIN_ROOT" ]; then
+  mkdir -p "$HOME/.claude/get-shit-done"
+  ln -sfn "$PLUGIN_ROOT/bin" "$HOME/.claude/get-shit-done/bin"
+fi
+```
+
+Then create the project-local symlink and initialize:
+
+```bash
 mkdir -p .claude/get-shit-done
 ln -sfn "$HOME/.claude/get-shit-done/bin" .claude/get-shit-done/bin
 
 # Initialize project
 node ./.claude/get-shit-done/bin/gsd-tools.cjs init new-project
 ```
-
-If the global symlink is missing (user hasn't run `/fh:setup`), create it first — see `/fh:setup` Step 3.
 
 Commit: `docs: initialize project planning with GSD structure`
 
@@ -202,6 +225,142 @@ To enable automatic GitHub → Vercel deployments:
 This only needs to be done once.
 ```
 
+### 6e: Set up Supabase (conditional)
+
+**Only run this step if the user chose Supabase in Step 2.** If not, skip to Step 7.
+
+Check `supabase` CLI availability:
+
+```bash
+command -v supabase >/dev/null 2>&1 && echo "OK" || echo "MISSING"
+```
+
+If `MISSING`: show a warning and skip. The user can run `brew install supabase/tap/supabase` (macOS) or `npm install -g supabase` to install later.
+
+#### Login
+
+Check if already authenticated:
+
+```bash
+supabase projects list >/dev/null 2>&1 && echo "LOGGED_IN" || echo "NOT_LOGGED_IN"
+```
+
+If `NOT_LOGGED_IN`:
+
+```bash
+supabase login
+```
+
+This opens the browser for OAuth — no dashboard navigation needed. Wait for the user to complete authentication.
+
+#### Create project
+
+Get the user's org (auto-select if only one):
+
+```bash
+supabase orgs list
+```
+
+If multiple orgs, ask the user which one to use.
+
+Ask the user for a preferred region. Common options: `us-east-1`, `eu-west-1`, `eu-central-1`, `ap-southeast-1`.
+
+Generate a strong database password and create the project:
+
+```bash
+DB_PASSWORD="$(openssl rand -base64 32)"
+supabase projects create "<project-name>" \
+  --org-id "<org-id>" \
+  --region "<region>" \
+  --db-password "$DB_PASSWORD"
+```
+
+Save the `DB_PASSWORD` — it's needed for linking.
+
+#### Wait for project readiness and retrieve keys
+
+The project takes ~60-90 seconds to become available after creation. Poll until keys are retrievable:
+
+```bash
+PROJECT_REF=$(supabase projects list | grep "<project-name>" | awk '{print $5}')
+
+# Poll for readiness (max 2 minutes)
+for i in $(seq 1 12); do
+  KEYS=$(supabase projects api-keys --project-ref "$PROJECT_REF" 2>/dev/null) && break
+  sleep 10
+done
+```
+
+Extract the keys:
+
+```bash
+ANON_KEY=$(echo "$KEYS" | grep "anon" | awk '{print $NF}')
+SERVICE_ROLE_KEY=$(echo "$KEYS" | grep "service_role" | awk '{print $NF}')
+SUPABASE_URL="https://${PROJECT_REF}.supabase.co"
+```
+
+#### Write `.env.local`
+
+**Security check first** — verify `.gitignore` includes `.env*.local`:
+
+```bash
+grep -q '\.env\*\.local\|\.env\.local' .gitignore 2>/dev/null && echo "GITIGNORE_OK" || echo "GITIGNORE_MISSING"
+```
+
+If `GITIGNORE_MISSING`, append `.env*.local` to `.gitignore` before writing secrets.
+
+Write the environment file (append if it already exists, don't overwrite):
+
+```bash
+cat >> .env.local <<EOF
+
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL}
+NEXT_PUBLIC_SUPABASE_ANON_KEY=${ANON_KEY}
+SUPABASE_SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY}
+EOF
+```
+
+**Security rules:**
+- `SUPABASE_SERVICE_ROLE_KEY` must NEVER be prefixed with `NEXT_PUBLIC_` — it bypasses Row Level Security
+- Never echo the service_role key value in user-facing output
+- `.env.local` must be gitignored before any secrets are written
+
+#### Initialize and link
+
+```bash
+supabase init
+supabase link --project-ref "$PROJECT_REF" --password "$DB_PASSWORD"
+```
+
+This creates the `supabase/` directory with `config.toml` and links it to the cloud project.
+
+#### Sync environment variables to Vercel
+
+Push the Supabase env vars to Vercel so deployments work out of the box:
+
+```bash
+echo "$SUPABASE_URL" | vercel env add NEXT_PUBLIC_SUPABASE_URL production --yes
+echo "$ANON_KEY" | vercel env add NEXT_PUBLIC_SUPABASE_ANON_KEY production --yes
+echo "$SERVICE_ROLE_KEY" | vercel env add SUPABASE_SERVICE_ROLE_KEY production --yes
+```
+
+If the `vercel` CLI is unavailable (Step 6c was skipped), show a checkpoint:
+
+```
+╔══════════════════════════════════════════════════════════════╗
+║  CHECKPOINT: Add Supabase env vars to Vercel                 ║
+╚══════════════════════════════════════════════════════════════╝
+
+Add these environment variables in Vercel Dashboard → Settings → Environment Variables:
+
+  NEXT_PUBLIC_SUPABASE_URL       = https://<ref>.supabase.co
+  NEXT_PUBLIC_SUPABASE_ANON_KEY  = <your anon key>
+  SUPABASE_SERVICE_ROLE_KEY      = <your service_role key>
+
+Mark SUPABASE_SERVICE_ROLE_KEY as "Sensitive" in Vercel.
+```
+
 ---
 
 ## Step 7: Handoff
@@ -219,6 +378,17 @@ Project initialized:
 - CLAUDE.md                 — project conventions
 - GitHub repo               — <repo-url> (private)
 - Vercel project            — linked (auto-deploys on push to main)
+- Supabase project          — <project-url> (if set up)
+- .env.local                — API keys configured (if Supabase)
 
 Next: run /fh:plan to plan your first phase (scaffolding and core setup).
+```
+
+If Supabase was set up, add this reminder:
+
+```
+⚠ Supabase security reminder:
+  - Enable Row Level Security (RLS) on every table you create
+  - The anon key is safe for client-side use ONLY with RLS enabled
+  - The service_role key bypasses RLS — use only in server-side code
 ```

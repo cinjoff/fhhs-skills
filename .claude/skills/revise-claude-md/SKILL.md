@@ -15,7 +15,7 @@ $ARGUMENTS
 | Argument | Mode | Action |
 |----------|------|--------|
 | No argument | **Session learnings** | Reflect on this session, propose targeted additions |
-| `audit` | **Full audit** | Run `skills/claude-md-improver/` — full quality assessment with scoring |
+| `audit` | **Full audit** | Full quality assessment with scoring using co-located guidelines |
 | `init` | **Initial creation** | Generate CLAUDE.md from project context (used by `/fh:new-project`) |
 
 ---
@@ -52,7 +52,7 @@ Decide where each addition belongs:
 
 Format: `<command or pattern>` - `<brief description>`
 
-Read `skills/claude-md-improver/references/update-guidelines.md` for what to add and what to avoid. Key rules:
+Read `update-guidelines.md` (co-located in this skill directory) for what to add and what to avoid. Key rules:
 - Don't duplicate `.planning/` content — reference it
 - Don't list current phases or milestones — they change
 - Do add commands, gotchas, architecture, testing patterns
@@ -81,7 +81,7 @@ Commit: `docs: update CLAUDE.md with session learnings`
 
 ## Step 2 (Full Audit): Run Improver
 
-Invoke `skills/claude-md-improver/`. Follow it completely — it handles discovery, quality assessment, scoring, and targeted updates.
+Read `templates.md` and `update-guidelines.md` (co-located in this skill directory). Use the templates for structure reference and the guidelines for quality assessment. Perform discovery, quality assessment, scoring, and targeted updates.
 
 ---
 
@@ -92,7 +92,7 @@ Read project context gathered by `/fh:new-project`:
 - Tech stack (from Step 2)
 - Design system (from Step 3, if done)
 
-Read `skills/claude-md-improver/references/templates.md` and use the **fhhs-skills Project** template.
+Read `templates.md` (co-located in this skill directory) and use the **fhhs-skills Project** template.
 
 Fill in:
 - **Project name** and one-line description

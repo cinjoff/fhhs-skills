@@ -78,7 +78,7 @@ fhhs-skills/
 │   ├── normalize/               # Design system consistency
 │   ├── harden/                  # Error/i18n/edge cases
 │   ├── animate/                 # Motion design
-│   ├── teach-impeccable/        # One-time DESIGN.md setup
+│   ├── ui-branding/             # One-time DESIGN.md setup
 │   ├── distill/                 # Remove complexity
 │   ├── adapt/                   # Responsive design
 │   ├── bolder/                  # Amplify visual impact

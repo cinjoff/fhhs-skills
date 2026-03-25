@@ -236,7 +236,7 @@
       "id": 10,
       "command": "new-project",
       "prompt": "I want to build a recipe sharing app where home cooks can post recipes with photos and others can save favorites. should work on mobile. i'm thinking react",
-      "expected_output": "Should walk through vision questions one at a time (what/who/why/scope/constraints/success), present default stack (Next.js/TS/Tailwind/Shadcn/Vercel + Supabase since auth/DB needed), invoke /teach-impeccable for design context (output to .planning/DESIGN.md), generate CLAUDE.md under 40 lines, create .planning/ structure with PROJECT.md/REQUIREMENTS.md/ROADMAP.md/STATE.md, and suggest /plan as next step. No external dependency checks needed.",
+      "expected_output": "Should walk through vision questions one at a time (what/who/why/scope/constraints/success), present default stack (Next.js/TS/Tailwind/Shadcn/Vercel + Supabase since auth/DB needed), invoke /fh:ui-branding for design context (output to .planning/DESIGN.md), generate CLAUDE.md under 40 lines, create .planning/ structure with PROJECT.md/REQUIREMENTS.md/ROADMAP.md/STATE.md, and suggest /plan as next step. No external dependency checks needed.",
       "files": [],
       "assertions": [
         {
@@ -248,7 +248,7 @@
           "type": "output"
         },
         {
-          "text": "Invokes /teach-impeccable",
+          "text": "Invokes /fh:ui-branding",
           "type": "behavioral"
         },
         {
@@ -1331,7 +1331,7 @@
       "id": 50,
       "command": "new-project",
       "prompt": "I want to create a CLI tool for managing dotfiles. pure node.js, no framework needed, just a simple npm package",
-      "expected_output": "Should walk through vision questions. Should NOT suggest Next.js/React/Tailwind defaults (this is a CLI tool, not a web app). Should adapt stack to CLI context (Node.js, Commander/yargs, minimal deps). Should still invoke /teach-impeccable but adapted for CLI (not visual design). Should create .planning/ structure. CLAUDE.md should reflect CLI-specific conventions (not web conventions).",
+      "expected_output": "Should walk through vision questions. Should NOT suggest Next.js/React/Tailwind defaults (this is a CLI tool, not a web app). Should adapt stack to CLI context (Node.js, Commander/yargs, minimal deps). Should still invoke /fh:ui-branding but adapted for CLI (not visual design). Should create .planning/ structure. CLAUDE.md should reflect CLI-specific conventions (not web conventions).",
       "files": [],
       "assertions": [
         {
@@ -4257,6 +4257,1083 @@
       ],
       "scenario_requires": [
         "gsd_project"
+      ]
+    },
+    {
+      "id": 135,
+      "command": "quick",
+      "prompt": "quick --discuss add a loading spinner to the submit button",
+      "expected_output": "Should parse --discuss flag, run lightweight discussion phase identifying 2-3 gray areas, ask user to pick which to discuss, lock decisions in CONTEXT.md, THEN proceed to planning.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Parses --discuss flag and enters discussion phase",
+          "type": "behavioral"
+        },
+        {
+          "text": "Identifies gray areas and asks user to select which to discuss",
+          "type": "behavioral"
+        },
+        {
+          "text": "Creates CONTEXT.md with locked decisions before planning",
+          "type": "ordering"
+        },
+        {
+          "text": "Does NOT skip discussion and go straight to planning",
+          "type": "guard"
+        }
+      ]
+    },
+    {
+      "id": 136,
+      "command": "quick",
+      "prompt": "quick --full fix the padding on the card grid",
+      "expected_output": "Should parse --full flag, create plan, run plan-checker loop (max 2 iterations), execute, then run verifier and write VERIFICATION.md.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Parses --full flag",
+          "type": "behavioral"
+        },
+        {
+          "text": "Runs plan-checker with max 2 revision iterations",
+          "type": "behavioral"
+        },
+        {
+          "text": "Runs verifier after execution",
+          "type": "ordering"
+        },
+        {
+          "text": "Writes VERIFICATION.md with evidence",
+          "type": "output"
+        }
+      ]
+    },
+    {
+      "id": 137,
+      "command": "quick",
+      "prompt": "quick --discuss --full add error handling to the API route",
+      "expected_output": "Should combine both flags: discussion phase first (gray areas then lock decisions), then plan with checker loop, then execute, then verify.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Runs discussion phase before planning",
+          "type": "ordering"
+        },
+        {
+          "text": "Runs plan-checker after planning",
+          "type": "ordering"
+        },
+        {
+          "text": "Runs verifier after execution",
+          "type": "ordering"
+        },
+        {
+          "text": "Follows ordering: discuss then plan then check then execute then verify",
+          "type": "ordering"
+        },
+        {
+          "text": "Does NOT skip any phase when both flags present",
+          "type": "guard"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ]
+    },
+    {
+      "id": 138,
+      "command": "health",
+      "prompt": "health --repair",
+      "expected_output": "Should parse --repair flag, auto-fix repairable issues (config.json recreation, STATE.md regeneration from ROADMAP.md), re-run health check to verify resolution.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Parses --repair flag",
+          "type": "behavioral"
+        },
+        {
+          "text": "Auto-fixes repairable issues without confirmation",
+          "type": "behavioral"
+        },
+        {
+          "text": "Re-runs health check after repairs to verify",
+          "type": "ordering"
+        },
+        {
+          "text": "Reports what was fixed and current health status",
+          "type": "output"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ]
+    },
+    {
+      "id": 139,
+      "command": "health",
+      "prompt": "run a health check, my STATE.md seems wrong — it says phase 3 but ROADMAP.md only has 2 phases",
+      "expected_output": "Should detect phase number mismatch between STATE.md and ROADMAP.md, report as error with specific inconsistency details, suggest --repair to fix.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects phase mismatch between STATE.md and ROADMAP.md",
+          "type": "behavioral"
+        },
+        {
+          "text": "Reports specific inconsistency (phase 3 vs 2 phases)",
+          "type": "output"
+        },
+        {
+          "text": "Suggests --repair flag to resolve",
+          "type": "output"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ]
+    },
+    {
+      "id": 140,
+      "command": "new-project",
+      "prompt": "I have an existing Next.js app at ./my-app, set up GSD tracking for it",
+      "expected_output": "Should detect existing codebase, read package.json and project structure, adapt .planning/ setup to existing project rather than scaffolding new, preserve existing files.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects existing codebase and adapts setup flow",
+          "type": "behavioral"
+        },
+        {
+          "text": "Reads existing package.json and project structure",
+          "type": "behavioral"
+        },
+        {
+          "text": "Creates .planning/ directory structure",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT scaffold new project files that would overwrite existing code",
+          "type": "guard"
+        }
+      ]
+    },
+    {
+      "id": 141,
+      "command": "new-project",
+      "prompt": "I want to build a rust CLI for parsing log files, no web stuff",
+      "expected_output": "Should adapt stack for CLI project, skip web-specific setup (React, Tailwind, Vercel), skip /fh:ui-branding since no frontend.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Adapts stack for Rust CLI (no web frameworks)",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT suggest React, Tailwind, or Vercel for CLI project",
+          "type": "guard"
+        },
+        {
+          "text": "Skips /fh:ui-branding for non-frontend project",
+          "type": "guard"
+        },
+        {
+          "text": "Creates .planning/ structure appropriate for CLI project",
+          "type": "output"
+        }
+      ]
+    },
+    {
+      "id": 142,
+      "command": "research",
+      "prompt": "research: should we use Drizzle or Prisma for our ORM?",
+      "expected_output": "Should compare both ORMs with trade-offs, tag findings with confidence levels (HIGH from official docs, MEDIUM from web, LOW from inference), include source attribution, produce prescriptive recommendation.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Compares both options with specific trade-offs",
+          "type": "output"
+        },
+        {
+          "text": "Tags findings with confidence levels (HIGH/MEDIUM/LOW)",
+          "type": "output"
+        },
+        {
+          "text": "Includes source attribution for claims",
+          "type": "output"
+        },
+        {
+          "text": "Produces prescriptive recommendation (not just it depends)",
+          "type": "output"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ]
+    },
+    {
+      "id": 143,
+      "command": "research",
+      "prompt": "research: can we implement real-time collaboration with yjs in our Next.js app?",
+      "expected_output": "Should investigate technical feasibility, identify constraints and requirements, include code examples, tag uncertain items as LOW confidence needing validation.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Identifies technical constraints and requirements",
+          "type": "output"
+        },
+        {
+          "text": "Includes code examples or architecture patterns",
+          "type": "output"
+        },
+        {
+          "text": "Tags inference items as LOW confidence needing validation",
+          "type": "output"
+        },
+        {
+          "text": "Produces clear feasibility assessment (yes/no/conditional)",
+          "type": "output"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ]
+    },
+    {
+      "id": 144,
+      "command": "observability",
+      "prompt": "check sentry for any auth-related errors in the last hour",
+      "expected_output": "Should search local Sentry store for auth-related errors with time filter, present structured results grouped by error type, not raw JSON.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Uses search command with keyword and time filter",
+          "type": "behavioral"
+        },
+        {
+          "text": "Presents structured results (not raw JSON)",
+          "type": "output"
+        },
+        {
+          "text": "Groups results by error type or frequency",
+          "type": "output"
+        },
+        {
+          "text": "Handles gracefully if no matching errors found",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 145,
+      "command": "observability",
+      "prompt": "what are the most common errors this week? show me details on the top one",
+      "expected_output": "Should run stats query first for error frequency, then detail query on the top event_id, include breadcrumbs and stack trace in detail.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Runs stats query first to identify most common errors",
+          "type": "ordering"
+        },
+        {
+          "text": "Runs detail query on top error event",
+          "type": "ordering"
+        },
+        {
+          "text": "Includes breadcrumbs and stack trace in detail output",
+          "type": "output"
+        },
+        {
+          "text": "Presents both summary and detail in readable format",
+          "type": "output"
+        }
+      ]
+    },
+    {
+      "id": 146,
+      "command": "map-codebase",
+      "prompt": "map the codebase and help me understand the data flow",
+      "expected_output": "Should produce architecture documentation explaining data flow patterns, identify entry points and key abstractions, explain how data moves through the system rather than just listing files.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Produces architecture documentation with data flow explanation",
+          "type": "output"
+        },
+        {
+          "text": "Identifies entry points and key abstractions",
+          "type": "output"
+        },
+        {
+          "text": "Explains patterns and flows, not just file listings",
+          "type": "output"
+        },
+        {
+          "text": "Includes diagrams or structured representation of data flow",
+          "type": "output"
+        }
+      ]
+    },
+    {
+      "id": 147,
+      "command": "setup",
+      "prompt": "setup — I don't have node installed",
+      "expected_output": "Should detect missing Node.js, provide platform-appropriate install instructions (Homebrew on macOS), halt further setup steps that depend on Node.js.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects missing Node.js prerequisite",
+          "type": "behavioral"
+        },
+        {
+          "text": "Provides platform-appropriate install instructions",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT skip ahead to TypeScript LSP setup without Node.js",
+          "type": "guard"
+        },
+        {
+          "text": "Offers to continue after user installs Node.js",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 148,
+      "command": "setup",
+      "prompt": "setup — I already ran this before, everything should be configured",
+      "expected_output": "Should detect existing configuration (symlinks, settings.json hooks, TypeScript LSP), report current status, offer to re-run specific steps rather than repeating full setup.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects existing configuration and symlinks",
+          "type": "behavioral"
+        },
+        {
+          "text": "Reports what is already set up with status",
+          "type": "output"
+        },
+        {
+          "text": "Offers selective re-run rather than full setup",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT overwrite existing configuration without asking",
+          "type": "guard"
+        }
+      ]
+    },
+    {
+      "id": 149,
+      "command": "help",
+      "prompt": "what commands are available?",
+      "expected_output": "Should output complete command reference with all 6 categories (Build Pipeline, Engineering, Navigation, Design Quality, Task Management, Setup/Maintenance), include architecture overview and non-negotiable disciplines, not add project-specific analysis.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Lists all 6 command categories with descriptions",
+          "type": "output"
+        },
+        {
+          "text": "Includes composite architecture explanation",
+          "type": "output"
+        },
+        {
+          "text": "Mentions non-negotiable disciplines (TDD, spec gates)",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT add project-specific analysis or git status",
+          "type": "guard"
+        },
+        {
+          "text": "Does NOT add suggestions or recommendations beyond reference",
+          "type": "guard"
+        }
+      ]
+    },
+    {
+      "id": 150,
+      "command": "update",
+      "prompt": "check for updates",
+      "expected_output": "Should compare installed version against latest marketplace version, when versions match report already up to date, not prompt for reinstallation.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Compares installed version against latest marketplace version",
+          "type": "behavioral"
+        },
+        {
+          "text": "Reports already up to date when versions match",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT offer to reinstall when already current",
+          "type": "guard"
+        }
+      ]
+    },
+    {
+      "id": 151,
+      "command": "plan-review",
+      "prompt": "review the plan but keep it minimal — we're on a tight deadline",
+      "expected_output": "Should detect tight deadline signal and select SCOPE REDUCTION mode, identify cuttable scope, find minimum viable version, not add new features or expand scope.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Selects SCOPE REDUCTION mode from deadline signal",
+          "type": "behavioral"
+        },
+        {
+          "text": "Identifies specific scope items that can be cut",
+          "type": "output"
+        },
+        {
+          "text": "Proposes minimum viable version achieving core goal",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT add new features or expand scope",
+          "type": "guard"
+        },
+        {
+          "text": "Does NOT suggest SCOPE EXPANSION items",
+          "type": "guard"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ]
+    },
+    {
+      "id": 152,
+      "command": "plan-review",
+      "prompt": "stress test this plan, especially the error handling",
+      "expected_output": "Should produce Error and Rescue Registry table (operation, error, exception, rescue, user-sees), produce Failure Modes Registry, identify CRITICAL GAPs, feed gaps back as [review] truths in PLAN.md.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Produces Error and Rescue Registry table with named exceptions",
+          "type": "output"
+        },
+        {
+          "text": "Produces Failure Modes Registry with all columns",
+          "type": "output"
+        },
+        {
+          "text": "Identifies CRITICAL GAPs (rows with all Ns)",
+          "type": "output"
+        },
+        {
+          "text": "Feeds critical gaps back as [review] prefixed truths in PLAN.md must_haves",
+          "type": "behavioral"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ]
+    },
+    {
+      "id": 153,
+      "command": "refactor",
+      "prompt": "refactor the auth module to use the new token format, but tests are currently failing on 2 specs",
+      "expected_output": "Should detect failing tests, refuse to start refactoring without GREEN baseline, explain iron law (tests must never go red during refactor), require fixing tests first.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects pre-existing test failures",
+          "type": "behavioral"
+        },
+        {
+          "text": "Refuses to start refactoring with failing tests",
+          "type": "behavioral"
+        },
+        {
+          "text": "Explains iron law requirement (GREEN baseline)",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT proceed with refactoring when tests are failing",
+          "type": "guard"
+        }
+      ]
+    },
+    {
+      "id": 154,
+      "command": "refactor",
+      "prompt": "refactor all 15 API route handlers to use the new middleware pattern",
+      "expected_output": "Should detect large scope (15 files, 10+ threshold), recommend /fh:plan-work for structured multi-file refactoring, not attempt all 15 in single context.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects large scope exceeding single-context threshold",
+          "type": "behavioral"
+        },
+        {
+          "text": "Recommends /fh:plan-work for structured approach",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT attempt 15-file refactor in single execution",
+          "type": "guard"
+        },
+        {
+          "text": "Explains why large refactors need structured planning",
+          "type": "output"
+        }
+      ]
+    },
+    {
+      "id": 155,
+      "command": "simplify",
+      "prompt": "simplify — I think there's duplicated logic across the API routes",
+      "expected_output": "Should scan for duplicated patterns across API routes, identify specific duplications with file paths and line ranges, suggest extraction targets with before/after comparison.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Identifies specific duplicated patterns with locations",
+          "type": "output"
+        },
+        {
+          "text": "Suggests extraction targets (shared utility, base class, middleware)",
+          "type": "output"
+        },
+        {
+          "text": "Provides before/after comparison for proposed changes",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT just list files without identifying the duplication",
+          "type": "guard"
+        }
+      ]
+    },
+    {
+      "id": 156,
+      "command": "revise-claude-md",
+      "prompt": "update claude.md with what we learned about the auth system today",
+      "expected_output": "Should extract specific learnings about auth system from conversation, add as actionable conventions to CLAUDE.md, keep under 40 lines, not duplicate existing entries.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Extracts specific, actionable learnings (not generic advice)",
+          "type": "output"
+        },
+        {
+          "text": "Keeps CLAUDE.md under 40 lines",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT duplicate existing CLAUDE.md entries",
+          "type": "guard"
+        },
+        {
+          "text": "Adds only conventions relevant to future development",
+          "type": "output"
+        }
+      ]
+    },
+    {
+      "id": 157,
+      "command": "playwright-testing",
+      "prompt": "write an E2E test for the login form with email and password fields",
+      "expected_output": "Should use role-based locators (getByRole, getByLabel) as primary strategy over CSS selectors, use web-first assertions (toBeVisible, toHaveText) that auto-retry, not use page.waitForTimeout. Follows Page Object Model pattern for form interactions.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Uses role-based locators (getByRole, getByLabel) as primary strategy",
+          "type": "behavioral"
+        },
+        {
+          "text": "Uses web-first assertions that auto-retry",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT use page.waitForTimeout or arbitrary waits",
+          "type": "guard"
+        },
+        {
+          "text": "Follows Page Object Model pattern for form interactions",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 158,
+      "command": "playwright-testing",
+      "prompt": "this playwright test passes locally but fails in CI about 30% of the time",
+      "expected_output": "Should identify common flakiness patterns (race conditions, network timing, viewport differences), suggest web-first assertions to replace manual waits, recommend retry configuration and CI-specific settings.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Identifies common flakiness root causes (race conditions, timing)",
+          "type": "behavioral"
+        },
+        {
+          "text": "Suggests replacing manual waits with web-first assertions",
+          "type": "output"
+        },
+        {
+          "text": "Recommends retry and CI configuration",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT suggest adding sleep or arbitrary waitForTimeout",
+          "type": "guard"
+        }
+      ]
+    },
+    {
+      "id": 159,
+      "command": "nextjs-perf",
+      "prompt": "optimize this page that fetches user data, then fetches their posts, then fetches comments for each post",
+      "expected_output": "Should identify sequential data fetching waterfall, suggest Promise.all for parallel independent fetches, recommend Suspense boundaries for streaming, use async-defer-await pattern.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Identifies sequential waterfall as the performance problem",
+          "type": "behavioral"
+        },
+        {
+          "text": "Suggests parallel data fetching with Promise.all",
+          "type": "output"
+        },
+        {
+          "text": "Recommends Suspense boundaries for progressive loading",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT suggest caching as the primary fix for a waterfall",
+          "type": "guard"
+        }
+      ]
+    },
+    {
+      "id": 160,
+      "command": "nextjs-perf",
+      "prompt": "the bundle is 2MB, help me reduce it",
+      "expected_output": "Should identify barrel imports as potential culprit, suggest dynamic imports for heavy components, recommend next/dynamic for route-level code splitting, check for client-side-only libraries that could be lazy loaded.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Identifies barrel imports as a bundle size suspect",
+          "type": "output"
+        },
+        {
+          "text": "Suggests dynamic imports (next/dynamic) for heavy components",
+          "type": "output"
+        },
+        {
+          "text": "Recommends route-level code splitting strategies",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT suggest removing features to reduce bundle size",
+          "type": "guard"
+        }
+      ]
+    },
+    {
+      "id": 161,
+      "command": "ui-branding",
+      "prompt": "set up design context for my fintech dashboard app",
+      "expected_output": "Should ask about target users/audience, brand personality and voice, aesthetic direction, write .planning/DESIGN.md with all required sections (Users, Brand Personality, Aesthetic Direction, Design Principles).",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Asks about target users and their context",
+          "type": "behavioral"
+        },
+        {
+          "text": "Asks about brand personality and aesthetic direction",
+          "type": "behavioral"
+        },
+        {
+          "text": "Writes .planning/DESIGN.md with all required sections",
+          "type": "output"
+        },
+        {
+          "text": "Produces 3-5 design principles specific to fintech context",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT skip user research questions and assume brand direction",
+          "type": "guard"
+        }
+      ]
+    },
+    {
+      "id": 162,
+      "command": "ui-branding",
+      "prompt": "set up branding, we already use Shadcn/ui with a custom purple theme",
+      "expected_output": "Should read existing theme/tokens from the project, incorporate existing design decisions into DESIGN.md rather than overriding, preserve the purple theme choice.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Reads existing theme and design tokens from project",
+          "type": "behavioral"
+        },
+        {
+          "text": "Incorporates existing design decisions into DESIGN.md",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT override existing purple theme with a new palette",
+          "type": "guard"
+        },
+        {
+          "text": "Preserves existing Shadcn/ui component choices",
+          "type": "guard"
+        }
+      ]
+    },
+    {
+      "id": 163,
+      "command": "adapt",
+      "prompt": "adapt this desktop data table to work well on mobile",
+      "expected_output": "Should propose a responsive strategy beyond just shrinking (card layout, expandable rows, priority columns), ensure touch targets are 44px minimum, suggest alternative patterns for complex tabular data on small screens.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Proposes responsive strategy beyond shrinking (cards, expandable rows)",
+          "type": "output"
+        },
+        {
+          "text": "Ensures touch targets meet 44px minimum",
+          "type": "output"
+        },
+        {
+          "text": "Suggests progressive disclosure for secondary data",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT just add overflow-x scroll as the solution",
+          "type": "guard"
+        },
+        {
+          "text": "Does NOT simply hide columns to fit mobile width",
+          "type": "guard"
+        }
+      ]
+    },
+    {
+      "id": 164,
+      "command": "bolder",
+      "prompt": "make this landing page more visually exciting, it looks too corporate and safe",
+      "expected_output": "Should amplify typography (weight contrast between headings and body), introduce bold color with clear hierarchy, add spatial drama (generous whitespace, scale contrast), use frontend-design skill principles.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Amplifies typography weight contrast",
+          "type": "output"
+        },
+        {
+          "text": "Introduces bold color with clear hierarchy",
+          "type": "output"
+        },
+        {
+          "text": "Adds spatial drama and scale contrast",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT add purple-blue gradients",
+          "type": "guard"
+        },
+        {
+          "text": "Does NOT use glassmorphism or frosted glass effects",
+          "type": "guard"
+        },
+        {
+          "text": "Does NOT add neon accents or generic AI aesthetic",
+          "type": "guard"
+        }
+      ]
+    },
+    {
+      "id": 165,
+      "command": "clarify",
+      "prompt": "improve the error messages in our form validation, they're confusing users",
+      "expected_output": "Should replace generic errors with specific actionable messages, use active voice, include what went wrong AND how to fix it, keep messages concise and jargon-free.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Replaces generic errors with specific actionable messages",
+          "type": "output"
+        },
+        {
+          "text": "Uses active voice in all error messages",
+          "type": "output"
+        },
+        {
+          "text": "Includes both what went wrong and how to fix it",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT use technical jargon or error codes in user-facing messages",
+          "type": "guard"
+        },
+        {
+          "text": "Does NOT use passive voice",
+          "type": "guard"
+        }
+      ]
+    },
+    {
+      "id": 166,
+      "command": "colorize",
+      "prompt": "add color to this gray dashboard to make different statuses clearer at a glance",
+      "expected_output": "Should apply semantic colors (green for success, red for errors, amber for warnings), maintain 60/30/10 color ratio, ensure WCAG contrast compliance, preserve readability.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Applies semantic colors for status indicators",
+          "type": "output"
+        },
+        {
+          "text": "Maintains balanced color ratio (not overwhelming)",
+          "type": "output"
+        },
+        {
+          "text": "Ensures WCAG contrast compliance",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT apply color randomly or purely decoratively",
+          "type": "guard"
+        },
+        {
+          "text": "Does NOT use more than 3-4 distinct hues",
+          "type": "guard"
+        }
+      ]
+    },
+    {
+      "id": 167,
+      "command": "delight",
+      "prompt": "add a nice touch when users complete their profile setup for the first time",
+      "expected_output": "Should add celebratory micro-interaction (confetti, checkmark animation), keep total animation under 1 second, respect prefers-reduced-motion, not block the user from proceeding.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Adds celebratory micro-interaction on completion",
+          "type": "output"
+        },
+        {
+          "text": "Keeps animation under 1 second total",
+          "type": "output"
+        },
+        {
+          "text": "Respects prefers-reduced-motion media query",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT block user from proceeding to next action",
+          "type": "guard"
+        },
+        {
+          "text": "Delight moment is non-intrusive and skippable",
+          "type": "guard"
+        }
+      ]
+    },
+    {
+      "id": 168,
+      "command": "distill",
+      "prompt": "this dashboard has too many widgets and controls, users are overwhelmed — simplify it",
+      "expected_output": "Should identify essential vs nice-to-have widgets, propose progressive disclosure for secondary content, reduce visual noise while preserving core functionality, suggest where removed items could be relocated.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Identifies essential vs secondary widgets",
+          "type": "output"
+        },
+        {
+          "text": "Proposes progressive disclosure for secondary content",
+          "type": "output"
+        },
+        {
+          "text": "Preserves core functionality after simplification",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT remove functionality without proposing where it moves",
+          "type": "guard"
+        },
+        {
+          "text": "Does NOT make features completely inaccessible",
+          "type": "guard"
+        }
+      ]
+    },
+    {
+      "id": 169,
+      "command": "extract",
+      "prompt": "there are 4 similar card components across the app with slightly different styles, consolidate them into one reusable component",
+      "expected_output": "Should identify shared patterns and per-card variations, create unified component with props/variants covering all cases, use LSP findReferences to locate all usage sites, migrate existing uses to the new component.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Identifies shared patterns and per-card variations",
+          "type": "behavioral"
+        },
+        {
+          "text": "Creates unified component with props/variants",
+          "type": "output"
+        },
+        {
+          "text": "Uses LSP findReferences to locate all usage sites",
+          "type": "behavioral"
+        },
+        {
+          "text": "Migrates existing uses to new component",
+          "type": "behavioral"
+        },
+        {
+          "text": "Extracted component is NOT more complex than originals combined",
+          "type": "guard"
+        }
+      ]
+    },
+    {
+      "id": 170,
+      "command": "harden",
+      "prompt": "harden the registration form for production — it needs to handle real-world edge cases",
+      "expected_output": "Should add text overflow handling (long names, emails), i18n considerations (30% expansion space for translations), inline validation with specific error messages, loading/disabled states during submission, keyboard navigation support.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Adds text overflow handling for long inputs",
+          "type": "output"
+        },
+        {
+          "text": "Includes i18n considerations (expansion space)",
+          "type": "output"
+        },
+        {
+          "text": "Adds inline validation with specific messages",
+          "type": "output"
+        },
+        {
+          "text": "Adds loading/disabled states during submission",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT change the visual design while hardening",
+          "type": "guard"
+        }
+      ]
+    },
+    {
+      "id": 171,
+      "command": "onboard",
+      "prompt": "design the empty state for the projects list when a new user first signs up",
+      "expected_output": "Should include what will appear here + why it matters + prominent CTA to create first project, add visual interest (illustration or icon), be encouraging not discouraging.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Includes explanation of what will appear and why it matters",
+          "type": "output"
+        },
+        {
+          "text": "Includes prominent CTA to create first project",
+          "type": "output"
+        },
+        {
+          "text": "Adds visual interest (illustration, icon, or graphic)",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT just say 'No projects yet' with no guidance",
+          "type": "guard"
+        },
+        {
+          "text": "Does NOT require reading documentation to get started",
+          "type": "guard"
+        }
+      ]
+    },
+    {
+      "id": 172,
+      "command": "optimize",
+      "prompt": "the dashboard takes 4 seconds to load, help me optimize it",
+      "expected_output": "Should identify potential bottlenecks (unoptimized images, large JS bundle, sequential data fetches), suggest specific fixes (lazy loading, code splitting, parallel fetches), target Core Web Vitals thresholds (LCP under 2.5s).",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Identifies specific bottlenecks (images, bundle, waterfalls)",
+          "type": "output"
+        },
+        {
+          "text": "Suggests lazy loading and code splitting",
+          "type": "output"
+        },
+        {
+          "text": "Targets Core Web Vitals thresholds",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT suggest removing features for performance",
+          "type": "guard"
+        },
+        {
+          "text": "Does NOT prematurely optimize non-bottlenecks",
+          "type": "guard"
+        }
+      ]
+    },
+    {
+      "id": 173,
+      "command": "quieter",
+      "prompt": "this marketing page feels too loud and visually aggressive, tone it down while keeping it professional",
+      "expected_output": "Should reduce color saturation (70-85%), lighten font weights, increase white space, make motion subtler, maintain design hierarchy and brand identity.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Reduces color saturation while maintaining palette identity",
+          "type": "output"
+        },
+        {
+          "text": "Lightens font weights and increases white space",
+          "type": "output"
+        },
+        {
+          "text": "Makes motion subtler (shorter durations, gentler easing)",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT make the design boring or generic",
+          "type": "guard"
+        },
+        {
+          "text": "Preserves brand identity and visual personality",
+          "type": "guard"
+        }
+      ]
+    },
+    {
+      "id": 174,
+      "command": "sync-upstream",
+      "prompt": "check if there are any upstream updates we should pull in",
+      "expected_output": "Should identify upstream repos from upstream/ directory, check for new versions or commits since last sync, show what changed with a summary, not auto-apply patches without user confirmation.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Identifies upstream repos from upstream/ directory",
+          "type": "behavioral"
+        },
+        {
+          "text": "Checks for new versions since last sync",
+          "type": "behavioral"
+        },
+        {
+          "text": "Shows summary of what changed",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT auto-apply patches without user confirmation",
+          "type": "guard"
+        }
       ]
     }
   ]

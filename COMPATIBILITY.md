@@ -63,7 +63,7 @@ Forked commands (now at `commands/`) and skills (now at `skills/`):
 | `/normalize` | `/build` design gates (if design system exists) |
 | `/harden` | Suggested by `/build` |
 | `/animate` | Suggested by `/build` |
-| `/teach-impeccable` | `/new-project` |
+| `/ui-branding` | `/new-project` |
 | `/distill` | Standalone (was `simplify` upstream, renamed) |
 | `/adapt`, `/bolder`, `/quieter`, `/extract`, `/colorize`, `/audit`, `/clarify`, `/onboard`, `/optimize`, `/delight` | Standalone design commands |
 | `skills/frontend-design/` | `/build` (subagent directives), `/fix` (design check) |

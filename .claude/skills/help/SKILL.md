@@ -45,7 +45,7 @@ Output ONLY the reference content below. Do NOT add project-specific analysis, g
 | `/fh:harden` | Error handling, i18n, text overflow, edge cases |
 | `/fh:animate` | Purposeful motion and micro-interactions |
 | `/fh:audit` | Full accessibility, performance, theming, and responsive audit |
-| `/fh:teach-impeccable` | One-time setup for your project's design language |
+| `/fh:ui-branding` | One-time setup for your project's design language |
 | `/fh:adapt` | Make designs work across screen sizes and platforms |
 | `/fh:bolder` | Amplify safe designs to be more visually interesting |
 | `/fh:quieter` | Tone down overly aggressive designs |
@@ -97,7 +97,7 @@ CLAUDE.md:    /fh:revise-claude-md (after sessions or /fh:revise-claude-md audit
 ├── PROJECT.md            # Project vision
 ├── ROADMAP.md            # Current phase breakdown
 ├── STATE.md              # Project memory & context
-├── DESIGN.md             # Design language (from /fh:teach-impeccable)
+├── DESIGN.md             # Design language (from /fh:ui-branding)
 ├── config.json           # Workflow mode & gates
 ├── todos/                # Captured ideas and tasks
 ├── debug/                # Active debug sessions
