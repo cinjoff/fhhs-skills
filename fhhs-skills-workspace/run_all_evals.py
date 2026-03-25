@@ -167,9 +167,11 @@ Provide a detailed behavioral trace, not actual tool execution."""
     start_time = time.time()
 
     try:
-        env = {k: v for k, v in os.environ.items() if k != "CLAUDECODE"}
+        env = {k: v for k, v in os.environ.items()
+               if not k.startswith("CLAUDE") and not k.startswith("CONDUCTOR")
+               and k != "__CFBundleIdentifier"}
         result = subprocess.run(
-            ["claude", "-p", full_prompt, "--output-format", "json"],
+            ["claude", "-p", full_prompt, "--output-format", "stream-json", "--verbose"],
             capture_output=True,
             text=True,
             timeout=TIMEOUT_SECONDS,
@@ -185,16 +187,47 @@ Provide a detailed behavioral trace, not actual tool execution."""
                 "output": "", "assertions": assertions,
             }
         else:
-            try:
-                output_data = json.loads(result.stdout)
-                output_text = output_data.get("result", result.stdout)
-            except json.JSONDecodeError:
-                output_text = result.stdout
+            # Parse NDJSON stream to extract assistant text and result metadata
+            output_text = ""
+            output_data = {}
+            for line in result.stdout.strip().split("\n"):
+                if not line.strip():
+                    continue
+                try:
+                    event = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                etype = event.get("type", "")
+                if etype == "assistant":
+                    msg = event.get("message", {})
+                    for block in msg.get("content", []):
+                        if block.get("type") == "text":
+                            output_text += block.get("text", "")
+                elif etype == "result":
+                    output_data = event
+                    # Also grab any result text (may be populated in future CLI versions)
+                    if not output_text and event.get("result"):
+                        output_text = event["result"]
+
+            # Extract token usage from result event
+            usage = output_data.get("usage", {})
+            token_info = {
+                "input_tokens": usage.get("input_tokens", 0),
+                "output_tokens": usage.get("output_tokens", 0),
+                "cache_creation_tokens": usage.get("cache_creation_input_tokens", 0),
+                "cache_read_tokens": usage.get("cache_read_input_tokens", 0),
+                "cost_usd": output_data.get("total_cost_usd", 0),
+            }
+            token_info["total_tokens"] = (
+                token_info["input_tokens"] + token_info["output_tokens"]
+                + token_info["cache_creation_tokens"] + token_info["cache_read_tokens"]
+            )
 
             res = {
                 "eval_id": eval_id, "command": command, "status": "success",
                 "output": output_text[:8000], "duration_ms": duration_ms,
                 "assertions": assertions, "expected": expected,
+                "tokens": token_info,
             }
     except subprocess.TimeoutExpired:
         res = {
@@ -219,9 +252,14 @@ Provide a detailed behavioral trace, not actual tool execution."""
 
         # Append to progress file
         if _progress_file:
+            progress_entry = {
+                "eval_id": eval_id, "command": command,
+                "status": res["status"], "duration_ms": res.get("duration_ms", 0),
+            }
+            if "tokens" in res:
+                progress_entry["tokens"] = res["tokens"]
             with open(_progress_file, "a") as pf:
-                pf.write(json.dumps({"eval_id": eval_id, "command": command,
-                                      "status": res["status"], "duration_ms": res.get("duration_ms", 0)}) + "\n")
+                pf.write(json.dumps(progress_entry) + "\n")
 
     return res
 
@@ -494,6 +532,15 @@ def main():
     total_a = sum(g["total"] for g in graded_evals)
     passed_a = sum(g["passed"] for g in graded_evals)
 
+    # Aggregate token usage from raw results
+    token_results = [r for r in results if r.get("tokens")]
+    total_input = sum(r["tokens"]["input_tokens"] for r in token_results)
+    total_output = sum(r["tokens"]["output_tokens"] for r in token_results)
+    total_cache_create = sum(r["tokens"]["cache_creation_tokens"] for r in token_results)
+    total_cache_read = sum(r["tokens"]["cache_read_tokens"] for r in token_results)
+    total_cost = sum(r["tokens"]["cost_usd"] for r in token_results)
+    total_all_tokens = sum(r["tokens"]["total_tokens"] for r in token_results)
+
     summary = {
         "run_date": datetime.now().isoformat(),
         "total_evals": len(evals),
@@ -503,8 +550,21 @@ def main():
         "total_assertions": total_a,
         "passed_assertions": passed_a,
         "overall_pass_rate": passed_a / total_a if total_a > 0 else 0.0,
+        "token_usage": {
+            "total_tokens": total_all_tokens,
+            "input_tokens": total_input,
+            "output_tokens": total_output,
+            "cache_creation_tokens": total_cache_create,
+            "cache_read_tokens": total_cache_read,
+            "total_cost_usd": round(total_cost, 4),
+            "avg_tokens_per_eval": int(total_all_tokens / max(len(token_results), 1)),
+            "avg_cost_per_eval": round(total_cost / max(len(token_results), 1), 4),
+        },
         "by_command": {},
     }
+
+    # Build a lookup from eval_id -> raw result for token data
+    result_by_id = {r["eval_id"]: r for r in results}
 
     for cmd, cmd_graded in sorted(by_command.items()):
         cmd_g = [g for g in cmd_graded if g["status"] == "graded"]
@@ -512,6 +572,12 @@ def main():
         cmd_passed = sum(g["passed"] for g in cmd_g)
         cmd_errors = sum(1 for g in cmd_graded if g["status"] in ("error", "timeout"))
         avg_dur = sum(g.get("duration_ms", 0) for g in cmd_g) / max(len(cmd_g), 1)
+
+        # Per-command token aggregation
+        cmd_token_results = [result_by_id[g["eval_id"]] for g in cmd_g if result_by_id.get(g["eval_id"], {}).get("tokens")]
+        cmd_tokens = sum(r["tokens"]["total_tokens"] for r in cmd_token_results) if cmd_token_results else 0
+        cmd_cost = sum(r["tokens"]["cost_usd"] for r in cmd_token_results) if cmd_token_results else 0
+
         summary["by_command"][cmd] = {
             "evals": len(cmd_graded),
             "assertions": cmd_total,
@@ -519,6 +585,9 @@ def main():
             "pass_rate": cmd_passed / cmd_total if cmd_total > 0 else 0.0,
             "errors": cmd_errors,
             "avg_duration_ms": int(avg_dur),
+            "total_tokens": cmd_tokens,
+            "avg_tokens": int(cmd_tokens / max(len(cmd_token_results), 1)),
+            "total_cost_usd": round(cmd_cost, 4),
         }
 
     summary_path = workspace_dir / "summary.json"
@@ -526,9 +595,10 @@ def main():
         json.dump(summary, f, indent=2)
 
     # Print report
-    log(f"\n{'='*75}")
+    tu = summary["token_usage"]
+    log(f"\n{'='*90}")
     log(f"EVAL RESULTS SUMMARY")
-    log(f"{'='*75}")
+    log(f"{'='*90}")
     log(f"Total evals:     {summary['total_evals']}")
     log(f"Successful runs: {summary['successful']}")
     log(f"Errors:          {summary['errors']}")
@@ -538,12 +608,24 @@ def main():
     log(f"Passed assertions: {summary['passed_assertions']}")
     log(f"Overall pass rate: {summary['overall_pass_rate']:.1%}")
     log(f"")
-    log(f"{'Command':<20} {'Evals':>6} {'Assert':>7} {'Pass':>5} {'Rate':>7} {'Err':>4} {'Avg(s)':>7}")
-    log(f"{'-'*20} {'-'*6} {'-'*7} {'-'*5} {'-'*7} {'-'*4} {'-'*7}")
+    log(f"TOKEN USAGE:")
+    log(f"  Total tokens:      {tu['total_tokens']:>12,}")
+    log(f"  Input tokens:      {tu['input_tokens']:>12,}")
+    log(f"  Output tokens:     {tu['output_tokens']:>12,}")
+    log(f"  Cache creation:    {tu['cache_creation_tokens']:>12,}")
+    log(f"  Cache read:        {tu['cache_read_tokens']:>12,}")
+    log(f"  Total cost:        ${tu['total_cost_usd']:>11,.4f}")
+    log(f"  Avg tokens/eval:   {tu['avg_tokens_per_eval']:>12,}")
+    log(f"  Avg cost/eval:     ${tu['avg_cost_per_eval']:>11,.4f}")
+    log(f"")
+    log(f"{'Command':<20} {'Evals':>5} {'Assert':>6} {'Pass':>5} {'Rate':>6} {'Err':>3} {'Avg(s)':>6} {'AvgTok':>7} {'Cost$':>7}")
+    log(f"{'-'*20} {'-'*5} {'-'*6} {'-'*5} {'-'*6} {'-'*3} {'-'*6} {'-'*7} {'-'*7}")
     for cmd, stats in sorted(summary["by_command"].items(), key=lambda x: x[1]["pass_rate"]):
         avg_s = stats['avg_duration_ms'] / 1000
-        log(f"{cmd:<20} {stats['evals']:>6} {stats['assertions']:>7} {stats['passed']:>5} {stats['pass_rate']:>6.0%} {stats['errors']:>4} {avg_s:>6.1f}")
-    log(f"{'='*75}")
+        avg_tok = stats.get('avg_tokens', 0)
+        cost = stats.get('total_cost_usd', 0)
+        log(f"{cmd:<20} {stats['evals']:>5} {stats['assertions']:>6} {stats['passed']:>5} {stats['pass_rate']:>5.0%} {stats['errors']:>3} {avg_s:>5.1f} {avg_tok:>7,} {cost:>6.2f}")
+    log(f"{'='*90}")
 
     # Failed assertions detail
     log(f"\n{'='*75}")

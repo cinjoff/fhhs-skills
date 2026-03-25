@@ -24,40 +24,33 @@ upstream/claude-md-management-1.0.0/
             └── update-guidelines.md              ← revision methodology
 ```
 
-## Capability Flow Diagram
+## Deep Capability Description
 
-```
-                CLAUDE-MD-MANAGEMENT WORKFLOW
-
-  ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-  │  READ EXISTING   │───▶│  ASSESS QUALITY  │───▶│  APPLY UPDATES  │
-  │  CLAUDE.md       │    │  (quality-       │    │  (update-       │
-  │                  │    │   criteria.md)   │    │   guidelines.md)│
-  └─────────────────┘    └──────────────────┘    └────────┬────────┘
-                                                          │
-                                                 ┌────────▼────────┐
-                                                 │ OUTPUT IMPROVED  │
-                                                 │ CLAUDE.md        │
-                                                 │ (templates.md)   │
-                                                 └─────────────────┘
-```
+| Skill | What It Actually Does | Value Proposition | fhhs Usage |
+|-------|----------------------|-------------------|------------|
+| **claude-md-improver** | Audits CLAUDE.md files against quality criteria: commands/workflows documented?, architecture clarity?, non-obvious patterns captured?, conciseness?, currency?, actionability?. Scores A-F with targeted improvement recommendations. Uses templates by project type (library, app, monorepo, etc.) and structured update guidelines for revision methodology. | Transforms CLAUDE.md maintenance from guesswork into a repeatable, quality-scored process. Prevents knowledge staleness. | **ACTIVE** — forked as internal skill + exposed as `/fh:revise-claude-md`. Quality criteria and templates actively used. |
 
 ## Skills Table
 
-| Skill | SDLC Phase | Quality | Status | fhhs Equivalent | Notes |
-|-------|-----------|---------|--------|-----------------|-------|
-| claude-md-improver | Knowledge | B | ✅ Forked | skills/claude-md-improver/ + /fh:revise-claude-md | Quality-driven CLAUDE.md revision |
+| Skill | SDLC Phase | Quality | Pipeline Status | fhhs Equivalent | Notes |
+|-------|-----------|---------|----------------|-----------------|-------|
+| claude-md-improver | Knowledge | B | ✅ **Active** | skills/claude-md-improver/ + /fh:revise-claude-md | Quality-driven revision |
 
 ## Supporting Assets Table
 
 | Asset | Type | Used by | Status | Notes |
 |-------|------|---------|--------|-------|
-| references/quality-criteria.md | Reference | claude-md-improver | ✅ Forked | Quality assessment rubric |
-| references/templates.md | Reference | claude-md-improver | ✅ Forked | CLAUDE.md structure templates |
-| references/update-guidelines.md | Reference | claude-md-improver | ✅ Forked | Revision methodology |
-| commands/revise-claude-md.md | Command | Entry point | ✅ Forked | /fh:revise-claude-md |
-| *.png (2 screenshots) | Images | Documentation | 🚫 N/A | Usage examples |
+| references/quality-criteria.md | Reference | claude-md-improver | ✅ Active | Quality assessment rubric |
+| references/templates.md | Reference | claude-md-improver | ✅ Active | CLAUDE.md structure templates |
+| references/update-guidelines.md | Reference | claude-md-improver | ✅ Active | Revision methodology |
+| commands/revise-claude-md.md | Command | Entry point | ✅ Active | /fh:revise-claude-md |
 
 ## Assessment
 
-claude-md-management is small but fully integrated. The skill and all three reference documents are forked into fhhs as both an internal skill (skills/claude-md-improver/) and a user-facing command (/fh:revise-claude-md). The quality-criteria and update-guidelines references are the most valuable assets — they provide a structured framework for what is otherwise an unstructured task. No integration gaps exist; this upstream is 100% absorbed.
+Fully integrated, no gaps. The skill and all three reference documents are forked and actively used. The quality-criteria and update-guidelines references are the most valuable assets — they provide structured framework for what is otherwise an unstructured task.
+
+### Recommendations
+
+| Priority | Action | Impact |
+|----------|--------|--------|
+| **None** | No changes needed | 100% integrated |

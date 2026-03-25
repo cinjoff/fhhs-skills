@@ -19,7 +19,7 @@ You are a **lean orchestrator**. Stay under 15% context usage. Delegate all anal
 | Flag | What runs | When to use |
 |------|-----------|-------------|
 | *(default — full)* | All 9 steps | Deep scrutiny before promoting |
-| `--quick` | Steps 1, 3, 4, 5, 6, 7, 8 (quality + goal verification + TS + evidence) | Fast pre-commit sanity check |
+| `--quick` | Steps 1, 1.5, 1.7, 2, 3, 4, 5, 6, 7, 8 (quality + goal verification + TS + evidence) | Fast pre-commit sanity check |
 
 ---
 
@@ -66,6 +66,30 @@ Budget: less than 2% context. Don't deep-dive errors — just surface file match
 
 ---
 
+## Step 1.7: Static Analysis (if available)
+
+If `fallow` is installed, run static analysis to provide ground truth data for the review agents.
+
+```bash
+if command -v fallow &>/dev/null; then
+  FALLOW_CHECK=$(fallow check --changed-since "$BASE_BRANCH" --format json --quiet 2>/dev/null) || FALLOW_CHECK=""
+  FALLOW_DUPES=$(fallow dupes --format json --quiet 2>/dev/null) || FALLOW_DUPES=""
+  FALLOW_HEALTH=$(fallow health --format json --quiet 2>/dev/null) || FALLOW_HEALTH=""
+fi
+```
+
+**Post-filter:** For `FALLOW_DUPES` and `FALLOW_HEALTH`, filter to entries involving files in the diff (from Step 1's file list). Cap each output at 200 lines. Skip injection for any empty outputs.
+
+If Fallow ran successfully and produced non-empty output, include it in the agent prompts dispatched in Step 2:
+- **Agent 1 (Code Quality + Architecture):** receives all three non-empty outputs — dead code, circular deps, duplication, complexity
+- **Agent 3 (Gap Analysis):** receives `FALLOW_CHECK` — unused exports/files for unwired code detection
+
+If fallow is NOT installed or all commands fail: skip silently. Do not mention Fallow in the report.
+
+Budget: less than 1% context. Fallow runs in <1 second.
+
+---
+
 ## Step 2: Dispatch Analysis (full and --quick modes)
 
 Based on mode, dispatch parallel subagents. Each agent receives ONLY the diff + its specific checklist — keep agent context lean.
@@ -75,6 +99,7 @@ Based on mode, dispatch parallel subagents. Each agent receives ONLY the diff + 
 **Agent 1 — Code Quality + Architecture** (`subagent_type: "code-reviewer"`)
 - Prompt: `skills/review/references/review-prompt.md`
 - Also include: `skills/review/references/production-safety-checklist.md` (two-pass safety review)
+- If Fallow data is available from Step 1.7, include it in the agent prompt under '## Static Analysis Findings'
 - Input: full diff (`git diff $BASE_BRANCH..HEAD`)
 - Covers: naming, structure, error handling, DRY, complexity, test quality, cross-file consistency, dependency direction, separation of concerns, abstraction quality, API design, cross-cutting concerns
 - If Next.js: include `.claude/skills/nextjs-perf/PROMPT.md` criteria
@@ -94,6 +119,7 @@ Based on mode, dispatch parallel subagents. Each agent receives ONLY the diff + 
 **Agent 3 — Gap Analysis** (`subagent_type: "code-reviewer"`)
 - Prompt: gap analysis section of `skills/review/references/review-prompt.md`
 - Input: full diff
+- If Fallow data is available from Step 1.7, include the `FALLOW_CHECK` unused-exports findings in the agent prompt
 - Covers: untested code paths, unhandled error states, incomplete features (TODO/FIXME/PLACEHOLDER), missing edge cases, API contract gaps
 
 ### --quick mode — dispatch 1 agent:
