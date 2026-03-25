@@ -1,5 +1,5 @@
 ---
-name: extract
+name: fh:extract
 description: Extract and consolidate reusable components, design tokens, and patterns into your design system. Identifies opportunities for systematic reuse and enriches your component library.
 user-invokable: false
 ---

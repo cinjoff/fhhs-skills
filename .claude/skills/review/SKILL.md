@@ -1,5 +1,5 @@
 ---
-name: review
+name: fh:review
 description: Code review. Checks quality, security, and whether the code actually achieves the goal. Use --quick for a fast check.
 user-invokable: true
 ---
@@ -193,11 +193,11 @@ Generate a structured report. For each finding above Minor/MEDIUM, include a **N
 
 | Finding type | Recommended action |
 |---|---|
-| Bug / broken behavior | `/fix` |
-| Structural / architectural issue | `/refactor` |
-| Missing functionality / incomplete feature | `/plan-work` |
-| Security vulnerability | Fix inline or `/fix` |
-| Goal verification failure | `/plan-work` for gap-closure |
+| Bug / broken behavior | `/fh:fix` |
+| Structural / architectural issue | `/fh:refactor` |
+| Missing functionality / incomplete feature | `/fh:plan-work` |
+| Security vulnerability | Fix inline or `/fh:fix` |
+| Goal verification failure | `/fh:plan-work` for gap-closure |
 | Style / naming | Fix directly |
 
 ### Report format:
@@ -262,7 +262,7 @@ Generate a structured report. For each finding above Minor/MEDIUM, include a **N
 | MEDIUM security + Minor code | **PASS** with notes |
 | Nitpick / LOW | **PASS** — note only |
 
-**If BLOCKED:** Report all blocking findings with next-action routing. Do NOT auto-fix — present the findings and let the user decide which action to take (`/fix`, `/refactor`, `/plan-work`, or manual).
+**If BLOCKED:** Report all blocking findings with next-action routing. Do NOT auto-fix — present the findings and let the user decide which action to take (`/fh:fix`, `/fh:refactor`, `/fh:plan-work`, or manual).
 
 **If WARN:** Present warnings. Proceed to Step 9 unless user wants to fix.
 

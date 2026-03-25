@@ -1,5 +1,5 @@
 ---
-name: observability
+name: fh:observability
 description: Check for runtime errors in your local Sentry store. Useful when something broke in the app.
 user-invokable: true
 ---

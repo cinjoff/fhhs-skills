@@ -1,5 +1,5 @@
 ---
-name: ui-redesign
+name: fh:ui-redesign
 description: Change the look and feel of your project. Updates your design guidelines and direction.
 user-invokable: true
 ---
@@ -75,4 +75,4 @@ Write this to `.planning/DESIGN.md`. If the file exists, append or update the De
 
 Confirm completion and summarize the key design principles that will now guide all future work.
 
-Suggest running `/ui-critique` to evaluate existing UI against the updated art direction.
+Suggest running `/fh:ui-critique` to evaluate existing UI against the updated art direction.

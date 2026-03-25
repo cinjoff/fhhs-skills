@@ -1,5 +1,5 @@
 ---
-name: plan-review
+name: fh:plan-review
 description: Stress-test a plan. Challenges assumptions and looks for blind spots before you commit.
 user-invokable: true
 allowed-tools:
@@ -362,9 +362,9 @@ truths:
 
 Append to `.planning/phases/{phase}/{phase}-CONTEXT.md` (create the section if missing):
 
-**"Review Decisions" section** — Architecture and implementation decisions made during AskUserQuestion exchanges. Same format as "Design Decisions" — these are locked for `/build` subagents.
+**"Review Decisions" section** — Architecture and implementation decisions made during AskUserQuestion exchanges. Same format as "Design Decisions" — these are locked for `/fh:build` subagents.
 
-**"NOT in scope" section** — Work considered and explicitly deferred during review, with one-line rationale each. The `/build` executor uses this as a scope boundary — subagents must not implement deferred items.
+**"NOT in scope" section** — Work considered and explicitly deferred during review, with one-line rationale each. The `/fh:build` executor uses this as a scope boundary — subagents must not implement deferred items.
 
 ### Step C: Human-Reference Summary
 

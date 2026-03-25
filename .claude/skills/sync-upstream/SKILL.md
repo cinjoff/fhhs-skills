@@ -1,5 +1,5 @@
 ---
-name: sync-upstream
+name: fh:sync-upstream
 description: |
   Check upstream repos for updates, show what changed, and guide patch reapplication.
   Use when the user says 'sync upstream', 'check upstream', 'update upstream',
@@ -236,8 +236,8 @@ Sync Complete:
 Files modified: [list]
 
 Next steps:
-  - Test affected composites: /build, /plan-work, /fix
-  - Run /review to validate changes
+  - Test affected composites: /fh:build, /fh:plan-work, /fh:fix
+  - Run /fh:review to validate changes
   - Run /release when ready
 ```
 

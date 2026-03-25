@@ -1,5 +1,5 @@
 ---
-name: ui-critique
+name: fh:ui-critique
 description: Get design feedback — layout, readability, flow, and what to improve.
 user-invokable: true
 ---

@@ -1,5 +1,5 @@
 ---
-name: ui-animate
+name: fh:ui-animate
 description: Add animations and transitions that make the interface feel polished and alive.
 user-invokable: true
 ---

@@ -1,5 +1,5 @@
 ---
-name: build
+name: fh:build
 description: Execute a plan — turns your PLAN.md into working code with tests and quality checks.
 user-invokable: true
 ---
@@ -31,7 +31,7 @@ Locate the plan to execute:
 - If the user specified a plan path, use that
 - If a GSD project is active, check `.planning/phases/` for incomplete plans (PLAN without matching SUMMARY)
 - If plans exist in `.planning/plans/`, use the most recent
-- If no plan exists, tell the user to run `/plan-work` first
+- If no plan exists, tell the user to run `/fh:plan-work` first
 
 Read only the plan frontmatter and task list — don't load all context files yet.
 
@@ -275,24 +275,24 @@ Calculate visual change ratio:
 If `TASKS_AVAILABLE` and a "Design gates" task was created, update it: `TaskUpdate(designGateTaskId, status: "in_progress", activeForm: "Running design gates")` when triggered, or `TaskUpdate(designGateTaskId, status: "completed", metadata: {skipped: true})` when skipped.
 
 When triggered, run the design pipeline (ui-critique → polish → normalize) below.
-When skipped, note: "Design gates skipped (N/M files visual). Run /ui-critique manually if needed."
+When skipped, note: "Design gates skipped (N/M files visual). Run /fh:ui-critique manually if needed."
 
 After all waves complete (including spec gates) and BEFORE self-check, run the design quality pipeline:
 
 **Context for all design gate subagents:** If `.planning/phases/{phase}/{phase}-CONTEXT.md` exists, include its "Design Decisions" and "Review Decisions" sections. These are locked design choices that ui-critique/polish/normalize must respect.
 
 ### Critique
-Dispatch subagent to invoke `/ui-critique` on modified frontend files.
+Dispatch subagent to invoke `/fh:ui-critique` on modified frontend files.
 Input: file list + `.planning/DESIGN.md` + anti-pattern reference from `skills/frontend-design/`.
 Fix Critical and High issues. Commit: `style({phase}-{plan}): address design critique`
 
 ### Polish
-Dispatch subagent to invoke `/polish` on modified files (excluding areas fixed by critique).
+Dispatch subagent to invoke `/fh:polish` on modified files (excluding areas fixed by critique).
 Commit: `style({phase}-{plan}): polish pass`
 
 ### Normalize (if design system exists)
 If `.planning/DESIGN.md` defines design tokens or a component system:
-Dispatch subagent to invoke `/normalize` against the design system.
+Dispatch subagent to invoke `/fh:normalize` against the design system.
 Commit: `style({phase}-{plan}): normalize to design system`
 Skip if no design system defined.
 
@@ -300,10 +300,10 @@ After all design gate sub-steps complete, if `TASKS_AVAILABLE`: `TaskUpdate(desi
 
 ### Consider Animate (optional)
 Suggest (don't auto-run) based on the work:
-- `/ui-animate` — if transitions, state changes, or interaction-heavy elements
+- `/fh:ui-animate` — if transitions, state changes, or interaction-heavy elements
 Ask user before proceeding.
 
-Uses design quality commands (`/ui-critique`, `/polish`, `/normalize`) and `skills/frontend-design/` — all built into this plugin.
+Uses design quality commands (`/fh:ui-critique`, `/fh:polish`, `/fh:normalize`) and `skills/frontend-design/` — all built into this plugin.
 
 ### Step 4b: Collect integration check results
 
@@ -393,7 +393,7 @@ Write `{phase}-VERIFICATION.md` with truth table, artifacts, key links, requirem
 
 **If PASSED:** `gsd-tools.cjs phase complete "${PHASE_NUM}"` — atomically updates STATE.md and ROADMAP.md. "Phase verified. Ready for next phase."
 
-**If FAILED:** Report gaps. Suggest `/plan-work` for closure or `/fix` for bugs.
+**If FAILED:** Report gaps. Suggest `/fh:plan-work` for closure or `/fh:fix` for bugs.
 
 ---
 
@@ -413,7 +413,7 @@ It runs 3 parallel review agents (reuse, quality, efficiency) on the git diff, t
 
 ## Step 9: Post-Build Review
 
-Auto-invoke `/review --quick` — this runs code quality + architecture analysis without the full security scan. It catches naming issues, structural problems, test quality gaps, and cross-file inconsistencies before they accumulate.
+Auto-invoke `/fh:review --quick` — this runs code quality + architecture analysis without the full security scan. It catches naming issues, structural problems, test quality gaps, and cross-file inconsistencies before they accumulate.
 
 If the review surfaces issues:
 - **BLOCK** findings → fix before continuing
@@ -428,7 +428,7 @@ After the review, report what was built:
 - Integration check results (if ran)
 - Review findings summary
 
-For deeper scrutiny, suggest `/review` (adds security scan + gap analysis).
+For deeper scrutiny, suggest `/fh:review` (adds security scan + gap analysis).
 
 **GSD completion (if GSD active):**
 
@@ -438,8 +438,8 @@ Route based on phase status:
 
 | Condition | Action |
 |-----------|--------|
-| More plans in phase | "Plan X of Y complete." Suggest `/build` for next plan. |
-| Phase complete, more phases | "Phase complete." Suggest `/plan-work {next}` or `/review`. Also suggest `/fh:revise-claude-md` to capture learnings from this phase. |
+| More plans in phase | "Plan X of Y complete." Suggest `/fh:build` for next plan. |
+| Phase complete, more phases | "Phase complete." Suggest `/fh:plan-work {next}` or `/fh:review`. Also suggest `/fh:revise-claude-md` to capture learnings from this phase. |
 | Last phase in milestone | "Milestone complete." Run milestone completion: archive phase directories, update STATE.md and ROADMAP.md via `gsd-tools.cjs milestone complete`, and suggest `/fh:revise-claude-md` — milestone boundaries are natural points to update project conventions. |
 
 If user prefers to skip the branch finishing (more work planned), report what was built with links to key files.
@@ -453,7 +453,7 @@ If user prefers to skip the branch finishing (more work planned), report what wa
 - **Spec gate agents:** Get the wave diff and task specs only. Don't load full plan history.
 - **Integration checker:** Runs in background. Gets phase SUMMARYs and source directory structure.
 - **Simplify agents:** Run on the git diff only. 3 parallel agents (reuse, quality, efficiency) — lightweight, no plan context needed.
-- **Post-build review:** `/review --quick` dispatches 1 code-reviewer agent on the diff. Adds ~1 subagent turn, no security scan overhead.
+- **Post-build review:** `/fh:review --quick` dispatches 1 code-reviewer agent on the diff. Adds ~1 subagent turn, no security scan overhead.
 - **`.planning/DESIGN.md`** is small (~30 lines) — safe to include in every frontend subagent prompt.
 - **Skill index:** Collect once (Step 3), inject into every subagent prompt as `{SKILL_INDEX}`. Subagents deep-read only what's relevant.
 - **Codebase docs per task type:**

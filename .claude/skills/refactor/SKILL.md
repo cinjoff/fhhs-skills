@@ -1,10 +1,10 @@
 ---
-name: refactor
+name: fh:refactor
 description: Reorganize code without changing what it does. Keeps tests passing at every step.
 user-invokable: true
 ---
 
-Restructure existing code safely. Not a bug (use /fix). Not new functionality (use /build). Behavior preservation is the iron law.
+Restructure existing code safely. Not a bug (use /fh:fix). Not new functionality (use /fh:build). Behavior preservation is the iron law.
 
 The refactoring goal: $ARGUMENTS
 
@@ -48,7 +48,7 @@ Identify the blast radius:
 
 Report: "This refactoring touches N files across M subsystems. Blast radius: [description]."
 
-If large (10+ files or 3+ subsystems), suggest writing a PLAN.md via `/plan-work` first.
+If large (10+ files or 3+ subsystems), suggest writing a PLAN.md via `/fh:plan-work` first.
 
 ---
 
@@ -107,7 +107,7 @@ Fix issues. Tests must remain GREEN (iron law still applies). Commit: `refactor(
 
 ## Step 6: Completion
 
-After simplify pass, suggest `/review` for comprehensive analysis (code quality + architecture + behavior preservation evidence). The user decides when to run it.
+After simplify pass, suggest `/fh:review` for comprehensive analysis (code quality + architecture + behavior preservation evidence). The user decides when to run it.
 
 Generate SUMMARY.md with refactoring steps, commit hashes, before/after metrics, test evidence.
 Update STATE.md: note refactoring completed, structural changes made.

@@ -1,6 +1,6 @@
 ---
-name: nextjs-perf
-description: Next.js and React performance patterns forked from Vercel React Best Practices. Referenced by /build subagents and /refactor reviews when working on Next.js projects.
+name: fh:nextjs-perf
+description: Next.js and React performance patterns forked from Vercel React Best Practices. Referenced by /fh:build subagents and /fh:refactor reviews when working on Next.js projects.
 user-invokable: false
 ---
 

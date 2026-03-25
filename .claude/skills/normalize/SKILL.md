@@ -1,5 +1,5 @@
 ---
-name: normalize
+name: fh:normalize
 description: Normalize design to match your design system and ensure consistency
 user-invokable: false
 ---
