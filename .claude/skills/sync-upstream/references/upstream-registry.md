@@ -13,7 +13,7 @@ versions, diff changes, and guide patch reapplication.
 | `version_source` | How to detect latest: `release` (gh releases/latest), `tag` (gh tags), `commit` (gh commits on default branch) |
 | `monorepo_path` | Subdirectory within the repo to extract (blank = whole repo) |
 | `compare_paths` | Which subdirectories to diff between old and new snapshots |
-| `forked_to` | Our skill/agent/command paths forked from this upstream. Path prefixes: `skills/` = `skills/` (root), `agents/` = `agents/` (root), `commands/` = `commands/` (root, shipped), `.claude/commands/` = `.claude/commands/` (maintainer-local) |
+| `forked_to` | Our skill/agent/command paths forked from this upstream. Path prefixes: `skills/` = internal skills (root), `.claude/skills/` = shipped skills, `agents/` = `agents/` (root), `commands/` = `commands/` (root, shipped), `.claude/commands/` = `.claude/commands/` (maintainer-local) |
 | `eval_commands` | Eval command names (from `run_all_evals.py` COMMAND_MAP) to run when this upstream is updated |
 
 ## Registry
@@ -39,7 +39,7 @@ versions, diff changes, and guide patch reapplication.
 | version_source | `release` |
 | monorepo_path | |
 | compare_paths | `source/skills/` |
-| forked_to | `skills/frontend-design`, `skills/ui-critique`, `skills/polish`, `skills/normalize`, `skills/harden`, `skills/ui-animate`, `skills/ui-redesign`, `skills/distill`, `skills/adapt`, `skills/bolder`, `skills/quieter`, `skills/extract`, `skills/colorize`, `skills/audit`, `skills/clarify`, `skills/onboard`, `skills/optimize`, `skills/delight` |
+| forked_to | `skills/frontend-design`, `.claude/skills/ui-critique`, `.claude/skills/polish`, `.claude/skills/normalize`, `.claude/skills/harden`, `.claude/skills/ui-animate`, `.claude/skills/ui-redesign`, `.claude/skills/distill`, `.claude/skills/adapt`, `.claude/skills/bolder`, `.claude/skills/quieter`, `.claude/skills/extract`, `.claude/skills/colorize`, `.claude/skills/audit`, `.claude/skills/clarify`, `.claude/skills/onboard`, `.claude/skills/optimize`, `.claude/skills/delight` |
 | eval_commands | `polish`, `normalize`, `harden`, `adapt`, `ui-animate`, `ui-critique`, `ui-redesign`, `distill`, `bolder`, `quieter`, `extract`, `colorize`, `audit`, `clarify`, `onboard`, `optimize`, `delight` |
 
 ### gsd
@@ -51,7 +51,7 @@ versions, diff changes, and guide patch reapplication.
 | version_source | `release` |
 | monorepo_path | |
 | compare_paths | `workflows/`, `agents/`, `references/`, `templates/` |
-| forked_to | `skills/build`, `skills/fix`, `skills/plan-work`, `skills/progress`, `skills/quick`, `skills/review`, `skills/map-codebase`, `skills/todos`, `skills/tracker`, `agents/gsd-executor`, `agents/gsd-planner`, `agents/gsd-verifier`, `agents/gsd-roadmapper`, `agents/gsd-debugger`, `agents/gsd-codebase-mapper`, `agents/gsd-integration-checker`, `agents/gsd-nyquist-auditor`, `agents/gsd-phase-researcher`, `agents/gsd-plan-checker`, `agents/gsd-project-researcher`, `agents/gsd-research-synthesizer`, `commands/new-project`, `.claude/commands/discuss-phase`, `.claude/commands/add-phase`, `.claude/commands/remove-phase`, `.claude/commands/insert-phase`, `.claude/commands/validate-phase`, `.claude/commands/list-phase-assumptions`, `.claude/commands/complete-milestone`, `.claude/commands/new-milestone`, `.claude/commands/audit-milestone`, `.claude/commands/plan-milestone-gaps`, `.claude/commands/pause-work`, `.claude/commands/set-profile`, `.claude/commands/add-tests`, `.claude/commands/cleanup`, `.claude/commands/release`, `.claude/commands/update-gsd` |
+| forked_to | `.claude/skills/build`, `.claude/skills/fix`, `.claude/skills/plan-work`, `.claude/skills/progress`, `.claude/skills/quick`, `.claude/skills/review`, `.claude/skills/map-codebase`, `.claude/skills/todos`, `.claude/skills/tracker`, `agents/gsd-executor`, `agents/gsd-planner`, `agents/gsd-verifier`, `agents/gsd-roadmapper`, `agents/gsd-debugger`, `agents/gsd-codebase-mapper`, `agents/gsd-integration-checker`, `agents/gsd-nyquist-auditor`, `agents/gsd-phase-researcher`, `agents/gsd-plan-checker`, `agents/gsd-project-researcher`, `agents/gsd-research-synthesizer`, `commands/new-project`, `.claude/commands/discuss-phase`, `.claude/commands/add-phase`, `.claude/commands/remove-phase`, `.claude/commands/insert-phase`, `.claude/commands/validate-phase`, `.claude/commands/list-phase-assumptions`, `.claude/commands/complete-milestone`, `.claude/commands/new-milestone`, `.claude/commands/audit-milestone`, `.claude/commands/plan-milestone-gaps`, `.claude/commands/pause-work`, `.claude/commands/set-profile`, `.claude/commands/add-tests`, `.claude/commands/cleanup`, `.claude/commands/release`, `.claude/commands/update-gsd` |
 | eval_commands | `build`, `fix`, `plan-work`, `progress`, `quick`, `review`, `map-codebase`, `todos`, `tracker` |
 
 ### gstack
@@ -63,7 +63,7 @@ versions, diff changes, and guide patch reapplication.
 | version_source | `release` |
 | monorepo_path | |
 | compare_paths | `plan-ceo-review/`, `plan-eng-review/`, `review/`, `qa/`, `ship/` |
-| forked_to | `skills/plan-review`, `skills/ui-test`, `skills/review` (checklist absorbed), `skills/plan-work` (eng-review absorbed), `.claude/commands/release` (ship absorbed) |
+| forked_to | `.claude/skills/plan-review`, `.claude/skills/ui-test`, `.claude/skills/review` (checklist absorbed), `.claude/skills/plan-work` (eng-review absorbed), `.claude/commands/release` (ship absorbed) |
 | eval_commands | `plan-review`, `ui-test`, `review` |
 
 ### feature-dev
