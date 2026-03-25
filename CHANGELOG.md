@@ -5,6 +5,11 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.21.4] - 2026-03-25
+
+### Fixed
+- **Skill names missing fh: prefix** — all 37 plugin skills now use the `fh:` prefix in their name field (e.g. `/fh:build`, `/fh:fix`, `/fh:plan-work`) so users can identify them as fh skills; updated all cross-references in skill content, README, SPEC, PATCHES, marketplace.json, and commands
+
 ## [1.21.3] - 2026-03-25
 
 ### Fixed
