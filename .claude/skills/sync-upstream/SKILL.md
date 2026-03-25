@@ -32,6 +32,33 @@ named upstream(s) (comma-separated is acceptable).
 
 ---
 
+## Step 0.5: Pre-Sync Validation
+
+For each targeted upstream, read its `forked_to` list from the registry and validate:
+
+1. **Verify every forked path exists on disk** using the correct pattern for each path type:
+   - `skills/{name}` → check `skills/{name}/PROMPT.md` exists (internal skills)
+   - `.claude/skills/{name}` → check `.claude/skills/{name}/SKILL.md` exists (shipped skills)
+   - `agents/{name}` → check `agents/{name}.md` exists (agent definitions)
+   - `commands/{name}` or `.claude/commands/{name}` → check `commands/{name}.md` or `.claude/commands/{name}.md` exists
+
+2. **Verify the snapshot directory exists** in `upstream/` matching the `snapshot_pattern` from the registry.
+
+3. **Verify PATCHES.md has a section header** matching the upstream name.
+
+4. **Report results per upstream:**
+
+```
+Pre-sync validation:
+  superpowers  forked paths: 15/15 OK  snapshot: OK  patches: OK
+  gsd          forked paths: 32/33 FAIL  snapshot: OK  patches: OK
+    MISSING: agents/gsd-foo.md
+```
+
+5. **If any check fails:** report all failures in the table above and ask the user to fix before continuing or force-proceed. Do NOT silently skip failures.
+
+---
+
 ## Step 1: Check for Updates
 
 For each targeted upstream, detect the latest version using the `version_source` from
@@ -152,6 +179,30 @@ superpowers patch status:
 
 ---
 
+## Step 3.5: Git Checkpoint
+
+Before modifying any files, create a git checkpoint for rollback safety:
+
+1. **Create a git stash** with a descriptive message:
+   ```bash
+   git stash push --include-untracked -m "sync-upstream checkpoint before {upstream} {old_version} -> {new_version}"
+   ```
+   - `--include-untracked` is required to capture new snapshot directories created in Step 4.
+
+2. **If working tree is clean** (nothing to stash): note "Working tree clean, no checkpoint needed" and record the current HEAD SHA instead:
+   ```bash
+   git rev-parse HEAD
+   ```
+
+3. **If `git stash` fails** (lock file, conflicted state, etc.): warn the user:
+   > "Could not create checkpoint — continuing without rollback safety net."
+
+   Ask: (a) continue anyway, (b) fix git state first. Do NOT silently proceed.
+
+4. **Store the checkpoint reference** (stash ref or HEAD SHA) for use in Step 4.5.
+
+---
+
 ## Step 4: Apply Updates
 
 For each confirmed upstream:
@@ -191,6 +242,32 @@ For each confirmed upstream:
    ```bash
    rm -rf "$TEMP_DIR"
    ```
+
+---
+
+## Step 4.5: Post-Sync Regression Check
+
+After patch reapplication, run targeted evals to catch regressions:
+
+1. **Read the `eval_commands` field** from the updated upstream's registry entry. This gives the explicit list of eval commands affected by this upstream.
+
+2. **Report:** "Running targeted evals for: build, plan-work, fix, review (N evals)"
+
+3. **Run:**
+   ```bash
+   python3 fhhs-skills-workspace/run_all_evals.py --commands {comma-separated-commands}
+   ```
+   - The `--commands` flag filters evals to only those matching the listed commands.
+
+4. **If evals pass:** "All N evals passed. Safe to commit."
+
+5. **If evals fail:** "N evals failed. Recommend reverting:" then show the git restore command:
+   - If stash was created in Step 3.5: `git stash pop`
+   - If HEAD was recorded in Step 3.5: `git reset --hard {SHA}`
+
+6. **If eval runner fails to execute** (missing python, script error): warn "Eval runner failed — cannot verify automatically. Run evals manually before committing." Do NOT block the sync.
+
+7. **Ask user:** (a) fix and re-run, (b) revert to checkpoint, (c) commit anyway (not recommended).
 
 ---
 
