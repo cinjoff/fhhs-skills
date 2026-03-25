@@ -5,6 +5,13 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.22.2] - 2026-03-25
+
+### Fixed
+- **Internal skills no longer exposed to users** — renames SKILL.md to PROMPT.md for 80+ internal/upstream skills so Claude Code's scanner doesn't discover them as user-invokable commands
+- **`resume-work` removed** — functionality merged into `/fh:progress`
+- **`playwright-testing` and `nextjs-perf` hidden from picker** — kept as internal reference prompts loaded by `/fh:build` and `/fh:fix`
+
 ## [1.22.1] - 2026-03-25
 
 ### Fixed
