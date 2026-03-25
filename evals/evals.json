@@ -5335,6 +5335,417 @@
           "type": "guard"
         }
       ]
+    },
+    {
+      "id": 175,
+      "command": "simplify",
+      "prompt": "simplify my recent changes. fallow is installed on my machine",
+      "expected_output": "Should check fallow availability, run 3 fallow commands (check, dupes --mode semantic, health) with JSON format, post-filter dupes and health to diff-relevant files, cap at 200 lines, inject non-empty outputs into the 3 review agent prompts under \"Static Analysis Findings\" headers. Code reuse agent gets dupes + unused exports. Code quality agent gets health metrics + circular deps. Efficiency agent gets complexity hotspots.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Checks fallow availability with command -v fallow",
+          "type": "behavioral"
+        },
+        {
+          "text": "Runs fallow check with --changed-since and --format json",
+          "type": "behavioral"
+        },
+        {
+          "text": "Runs fallow dupes with --mode semantic and --format json",
+          "type": "behavioral"
+        },
+        {
+          "text": "Runs fallow health with --format json",
+          "type": "behavioral"
+        },
+        {
+          "text": "Post-filters dupes and health output to diff-relevant files",
+          "type": "behavioral"
+        },
+        {
+          "text": "Injects Fallow findings into agent prompts as ground truth",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 176,
+      "command": "simplify",
+      "prompt": "simplify the code changes on this branch",
+      "expected_output": "Should check fallow availability, find it NOT installed, skip fallow silently with no error or mention. Should proceed normally with 3 parallel review agents on the git diff — identical behavior to pre-Fallow simplify.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Checks fallow availability",
+          "type": "behavioral"
+        },
+        {
+          "text": "Skips fallow silently when not installed",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT mention fallow in output when not installed",
+          "type": "guard"
+        },
+        {
+          "text": "Runs 3 parallel review agents on git diff",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 177,
+      "command": "review",
+      "prompt": "review my changes before creating a PR. fallow is available on this machine",
+      "expected_output": "Should run Step 1.7 (static analysis) with fallow check --changed-since, dupes, and health. Should post-filter to diff files and cap at 200 lines. Should include fallow output in Agent 1 (code quality) and Agent 3 (gap analysis) prompts. Agent 1 receives all three outputs. Agent 3 receives FALLOW_CHECK for unwired code detection.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Runs Step 1.7 static analysis before Step 2 dispatch",
+          "type": "ordering"
+        },
+        {
+          "text": "Runs fallow check with --changed-since $BASE_BRANCH",
+          "type": "behavioral"
+        },
+        {
+          "text": "Includes fallow data in Agent 1 prompt",
+          "type": "behavioral"
+        },
+        {
+          "text": "Includes FALLOW_CHECK in Agent 3 prompt",
+          "type": "behavioral"
+        },
+        {
+          "text": "Post-filters and caps output at 200 lines",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 178,
+      "command": "review",
+      "prompt": "review --quick. fallow is installed",
+      "expected_output": "Should include Step 1.7 in quick mode (mode table lists Steps 1, 1.5, 1.7, 2, 3, 4, 5, 6, 7, 8). Should run fallow analysis and feed results to the quick-mode Agent 1.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Runs Step 1.7 in --quick mode",
+          "type": "behavioral"
+        },
+        {
+          "text": "Feeds fallow data to quick-mode Agent 1",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 179,
+      "command": "build",
+      "prompt": "build the plan. fallow is installed. the plan has 1 wave with 2 tasks",
+      "expected_output": "Should run fallow check --changed-since before dispatching spec-gate agent in Step 3b. Should include fallow output in spec-gate prompt for definitive unwired-code detection. Spec gate should use fallow findings as ground truth for unused exports/files.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Runs fallow check before dispatching spec-gate agent",
+          "type": "behavioral"
+        },
+        {
+          "text": "Includes fallow output in spec-gate agent prompt",
+          "type": "behavioral"
+        },
+        {
+          "text": "Spec gate uses fallow for unwired-code detection",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 180,
+      "command": "review",
+      "prompt": "review my changes. fallow is installed but crashes when running fallow check",
+      "expected_output": "Should detect fallow is available, attempt to run commands, handle the crash gracefully (|| FALLOW_CHECK=\"\" pattern sets empty string). Should skip injecting empty outputs. Should proceed with review normally without fallow data. Should NOT error out or mention the fallow failure to the user.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Handles fallow command failure with || empty-string fallback",
+          "type": "behavioral"
+        },
+        {
+          "text": "Skips injection for empty/failed outputs",
+          "type": "behavioral"
+        },
+        {
+          "text": "Proceeds normally without fallow data",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT surface fallow failure to user",
+          "type": "guard"
+        }
+      ]
+    },
+    {
+      "id": 181,
+      "command": "audit-upstream",
+      "prompt": "audit upstream skills",
+      "expected_output": "Should scan the upstream/ directory, compare against .planning/upstream/INDEX.md, identify version changes and new/removed sources, assess quality of each changed item, produce prioritized recommendations, and update the upstream index files.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Scans upstream/ directory for all sources",
+          "type": "behavioral"
+        },
+        {
+          "text": "Compares against .planning/upstream/INDEX.md",
+          "type": "behavioral"
+        },
+        {
+          "text": "Produces prioritized recommendations (immediate/plan/backlog/skip)",
+          "type": "output"
+        },
+        {
+          "text": "Updates INDEX.md with current state",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 182,
+      "command": "audit-upstream",
+      "prompt": "what changed in upstream since last sync",
+      "expected_output": "Should scan upstream/ directory, diff against the last audit state in INDEX.md, identify version changes and new/modified/removed items across all four asset categories (skills, commands, agents, supporting assets), and summarize changes per source.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Identifies version changes since last audit",
+          "type": "behavioral"
+        },
+        {
+          "text": "Scans all four asset categories",
+          "type": "behavioral"
+        },
+        {
+          "text": "Summarizes changes per upstream source",
+          "type": "output"
+        }
+      ]
+    },
+    {
+      "id": 183,
+      "command": "audit-upstream",
+      "prompt": "evaluate integration opportunities from upstream",
+      "expected_output": "Should scan upstream sources, assess each item on quality (A-D rating), gap fill potential, integration effort (low/medium/high), and risk. Should produce recommendations organized by tier (immediate/plan/backlog/skip).",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Rates quality of upstream items A-D",
+          "type": "behavioral"
+        },
+        {
+          "text": "Assesses integration effort as low/medium/high",
+          "type": "behavioral"
+        },
+        {
+          "text": "Produces tiered recommendations",
+          "type": "output"
+        }
+      ]
+    },
+    {
+      "id": 184,
+      "command": "audit-upstream",
+      "prompt": "review upstream capabilities and update the index",
+      "expected_output": "Should scan upstream/, build complete inventory, compare against INDEX.md, and update .planning/upstream/ files including per-source files and INDEX.md with current version numbers, SDLC coverage matrix, and gap registry.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Updates per-source files in .planning/upstream/",
+          "type": "behavioral"
+        },
+        {
+          "text": "Updates INDEX.md with version numbers and coverage matrix",
+          "type": "behavioral"
+        },
+        {
+          "text": "Updates gap registry in INDEX.md",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 185,
+      "command": "audit-upstream",
+      "prompt": "I just synced upstream, now evaluate what changed",
+      "expected_output": "Should recognize this as the post-sync chain step. Should scan upstream/ for changes since last audit, diff against INDEX.md, assess new/modified items, produce recommendations, update the index, and append an entry to the Integration Log.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Recognizes post-sync context",
+          "type": "behavioral"
+        },
+        {
+          "text": "Diffs against last audit state",
+          "type": "behavioral"
+        },
+        {
+          "text": "Appends entry to Integration Log in INDEX.md",
+          "type": "behavioral"
+        },
+        {
+          "text": "Produces recommendations for integration",
+          "type": "output"
+        }
+      ]
+    },
+    {
+      "id": 186,
+      "command": "sync-upstream",
+      "prompt": "sync upstream repos",
+      "expected_output": "Should trigger sync-upstream, NOT audit-upstream. Should pull latest upstream code from configured sources.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Routes to sync-upstream skill",
+          "type": "routing"
+        },
+        {
+          "text": "Does NOT trigger audit-upstream",
+          "type": "guard"
+        }
+      ]
+    },
+    {
+      "id": 187,
+      "command": "update",
+      "prompt": "update the plugin to latest version",
+      "expected_output": "Should trigger update, NOT audit-upstream. Should check for and apply plugin updates.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Routes to update skill",
+          "type": "routing"
+        },
+        {
+          "text": "Does NOT trigger audit-upstream",
+          "type": "guard"
+        }
+      ]
+    },
+    {
+      "id": 188,
+      "command": "health",
+      "prompt": "check my project health",
+      "expected_output": "Should trigger health, NOT audit-upstream. Should assess project health metrics.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Routes to health skill",
+          "type": "routing"
+        },
+        {
+          "text": "Does NOT trigger audit-upstream",
+          "type": "guard"
+        }
+      ]
+    },
+    {
+      "id": 189,
+      "command": "review",
+      "prompt": "review my code changes",
+      "expected_output": "Should trigger review, NOT audit-upstream. Should review code changes on the current branch.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Routes to review skill",
+          "type": "routing"
+        },
+        {
+          "text": "Does NOT trigger audit-upstream",
+          "type": "guard"
+        }
+      ]
+    },
+    {
+      "id": 190,
+      "command": "audit-upstream",
+      "prompt": "scan upstream directory for version changes",
+      "expected_output": "Should scan upstream/ directory, identify version/commit for each source, compare against INDEX.md to detect version bumps, new sources, and removed sources.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Scans upstream/ for version metadata",
+          "type": "behavioral"
+        },
+        {
+          "text": "Detects version bumps since last audit",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 191,
+      "command": "audit-upstream",
+      "prompt": "assess quality of upstream skills",
+      "expected_output": "Should scan upstream skills, rate each on quality (A-D scale based on structure, edge case handling, error recovery, documentation), and produce an assessment with integration recommendations.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Rates upstream skills on A-D quality scale",
+          "type": "behavioral"
+        },
+        {
+          "text": "Evaluates structure, edge cases, error recovery, documentation",
+          "type": "behavioral"
+        },
+        {
+          "text": "Produces integration recommendations",
+          "type": "output"
+        }
+      ]
+    },
+    {
+      "id": 192,
+      "command": "audit-upstream",
+      "prompt": "which GSD agents aren't being used",
+      "expected_output": "Should scan upstream agent definitions, cross-reference against the Subagent Dispatch Matrix in INDEX.md, identify agents that exist in upstream but are not integrated or referenced by any /fh: skill.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Scans upstream agent definitions",
+          "type": "behavioral"
+        },
+        {
+          "text": "Cross-references against Subagent Dispatch Matrix",
+          "type": "behavioral"
+        },
+        {
+          "text": "Identifies unused agents",
+          "type": "output"
+        }
+      ]
+    },
+    {
+      "id": 193,
+      "command": "audit-upstream",
+      "prompt": "what GSD commands are available but not exposed as /fh skills",
+      "expected_output": "Should scan upstream commands/workflows, cross-reference against the Command Exposure Map in INDEX.md, identify commands present in upstream that have no corresponding /fh: skill.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Scans upstream commands and workflows",
+          "type": "behavioral"
+        },
+        {
+          "text": "Cross-references against Command Exposure Map",
+          "type": "behavioral"
+        },
+        {
+          "text": "Identifies unexposed commands",
+          "type": "output"
+        }
+      ]
     }
   ]
 }
