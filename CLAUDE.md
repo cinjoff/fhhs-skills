@@ -31,6 +31,7 @@ Claude Code plugin composing upstream skills (Superpowers, Impeccable, GSD) into
 
 - No postinstall hooks — setup is user-initiated via `/fh:setup`
 - `references/`, `templates/`, repo-root dirs NOT shipped to plugin installs
+- Frontmatter field is `user-invocable` (with a **c**), NOT `user-invokable` — misspelling silently defaults to `true`
 - After skill renames: grep for old paths in all shipped files before committing
 - `str.replace()` with dynamic content: always use function form to avoid `$&` corruption
 - Every executed plan MUST have a SUMMARY.md — `gsd-tools verify phase-completeness` checks for these

@@ -1,7 +1,7 @@
 ---
 name: fh:research
 description: Look into a topic. Searches the web and docs, then writes up what it found.
-user-invokable: true
+user-invocable: true
 ---
 
 Research a topic using Firecrawl and Context7. Outputs in GSD-compatible format for seamless planning.

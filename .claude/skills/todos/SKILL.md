@@ -1,7 +1,7 @@
 ---
 name: fh:todos
 description: Track things to do. Add a todo with arguments, or review pending ones without.
-user-invokable: true
+user-invocable: true
 ---
 
 ## Routing

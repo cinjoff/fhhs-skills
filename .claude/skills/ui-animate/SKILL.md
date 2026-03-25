@@ -1,7 +1,7 @@
 ---
 name: fh:ui-animate
 description: Add animations and transitions that make the interface feel polished and alive.
-user-invokable: true
+user-invocable: true
 ---
 
 Analyze a feature and strategically add animations and micro-interactions that enhance understanding, provide feedback, and create delight.

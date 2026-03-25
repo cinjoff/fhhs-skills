@@ -1,7 +1,7 @@
 ---
 name: fh:quick
 description: Execute small ad-hoc tasks with GSD guarantees. Use when the user says 'quick', 'quick task', or has a small task that doesn't warrant full /fh:plan-work + /fh:build ceremony. Supports --discuss and --full flags.
-user-invokable: false
+user-invocable: false
 ---
 
 Quick mode spawns gsd-planner + gsd-executor(s), tracks tasks in `.planning/quick/`, and updates STATE.md.

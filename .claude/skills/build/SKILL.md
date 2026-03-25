@@ -1,7 +1,7 @@
 ---
 name: fh:build
 description: Execute a plan — turns your PLAN.md into working code with tests and quality checks.
-user-invokable: true
+user-invocable: true
 ---
 
 Execute an existing plan. Delegates task execution to subagents for optimal context usage.

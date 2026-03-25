@@ -1,7 +1,7 @@
 ---
 name: fh:map-codebase
 description: Explore and document how your codebase is structured.
-user-invokable: true
+user-invocable: true
 ---
 
 Each agent has fresh context, explores a specific focus area, and **writes documents directly**. The orchestrator only receives confirmation + line counts, then writes a summary. Output: .planning/codebase/ folder with 7 structured documents.

@@ -1,7 +1,7 @@
 ---
 name: fh:plan-review
 description: Stress-test a plan. Challenges business alignment AND engineering rigor — architecture, code quality, tests, performance — before you commit.
-user-invokable: true
+user-invocable: true
 allowed-tools:
   - Read
   - Grep

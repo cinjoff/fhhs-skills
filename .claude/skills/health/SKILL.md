@@ -1,7 +1,7 @@
 ---
 name: fh:health
 description: Validate .planning/ directory integrity and diagnose issues. Use when the user says 'health', 'health check', 'check planning', 'is my project ok', or suspects corrupted planning state. Supports --repair flag.
-user-invokable: true
+user-invocable: true
 ---
 
 <required_reading>

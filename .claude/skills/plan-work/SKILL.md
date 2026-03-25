@@ -1,7 +1,7 @@
 ---
 name: fh:plan-work
 description: Plan before you build. Researches the problem and produces a step-by-step plan.
-user-invokable: true
+user-invocable: true
 ---
 
 Plan a feature before building it. Brainstorm, research, and produce an execution-ready plan.

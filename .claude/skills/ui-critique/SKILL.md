@@ -1,7 +1,7 @@
 ---
 name: fh:ui-critique
 description: Get design feedback — layout, readability, flow, and what to improve.
-user-invokable: true
+user-invocable: true
 ---
 
 Conduct a holistic design critique, evaluating whether the interface actually works---not just technically, but as a designed experience. Think like a design director giving feedback.

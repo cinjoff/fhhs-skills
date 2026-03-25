@@ -1,7 +1,7 @@
 ---
 name: fh:revise-claude-md
 description: Update CLAUDE.md with learnings from this session. Use when the user says 'update claude md', 'save learnings', 'improve claude md', 'audit claude md', or after significant implementation work. Also triggered automatically by /fh:build at the end of phase completion.
-user-invokable: true
+user-invocable: true
 ---
 
 Review this session for learnings about working with this codebase. Update CLAUDE.md with context that would help future sessions be more effective.
