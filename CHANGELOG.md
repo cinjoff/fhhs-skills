@@ -5,6 +5,11 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.24.3] - 2026-03-26
+
+### Changed
+- **`/fh:update` simplified** — uses plain `claude plugin update` instead of uninstall+reinstall workaround
+
 ## [1.24.2] - 2026-03-26
 
 ### Fixed
