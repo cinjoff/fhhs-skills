@@ -33,22 +33,7 @@ git fetch origin main && git merge origin/main --no-edit
 
 **If there are merge conflicts:** STOP and show the conflicts. Do not proceed until resolved.
 
-### 0c. Run test suite
-
-Auto-detect the test runner and execute:
-
-| Detect                        | Command         |
-|-------------------------------|-----------------|
-| `package.json` has `test`     | `npm test`      |
-| `bun.lockb` exists            | `bun test`      |
-| `Cargo.toml` exists           | `cargo test`    |
-| `pytest.ini` / `pyproject.toml` with pytest | `pytest` |
-| `Makefile` has `test` target  | `make test`     |
-| Fallback                      | skip with note  |
-
-**If tests fail:** STOP, show the failures, do not proceed.
-
-### 0d. Quick review
+### 0c. Quick review
 
 Run `/fh:review --quick` against the current diff (unless the user already ran a review this session).
 

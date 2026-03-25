@@ -157,7 +157,6 @@ Phase management, milestone lifecycle, and test generation are handled automatic
 | `/fh:map-codebase` | Analyze your codebase structure |
 | `/fh:revise-claude-md` | Update CLAUDE.md with learnings from the session |
 | `/fh:update` | Check for updates and install the latest version |
-| `/fh:sync-upstream` | Check upstreams for updates, sync changes, reapply patches |
 | `/fh:help` | Command reference and architecture guide |
 
 </details>
@@ -537,7 +536,6 @@ Native task tracking shows progress through each step in real-time.
 
 ```
 /fh:update           update the plugin itself
-/fh:sync-upstream    check upstream repos for new versions and sync changes
 ```
 
 ## License

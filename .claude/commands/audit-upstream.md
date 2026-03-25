@@ -1,7 +1,5 @@
 ---
-name: fh:audit-upstream
 description: "Use when evaluating upstream skill changes after sync, assessing integration opportunities, or maintaining the upstream capability index. Triggers on 'audit upstream', 'evaluate upstream', 'what changed upstream', 'integration opportunities', or after /fh:sync-upstream."
-user-invokable: true
 ---
 
 # Audit Upstream
@@ -235,11 +233,11 @@ Flag as `⚠️ Unreadable: {path} — {reason}`, never silently skip.
 >
 > **After sync:**
 > 1. `/fh:sync-upstream` — pull latest upstream code
-> 2. `/fh:audit-upstream` — evaluate changes (incremental), update index
+> 2. `/audit-upstream` — evaluate changes (incremental), update index
 > 3. `/fh:plan-work` — plan integration of recommended changes
 >
 > **Periodic deep review:**
-> 1. `/fh:audit-upstream` with deep/review/compare arguments
+> 1. `/audit-upstream` with deep/review/compare arguments
 > 2. Review overlap analysis and pipeline usage reality
 > 3. Decide which gaps to fill and which dead weight to prune
 > 4. `/fh:plan-work` — plan the improvements

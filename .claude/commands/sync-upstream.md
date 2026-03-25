@@ -1,10 +1,8 @@
 ---
-name: fh:sync-upstream
 description: |
   Check upstream repos for updates, show what changed, and guide patch reapplication.
   Use when the user says 'sync upstream', 'check upstream', 'update upstream',
   'new version of superpowers/impeccable/gsd', or wants to pull latest upstream changes.
-user-invokable: false
 ---
 
 # Sync Upstream
@@ -17,7 +15,7 @@ Valid upstream names: `superpowers`, `impeccable`, `gsd`, `gstack`, `feature-dev
 
 ## Step 0: Load Registry
 
-Read `references/upstream-registry.md` (co-located with this skill).
+Read `.claude/commands/upstream-registry.md` (co-located with this command).
 
 Read current snapshot versions from the `upstream/` directory. The directory name is the
 **source of truth** for the current version — parse version from directory name using
