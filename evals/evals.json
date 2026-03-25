@@ -234,34 +234,6 @@
     },
     {
       "id": 10,
-      "command": "verify",
-      "prompt": "verify phase 13",
-      "expected_output": "Should load all PLAN.md files in .planning/phases/13-*, extract must_haves, run goal-backward verification (truth table + artifacts + key links via gsd-tools), run evidence-based verification (fresh test suite, build check, linter), detect anti-patterns, write VERIFICATION.md, and generate gap-closure plans if anything fails.",
-      "files": [],
-      "assertions": [
-        {
-          "text": "Loads PLAN.md files for phase 13",
-          "type": "behavioral"
-        },
-        {
-          "text": "Runs goal-backward verification with truth table",
-          "type": "behavioral"
-        },
-        {
-          "text": "Writes VERIFICATION.md",
-          "type": "output"
-        },
-        {
-          "text": "Generates gap-closure plans on failure",
-          "type": "behavioral"
-        }
-      ],
-      "scenario_requires": [
-        "gsd_project"
-      ]
-    },
-    {
-      "id": 11,
       "command": "new-project",
       "prompt": "I want to build a recipe sharing app where home cooks can post recipes with photos and others can save favorites. should work on mobile. i'm thinking react",
       "expected_output": "Should walk through vision questions one at a time (what/who/why/scope/constraints/success), present default stack (Next.js/TS/Tailwind/Shadcn/Vercel + Supabase since auth/DB needed), invoke /teach-impeccable for design context (output to .planning/DESIGN.md), generate CLAUDE.md under 40 lines, create .planning/ structure with PROJECT.md/REQUIREMENTS.md/ROADMAP.md/STATE.md, and suggest /plan as next step. No external dependency checks needed.",
@@ -290,7 +262,7 @@
       ]
     },
     {
-      "id": 12,
+      "id": 11,
       "command": "build",
       "prompt": "execute the plan at .planning/phases/05-onboarding/05-02-PLAN.md. the plan has a task with type checkpoint:human-verify for reviewing the welcome screen visually",
       "expected_output": "Should find the plan, analyze waves, dispatch subagents for non-checkpoint tasks, and when reaching the checkpoint:human-verify task, the subagent should STOP and return structured state (what was built, verification steps, URLs/commands, expected behavior). Orchestrator should present this to user and WAIT before continuing. Should NOT auto-proceed past the checkpoint. After checkpoint passes, invokes /review --quick for post-build quality checks.",
@@ -319,7 +291,7 @@
       ]
     },
     {
-      "id": 13,
+      "id": 12,
       "command": "plan-work",
       "prompt": "plan adding real-time notifications. we already discussed this in phase 8 and there's a .planning/phases/08-notifications/08-CONTEXT.md with locked decisions about using SSE instead of websockets",
       "expected_output": "Should detect existing CONTEXT.md, SKIP Step 3 (Discuss Implementation) since decisions are already locked, read the CONTEXT.md and honor the SSE decision in the plan, and NOT re-open the SSE vs websockets discussion. Plan should reference the locked SSE decision.",
@@ -340,7 +312,7 @@
       ]
     },
     {
-      "id": 14,
+      "id": 13,
       "command": "fix",
       "prompt": "users are reporting intermittent 502 errors on our API but I can't reproduce it locally. it happens maybe once every 50 requests and the logs show different errors each time \u2014 sometimes connection reset, sometimes timeout, sometimes a memory warning. no clear pattern",
       "expected_output": "Should triage as COMPLEX (unclear cause, needs hypotheses, intermittent, no clear pattern), write triage findings to .planning/debug/YYYY-MM-DD-intermittent-502-errors.md with initial hypotheses, and dispatch a gsd-debugger agent for sustained scientific investigation. Should NOT attempt a quick fix or triage as SIMPLE/MODERATE.",
@@ -361,7 +333,7 @@
       ]
     },
     {
-      "id": 15,
+      "id": 14,
       "command": "build",
       "prompt": "build the auth phase. there are 3 plans: 05-01 is done (has SUMMARY), 05-02 and 05-03 still need execution",
       "expected_output": "Should detect resume scenario (multiple plans, some complete), report 'Found 3 plans, 1 already completed. Continuing from plan 05-02.' Should skip 05-01 entirely. Should check 05-01's SUMMARY for unresolved 'Issues Encountered' and ask user if any found. Should execute 05-02 first, then 05-03 sequentially.",
@@ -385,7 +357,7 @@
       ]
     },
     {
-      "id": 16,
+      "id": 15,
       "command": "plan-work",
       "prompt": "i want to add a feature for exporting reports as PDF. this doesn't match any phase in the roadmap",
       "expected_output": "Should compare against ROADMAP.md phases, detect no match, ask user: 'This doesn't match any existing phase. Add as a new phase to the roadmap, or fold into the current phase?' Should wait for user choice before proceeding. If new phase chosen, should add phase to ROADMAP.md and create phase directory.",
@@ -406,7 +378,7 @@
       ]
     },
     {
-      "id": 17,
+      "id": 16,
       "command": "audit",
       "prompt": "run an audit on this project \u2014 check accessibility, performance, theming, and responsive design",
       "expected_output": "Should detect multiple categories of issues: accessibility (missing ARIA roles on sidebar, toast, comment-card), performance (layout thrashing in chart-widget, client waterfall in page.tsx), design anti-patterns (AI slop in metric-card), responsive (fixed 280px sidebar, 800px min-width on users page), and theming (missing dark mode variable for surface-elevated).",
@@ -440,8 +412,8 @@
       ]
     },
     {
-      "id": 18,
-      "command": "critique",
+      "id": 17,
+      "command": "ui-critique",
       "prompt": "critique the dashboard page. it's at src/app/dashboard/page.tsx",
       "expected_output": "Should read skills/frontend-design/SKILL.md for design principles and anti-patterns, then evaluate the dashboard page across all dimensions (AI slop detection, visual hierarchy, information architecture, emotional resonance, etc.). Should produce a structured critique report with Anti-Patterns Verdict, Overall Impression, What's Working, Priority Issues with severity, and specific fix commands (/polish, /simplify, etc.).",
       "files": [],
@@ -461,28 +433,7 @@
       ]
     },
     {
-      "id": 19,
-      "command": "teach-impeccable",
-      "prompt": "set up the design context for my project",
-      "expected_output": "Should explore the codebase first (README, package.json, existing components, brand assets), then ask UX-focused questions about what couldn't be inferred. Should write output to .planning/DESIGN.md (NOT CLAUDE.md) with YAML frontmatter (created date, type: design-context) and a Design Context section with Users, Brand Personality, Aesthetic Direction, and Design Principles.",
-      "files": [],
-      "assertions": [
-        {
-          "text": "Explores codebase before asking questions",
-          "type": "behavioral"
-        },
-        {
-          "text": "Writes to .planning/DESIGN.md",
-          "type": "output"
-        },
-        {
-          "text": "Includes YAML frontmatter",
-          "type": "output"
-        }
-      ]
-    },
-    {
-      "id": 20,
+      "id": 18,
       "command": "simplify",
       "prompt": "simplify the changes I just made",
       "expected_output": "Should invoke skills/simplify/ which runs 3 parallel review agents on the git diff (code reuse, code quality, efficiency). Should fix issues directly and commit with 'refactor(scope): simplify pass'. Should NOT read full codebase - only operates on changed files from git diff.",
@@ -507,7 +458,7 @@
       ]
     },
     {
-      "id": 21,
+      "id": 19,
       "command": "simplify",
       "prompt": "clean up the auth module after refactoring",
       "expected_output": "Should invoke skills/simplify/ with the auth module as scope. Should check git diff for recent auth-related changes and run 3 parallel agents. If no git diff exists for auth files, should inform user there are no recent changes to simplify.",
@@ -528,7 +479,7 @@
       ]
     },
     {
-      "id": 22,
+      "id": 20,
       "command": "research",
       "prompt": "research how to implement real-time collaborative editing like google docs. looking at CRDTs vs OT",
       "expected_output": "Should check for .planning/PROJECT.md (GSD dependency). If present, determine scope as Comparison mode (CRDTs vs OT). Should dispatch a Task subagent with Firecrawl/Context7 instructions. Subagent output should go to .planning/phases/XX-name/XX-RESEARCH.md with YAML frontmatter (researched date, domain, confidence). Report should be prescriptive with confidence tags (HIGH/MEDIUM/LOW). Should update STATE.md.",
@@ -557,7 +508,7 @@
       ]
     },
     {
-      "id": 23,
+      "id": 21,
       "command": "research",
       "prompt": "research best practices for image optimization in Next.js",
       "expected_output": "Should check for .planning/PROJECT.md. If missing, should stop and tell user to run /new-project first. Should NOT proceed with research without GSD project.",
@@ -578,8 +529,8 @@
       ]
     },
     {
-      "id": 24,
-      "command": "verify-ui",
+      "id": 22,
+      "command": "ui-test",
       "prompt": "check the UI on the settings page at localhost:3000/settings",
       "expected_output": "Should check for dev server on common ports. Should check agent-browser availability. If agent-browser not installed, should stop and tell user to install it. If available, should capture screenshots at 3 viewports (desktop 1440x900, tablet 768x1024, mobile 375x812), run console health check, read .planning/DESIGN.md for design context, perform design critique with severity ratings, and produce a Visual Verification Report.",
       "files": [],
@@ -607,8 +558,8 @@
       ]
     },
     {
-      "id": 25,
-      "command": "verify-ui",
+      "id": 23,
+      "command": "ui-test",
       "prompt": "verify the dashboard looks right. agent-browser is not installed on this machine",
       "expected_output": "Should detect that agent-browser is not available (via which check), stop, and tell the user to install it with 'npm install -g agent-browser'. Should NOT attempt to proceed without it or use alternative tools.",
       "files": [],
@@ -628,7 +579,7 @@
       ]
     },
     {
-      "id": 26,
+      "id": 24,
       "command": "progress",
       "prompt": "progress",
       "expected_output": "Should run gsd-tools.cjs init progress, load roadmap analysis and state snapshot, gather recent SUMMARY.md files, present rich status report with progress bar, recent work, current position, key decisions, blockers, pending todos, and route to next action (Route A if unexecuted plans exist, Route B if phase needs planning, Route C/D/E/F for other states).",
@@ -664,7 +615,7 @@
       ]
     },
     {
-      "id": 27,
+      "id": 25,
       "command": "progress",
       "prompt": "progress (no .planning/ directory exists)",
       "expected_output": "Should detect project_exists is false from gsd-tools init, output 'No planning structure found.' and suggest running /new-project. Should NOT attempt to read STATE.md or ROADMAP.md.",
@@ -688,7 +639,7 @@
       ]
     },
     {
-      "id": 28,
+      "id": 26,
       "command": "progress",
       "prompt": "progress (all phases in current milestone are complete)",
       "expected_output": "Should detect milestone completion (current phase = highest phase), show Route D with milestone complete message, suggest /verify to verify and complete the milestone. Should display the completion celebration format.",
@@ -712,7 +663,7 @@
       ]
     },
     {
-      "id": 29,
+      "id": 27,
       "command": "progress",
       "prompt": "progress (ROADMAP.md missing but PROJECT.md exists \u2014 milestone was archived)",
       "expected_output": "Should detect between-milestones state (Route F), read MILESTONES.md for last completed version, suggest /plan for next milestone. Should NOT suggest /new-project since PROJECT.md exists.",
@@ -740,7 +691,7 @@
       ]
     },
     {
-      "id": 30,
+      "id": 28,
       "command": "quick",
       "prompt": "quick add a loading spinner to the submit button in the contact form",
       "expected_output": "Should parse arguments (no flags), use description 'add a loading spinner to the submit button in the contact form', run gsd-tools init quick, create .planning/quick/NNN-slug/ directory, spawn gsd-planner in quick mode (not quick-full), spawn gsd-executor, update STATE.md Quick Tasks Completed table, commit artifacts, show completion banner.",
@@ -780,7 +731,7 @@
       ]
     },
     {
-      "id": 31,
+      "id": 29,
       "command": "quick",
       "prompt": "quick --discuss --full implement rate limiting on the /api/upload endpoint",
       "expected_output": "Should parse both flags (--discuss and --full). Should show DISCUSS + FULL banner. In discuss phase: identify 2-4 gray areas about rate limiting (e.g., rate limits per user/IP, response when limited, storage for counters). Present gray areas via AskUserQuestion with multiSelect. Capture decisions in CONTEXT.md. Then spawn gsd-planner in quick-full mode with CONTEXT.md reference. Run plan-checker loop (max 2 iterations). Spawn gsd-executor. Run verification via gsd-verifier. Update STATE.md with Status column. Show completion banner with verification status.",
@@ -824,7 +775,7 @@
       ]
     },
     {
-      "id": 32,
+      "id": 30,
       "command": "quick",
       "prompt": "quick --full rename the UserProfile component to AccountProfile everywhere",
       "expected_output": "Should parse --full flag. Spawn gsd-planner in quick-full mode (must generate must_haves). Run plan-checker. Spawn gsd-executor. Run gsd-verifier. CONTEXT.md should NOT be created (no --discuss). STATE.md should have Status column.",
@@ -856,7 +807,7 @@
       ]
     },
     {
-      "id": 33,
+      "id": 31,
       "command": "quick",
       "prompt": "quick fix the typo in the footer (no .planning/ROADMAP.md exists)",
       "expected_output": "Should detect ROADMAP.md is missing from gsd-tools init quick response (roadmap_exists=false). Should error and tell user that quick mode requires an active project with ROADMAP.md. Should suggest /new-project. Should NOT proceed.",
@@ -880,7 +831,7 @@
       ]
     },
     {
-      "id": 34,
+      "id": 32,
       "command": "health",
       "prompt": "health",
       "expected_output": "Should run gsd-tools.cjs validate health, parse JSON output with status/errors/warnings/info, format output with banner (GSD Health Check), show status (HEALTHY/DEGRADED/BROKEN), list any errors with codes (E001-E005) and warnings (W001-W009). If repairable issues exist, show footer with 'Run: health --repair'.",
@@ -905,7 +856,7 @@
       ]
     },
     {
-      "id": 35,
+      "id": 33,
       "command": "health",
       "prompt": "health --repair",
       "expected_output": "Should run gsd-tools.cjs validate health --repair. Should show repairs performed (e.g., createConfig, resetConfig, regenerateState, addNyquistKey). Should re-run health check after repairs to confirm issues resolved. Should show final status.",
@@ -930,7 +881,7 @@
       ]
     },
     {
-      "id": 36,
+      "id": 34,
       "command": "revise-claude-md",
       "prompt": "revise-claude-md",
       "expected_output": "Should detect Session Learnings mode (no argument). Should reflect on session for missing context (bash commands, code style, testing approaches, environment quirks). Should find and read CLAUDE.md files. Should check for GSD project and DESIGN.md. Should read update-guidelines.md for rules. Should draft additions (one line per concept). Should show proposed changes with diff format and 'Why' rationale. Should ask for approval before applying. Should commit with 'docs: update CLAUDE.md with session learnings'.",
@@ -959,7 +910,7 @@
       ]
     },
     {
-      "id": 37,
+      "id": 35,
       "command": "revise-claude-md",
       "prompt": "revise-claude-md audit",
       "expected_output": "Should detect Full Audit mode. Should invoke skills/claude-md-improver/ completely. The improver skill handles discovery, quality assessment, scoring, and targeted updates. Should NOT duplicate the improver's work inline.",
@@ -980,7 +931,7 @@
       ]
     },
     {
-      "id": 38,
+      "id": 36,
       "command": "revise-claude-md",
       "prompt": "revise-claude-md init",
       "expected_output": "Should detect Initial Creation mode. Should read project context from /new-project steps (project name, tech stack, design system). Should read templates.md from claude-md-improver references. Should use the fhhs-skills Project template. Should generate CLAUDE.md under 40 lines with project name, tech stack, commands, architecture, code style, testing, planning, and gotchas sections. Should commit with 'docs: initialize CLAUDE.md with project conventions'.",
@@ -1009,7 +960,7 @@
       ]
     },
     {
-      "id": 39,
+      "id": 37,
       "command": "map-codebase",
       "prompt": "map-codebase",
       "expected_output": "Should run gsd-tools.cjs init map-codebase, create .planning/codebase/ directory, spawn 4 parallel gsd-codebase-mapper agents (tech, arch, quality, concerns) with run_in_background=true. Agents write documents directly (orchestrator does NOT receive document contents). Should verify all 7 documents created (STACK.md, INTEGRATIONS.md, ARCHITECTURE.md, STRUCTURE.md, CONVENTIONS.md, TESTING.md, CONCERNS.md). Should scan for secrets before committing. Should commit and show completion summary with line counts.",
@@ -1042,7 +993,7 @@
       ]
     },
     {
-      "id": 40,
+      "id": 38,
       "command": "map-codebase",
       "prompt": "map-codebase (codebase already mapped, .planning/codebase/ exists)",
       "expected_output": "Should detect existing .planning/codebase/ from init context (has_maps=true). Should list existing documents. Should offer 3 choices: Refresh (delete and remap), Update (selectively update), Skip (use existing). Should wait for user choice before proceeding.",
@@ -1063,7 +1014,7 @@
       ]
     },
     {
-      "id": 41,
+      "id": 39,
       "command": "help",
       "prompt": "help",
       "expected_output": "Should output ONLY the reference content from the command \u2014 the command tables for Build Pipeline, Engineering, Navigation, Design Quality, Task Management, Setup & Maintenance, plus Common Workflows, Files & Structure, Architecture, Non-Negotiable Disciplines, and Code Intelligence sections. Should NOT add project-specific analysis, git status, next-step suggestions, or any commentary beyond the reference.",
@@ -1096,8 +1047,8 @@
       ]
     },
     {
-      "id": 42,
-      "command": "critique",
+      "id": 40,
+      "command": "ui-critique",
       "prompt": "critique this metric card component from a design perspective",
       "expected_output": "Should identify AI slop tells: gradient text effect, glassmorphism backdrop-blur, oversized text-5xl hero numbers, decorative SVG blobs. Should recommend simpler, data-focused design that lets the numbers speak.",
       "files": [
@@ -1122,8 +1073,8 @@
       ]
     },
     {
-      "id": 43,
-      "command": "add-todo",
+      "id": 41,
+      "command": "todos",
       "prompt": "add-todo The modal z-index is wrong on the billing page, it shows behind the sidebar",
       "expected_output": "Should create .planning/todos/pending/ and .planning/todos/done/ if missing. Should extract content from arguments. Should infer area as 'ui' (modal, z-index, sidebar are UI concerns). Should check for duplicate todos. Should create file at .planning/todos/pending/YYYY-MM-DD-modal-z-index-billing.md with frontmatter (created, title, area: ui, files). Should update STATE.md todo count. Should commit.",
       "files": [],
@@ -1151,8 +1102,8 @@
       ]
     },
     {
-      "id": 44,
-      "command": "add-todo",
+      "id": 42,
+      "command": "todos",
       "prompt": "add-todo",
       "expected_output": "Should detect no arguments provided. Should extract task from current conversation context (what was just discussed). If conversation has no clear task context, should prompt user interactively for the todo description.",
       "files": [],
@@ -1172,8 +1123,8 @@
       ]
     },
     {
-      "id": 45,
-      "command": "check-todos",
+      "id": 43,
+      "command": "todos",
       "prompt": "check-todos",
       "expected_output": "Should initialize todo context via gsd-tools. Should list all pending todos from .planning/todos/pending/ with relative timestamps. Should allow user to select a todo. Should load selected todo's full context. Should check ROADMAP.md for phase match. Should offer actions: work on it, add to phase plan, create phase, brainstorm, put back. Should execute chosen action and update STATE.md.",
       "files": [],
@@ -1201,7 +1152,7 @@
       ]
     },
     {
-      "id": 46,
+      "id": 44,
       "command": "settings",
       "prompt": "settings",
       "expected_output": "Should present current configuration from .planning/config.json. Should show options for model profile (quality/balanced/budget), workflow toggles (research, plan_check, verifier, auto_advance, nyquist_validation), and git branching (none/per-phase/per-milestone). Should save changes to .planning/config.json. Should offer to save as global defaults to ~/.gsd/defaults.json.",
@@ -1230,7 +1181,7 @@
       ]
     },
     {
-      "id": 47,
+      "id": 45,
       "command": "build",
       "prompt": "build the plan (plan has only frontend tasks - React component refactor, new page layout, CSS updates)",
       "expected_output": "Should detect all tasks are frontend. Should dispatch subagents with frontend-design directives from skills/frontend-design/. Should run design gates after execution (/critique -> /polish -> /normalize). Should read .planning/DESIGN.md for design context during critique. Should check for frontend anti-patterns (AI slop, emoji in UI, generic gradients).",
@@ -1262,7 +1213,7 @@
       ]
     },
     {
-      "id": 48,
+      "id": 46,
       "command": "fix",
       "prompt": "the CSS grid layout breaks on tablet. elements overlap at 768px width",
       "expected_output": "Should triage as MODERATE (2-4 files, single subsystem - CSS/layout). Should use systematic debugging to identify the breakpoint issue. Should apply TDD fix. Should detect frontend work and check for design system consistency. Should run /simplify pass (MODERATE triggers simplify). Should verify fix at the specific breakpoint.",
@@ -1287,35 +1238,7 @@
       ]
     },
     {
-      "id": 49,
-      "command": "verify",
-      "prompt": "verify (no phase specified, working on current phase from STATE.md)",
-      "expected_output": "Should detect scope from STATE.md current position (no explicit phase argument). Should load PLAN.md files from the current phase directory. Should run full dual verification. Should write VERIFICATION.md in the phase directory. If frontend work detected, should suggest /verify-ui.",
-      "files": [],
-      "assertions": [
-        {
-          "text": "Detects scope from STATE.md",
-          "type": "behavioral"
-        },
-        {
-          "text": "Runs dual verification (goal-backward + evidence-based)",
-          "type": "behavioral"
-        },
-        {
-          "text": "Writes VERIFICATION.md",
-          "type": "output"
-        },
-        {
-          "text": "Suggests /verify-ui for frontend work",
-          "type": "output"
-        }
-      ],
-      "scenario_requires": [
-        "gsd_project"
-      ]
-    },
-    {
-      "id": 50,
+      "id": 47,
       "command": "progress",
       "prompt": "progress (phase has UAT.md with status: diagnosed and gaps needing fixes)",
       "expected_output": "Should detect UAT gaps (uat_with_gaps > 0) and show Route E. Should display UAT Gaps Found message with gap count. Should suggest /plan to plan fixes for the gaps. Should suggest /clear first for fresh context.",
@@ -1343,7 +1266,7 @@
       ]
     },
     {
-      "id": 51,
+      "id": 48,
       "command": "quick",
       "prompt": "quick --discuss add webhook support for new user signups",
       "expected_output": "Should parse --discuss flag (no --full). Should show DISCUSS banner. Should identify gray areas specific to webhooks (e.g., payload format, retry policy, authentication/signing, which events to support). Should present gray areas via AskUserQuestion with multiSelect. Should capture decisions in CONTEXT.md. Should spawn gsd-planner in standard quick mode (NOT quick-full). Should NOT run plan-checker or verifier (no --full). STATE.md table should NOT have Status column.",
@@ -1380,7 +1303,7 @@
       ]
     },
     {
-      "id": 52,
+      "id": 49,
       "command": "research",
       "prompt": "research what auth providers are available for Next.js. we need social login and magic links",
       "expected_output": "Should check GSD project exists. Should identify Ecosystem research mode ('what exists?'). Should dispatch Task subagent with instructions for Firecrawl/Context7. Should produce prescriptive output ('Use X because Y', not 'Consider X or Y'). Should tag findings with confidence levels. Should save to .planning/phases/XX-name/XX-RESEARCH.md.",
@@ -1405,7 +1328,7 @@
       ]
     },
     {
-      "id": 53,
+      "id": 50,
       "command": "new-project",
       "prompt": "I want to create a CLI tool for managing dotfiles. pure node.js, no framework needed, just a simple npm package",
       "expected_output": "Should walk through vision questions. Should NOT suggest Next.js/React/Tailwind defaults (this is a CLI tool, not a web app). Should adapt stack to CLI context (Node.js, Commander/yargs, minimal deps). Should still invoke /teach-impeccable but adapted for CLI (not visual design). Should create .planning/ structure. CLAUDE.md should reflect CLI-specific conventions (not web conventions).",
@@ -1430,7 +1353,7 @@
       ]
     },
     {
-      "id": 54,
+      "id": 51,
       "command": "polish",
       "prompt": "polish the settings page at src/app/settings/page.tsx",
       "expected_output": "Should read the file, check .planning/DESIGN.md for design context, then fix alignment, spacing, consistency, and detail issues. Should commit changes.",
@@ -1459,70 +1382,8 @@
       ]
     },
     {
-      "id": 55,
-      "command": "harden",
-      "prompt": "harden the checkout form at src/components/CheckoutForm.tsx \u2014 make it handle edge cases",
-      "expected_output": "Should read the component, add error handling for failed payments, handle empty/invalid inputs, add loading states, handle network errors gracefully. Should check i18n readiness.",
-      "files": [],
-      "assertions": [
-        {
-          "text": "Adds error handling for edge cases",
-          "type": "output"
-        },
-        {
-          "text": "Handles loading/error states",
-          "type": "output"
-        },
-        {
-          "text": "Checks i18n readiness",
-          "type": "behavioral"
-        },
-        {
-          "text": "Commits changes with descriptive message",
-          "type": "output"
-        },
-        {
-          "text": "Does not over-engineer beyond the specific request",
-          "type": "guard"
-        }
-      ]
-    },
-    {
-      "id": 56,
-      "command": "adapt",
-      "prompt": "adapt the dashboard layout to work on mobile. currently it's desktop-only with a sidebar",
-      "expected_output": "Should analyze current layout, add responsive breakpoints, convert sidebar to mobile-friendly navigation (bottom nav or hamburger), ensure touch targets are 44px+, test at 375px width.",
-      "files": [],
-      "assertions": [
-        {
-          "text": "Reads .planning/DESIGN.md for design context",
-          "type": "behavioral"
-        },
-        {
-          "text": "Adds responsive breakpoints",
-          "type": "output"
-        },
-        {
-          "text": "Converts sidebar for mobile",
-          "type": "output"
-        },
-        {
-          "text": "Ensures minimum 44px touch target sizes",
-          "type": "behavioral"
-        },
-        {
-          "text": "Commits changes with descriptive message",
-          "type": "output"
-        },
-        {
-          "text": "Does not over-engineer beyond the specific request",
-          "type": "guard"
-        }
-      ]
-    },
-    {
-      "id": 57,
-      "command": "animate",
+      "id": 52,
+      "command": "ui-animate",
       "prompt": "add animations to the modal component at src/components/Modal.tsx \u2014 it just snaps open/closed",
       "expected_output": "Should add entrance/exit animations (fade + scale or slide), use CSS transitions or framer-motion, respect prefers-reduced-motion, keep animations under 300ms for responsiveness.",
       "files": [],
@@ -1554,36 +1415,7 @@
       ]
     },
     {
-      "id": 58,
-      "command": "distill",
-      "prompt": "distill the user profile page \u2014 it has too many sections and options, feels overwhelming",
-      "expected_output": "Should analyze the page, identify low-value sections, consolidate related settings, apply progressive disclosure (hide advanced options), reduce visual noise.",
-      "files": [],
-      "assertions": [
-        {
-          "text": "Identifies and removes low-value elements",
-          "type": "behavioral"
-        },
-        {
-          "text": "Applies progressive disclosure",
-          "type": "output"
-        },
-        {
-          "text": "Reduces visual complexity",
-          "type": "output"
-        },
-        {
-          "text": "Commits changes with descriptive message",
-          "type": "output"
-        },
-        {
-          "text": "Does not over-engineer beyond the specific request",
-          "type": "guard"
-        }
-      ]
-    },
-    {
-      "id": 59,
+      "id": 53,
       "command": "normalize",
       "prompt": "normalize the buttons across the app \u2014 some are rounded, some square, inconsistent padding",
       "expected_output": "Should scan for button variants, identify inconsistencies against the design system or established patterns, standardize border-radius, padding, font-size, and color usage.",
@@ -1616,7 +1448,7 @@
       ]
     },
     {
-      "id": 60,
+      "id": 54,
       "command": "audit",
       "prompt": "audit the landing page at src/app/page.tsx",
       "expected_output": "Should evaluate across accessibility (WCAG compliance, alt texts, keyboard nav), performance (image optimization, lazy loading), theming (dark mode support), and responsive design. Should produce a severity-rated report.",
@@ -1637,36 +1469,7 @@
       ]
     },
     {
-      "id": 61,
-      "command": "onboard",
-      "prompt": "design an onboarding flow for new users \u2014 right now they just land on an empty dashboard after signup",
-      "expected_output": "Should design a multi-step onboarding: welcome screen, key feature highlights, first action prompt (e.g., create first project), progress indicator. Should handle empty states with helpful CTAs.",
-      "files": [],
-      "assertions": [
-        {
-          "text": "Designs multi-step onboarding flow",
-          "type": "output"
-        },
-        {
-          "text": "Handles empty states with helpful CTAs",
-          "type": "output"
-        },
-        {
-          "text": "Includes first action prompt",
-          "type": "output"
-        },
-        {
-          "text": "Adds progress indicator for onboarding steps",
-          "type": "output"
-        },
-        {
-          "text": "Does not over-engineer beyond the specific request",
-          "type": "guard"
-        }
-      ]
-    },
-    {
-      "id": 62,
+      "id": 55,
       "command": "update",
       "prompt": "update",
       "expected_output": "Should check current plugin version against latest available version. If update available, should download and install. Should clear statusline cache after updating. Should report what changed (version diff).",
@@ -1694,7 +1497,7 @@
       ]
     },
     {
-      "id": 63,
+      "id": 56,
       "command": "build",
       "prompt": "Build the auth plan at .planning/phases/01-auth/01-01-PLAN.md. It has 3 tasks \u2014 JWT auth middleware, refresh token rotation (both backend, independent), and a login form that depends on both.",
       "expected_output": "Should detect GSD mode, find the plan, identify 2 waves (wave 1: 2 parallel backend tasks, wave 2: 1 frontend task). Dispatch general-purpose subagents with Next.js performance rules in prompts (waterfall avoidance, bundle awareness). Spec gates run per wave. Design gates (critique \u2192 polish \u2192 normalize) run for the frontend login form task. Simplify pass runs after all waves. Then invoke /review --quick for post-build quality checks (code-reviewer agent). SUMMARY.md generated with correct frontmatter. PR title follows conventional commit format.",
@@ -1773,7 +1576,7 @@
       ]
     },
     {
-      "id": 64,
+      "id": 57,
       "command": "build",
       "prompt": "Execute the API refactor plan at .planning/phases/02-api/02-01-PLAN.md",
       "expected_output": "Should build the API refactor plan. During /review, security scan finds SQL injection via string concatenation (CRITICAL) and hardcoded JWT secret (CRITICAL) in existing code. CRITICAL findings BLOCK promotion. Fix agent is dispatched to remediate CRITICAL findings (parameterized queries, env-based secrets). After fix, re-scan verifies remediation. MEDIUM findings (missing CORS) are logged but do not block. Promotion proceeds after re-scan passes.",
@@ -1834,7 +1637,7 @@
       ]
     },
     {
-      "id": 65,
+      "id": 58,
       "command": "build",
       "prompt": "Build the dashboard plan at .planning/phases/02-dashboard/02-01-PLAN.md",
       "expected_output": "Should identify 2 waves. Wave 1 is the component task (no Playwright involvement) \u2014 subagent prompt should NOT include Playwright guidance. Wave 2 is the Playwright test task \u2014 subagent detects *.spec.* files in task and loads Playwright guidance (Page Object Model, locator strategies, auto-waiting). Spec gates run per wave. /review runs after both waves. SUMMARY.md notes Playwright tests written.",
@@ -1883,7 +1686,7 @@
       ]
     },
     {
-      "id": 66,
+      "id": 59,
       "command": "build",
       "prompt": "Build the auth plan at .planning/phases/01-auth/01-01-PLAN.md",
       "expected_output": "Should build the auth plan. During spec gate, the gate catches any usage in the subagent output (e.g., function params typed as any). This is flagged as BLOCKING \u2014 not advisory. Fix agent replaces any with specific types (unknown + type guards, or concrete interface types). Fix happens before the next wave starts. as any assertions are also rejected. Suggests unknown or proper type guard as alternatives.",
@@ -1934,7 +1737,7 @@
       ]
     },
     {
-      "id": 67,
+      "id": 60,
       "command": "fix",
       "prompt": "The user profile page crashes when the user has no avatar \u2014 TypeError: Cannot read properties of null (reading 'url'). It's in src/components/profile.tsx",
       "expected_output": "Should triage as MODERATE (single component, one subsystem). Invokes systematic debugging to locate null reference in profile.tsx (accessing avatar.url when avatar is null). TDD approach: writes failing test first reproducing the null avatar case, then fixes with optional chaining or null check, confirms test passes. Frontend check reads DESIGN.md for fallback avatar styling. Simplify runs before /review. /review runs quality review on the fix diff, security scan on changed files, TS strictness check. Fix commit uses fix(profile): prefix. Does NOT fix unrelated pre-existing issues.",
@@ -1993,7 +1796,7 @@
       ]
     },
     {
-      "id": 68,
+      "id": 61,
       "command": "refactor",
       "prompt": "Refactor the auth module to extract token management into a separate service. src/lib/auth.ts currently handles JWT signing, verification, session management, and refresh token rotation \u2014 split token concerns out into src/lib/token-service.ts",
       "expected_output": "Should scope with LSP findReferences to map blast radius (all files importing from auth.ts). Captures baseline test suite (must be GREEN). Plans atomic steps ordered safest-first (create new file, move functions, update imports, remove old code). Executes with tests green at every step \u2014 reverts immediately if tests go red. Simplify pass after completion. /review runs quality review (behavior preservation focus), security scan (extracted auth service), TS strictness check, and if Next.js files touched, perf patterns. Atomic commits with refactor(auth): prefix.",
@@ -2052,7 +1855,7 @@
       ]
     },
     {
-      "id": 69,
+      "id": 62,
       "command": "secure",
       "prompt": "Scan the whole codebase for security issues",
       "expected_output": "Should scope the full codebase and dispatch exactly 4 parallel scanning agents. Agent findings: SQL injection via string concatenation in api/users/route.ts (CRITICAL), XSS via dangerouslySetInnerHTML in comment.tsx (CRITICAL), hardcoded JWT secret in auth.ts (CRITICAL), session stored in localStorage (HIGH), .env.example with real-looking API keys (CRITICAL), missing CORS on data route (MEDIUM), no auth check on data route (HIGH). Report has file:line references, findings grouped by severity then category. Overlapping findings from different agents are deduplicated.",
@@ -2111,7 +1914,7 @@
       ]
     },
     {
-      "id": 70,
+      "id": 63,
       "command": "review",
       "prompt": "Review my changes before creating a PR",
       "expected_output": "Should run the full /review pipeline: code quality review first (code-reviewer agent), then security scan (4 parallel agents), then TS strictness check (any usage in diff). Gate decision aggregates all findings. If Next.js project detected, includes perf patterns in review. Review report includes quality score, security findings, and TS strictness results. Presents promotion options (PR/merge/keep/discard from finishing-a-development-branch). PR title enforces conventional commit format.",
@@ -2165,43 +1968,7 @@
       ]
     },
     {
-      "id": 71,
-      "command": "release",
-      "prompt": "Release a new version",
-      "expected_output": "Should gather changes from git log since last tag, classify conventional commit types (feat, fix, refactor, chore, docs). Suggest version bump based on changes (feat \u2192 minor, fix \u2192 patch, breaking \u2192 major). Generate conventional changelog with groups: feat \u2192 Added, fix \u2192 Fixed, refactor \u2192 Changed. Bump both plugin.json and marketplace.json to the same version. Create commit + tag + push + GitHub release. Internal chore/docs commits excluded from user-facing changelog. Asks user for version bump approval before proceeding.",
-      "files": [],
-      "assertions": [
-        {
-          "text": "Checks git log for changes since last release tag",
-          "type": "behavioral"
-        },
-        {
-          "text": "Detects no new commits to release",
-          "type": "behavioral"
-        },
-        {
-          "text": "Reports nothing to release to user",
-          "type": "output"
-        },
-        {
-          "text": "Does not create empty release",
-          "type": "guard"
-        },
-        {
-          "text": "Does not bump version without changes",
-          "type": "guard"
-        },
-        {
-          "text": "Mentions last release version",
-          "type": "output"
-        }
-      ],
-      "scenario_requires": [
-        "gsd_project"
-      ]
-    },
-    {
-      "id": 72,
+      "id": 64,
       "command": "build",
       "prompt": "Build the plan at plan.md in the project root",
       "expected_output": "Should detect that .planning/PROJECT.md is missing (no GSD project initialized). Stops immediately and tells the user to run /fh:new-project first. Does NOT proceed with any execution \u2014 no subagent dispatch, no plan parsing, no wave analysis.",
@@ -2225,7 +1992,7 @@
       ]
     },
     {
-      "id": 73,
+      "id": 65,
       "command": "plan-work",
       "prompt": "Plan and build adding user settings page with a dark mode toggle. The project already has a ThemeProvider and uses Tailwind dark: prefix.",
       "expected_output": "Should run /plan-work first: skips research (dark mode toggle is well-known pattern), brainstorms design options (toggle placement, persistence strategy, system preference detection), discusses with user, derives must_haves with user-facing truths, creates PLAN.md with proper frontmatter. Then /build: loads Next.js perf rules, dispatches subagents, spec gate per wave, design gates (critique \u2192 polish \u2192 normalize) for frontend components. Design gates run after spec gates. Simplify before /review. /review runs full pipeline (quality + security + TS strictness). SUMMARY.md generated with must_haves verification. PR with conventional commit title.",
@@ -2302,7 +2069,7 @@
       ]
     },
     {
-      "id": 74,
+      "id": 66,
       "command": "fix",
       "prompt": "API returns 500 on /api/users and /api/billing simultaneously, and the dashboard shows stale data. Three independent failures.",
       "expected_output": "Should triage as PARALLEL (3+ independent failures across different subsystems). Dispatches parallel gsd-debugger agents \u2014 one per failing subsystem (users API, billing API, dashboard staleness). Each debugger uses scientific method (hypothesis \u2192 test \u2192 conclude). TDD fix per root cause. Simplify after all fixes. /review security scan catches SQL injection in /api/users route (CRITICAL). BLOCKS on CRITICAL. Fix agent addresses SQL injection. Re-scan after security fix. SUMMARY.md notes all three subsystem fixes plus security remediation.",
@@ -2366,7 +2133,7 @@
       ]
     },
     {
-      "id": 75,
+      "id": 67,
       "command": "normalize",
       "prompt": "normalize this project's components to use the design system consistently",
       "expected_output": "Should detect that user-form.tsx uses raw HTML inputs/buttons instead of shadcn Input/Button components, sidebar uses hard-coded hex colors instead of CSS variables, and login page duplicates validation instead of using shared validators.",
@@ -2402,70 +2169,7 @@
       ]
     },
     {
-      "id": 76,
-      "command": "optimize",
-      "prompt": "optimize performance in this dashboard app",
-      "expected_output": "Should detect client-side waterfall in page.tsx (sequential useEffect fetches should be parallel server-side), layout thrashing in chart-widget (reading offsetWidth in loop), missing Suspense boundaries, unoptimized images in user-avatar (raw img instead of next/image), and search input in data-table triggering full re-renders without debounce.",
-      "files": [
-        "evals/fixtures/nextjs-app-deep/src/app/page.tsx",
-        "evals/fixtures/nextjs-app-deep/src/components/chart-widget.tsx",
-        "evals/fixtures/nextjs-app-deep/src/components/data-table.tsx",
-        "evals/fixtures/nextjs-app-deep/src/components/user-avatar.tsx",
-        "evals/fixtures/nextjs-app-deep/src/hooks/use-debounce.ts",
-        "evals/fixtures/nextjs-app-deep/CLAUDE.md"
-      ],
-      "assertions": [
-        {
-          "text": "Detects client-side waterfall (sequential fetches in useEffect)",
-          "type": "behavioral"
-        },
-        {
-          "text": "Detects layout thrashing (offsetWidth reads in loop)",
-          "type": "behavioral"
-        },
-        {
-          "text": "Detects missing debounce on data-table search despite hook existing",
-          "type": "behavioral"
-        },
-        {
-          "text": "Detects unoptimized images (raw img instead of next/image)",
-          "type": "behavioral"
-        },
-        {
-          "text": "Does not over-engineer beyond the specific request",
-          "type": "guard"
-        }
-      ]
-    },
-    {
-      "id": 77,
-      "command": "harden",
-      "prompt": "harden the user-facing components for edge cases and error handling",
-      "expected_output": "Should detect missing error state rendering in user-form, missing keyboard dismiss on notification-toast, toast stacking without limit, generic error messages in login page, hard-coded English strings (i18n concern), no empty state for users page, and missing loading states.",
-      "files": [
-        "evals/fixtures/nextjs-app-deep/src/components/user-form.tsx",
-        "evals/fixtures/nextjs-app-deep/src/components/notification-toast.tsx",
-        "evals/fixtures/nextjs-app-deep/src/app/login/page.tsx",
-        "evals/fixtures/nextjs-app-deep/src/app/users/page.tsx",
-        "evals/fixtures/nextjs-app-deep/CLAUDE.md"
-      ],
-      "assertions": [
-        {
-          "text": "Detects missing error states in user-form (validates but doesn't show errors)",
-          "type": "behavioral"
-        },
-        {
-          "text": "Detects missing keyboard dismiss and auto-dismiss on toasts",
-          "type": "behavioral"
-        },
-        {
-          "text": "Detects hard-coded strings as i18n concern",
-          "type": "behavioral"
-        }
-      ]
-    },
-    {
-      "id": 78,
+      "id": 68,
       "command": "refactor",
       "prompt": "refactor this codebase \u2014 there's a 180-line component and a kitchen sink utility file that need breaking up",
       "expected_output": "Should identify data-table.tsx as a god component (180+ lines mixing search, sort, pagination, rendering) and recommend splitting. Should identify utils.ts as kitchen-sink (cn() plus 5 unrelated functions) and recommend extracting. Should identify duplicated fetch pattern in api.ts and recommend shared wrapper.",
@@ -2494,7 +2198,7 @@
       ]
     },
     {
-      "id": 79,
+      "id": 69,
       "command": "fix",
       "prompt": "the data-table test is failing, can you fix it?",
       "expected_output": "Should diagnose the prop interface mismatch: data-table.test.tsx passes `columns` prop but the DataTable component expects `fields`. Should fix the test to use the correct prop name, not change the component interface. Should follow TDD discipline.",
@@ -2520,7 +2224,7 @@
       ]
     },
     {
-      "id": 80,
+      "id": 70,
       "command": "polish",
       "prompt": "polish the components in this dashboard for shipping quality",
       "expected_output": "Should detect spacing/alignment inconsistencies, missing focus states, inconsistent border-radius usage, hard-coded z-index values (z-[9999] on toast), and color inconsistencies between components using design tokens vs hard-coded values.",
@@ -2561,84 +2265,8 @@
       ]
     },
     {
-      "id": 81,
-      "command": "extract",
-      "prompt": "find duplicated patterns and extract them into shared components or utilities",
-      "expected_output": "Should detect duplicated email validation in validators.ts, user-form.tsx, and login/page.tsx. Should detect that user-form bypasses existing shadcn components. Should detect duplicated fetch+error pattern in api.ts.",
-      "files": [
-        "evals/fixtures/nextjs-app-deep/src/lib/validators.ts",
-        "evals/fixtures/nextjs-app-deep/src/components/user-form.tsx",
-        "evals/fixtures/nextjs-app-deep/src/app/login/page.tsx",
-        "evals/fixtures/nextjs-app-deep/src/lib/api.ts",
-        "evals/fixtures/nextjs-app-deep/src/components/ui/input.tsx",
-        "evals/fixtures/nextjs-app-deep/src/components/ui/button.tsx",
-        "evals/fixtures/nextjs-app-deep/CLAUDE.md"
-      ],
-      "assertions": [
-        {
-          "text": "Detects duplicated email validation across 3 files",
-          "type": "behavioral"
-        },
-        {
-          "text": "Detects duplicated fetch pattern in api.ts",
-          "type": "behavioral"
-        },
-        {
-          "text": "Recommends extracting shared validation utility",
-          "type": "output"
-        },
-        {
-          "text": "Commits changes with descriptive message",
-          "type": "output"
-        },
-        {
-          "text": "Does not over-engineer beyond the specific request",
-          "type": "guard"
-        }
-      ]
-    },
-    {
-      "id": 82,
-      "command": "adapt",
-      "prompt": "make this dashboard work on mobile and tablet devices",
-      "expected_output": "Should detect fixed 280px sidebar width, min-w-[800px] on users page, and lack of responsive breakpoints. Should recommend hamburger menu for mobile sidebar, responsive table layout, and fluid widths.",
-      "files": [
-        "evals/fixtures/nextjs-app-deep/src/components/sidebar.tsx",
-        "evals/fixtures/nextjs-app-deep/src/app/users/page.tsx",
-        "evals/fixtures/nextjs-app-deep/src/app/settings/page.tsx",
-        "evals/fixtures/nextjs-app-deep/src/components/data-table.tsx",
-        "evals/fixtures/nextjs-app-deep/CLAUDE.md"
-      ],
-      "assertions": [
-        {
-          "text": "Detects fixed 280px sidebar width as non-responsive",
-          "type": "behavioral"
-        },
-        {
-          "text": "Detects min-w-[800px] on users page as mobile-hostile",
-          "type": "behavioral"
-        },
-        {
-          "text": "Recommends hamburger/overlay pattern for mobile navigation",
-          "type": "output"
-        },
-        {
-          "text": "Ensures minimum 44px touch target sizes for interactive elements",
-          "type": "behavioral"
-        },
-        {
-          "text": "Commits changes with descriptive message",
-          "type": "output"
-        },
-        {
-          "text": "Does not over-engineer beyond the specific request",
-          "type": "guard"
-        }
-      ]
-    },
-    {
-      "id": 83,
-      "command": "critique",
+      "id": 71,
+      "command": "ui-critique",
       "prompt": "review the e2e tests and suggest improvements following Playwright best practices",
       "expected_output": "Should read the frontend-design skill for critique methodology, then produce a structured critique report. Should detect CSS selector anti-patterns (.email-input, .btn-primary, .text-red-600), recommend role-based or test-id locators, suggest Page Object Model pattern, identify missing error state test coverage, and rate each finding by severity.",
       "files": [
@@ -2675,7 +2303,7 @@
       ]
     },
     {
-      "id": 84,
+      "id": 72,
       "command": "progress",
       "prompt": "where are we on this project? what's done and what's remaining?",
       "expected_output": "Should read STATE.md and ROADMAP.md, report Phase 01 (Auth) is COMPLETE with all requirements satisfied, Phase 02 (Dashboard) is IN_PROGRESS with task 1 done and task 2 in-progress, Phases 03-04 are PLANNED. Should summarize overall progress as ~25-30% complete.",
@@ -2706,7 +2334,7 @@
       ]
     },
     {
-      "id": 85,
+      "id": 73,
       "command": "resume-work",
       "prompt": "I'm coming back to this project after a break, where was I?",
       "expected_output": "Should restore context from STATE.md showing Phase 02 in-progress, identify 02-01 plan with task 2 in-progress (widget system), mention pending todos (rate limiting, fetch wrapper, data-table regression), and suggest next action.",
@@ -2738,38 +2366,7 @@
       ]
     },
     {
-      "id": 86,
-      "command": "verify",
-      "prompt": "verify that Phase 01 (auth) was completed correctly",
-      "expected_output": "Should compare 01-01-PLAN.md requirements against 01-01-SUMMARY.md evidence, check that claimed files exist, verify R-001/R-002/R-003 are covered, and note any gaps (e.g., auth.test.ts only tests happy path, hardcoded JWT secret is a security issue in the 'completed' phase).",
-      "files": [
-        "evals/fixtures/nextjs-app-deep/.planning/phases/01-auth/01-01-PLAN.md",
-        "evals/fixtures/nextjs-app-deep/.planning/phases/01-auth/01-01-SUMMARY.md",
-        "evals/fixtures/nextjs-app-deep/.planning/ROADMAP.md",
-        "evals/fixtures/nextjs-app-deep/src/lib/auth.ts",
-        "evals/fixtures/nextjs-app-deep/src/__tests__/auth.test.ts",
-        "evals/fixtures/nextjs-app-deep/CLAUDE.md"
-      ],
-      "assertions": [
-        {
-          "text": "Compares PLAN requirements against SUMMARY evidence",
-          "type": "behavioral"
-        },
-        {
-          "text": "Verifies claimed artifacts exist on disk",
-          "type": "behavioral"
-        },
-        {
-          "text": "Notes security concern in completed auth implementation",
-          "type": "behavioral"
-        }
-      ],
-      "scenario_requires": [
-        "gsd_project"
-      ]
-    },
-    {
-      "id": 87,
+      "id": 74,
       "command": "health",
       "prompt": "check the health of this project's planning directory",
       "expected_output": "Should validate .planning/ structure, confirm PROJECT.md/STATE.md/ROADMAP.md exist and are consistent, check that phase directories have proper PLAN/SUMMARY pairing (01-auth has both, 02-dashboard has PLAN only), verify todos are valid, and report overall health status.",
@@ -2801,8 +2398,8 @@
       ]
     },
     {
-      "id": 88,
-      "command": "check-todos",
+      "id": 75,
+      "command": "todos",
       "prompt": "what todos do I have pending?",
       "expected_output": "Should list 3 todos: todo-001 (rate limiting, pending, high priority, security), todo-002 (fetch wrapper, pending, medium, refactor), todo-003 (data-table regression, in-progress, high, bug). Should categorize by priority and suggest which to tackle first.",
       "files": [
@@ -2828,75 +2425,7 @@
       ]
     },
     {
-      "id": 89,
-      "command": "onboard",
-      "prompt": "the dashboard page has no empty state or loading experience, can you improve the onboarding?",
-      "expected_output": "Should detect that page.tsx shows generic 'Loading...' text with no skeleton, has no empty state when data is null/empty, and provides no first-time user guidance. Should recommend skeleton loaders, empty state illustrations with CTAs, and progressive disclosure.",
-      "files": [
-        "evals/fixtures/nextjs-app-deep/src/app/page.tsx",
-        "evals/fixtures/nextjs-app-deep/src/app/users/page.tsx",
-        "evals/fixtures/nextjs-app-deep/src/components/data-table.tsx",
-        "evals/fixtures/nextjs-app-deep/.planning/DESIGN.md",
-        "evals/fixtures/nextjs-app-deep/CLAUDE.md"
-      ],
-      "assertions": [
-        {
-          "text": "Detects missing skeleton/loading states",
-          "type": "behavioral"
-        },
-        {
-          "text": "Detects missing empty states for zero-data scenarios",
-          "type": "behavioral"
-        },
-        {
-          "text": "Recommends specific empty state patterns with CTAs",
-          "type": "output"
-        },
-        {
-          "text": "Commits changes with descriptive message",
-          "type": "output"
-        },
-        {
-          "text": "Does not over-engineer beyond the specific request",
-          "type": "guard"
-        }
-      ]
-    },
-    {
-      "id": 90,
-      "command": "clarify",
-      "prompt": "improve the error messages and microcopy on the login page",
-      "expected_output": "Should detect generic 'Something went wrong' error that doesn't help users, identify that validation messages could be more helpful (e.g., 'Please fill in all fields' is vague), and suggest more actionable, specific error copy.",
-      "files": [
-        "evals/fixtures/nextjs-app-deep/src/app/login/page.tsx",
-        "evals/fixtures/nextjs-app-deep/src/components/user-form.tsx",
-        "evals/fixtures/nextjs-app-deep/CLAUDE.md"
-      ],
-      "assertions": [
-        {
-          "text": "Identifies 'Something went wrong' as unhelpful generic error",
-          "type": "behavioral"
-        },
-        {
-          "text": "Suggests more specific, actionable error messages",
-          "type": "output"
-        },
-        {
-          "text": "Improves form field labels or placeholder text",
-          "type": "output"
-        },
-        {
-          "text": "Commits changes with descriptive message",
-          "type": "output"
-        },
-        {
-          "text": "Does not over-engineer beyond the specific request",
-          "type": "guard"
-        }
-      ]
-    },
-    {
-      "id": 91,
+      "id": 76,
       "command": "secure",
       "prompt": "scan just the changed files for security issues (default scope, not --full)",
       "expected_output": "Should use default scoping (git diff from merge-base, not full codebase). Should compute merge-base, collect changed + staged + unstaged file list, filter to source files, deduplicate. Should still dispatch 4 parallel agents on the scoped file set. Report should note 'Scanning N files' with the scoped count, not the full codebase count.",
@@ -2928,7 +2457,7 @@
       ]
     },
     {
-      "id": 92,
+      "id": 77,
       "command": "secure",
       "prompt": "security scan --full on just the auth module: src/lib/auth.ts and the login route",
       "expected_output": "Should detect hardcoded JWT secret 'acme-dashboard-secret-2024' (CRITICAL), localStorage for token storage (HIGH), 'as TokenPayload' type assertion bypassing type safety, error details leaked in login route catch (String(error) exposes internals), and hardcoded role 'viewer' in login. Gate output should be BLOCK due to CRITICAL (hardcoded secret).",
@@ -2964,7 +2493,7 @@
       ]
     },
     {
-      "id": 93,
+      "id": 78,
       "command": "secure",
       "prompt": "run a security scan on the data route at src/app/api/data/route.ts",
       "expected_output": "Should detect user-controlled table name passed directly to supabase.from(table) \u2014 allows querying arbitrary tables (CRITICAL IDOR/injection). Should detect missing authentication check (HIGH). Should detect no CORS configuration (MEDIUM). Gate output should be BLOCK.",
@@ -2995,7 +2524,7 @@
       ]
     },
     {
-      "id": 94,
+      "id": 79,
       "command": "secure",
       "prompt": "check the comment-card and comments API for XSS vulnerabilities",
       "expected_output": "Should detect dangerouslySetInnerHTML with user-provided content (comment.content) in comment-card.tsx as CRITICAL stored XSS. Should detect that comments POST route accepts raw body.content without sanitization. Gate output should be BLOCK. Fix should recommend sanitizing HTML (DOMPurify) or using text rendering instead of dangerouslySetInnerHTML.",
@@ -3026,7 +2555,7 @@
       ]
     },
     {
-      "id": 95,
+      "id": 80,
       "command": "secure",
       "prompt": "scan the users API route for security issues",
       "expected_output": "Should detect POST accepting arbitrary body fields (mass assignment \u2014 user controls what gets inserted). Should detect DELETE exposed without authentication. Should detect no rate limiting on operations. Should note that error.message from Supabase is returned verbatim (information disclosure). Report should include file:line references.",
@@ -3057,7 +2586,7 @@
       ]
     },
     {
-      "id": 96,
+      "id": 81,
       "command": "review",
       "prompt": "review my changes \u2014 I only touched CSS files (globals.css and a few component styles)",
       "expected_output": "Should run full review pipeline: quality review (code-reviewer), security scan (should find minimal issues in CSS-only changes), evidence verification (tests, build, lint). TS strictness check should report 'No any found' since CSS has no TS. Should detect frontend work and suggest /fh:verify-ui for visual verification. Should NOT include Next.js perf patterns for CSS-only changes unless components were touched.",
@@ -3086,7 +2615,7 @@
       ]
     },
     {
-      "id": 97,
+      "id": 82,
       "command": "review",
       "prompt": "review \u2014 the diff has several uses of 'any' type in the new service files",
       "expected_output": "Should run TS strictness check (Step 4) and detect 'any' usage in added lines. Should flag each instance with file and line. Should BLOCK promotion because 'any' in new code is a blocking finding per the gate decision table. Should recommend replacing with proper types (unknown + type guards or concrete interfaces). Should NOT proceed to promotion until any usage is fixed.",
@@ -3115,7 +2644,7 @@
       ]
     },
     {
-      "id": 98,
+      "id": 83,
       "command": "review",
       "prompt": "review my changes (tests are failing \u2014 3 out of 20 tests red)",
       "expected_output": "Should run evidence verification (Step 3) and detect failing tests from fresh test run output. Should report: '20 tests total, 17 passed, 3 failed' with exit code. Should BLOCK promotion because verification failures are blocking per gate table. Should diagnose which tests are failing. Should NOT proceed to promotion. Should suggest fixing tests before re-reviewing.",
@@ -3144,7 +2673,7 @@
       ]
     },
     {
-      "id": 99,
+      "id": 84,
       "command": "review",
       "prompt": "review \u2014 I think everything is clean, ready to create a PR",
       "expected_output": "Should run full pipeline: quality review, security scan, evidence verification, TS strictness. If all pass: generate review report (quality score, security status, verification evidence, TS strictness results). Gate decision PASS. Invoke finishing-a-development-branch with promotion options (PR/merge/keep/discard). PR title should follow conventional commit format type(scope): summary. Should present the 4 options to user.",
@@ -3173,7 +2702,7 @@
       ]
     },
     {
-      "id": 100,
+      "id": 85,
       "command": "review",
       "prompt": "review the changes (security scan finds HIGH but no CRITICAL issues)",
       "expected_output": "Should run full pipeline. Security scan returns WARN (HIGH findings but no CRITICAL). Code quality review passes. Evidence verification passes. Gate decision should be WARN \u2014 log HIGH findings in report, recommend fixing, but proceed to promotion unless user wants to fix first. Should present findings with severity and file:line references. Should still allow promotion.",
@@ -3202,7 +2731,7 @@
       ]
     },
     {
-      "id": 101,
+      "id": 86,
       "command": "review",
       "prompt": "review \u2014 this is a Next.js project and I changed several API routes and a page component",
       "expected_output": "Should detect Next.js project (checks for next.config.*). Should include nextjs-perf skill patterns in the code quality review criteria (client-side waterfalls, caching patterns, unnecessary client components, barrel import bundle bloat). Security scan should focus on API routes. Evidence verification should include build check. TS strictness check should run on the diff. Review report should mention Next.js-specific findings if any.",
@@ -3235,7 +2764,7 @@
       ]
     },
     {
-      "id": 102,
+      "id": 87,
       "command": "review",
       "prompt": "review (code quality review finds Critical issue: function silently swallows errors and returns undefined)",
       "expected_output": "Should run quality review and receive Critical finding. Gate decision should BLOCK on Critical code review finding (per gate table). Should report the Critical finding with file context. Should fix directly or dispatch fix agent. After fix, should re-run only the quality review step (not entire pipeline). Should proceed to promotion after re-check passes.",
@@ -3264,7 +2793,7 @@
       ]
     },
     {
-      "id": 103,
+      "id": 88,
       "command": "review",
       "prompt": "review (no changes on current branch \u2014 clean diff)",
       "expected_output": "Should detect empty diff (no changes from merge-base to HEAD). Should report there's nothing to review. Should NOT dispatch code-reviewer, security agents, or run verification. Should NOT offer promotion options.",
@@ -3289,7 +2818,7 @@
       ]
     },
     {
-      "id": 104,
+      "id": 89,
       "command": "review",
       "prompt": "review \u2014 this is NOT a GSD project (no .planning/ directory)",
       "expected_output": "Should run the full review pipeline regardless of GSD status. /review is a pure quality gate \u2014 it does NOT require .planning/PROJECT.md. Should run quality review, security scan, evidence verification, TS strictness. Should proceed to promotion options normally. Should NOT suggest /new-project or refuse to run.",
@@ -3314,7 +2843,7 @@
       ]
     },
     {
-      "id": 105,
+      "id": 90,
       "command": "secure",
       "prompt": "security scan on a project with no vulnerabilities found",
       "expected_output": "Should dispatch 4 parallel agents, collect results, find no findings. Should report 'Scanning N files for OWASP Top 10 vulnerabilities.' followed by clean report. Gate output should be 'PASS (clean)'. Should NOT fabricate findings.",
@@ -3342,7 +2871,7 @@
       ]
     },
     {
-      "id": 106,
+      "id": 91,
       "command": "tracker",
       "prompt": "show me the project tracker dashboard",
       "expected_output": "Should detect .planning/ directory is present, read PROJECT.md, ROADMAP.md, STATE.md. Should launch tracker dashboard showing all phases with progress bars, current phase highlighted, todo counts per phase, and overall project completion percentage. Should display blockers from CONCERNS.md if any.",
@@ -3371,7 +2900,7 @@
       ]
     },
     {
-      "id": 107,
+      "id": 92,
       "command": "tracker",
       "prompt": "show me the tracker",
       "expected_output": "Should detect that .planning/ directory does not exist (no GSD project initialized). Should report that no project is found and suggest running /new-project to initialize one. Should NOT crash or show empty dashboard.",
@@ -3400,257 +2929,7 @@
       ]
     },
     {
-      "id": 108,
-      "command": "colorize",
-      "prompt": "add some color to the settings page, it's too monochromatic",
-      "expected_output": "Should read the settings page component and analyze current color usage. Should read DESIGN.md for design system context (brand colors, palette). Should identify monochromatic areas and add strategic accent colors \u2014 section headers, active states, status indicators. Should maintain accessibility contrast ratios. Should not over-saturate.",
-      "files": [
-        "evals/fixtures/nextjs-app-deep/src/app/settings/page.tsx"
-      ],
-      "assertions": [
-        {
-          "text": "Reads settings page and analyzes current color usage",
-          "type": "behavioral"
-        },
-        {
-          "text": "Reads DESIGN.md for design system context",
-          "type": "behavioral"
-        },
-        {
-          "text": "Adds strategic accent colors to monochromatic areas",
-          "type": "output"
-        },
-        {
-          "text": "Maintains accessibility contrast ratios",
-          "type": "behavioral"
-        },
-        {
-          "text": "Does NOT over-saturate or add colors indiscriminately",
-          "type": "guard"
-        }
-      ]
-    },
-    {
-      "id": 109,
-      "command": "colorize",
-      "prompt": "colorize the data table",
-      "expected_output": "Should read the data-table component and identify areas that benefit from color: status badges, row highlights for different states, header accents. Should add meaningful color (status-based, not decorative). Should maintain readability and not distract from data. Should use design system tokens if available.",
-      "files": [
-        "evals/fixtures/nextjs-app-deep/src/components/data-table.tsx"
-      ],
-      "assertions": [
-        {
-          "text": "Reads data-table component and identifies colorizable areas",
-          "type": "behavioral"
-        },
-        {
-          "text": "Adds color to status badges and row highlights",
-          "type": "output"
-        },
-        {
-          "text": "Uses meaningful color (status-based, not random decorative)",
-          "type": "behavioral"
-        },
-        {
-          "text": "Maintains data readability \u2014 color supports, not distracts",
-          "type": "guard"
-        },
-        {
-          "text": "References design system tokens if available",
-          "type": "behavioral"
-        }
-      ]
-    },
-    {
-      "id": 110,
-      "command": "bolder",
-      "prompt": "make the landing page more visually impactful",
-      "expected_output": "Should read page.tsx and analyze visual hierarchy. Should amplify contrast, increase font weight/size on key headings, add emphasis to CTAs, strengthen section separation. Should make the page feel more confident and impactful without introducing AI slop patterns (gratuitous gradients, glassmorphism, blur effects).",
-      "files": [
-        "evals/fixtures/nextjs-app-deep/src/app/page.tsx"
-      ],
-      "assertions": [
-        {
-          "text": "Reads page.tsx and analyzes visual hierarchy",
-          "type": "behavioral"
-        },
-        {
-          "text": "Increases contrast and heading emphasis",
-          "type": "output"
-        },
-        {
-          "text": "Strengthens CTA visual weight",
-          "type": "output"
-        },
-        {
-          "text": "Does NOT introduce AI slop (gratuitous gradients, glassmorphism)",
-          "type": "guard"
-        },
-        {
-          "text": "Improves section separation and visual rhythm",
-          "type": "output"
-        }
-      ]
-    },
-    {
-      "id": 111,
-      "command": "bolder",
-      "prompt": "bolder the metric cards",
-      "expected_output": "Should read metric-card.tsx and detect existing AI slop patterns (gradient text, backdrop-blur, SVG blobs, glassmorphism). Should NOT amplify these anti-patterns. Should flag the existing slop and suggest cleaning it up first. Should recommend /quieter to remove the slop before applying /bolder. Bold should mean confident design, not more visual noise.",
-      "files": [
-        "evals/fixtures/nextjs-app-deep/src/components/metric-card.tsx"
-      ],
-      "assertions": [
-        {
-          "text": "Reads metric-card.tsx and detects AI slop patterns",
-          "type": "behavioral"
-        },
-        {
-          "text": "Does NOT amplify existing gradients/glassmorphism/blur",
-          "type": "guard"
-        },
-        {
-          "text": "Flags anti-patterns and suggests cleanup first",
-          "type": "output"
-        },
-        {
-          "text": "Recommends /quieter before applying /bolder",
-          "type": "output"
-        },
-        {
-          "text": "Distinguishes bold design from visual noise",
-          "type": "behavioral"
-        }
-      ]
-    },
-    {
-      "id": 112,
-      "command": "quieter",
-      "prompt": "tone down the metric card, it's too flashy",
-      "expected_output": "Should read metric-card.tsx and detect AI slop: gradient text, backdrop-blur, SVG decorative blobs, glassmorphism effects. Should systematically remove these anti-patterns. Should replace with clean, simple design \u2014 solid backgrounds, clear typography, proper spacing. Result should be quieter and more professional.",
-      "files": [
-        "evals/fixtures/nextjs-app-deep/src/components/metric-card.tsx"
-      ],
-      "assertions": [
-        {
-          "text": "Detects AI slop patterns (gradient text, backdrop-blur, SVG blobs)",
-          "type": "behavioral"
-        },
-        {
-          "text": "Removes gradient text and replaces with solid color",
-          "type": "output"
-        },
-        {
-          "text": "Removes backdrop-blur and glassmorphism effects",
-          "type": "output"
-        },
-        {
-          "text": "Simplifies to clean design with solid backgrounds",
-          "type": "output"
-        },
-        {
-          "text": "Does NOT strip all styling \u2014 maintains proper spacing and typography",
-          "type": "guard"
-        }
-      ]
-    },
-    {
-      "id": 113,
-      "command": "quieter",
-      "prompt": "the notification toast is too aggressive, quiet it down",
-      "expected_output": "Should read notification-toast.tsx and identify overly aggressive patterns: intense colors, large size, excessive animation, attention-grabbing effects. Should tone down to a subtle, non-intrusive notification \u2014 softer colors, smaller footprint, gentler entrance/exit animations. Should maintain visibility and function while reducing visual aggression.",
-      "files": [
-        "evals/fixtures/nextjs-app-deep/src/components/notification-toast.tsx"
-      ],
-      "assertions": [
-        {
-          "text": "Reads notification-toast.tsx and identifies aggressive styling",
-          "type": "behavioral"
-        },
-        {
-          "text": "Reduces color intensity and visual weight",
-          "type": "output"
-        },
-        {
-          "text": "Softens animations (gentler entrance/exit)",
-          "type": "output"
-        },
-        {
-          "text": "Maintains toast visibility and functional readability",
-          "type": "guard"
-        },
-        {
-          "text": "Does NOT remove the toast entirely or make it invisible",
-          "type": "guard"
-        }
-      ]
-    },
-    {
-      "id": 114,
-      "command": "delight",
-      "prompt": "add moments of delight to the dashboard",
-      "expected_output": "Should read dashboard page and components. Should add micro-interactions (hover effects, click feedback), subtle animations (staggered entrance, number counting), personality touches (friendly empty states, contextual tooltips). Should enhance without degrading performance. Animations should respect prefers-reduced-motion.",
-      "files": [
-        "evals/fixtures/nextjs-app-deep/src/app/page.tsx",
-        "evals/fixtures/nextjs-app-deep/src/components/metric-card.tsx",
-        "evals/fixtures/nextjs-app-deep/src/components/chart-widget.tsx"
-      ],
-      "assertions": [
-        {
-          "text": "Adds micro-interactions (hover effects, click feedback)",
-          "type": "output"
-        },
-        {
-          "text": "Adds subtle entrance animations (staggered, counting)",
-          "type": "output"
-        },
-        {
-          "text": "Respects prefers-reduced-motion",
-          "type": "behavioral"
-        },
-        {
-          "text": "Does NOT degrade performance with heavy animations",
-          "type": "guard"
-        },
-        {
-          "text": "Adds personality touches (friendly copy, contextual details)",
-          "type": "output"
-        }
-      ]
-    },
-    {
-      "id": 115,
-      "command": "delight",
-      "prompt": "add delight to the empty state on the users page",
-      "expected_output": "Should read users page and identify the empty state rendering path. Should enhance the empty state with an illustration or tasteful animation, friendly copy, and a clear CTA. Should make the empty state feel intentional, not like a broken page. Should NOT add purely decorative noise \u2014 delight should serve the user experience.",
-      "files": [
-        "evals/fixtures/nextjs-app-deep/src/app/users/page.tsx"
-      ],
-      "assertions": [
-        {
-          "text": "Identifies empty state rendering path in users page",
-          "type": "behavioral"
-        },
-        {
-          "text": "Adds illustration or tasteful animation to empty state",
-          "type": "output"
-        },
-        {
-          "text": "Includes friendly copy and clear CTA",
-          "type": "output"
-        },
-        {
-          "text": "Empty state feels intentional, not broken",
-          "type": "behavioral"
-        },
-        {
-          "text": "Does NOT add purely decorative noise without purpose",
-          "type": "guard"
-        }
-      ]
-    },
-    {
-      "id": 116,
+      "id": 93,
       "command": "fix",
       "prompt": "add a new button to the header for notifications",
       "expected_output": "Should recognize this is NOT a bug \u2014 it's a feature request. Should NOT proceed with TDD triage (no failing test to write, no bug to reproduce). Should redirect the user to /quick for a small addition or /plan-work for a planned feature. Should explain why /fix is the wrong tool for this task.",
@@ -3679,7 +2958,7 @@
       ]
     },
     {
-      "id": 117,
+      "id": 94,
       "command": "build",
       "prompt": "build the plan at .planning/phases/03-dashboard/03-01-PLAN.md",
       "expected_output": "Should read the plan file and find that <tasks></tasks> is empty (zero tasks defined). Should refuse to build because there's nothing to execute. Should report that the plan has no tasks and suggest the user add tasks to the plan first. Should NOT dispatch any subagents or create waves from an empty task list.",
@@ -3711,7 +2990,7 @@
       ]
     },
     {
-      "id": 118,
+      "id": 95,
       "command": "polish",
       "prompt": "polish src/lib/auth.ts",
       "expected_output": "Should recognize that src/lib/auth.ts is a pure backend file (no UI, no components, no styling). Should note that /polish is design-focused (visual refinement, spacing, typography, interactions). Should either proceed with code-level polish (naming, structure, readability) or suggest /simplify or /refactor as better tools for backend code cleanup. Should NOT apply frontend design patterns to backend code.",
@@ -3740,7 +3019,7 @@
       ]
     },
     {
-      "id": 119,
+      "id": 96,
       "command": "build",
       "prompt": "build the plan \u2014 it has 2 waves. wave 1 has 2 tasks and wave 2 has 1 task that depends on wave 1",
       "expected_output": "Should execute wave 1 (2 parallel tasks). When spec gate fails on wave 1 output (tests fail or quality issues), should HALT and NOT dispatch wave 2. Should report spec gate failure with details. Should allow user to fix wave 1 issues before retrying. Should NOT execute wave 2 with known spec issues from wave 1.",
@@ -3772,7 +3051,7 @@
       ]
     },
     {
-      "id": 120,
+      "id": 97,
       "command": "build",
       "prompt": "build the plan \u2014 all waves completed, running /review now",
       "expected_output": "Should complete all waves and invoke /review. When /review gate decision is BLOCK (e.g., security CRITICAL or test failures), should NOT mark the phase as complete in STATE.md. Should report the block reason clearly. Should offer a fix-and-retry path (fix the issues, then re-run /review). Should NOT update STATE.md to mark phase done while review is blocked.",
@@ -3804,7 +3083,7 @@
       ]
     },
     {
-      "id": 121,
+      "id": 98,
       "command": "resume-work",
       "prompt": "picking up where I left off",
       "expected_output": "Should read STATE.md and find it references phase 5 as current_phase. Should scan .planning/phases/ and discover only phases 1-2 exist on disk. Should detect the mismatch (STATE.md points to non-existent phase). Should report the state corruption clearly. Should suggest /health --repair to fix the drift. Should NOT silently proceed as if phase 5 exists.",
@@ -3836,7 +3115,7 @@
       ]
     },
     {
-      "id": 122,
+      "id": 99,
       "command": "progress",
       "prompt": "show me the project progress",
       "expected_output": "Should attempt to read STATE.md and find it missing. Should detect that PROJECT.md and ROADMAP.md exist (partial .planning/ state). Should handle gracefully \u2014 not crash or throw unhandled errors. Should report that STATE.md is missing and project state is incomplete. Should suggest /health --repair to regenerate state or manually create STATE.md.",
@@ -3868,7 +3147,7 @@
       ]
     },
     {
-      "id": 123,
+      "id": 100,
       "command": "build",
       "prompt": "build phase 3 \u2014 the plan is at .planning/phases/03-dashboard/03-01-PLAN.md",
       "expected_output": "Should read STATE.md and find current_phase disagrees with the phase being built (e.g., STATE.md says phase 1 is current but user wants to build phase 3). Should detect the state drift and warn the user. Should ask whether to update STATE.md to reflect phase 3 or abort the build. Should NOT silently proceed with mismatched state. Should NOT overwrite STATE.md without user confirmation.",
@@ -3900,7 +3179,7 @@
       ]
     },
     {
-      "id": 124,
+      "id": 101,
       "command": "review",
       "prompt": "review these changed files \u2014 auth, API routes, and the comment card. check for security issues especially",
       "expected_output": "Should run security scan and detect SQL injection in api/users/route.ts (string-interpolated query), hardcoded secrets in auth.ts (JWT_SECRET inline), XSS vulnerability in comment-card.tsx (dangerouslySetInnerHTML on user content), and exposed env values in .env.example. Should BLOCK on CRITICAL findings (SQL injection, hardcoded secrets). Should generate a review report with file:line references for each finding. Should recommend fixes for each issue.",
@@ -3942,7 +3221,7 @@
       ]
     },
     {
-      "id": 125,
+      "id": 102,
       "command": "review",
       "prompt": "review these frontend component changes \u2014 sidebar, metric card, and user form",
       "expected_output": "Should run security scan but find minimal security issues in pure frontend components. Quality review should catch design anti-patterns: sidebar uses hardcoded colors instead of CSS variables, user-form uses raw HTML inputs instead of shadcn components, metric-card may lack responsive handling. Should suggest /verify-ui for visual verification of component changes. Should reference DESIGN.md conventions.",
@@ -3977,7 +3256,7 @@
       ]
     },
     {
-      "id": 126,
+      "id": 103,
       "command": "simplify",
       "prompt": "simplify these files \u2014 the data table is massive, utils is a grab bag, and the API module repeats itself",
       "expected_output": "Should detect: data-table.tsx is a god component (180+ lines mixing search, sort, pagination, rendering) needing decomposition. utils.ts is a kitchen-sink module (cn() plus unrelated helpers) needing extraction. api.ts has duplicated fetch patterns that should use a shared wrapper. Should run 3 parallel review agents scoped to git diff. Should produce concrete split/extract recommendations with before/after outlines.",
@@ -4012,7 +3291,7 @@
       ]
     },
     {
-      "id": 127,
+      "id": 104,
       "command": "resume-work",
       "prompt": "hey picking this back up, where was I?",
       "expected_output": "Should read STATE.md and find Phase 02 (dashboard) is in-progress as current phase. Should find 02-01-PLAN.md exists without a matching SUMMARY (incomplete). Should detect 3 pending todos (todo-001, todo-002, todo-003). Should present briefing showing Phase 01 complete, Phase 02 in-progress. Should route to continue the unfinished plan (task 2) or fix a regression if one is flagged in todos.",
@@ -4052,46 +3331,7 @@
       ]
     },
     {
-      "id": 128,
-      "command": "verify",
-      "prompt": "verify phase 1 \u2014 make sure everything claimed in the summary actually shipped correctly",
-      "expected_output": "Should compare 01-01-PLAN.md must_haves against 01-01-SUMMARY.md claimed deliverables. Should verify that files claimed as delivered actually exist on disk (auth.ts, auth.test.ts). Should catch the hardcoded JWT secret in auth.ts as a security gap in supposedly-completed phase. Should catch that auth.test.ts only tests the happy path (missing error/edge case coverage). Should produce a verification report with pass/fail per must_have.",
-      "files": [
-        "evals/fixtures/nextjs-app-deep/.planning/phases/01-auth/01-01-PLAN.md",
-        "evals/fixtures/nextjs-app-deep/.planning/phases/01-auth/01-01-SUMMARY.md",
-        "evals/fixtures/nextjs-app-deep/.planning/ROADMAP.md",
-        "evals/fixtures/nextjs-app-deep/src/lib/auth.ts",
-        "evals/fixtures/nextjs-app-deep/src/__tests__/auth.test.ts",
-        "evals/fixtures/nextjs-app-deep/CLAUDE.md"
-      ],
-      "assertions": [
-        {
-          "text": "Compares 01-01-PLAN.md must_haves against 01-01-SUMMARY.md deliverables",
-          "type": "behavioral"
-        },
-        {
-          "text": "Verifies claimed files exist on disk",
-          "type": "behavioral"
-        },
-        {
-          "text": "Catches hardcoded JWT secret in auth.ts as security gap",
-          "type": "behavioral"
-        },
-        {
-          "text": "Catches auth.test.ts only testing happy path",
-          "type": "behavioral"
-        },
-        {
-          "text": "Produces verification report with pass/fail per must_have",
-          "type": "output"
-        }
-      ],
-      "scenario_requires": [
-        "gsd_project"
-      ]
-    },
-    {
-      "id": 129,
+      "id": 105,
       "command": "progress",
       "prompt": "show me the project progress",
       "expected_output": "Should use gsd-tools to read STATE.md and ROADMAP.md. Should report Phase 01 (auth) as COMPLETE with summary on disk. Should report Phase 02 (dashboard) as IN_PROGRESS with plan but no summary. Should calculate overall progress at ~25-30% (1 of ~3-4 phases complete). Should route to correct next action: Route A (unexecuted plan exists \u2014 suggest /build for 02-01-PLAN.md).",
@@ -4130,7 +3370,7 @@
       ]
     },
     {
-      "id": 130,
+      "id": 106,
       "command": "build",
       "prompt": "I just finished planning phase 2, build it, then verify and tell me progress",
       "expected_output": "Should execute a lifecycle chain: first invoke /build for 02-01-PLAN.md, then on completion invoke /verify for phase 2 deliverables, then invoke /progress showing updated state. Each step must complete before the next starts. /build should invoke /review --quick internally as post-build quality check. Final /progress output should show Phase 02 further along than before (plan executed, summary generated).",
@@ -4180,10 +3420,10 @@
       ]
     },
     {
-      "id": 131,
+      "id": 107,
       "command": "plan-review",
-      "prompt": "Review this plan — I just finished /plan-work and have a PLAN.md at .planning/phases/03-billing/03-01-PLAN.md for adding Stripe subscription billing. It has 4 tasks across backend and frontend.",
-      "expected_output": "Should run pre-review system audit (git log, git diff main, stash list), then enter Step 0 Nuclear Scope Challenge — challenge whether this is the right problem, check must_haves truths, map existing code leverage, produce dream state mapping. Must present three mode options: SCOPE EXPANSION, HOLD SCOPE, SCOPE REDUCTION with context-dependent default. Must AskUserQuestion for mode selection before proceeding to review sections.",
+      "prompt": "Review this plan \u2014 I just finished /plan-work and have a PLAN.md at .planning/phases/03-billing/03-01-PLAN.md for adding Stripe subscription billing. It has 4 tasks across backend and frontend.",
+      "expected_output": "Should run pre-review system audit (git log, git diff main, stash list), then enter Step 0 Nuclear Scope Challenge \u2014 challenge whether this is the right problem, check must_haves truths, map existing code leverage, produce dream state mapping. Must present three mode options: SCOPE EXPANSION, HOLD SCOPE, SCOPE REDUCTION with context-dependent default. Must AskUserQuestion for mode selection before proceeding to review sections.",
       "files": [],
       "assertions": [
         {
@@ -4212,10 +3452,10 @@
       ]
     },
     {
-      "id": 132,
+      "id": 108,
       "command": "plan-review",
       "prompt": "I chose HOLD SCOPE for the billing plan review. Proceed with the review sections.",
-      "expected_output": "Should commit to HOLD SCOPE mode and proceed through review sections in order: Architecture Review (Section 1), then Error & Rescue Map (Section 2) with a complete table naming specific error types (TimeoutError, RateLimitError, ParseError, etc.), rescue status, rescue action, and user-visible impact for every method/codepath that can fail. Must produce the Error/Rescue Map table with named exceptions — not generic 'handle errors'. Must AskUserQuestion after each section before proceeding.",
+      "expected_output": "Should commit to HOLD SCOPE mode and proceed through review sections in order: Architecture Review (Section 1), then Error & Rescue Map (Section 2) with a complete table naming specific error types (TimeoutError, RateLimitError, ParseError, etc.), rescue status, rescue action, and user-visible impact for every method/codepath that can fail. Must produce the Error/Rescue Map table with named exceptions \u2014 not generic 'handle errors'. Must AskUserQuestion after each section before proceeding.",
       "files": [],
       "assertions": [
         {
@@ -4244,14 +3484,14 @@
       ]
     },
     {
-      "id": 133,
+      "id": 109,
       "command": "plan-review",
-      "prompt": "Review the auth plan at .planning/phases/04-auth/04-01-PLAN.md — it adds JWT auth, refresh tokens, and a login form. Three architectural issues and a security concern need to be raised.",
-      "expected_output": "Should raise each issue as a separate AskUserQuestion call — one issue per question, never batched. Each question must present 2-3 concrete lettered options (A, B, C), state the recommended option FIRST with a directive ('Do B. Here's why:'), and explain why that option over others. Must use numbered issues with lettered options (e.g., '1A', '1B'). No yes/no questions. No batching multiple issues into one question.",
+      "prompt": "Review the auth plan at .planning/phases/04-auth/04-01-PLAN.md \u2014 it adds JWT auth, refresh tokens, and a login form. Three architectural issues and a security concern need to be raised.",
+      "expected_output": "Should raise each issue as a separate AskUserQuestion call \u2014 one issue per question, never batched. Each question must present 2-3 concrete lettered options (A, B, C), state the recommended option FIRST with a directive ('Do B. Here's why:'), and explain why that option over others. Must use numbered issues with lettered options (e.g., '1A', '1B'). No yes/no questions. No batching multiple issues into one question.",
       "files": [],
       "assertions": [
         {
-          "text": "One issue per AskUserQuestion call — never batches multiple issues into one question",
+          "text": "One issue per AskUserQuestion call \u2014 never batches multiple issues into one question",
           "type": "behavioral"
         },
         {
@@ -4263,7 +3503,7 @@
           "type": "output"
         },
         {
-          "text": "Does NOT ask yes/no questions — always provides lettered alternatives",
+          "text": "Does NOT ask yes/no questions \u2014 always provides lettered alternatives",
           "type": "guard"
         },
         {
@@ -4276,124 +3516,9 @@
       ]
     },
     {
-      "id": 134,
-      "command": "qa",
-      "prompt": "qa",
-      "expected_output": "Should detect feature branch automatically and enter diff-aware mode. Must analyze git diff (git diff main...HEAD --name-only, git log main..HEAD --oneline) to identify changed files, then map changed files to affected pages/routes (controller files to URL paths, component files to pages, model files to pages that use them). Must detect running app on local dev ports and test each affected page/route with screenshots and console checks.",
-      "files": [],
-      "assertions": [
-        {
-          "text": "Detects feature branch and automatically enters diff-aware mode",
-          "type": "behavioral"
-        },
-        {
-          "text": "Reads git diff to identify changed files (git diff main...HEAD --name-only)",
-          "type": "behavioral"
-        },
-        {
-          "text": "Maps changed files to affected pages/routes for targeted testing",
-          "type": "behavioral"
-        },
-        {
-          "text": "Tests each affected page with screenshot evidence",
-          "type": "output"
-        },
-        {
-          "text": "Does NOT test unrelated pages outside the diff scope",
-          "type": "guard"
-        }
-      ],
-      "scenario_requires": [
-        "feature_branch"
-      ]
-    },
-    {
-      "id": 135,
-      "command": "qa",
-      "prompt": "/fh:qa --quick https://myapp.localhost:3000",
-      "expected_output": "Should run quick mode: 30-second smoke test visiting homepage plus top 5 navigation targets. Must check page loads, console errors, and broken links at each page. Should NOT run per-page exploration checklist or detailed issue documentation. Must produce health score at the end. Should complete within the 30-second scope constraint.",
-      "files": [],
-      "assertions": [
-        {
-          "text": "Enters quick mode — visits homepage plus top navigation targets only",
-          "type": "behavioral"
-        },
-        {
-          "text": "Checks page loads, console errors, and broken links",
-          "type": "behavioral"
-        },
-        {
-          "text": "Does NOT run detailed per-page exploration checklist in quick mode",
-          "type": "guard"
-        },
-        {
-          "text": "Produces health score in output",
-          "type": "output"
-        },
-        {
-          "text": "Scopes testing to 30-second smoke test constraint",
-          "type": "behavioral"
-        }
-      ]
-    },
-    {
-      "id": 136,
-      "command": "qa",
-      "prompt": "qa the staging site at https://staging.myapp.com — full mode, give me the report",
-      "expected_output": "Should run full QA mode producing a structured report with weighted health score. Health score must include category breakdown with individual scores for: Console (15%), Links (10%), Visual (10%), Functional (20%), UX (15%), Performance (10%), Content (5%), Accessibility (15%). Final score is the weighted average. Report must include severity counts, top 3 things to fix, and console health summary.",
-      "files": [],
-      "assertions": [
-        {
-          "text": "Produces weighted health score with category breakdown",
-          "type": "output"
-        },
-        {
-          "text": "Health score includes category weights (Console 15%, Functional 20%, Accessibility 15%, etc.)",
-          "type": "output"
-        },
-        {
-          "text": "Report includes top 3 things to fix section",
-          "type": "output"
-        },
-        {
-          "text": "Report includes severity counts and console health summary",
-          "type": "output"
-        },
-        {
-          "text": "Writes report to .planning/qa-reports/ directory",
-          "type": "output"
-        }
-      ]
-    },
-    {
-      "id": 137,
-      "command": "qa",
-      "prompt": "qa my local app at http://localhost:3000 — check the dashboard and settings pages",
-      "expected_output": "Should use agent-browser CLI commands (agent-browser open, agent-browser snapshot, agent-browser screenshot, agent-browser console, agent-browser click, agent-browser fill) for all browser interactions. Must NOT use $B, playwright, puppeteer, or any custom browser binary. All browser commands must use --session flag for isolated sessions. Must use agent-browser snapshot -i for finding interactive elements.",
-      "files": [],
-      "assertions": [
-        {
-          "text": "Uses agent-browser CLI for all browser interactions (open, snapshot, screenshot, click, fill)",
-          "type": "behavioral"
-        },
-        {
-          "text": "Does NOT use $B, playwright, puppeteer, or custom browser binary",
-          "type": "guard"
-        },
-        {
-          "text": "Uses --session flag for isolated browser sessions",
-          "type": "behavioral"
-        },
-        {
-          "text": "Uses agent-browser snapshot -i for finding interactive elements",
-          "type": "behavioral"
-        }
-      ]
-    },
-    {
-      "id": 138,
+      "id": 110,
       "command": "review",
-      "prompt": "review my changes — I touched auth middleware, two API routes, and the user settings page",
+      "prompt": "review my changes \u2014 I touched auth middleware, two API routes, and the user settings page",
       "expected_output": "Should run the full /review pipeline including the production safety checklist. Code quality agent (Agent 1) must reference skills/review/references/production-safety-checklist.md for the two-pass safety review. The agent must honor the checklist's explicit suppressions section to reduce noise on known-safe patterns. Security scan (Agent 2) runs separately. Gate decision aggregates all findings including production safety results.",
       "files": [],
       "assertions": [
@@ -4420,7 +3545,7 @@
       ]
     },
     {
-      "id": 139,
+      "id": 111,
       "command": "plan-work",
       "prompt": "plan adding WebSocket real-time notifications to the dashboard. Users should see live updates when team members post comments or complete tasks. We use Next.js with a Node backend.",
       "expected_output": "Should reach Step 3 (Discuss Implementation) and produce a Failure Modes Registry table with columns: CODEPATH, FAILURE MODE, RESCUED?, TEST?, USER SEES?, LOGGED?. Must map failure modes for WebSocket-specific concerns (connection drop, reconnection, stale state, message ordering, backpressure). Any row with RESCUED=N, TEST=N, USER SEES=Silent must be flagged as CRITICAL GAP. Failure modes from the registry should be included as must_haves.truths in Step 4.",
@@ -4449,7 +3574,7 @@
       ]
     },
     {
-      "id": 140,
+      "id": 112,
       "command": "plan-work",
       "prompt": "plan adding a user preferences API endpoint. well-known REST patterns, no research needed",
       "expected_output": "Should create native tasks for all planning steps (Phase matching, Research, Brainstorm, Discuss implementation, Derive must_haves, Create plan, Plan-check) using TaskCreate at the start. Should update tasks to in_progress/completed as each step progresses. Should mark Research as completed with skipped metadata since well-known patterns. Should include graceful degradation (TASKS_AVAILABLE flag).",
@@ -4472,12 +3597,14 @@
           "type": "behavioral"
         }
       ],
-      "scenario_requires": ["gsd_project"]
+      "scenario_requires": [
+        "gsd_project"
+      ]
     },
     {
-      "id": 141,
+      "id": 113,
       "command": "build",
-      "prompt": "execute the plan at .planning/phases/05-api/05-01-PLAN.md. it has 3 tasks in 2 waves — task 1 and 2 are wave 1, task 3 is wave 2",
+      "prompt": "execute the plan at .planning/phases/05-api/05-01-PLAN.md. it has 3 tasks in 2 waves \u2014 task 1 and 2 are wave 1, task 3 is wave 2",
       "expected_output": "Should create native tasks from plan's tasks block using TaskCreate with metadata (wave, phase, plan). Should create pipeline stage tasks (spec gate per wave, design gates, self-check). Should set up wave dependencies via addBlockedBy (wave 2 blocked by wave 1, spec gates blocked by wave tasks). Should thread {TASK_ID} to subagent prompts. Should update task status as subagents complete.",
       "files": [],
       "assertions": [
@@ -4502,10 +3629,12 @@
           "type": "behavioral"
         }
       ],
-      "scenario_requires": ["gsd_project"]
+      "scenario_requires": [
+        "gsd_project"
+      ]
     },
     {
-      "id": 142,
+      "id": 114,
       "command": "plan-work",
       "prompt": "plan adding role-based access control to the API routes. this touches auth middleware, 3 route handlers, and a new permissions table",
       "expected_output": "After plan creation and plan-check, Step 7 handoff should recommend /fh:plan-review as the first option (before /fh:build). Should present three options: (1) /fh:plan-review recommended, (2) /fh:build for straightforward plans, (3) continue planning. Should default to plan-review since this is a non-trivial multi-file change.",
@@ -4528,13 +3657,15 @@
           "type": "output"
         }
       ],
-      "scenario_requires": ["gsd_project"]
+      "scenario_requires": [
+        "gsd_project"
+      ]
     },
     {
-      "id": 143,
+      "id": 115,
       "command": "plan-work",
       "prompt": "plan adding a discount calculation engine and a coupon validation service. pure business logic, no frontend",
-      "expected_output": "During plan-check (Step 6), should detect that business-logic tasks (discount calculation, coupon validation) involve state/logic and WARN if they lack tdd=true. Should ask the planner to confirm or add tdd=true. Should NOT block — only warn.",
+      "expected_output": "During plan-check (Step 6), should detect that business-logic tasks (discount calculation, coupon validation) involve state/logic and WARN if they lack tdd=true. Should ask the planner to confirm or add tdd=true. Should NOT block \u2014 only warn.",
       "files": [],
       "assertions": [
         {
@@ -4554,10 +3685,12 @@
           "type": "guard"
         }
       ],
-      "scenario_requires": ["gsd_project"]
+      "scenario_requires": [
+        "gsd_project"
+      ]
     },
     {
-      "id": 144,
+      "id": 116,
       "command": "plan-work",
       "prompt": "plan adding a user settings page with profile editing form, password change, and notification preferences toggles",
       "expected_output": "During plan-check (Step 6), should detect interactive frontend features (forms, toggles) and check for playwright.config in the project. Should WARN that no E2E test task exists and suggest adding a Playwright test task. Should offer to create the test task referencing skills/playwright-testing/. Should NOT block.",
@@ -4584,13 +3717,15 @@
           "type": "guard"
         }
       ],
-      "scenario_requires": ["gsd_project"]
+      "scenario_requires": [
+        "gsd_project"
+      ]
     },
     {
-      "id": 145,
+      "id": 117,
       "command": "build",
-      "prompt": "execute the plan. task 1 is marked tdd=true for implementing a rate limiter. after the subagent finishes, the git log shows: 'feat(01-01): implement rate limiter' then 'test(01-01): add rate limiter tests' — feat before test",
-      "expected_output": "During spec gate (Step 3b), should detect that the tdd=true task has feat commit before test commit. Should emit a WARN (not blocking) about TDD discipline violation — expected test commit before feat commit (RED before GREEN). Should NOT change the PASS/BLOCKING verdict based on this warning alone.",
+      "prompt": "execute the plan. task 1 is marked tdd=true for implementing a rate limiter. after the subagent finishes, the git log shows: 'feat(01-01): implement rate limiter' then 'test(01-01): add rate limiter tests' \u2014 feat before test",
+      "expected_output": "During spec gate (Step 3b), should detect that the tdd=true task has feat commit before test commit. Should emit a WARN (not blocking) about TDD discipline violation \u2014 expected test commit before feat commit (RED before GREEN). Should NOT change the PASS/BLOCKING verdict based on this warning alone.",
       "files": [],
       "assertions": [
         {
@@ -4610,7 +3745,519 @@
           "type": "output"
         }
       ],
-      "scenario_requires": ["gsd_project"]
+      "scenario_requires": [
+        "gsd_project"
+      ]
+    },
+    {
+      "id": 118,
+      "command": "ui-redesign",
+      "prompt": "Redesign the dashboard with a dark theme",
+      "expected_output": "Should read .planning/DESIGN.md for current design context, explore existing components, propose a cohesive dark theme design direction with color palette, update DESIGN.md, and NOT modify component files without user approval.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Reads .planning/DESIGN.md for current design context and tokens",
+          "type": "behavioral"
+        },
+        {
+          "text": "Explores existing components to understand current visual patterns",
+          "type": "behavioral"
+        },
+        {
+          "text": "Proposes a cohesive dark theme design direction with color palette",
+          "type": "behavioral"
+        },
+        {
+          "text": "Writes updated design context to .planning/DESIGN.md",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT modify component files directly without user approval of design direction",
+          "type": "guard"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ]
+    },
+    {
+      "id": 119,
+      "command": "ui-redesign",
+      "prompt": "Make the app feel more premium and professional",
+      "expected_output": "Should read .planning/DESIGN.md, analyze current typography/spacing/color choices, propose systematic design improvements with specific token changes, produce a design direction document, and NOT apply changes without presenting the direction first.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Reads .planning/DESIGN.md for existing design context",
+          "type": "behavioral"
+        },
+        {
+          "text": "Analyzes current typography, spacing, and color choices across components",
+          "type": "behavioral"
+        },
+        {
+          "text": "Proposes systematic design improvements with specific token changes",
+          "type": "behavioral"
+        },
+        {
+          "text": "Produces a design direction document or updates DESIGN.md",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT apply changes without presenting the design direction first",
+          "type": "guard"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ]
+    },
+    {
+      "id": 120,
+      "command": "ui-redesign",
+      "prompt": "Update our design system to use a blue primary color instead of the current one",
+      "expected_output": "Should read .planning/DESIGN.md to find current primary color token, propose new blue palette with accessible contrast ratios, update DESIGN.md with new tokens, and NOT change component files.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Reads .planning/DESIGN.md to find current primary color token",
+          "type": "behavioral"
+        },
+        {
+          "text": "Proposes new blue palette with accessible contrast ratios",
+          "type": "behavioral"
+        },
+        {
+          "text": "Updates DESIGN.md with new primary color tokens",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT change component files \u2014 only updates the design system definition",
+          "type": "guard"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ]
+    },
+    {
+      "id": 121,
+      "command": "observability",
+      "prompt": "Check if there are any runtime errors in my app",
+      "expected_output": "Should look for local error store like .sentry-local/events.db, query the error database for recent events, report findings in structured format, and if no error store exists, report that no local error tracking is configured.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Looks for .sentry-local/events.db or similar local error store",
+          "type": "behavioral"
+        },
+        {
+          "text": "Queries the error database for recent events",
+          "type": "behavioral"
+        },
+        {
+          "text": "Reports findings in a structured format with error counts and types",
+          "type": "output"
+        },
+        {
+          "text": "If no error store exists, reports that no local error tracking is configured",
+          "type": "behavioral"
+        }
+      ],
+      "scenario_requires": []
+    },
+    {
+      "id": 122,
+      "command": "observability",
+      "prompt": "What errors happened in the last hour?",
+      "expected_output": "Should query error store with time-based filter, group errors by type or source file, present errors with timestamps and stack traces, and NOT attempt to fix errors automatically.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Queries error store with time-based filter for recent errors",
+          "type": "behavioral"
+        },
+        {
+          "text": "Groups errors by type or source file for readability",
+          "type": "behavioral"
+        },
+        {
+          "text": "Presents errors with timestamps, stack traces, and occurrence counts",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT attempt to fix errors automatically \u2014 only reports them",
+          "type": "guard"
+        }
+      ],
+      "scenario_requires": []
+    },
+    {
+      "id": 123,
+      "command": "observability",
+      "prompt": "Are there any errors related to the login flow?",
+      "expected_output": "Should query error store filtering by auth-related source files, correlate errors with source code, report login-specific errors with context, NOT attempt to fix errors, and clearly report if no login errors found.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Queries error store filtering by auth-related source files",
+          "type": "behavioral"
+        },
+        {
+          "text": "Correlates errors with source code in src/lib/auth.ts and src/app/api/auth/",
+          "type": "behavioral"
+        },
+        {
+          "text": "Reports login-specific errors with relevant code context",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT attempt to fix errors \u2014 only reports and correlates",
+          "type": "guard"
+        },
+        {
+          "text": "If no login errors found, reports that clearly",
+          "type": "behavioral"
+        }
+      ],
+      "scenario_requires": []
+    },
+    {
+      "id": 124,
+      "command": "ui-animate",
+      "prompt": "Add a subtle entrance animation to the metric cards on the dashboard",
+      "expected_output": "Should plan animation strategy before implementing, use GPU-accelerated CSS properties, add prefers-reduced-motion media query, modify metric-card component, and NOT use JavaScript-based animation when CSS is sufficient.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Plans animation strategy before implementing",
+          "type": "behavioral"
+        },
+        {
+          "text": "Uses GPU-accelerated CSS properties like transform and opacity",
+          "type": "behavioral"
+        },
+        {
+          "text": "Adds prefers-reduced-motion media query to respect accessibility",
+          "type": "behavioral"
+        },
+        {
+          "text": "Modifies metric-card component with entrance animation",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT use JavaScript-based animation when CSS is sufficient",
+          "type": "guard"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ]
+    },
+    {
+      "id": 125,
+      "command": "ui-animate",
+      "prompt": "Make the sidebar navigation feel more polished with hover and transition effects",
+      "expected_output": "Should identify interaction points in sidebar, add transition properties for hover states, keep durations under 300ms, modify sidebar component, and NOT add animations that interfere with navigation functionality.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Identifies interaction points in the sidebar component",
+          "type": "behavioral"
+        },
+        {
+          "text": "Adds transition properties for hover states",
+          "type": "behavioral"
+        },
+        {
+          "text": "Keeps animation durations under 300ms for snappy feel",
+          "type": "behavioral"
+        },
+        {
+          "text": "Modifies sidebar component with transition effects",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT add animations that interfere with navigation functionality",
+          "type": "guard"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ]
+    },
+    {
+      "id": 126,
+      "command": "update",
+      "prompt": "Check if there's a newer version of fhhs-skills available",
+      "expected_output": "Should check current installed version, query for latest available version, report comparison, and if already up to date, report that clearly.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Checks current installed version from plugin.json or marketplace.json",
+          "type": "behavioral"
+        },
+        {
+          "text": "Queries for latest available version",
+          "type": "behavioral"
+        },
+        {
+          "text": "Reports current version vs latest version with comparison",
+          "type": "output"
+        },
+        {
+          "text": "If already up to date, reports that clearly",
+          "type": "behavioral"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ]
+    },
+    {
+      "id": 127,
+      "command": "update",
+      "prompt": "Update fhhs-skills to the latest version",
+      "expected_output": "Should check current version before updating, use claude plugin install or marketplace update mechanism, report update result with version numbers, and NOT skip version check.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Checks current version before updating",
+          "type": "behavioral"
+        },
+        {
+          "text": "Uses claude plugin install or marketplace update mechanism",
+          "type": "behavioral"
+        },
+        {
+          "text": "Reports the update result with old and new version numbers",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT skip version check before attempting update",
+          "type": "guard"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ]
+    },
+    {
+      "id": 128,
+      "command": "refactor",
+      "prompt": "The auth module in src/lib/auth.ts is getting complex, refactor it into smaller focused modules",
+      "expected_output": "Should capture baseline by running existing tests, scope blast radius by identifying importers, plan atomic refactoring steps, run tests before making changes, and NOT let tests go red at any intermediate step.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Captures baseline by running existing auth tests before refactoring",
+          "type": "behavioral"
+        },
+        {
+          "text": "Scopes blast radius by identifying all files that import from auth.ts",
+          "type": "behavioral"
+        },
+        {
+          "text": "Plans atomic refactoring steps that keep tests passing at each step",
+          "type": "behavioral"
+        },
+        {
+          "text": "Runs tests before making any code changes",
+          "type": "ordering"
+        },
+        {
+          "text": "Does NOT let tests go red at any intermediate step \u2014 iron law of refactoring",
+          "type": "guard"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ]
+    },
+    {
+      "id": 129,
+      "command": "refactor",
+      "prompt": "Extract the data fetching logic from the dashboard page into a custom hook",
+      "expected_output": "Should read dashboard page to identify data fetching patterns, create a custom hook, update dashboard to use the hook, write tests before extracting, and NOT change external behavior.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Reads dashboard page to identify data fetching patterns",
+          "type": "behavioral"
+        },
+        {
+          "text": "Creates a custom hook with the extracted data fetching logic",
+          "type": "behavioral"
+        },
+        {
+          "text": "Updates the dashboard page to use the new hook",
+          "type": "behavioral"
+        },
+        {
+          "text": "Writes tests for current behavior before extracting",
+          "type": "ordering"
+        },
+        {
+          "text": "Does NOT change the external behavior of the dashboard page",
+          "type": "guard"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ]
+    },
+    {
+      "id": 130,
+      "command": "plan-review",
+      "prompt": "Review my plan for adding user roles and permissions to the dashboard",
+      "expected_output": "Should read the plan and challenge assumptions, identify failure modes and edge cases, produce an error and rescue map, produce structured review with numbered issues and lettered options, and ask user to select review mode.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Reads the plan and challenges key assumptions",
+          "type": "behavioral"
+        },
+        {
+          "text": "Identifies failure modes and edge cases in the permissions model",
+          "type": "behavioral"
+        },
+        {
+          "text": "Produces an error and rescue map for the plan",
+          "type": "behavioral"
+        },
+        {
+          "text": "Produces a structured review with numbered issues and lettered options",
+          "type": "output"
+        },
+        {
+          "text": "Asks user to select review mode before proceeding",
+          "type": "behavioral"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ]
+    },
+    {
+      "id": 131,
+      "command": "plan-review",
+      "prompt": "Stress test this plan but don't expand scope \u2014 hold scope mode",
+      "expected_output": "Should operate in HOLD SCOPE mode without suggesting new features, focus on rigor within existing plan scope, map error paths and failure modes, NOT suggest expanding scope, and produce failure modes registry with CRITICAL GAP identification.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Operates in HOLD SCOPE mode \u2014 does not suggest adding features",
+          "type": "behavioral"
+        },
+        {
+          "text": "Focuses on rigor within existing plan scope",
+          "type": "behavioral"
+        },
+        {
+          "text": "Maps error paths and failure modes thoroughly",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT suggest expanding scope or adding new features",
+          "type": "guard"
+        },
+        {
+          "text": "Produces failure modes registry with CRITICAL GAP identification",
+          "type": "output"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ]
+    },
+    {
+      "id": 132,
+      "command": "map-codebase",
+      "prompt": "Map this entire codebase for me",
+      "expected_output": "Should spawn parallel mapper agents, produce architecture documentation in .planning/codebase/, generate STACK.md and CONVENTIONS.md, and cover tech stack, architecture, conventions, and technical debt.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Spawns parallel mapper agents for different aspects of the codebase",
+          "type": "behavioral"
+        },
+        {
+          "text": "Produces architecture documentation in .planning/codebase/",
+          "type": "output"
+        },
+        {
+          "text": "Generates STACK.md documenting the technology stack",
+          "type": "output"
+        },
+        {
+          "text": "Generates CONVENTIONS.md documenting coding conventions",
+          "type": "output"
+        },
+        {
+          "text": "Covers tech stack, architecture, conventions, and technical debt",
+          "type": "behavioral"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ]
+    },
+    {
+      "id": 133,
+      "command": "map-codebase",
+      "prompt": "I'm new to this project, help me understand the architecture and how things are organized",
+      "expected_output": "Should explore project structure and key directories, identify framework and architectural decisions, produce documentation focused on architecture, and explain the codebase in newcomer-friendly terms.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Explores the project structure and key directories",
+          "type": "behavioral"
+        },
+        {
+          "text": "Identifies the framework, key patterns, and architectural decisions",
+          "type": "behavioral"
+        },
+        {
+          "text": "Produces documentation focused on architecture and project organization",
+          "type": "output"
+        },
+        {
+          "text": "Explains how the codebase is structured in terms a newcomer can understand",
+          "type": "behavioral"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ]
+    },
+    {
+      "id": 134,
+      "command": "tracker",
+      "prompt": "Show me the project progress dashboard",
+      "expected_output": "Should read .planning/ROADMAP.md and STATE.md for project status, launch or generate a visual dashboard, show phases/milestones/completion status, and display progress with status indicators.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Reads .planning/ROADMAP.md and STATE.md for project status",
+          "type": "behavioral"
+        },
+        {
+          "text": "Launches or generates a visual dashboard of project progress",
+          "type": "behavioral"
+        },
+        {
+          "text": "Shows phases, milestones, and completion status",
+          "type": "output"
+        },
+        {
+          "text": "Displays progress for each phase with current status indicators",
+          "type": "behavioral"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ]
     }
   ]
 }
