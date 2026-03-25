@@ -128,7 +128,7 @@ Subagents create their own sub-tasks for granular progress. If task tools are un
 | `/fh:observability` | Query local Sentry error store for runtime errors |
 | `/fh:ui-branding` | One-time setup for your project's design language |
 
-The following design skills are available as internal skills (auto-invoked by `/fh:build` and other pipelines, not user-invokable): adapt, bolder, quieter, distill, clarify, colorize, delight, extract, onboard, optimize.
+Additional design skills (also auto-invoked by `/fh:build` and other pipelines): `/fh:adapt`, `/fh:bolder`, `/fh:quieter`, `/fh:distill`, `/fh:clarify`, `/fh:colorize`, `/fh:delight`, `/fh:extract`, `/fh:onboard`, `/fh:optimize`.
 
 </details>
 

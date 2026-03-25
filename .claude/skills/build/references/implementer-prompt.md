@@ -76,7 +76,7 @@ optional — your implementation and report are what matter.
 ## Implementation Rules
 
 **TDD** (if task has `tdd="true"`):
-Follow RED-GREEN-REFACTOR per `skills/test-driven-development/`.
+Follow RED-GREEN-REFACTOR per `skills/test-driven-development/PROMPT.md`.
 Failing test first, then minimal implementation, then optional cleanup.
 Commit each phase: `test(...)`, `feat(...)`, `refactor(...)`.
 
@@ -87,20 +87,20 @@ Tests run in watch mode will hang the subagent indefinitely.
 - When in doubt: prefix with `CI=true` — most runners respect it.
 
 **Frontend** (if task touches `.tsx`, `.css`, component files):
-Read `.planning/DESIGN.md` and apply `skills/frontend-design/` guidance.
+Read `.planning/DESIGN.md` and apply `skills/frontend-design/PROMPT.md` guidance.
 Add stable selectors for Playwright: `aria-label`, `id`, `role`, or `data-testid`
 on key interactive elements.
 If this task creates interactive UI (forms, navigation, auth flows) and the project has `playwright.config.*` but no E2E test is part of this task's scope, note in your report: 'This task creates interactive UI — consider adding E2E coverage in a follow-up task.'
 
 **Playwright** (if task files include `*.test.*`, `*.spec.*`, `playwright.config.*`, or `e2e/`):
-Read `skills/playwright-testing/` for Playwright-specific patterns. Follow its locator strategies,
+Read `.claude/skills/playwright-testing/PROMPT.md` for Playwright-specific patterns. Follow its locator strategies,
 assertion patterns, and Page Object Model conventions.
 
 {DESIGN_MD_CONTENT}
 
 **Next.js Performance Rules:**
 If this project uses Next.js (check for `next.config.*`, `app/` or `pages/` directory),
-read `skills/nextjs-perf/` and follow its rules. Key priorities:
+read `.claude/skills/nextjs-perf/PROMPT.md` and follow its rules. Key priorities:
 - Avoid client-side waterfalls (parallelize fetches, use Suspense boundaries)
 - Minimize bundle size (dynamic imports, avoid barrel files, defer third-party scripts)
 - Use proper caching strategies (React.cache(), LRU cache, minimal serialization)

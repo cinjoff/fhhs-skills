@@ -22,7 +22,7 @@ This command runs in a single context by default. For large refactors (10+ files
 
 ## Step 0: Analysis Mode (no target specified)
 
-If the user asks to "refactor this codebase", "clean up", or "find things to refactor" without specifying a target, invoke `skills/simplify/` first to identify refactoring candidates. It runs 3 parallel review agents that scan for:
+If the user asks to "refactor this codebase", "clean up", or "find things to refactor" without specifying a target, read `skills/simplify/PROMPT.md` and follow it to identify refactoring candidates. It runs 3 parallel review agents that scan for:
 
 - **God components/classes** — files doing too many things, violating single responsibility
 - **Kitchen-sink utilities** — catch-all modules that should be split by domain
@@ -95,7 +95,7 @@ Report progress after each commit.
 
 ## Step 5: Simplify
 
-After execution, invoke `skills/simplify/` on the refactoring diff. Refactoring often introduces new abstractions or moves code around — simplify catches:
+After execution, read `skills/simplify/PROMPT.md` and follow it on the refactoring diff. Refactoring often introduces new abstractions or moves code around — simplify catches:
 
 - Extracted utilities that duplicate existing ones elsewhere in the codebase
 - Restructured code with missed efficiency opportunities (sequential → parallel, redundant reads)

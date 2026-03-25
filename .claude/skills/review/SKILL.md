@@ -77,7 +77,7 @@ Based on mode, dispatch parallel subagents. Each agent receives ONLY the diff + 
 - Also include: `skills/review/references/production-safety-checklist.md` (two-pass safety review)
 - Input: full diff (`git diff $BASE_BRANCH..HEAD`)
 - Covers: naming, structure, error handling, DRY, complexity, test quality, cross-file consistency, dependency direction, separation of concerns, abstraction quality, API design, cross-cutting concerns
-- If Next.js: include `skills/nextjs-perf/` criteria
+- If Next.js: include `.claude/skills/nextjs-perf/PROMPT.md` criteria
 - **Note:** The production safety checklist has an explicit suppressions section — the subagent must honor it to reduce noise.
 
 **Agent 2 — Security Scan** (4 parallel sub-scanners, `subagent_type: "general-purpose"`)
@@ -272,7 +272,7 @@ Generate a structured report. For each finding above Minor/MEDIUM, include a **N
 
 ## Step 9: Promote
 
-If all gates pass (or user explicitly overrides), invoke `skills/finishing-a-development-branch/`.
+If all gates pass (or user explicitly overrides), read `skills/finishing-a-development-branch/PROMPT.md` and follow it.
 
 **Conventional commit enforcement:** PR title / merge commit must follow:
 ```

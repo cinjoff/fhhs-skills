@@ -5,7 +5,7 @@
       "id": 1,
       "command": "build",
       "prompt": "ok i just finished planning phase 13 for my saas app. there's a PLAN.md at .planning/phases/13-auth/13-01-PLAN.md with 3 tasks \u2014 two backend (JWT auth + refresh tokens) and one frontend (login form). the backend tasks are independent but the frontend depends on both. execute it",
-      "expected_output": "Should detect GSD mode, find the plan, identify 2 waves (wave 1: 2 parallel backend tasks, wave 2: 1 frontend task), dispatch general-purpose subagents (not gsd-executor), include TDD directives (from internal skills/test-driven-development/) for backend tasks and frontend-design directives (from internal skills/frontend-design/) for the login form, run design gates (/critique then /polish) after frontend task, generate SUMMARY.md, update GSD state, and invoke /review --quick for post-build quality checks.",
+      "expected_output": "Should detect GSD mode, find the plan, identify 2 waves (wave 1: 2 parallel backend tasks, wave 2: 1 frontend task), dispatch general-purpose subagents (not gsd-executor), include TDD directives (from internal skills/test-driven-development/PROMPT.md) for backend tasks and frontend-design directives (from internal skills/frontend-design/PROMPT.md) for the login form, run design gates (/critique then /polish) after frontend task, generate SUMMARY.md, update GSD state, and invoke /review --quick for post-build quality checks.",
       "files": [],
       "assertions": [
         {
@@ -148,7 +148,7 @@
     },
     {
       "id": 7,
-      "command": "resume-work",
+      "command": "progress",
       "prompt": "hey, picking this back up. where was I?",
       "expected_output": "Should read STATE.md, ROADMAP.md, CONCERNS.md, scan for incomplete plans (PLAN without SUMMARY), check git state, present a concise briefing with project name/branch/position/status/last activity/blockers, then route to the right next action.",
       "files": [],
@@ -415,7 +415,7 @@
       "id": 17,
       "command": "ui-critique",
       "prompt": "critique the dashboard page. it's at src/app/dashboard/page.tsx",
-      "expected_output": "Should read skills/frontend-design/SKILL.md for design principles and anti-patterns, then evaluate the dashboard page across all dimensions (AI slop detection, visual hierarchy, information architecture, emotional resonance, etc.). Should produce a structured critique report with Anti-Patterns Verdict, Overall Impression, What's Working, Priority Issues with severity, and specific fix commands (/polish, /simplify, etc.).",
+      "expected_output": "Should read skills/frontend-design/PROMPT.mdPROMPT.md for design principles and anti-patterns, then evaluate the dashboard page across all dimensions (AI slop detection, visual hierarchy, information architecture, emotional resonance, etc.). Should produce a structured critique report with Anti-Patterns Verdict, Overall Impression, What's Working, Priority Issues with severity, and specific fix commands (/polish, /simplify, etc.).",
       "files": [],
       "assertions": [
         {
@@ -436,11 +436,11 @@
       "id": 18,
       "command": "simplify",
       "prompt": "simplify the changes I just made",
-      "expected_output": "Should invoke skills/simplify/ which runs 3 parallel review agents on the git diff (code reuse, code quality, efficiency). Should fix issues directly and commit with 'refactor(scope): simplify pass'. Should NOT read full codebase - only operates on changed files from git diff.",
+      "expected_output": "Should invoke skills/simplify/PROMPT.md which runs 3 parallel review agents on the git diff (code reuse, code quality, efficiency). Should fix issues directly and commit with 'refactor(scope): simplify pass'. Should NOT read full codebase - only operates on changed files from git diff.",
       "files": [],
       "assertions": [
         {
-          "text": "Invokes skills/simplify/",
+          "text": "Invokes skills/simplify/PROMPT.md",
           "type": "behavioral"
         },
         {
@@ -461,7 +461,7 @@
       "id": 19,
       "command": "simplify",
       "prompt": "clean up the auth module after refactoring",
-      "expected_output": "Should invoke skills/simplify/ with the auth module as scope. Should check git diff for recent auth-related changes and run 3 parallel agents. If no git diff exists for auth files, should inform user there are no recent changes to simplify.",
+      "expected_output": "Should invoke skills/simplify/PROMPT.md with the auth module as scope. Should check git diff for recent auth-related changes and run 3 parallel agents. If no git diff exists for auth files, should inform user there are no recent changes to simplify.",
       "files": [],
       "assertions": [
         {
@@ -1184,7 +1184,7 @@
       "id": 45,
       "command": "build",
       "prompt": "build the plan (plan has only frontend tasks - React component refactor, new page layout, CSS updates)",
-      "expected_output": "Should detect all tasks are frontend. Should dispatch subagents with frontend-design directives from skills/frontend-design/. Should run design gates after execution (/critique -> /polish -> /normalize). Should read .planning/DESIGN.md for design context during critique. Should check for frontend anti-patterns (AI slop, emoji in UI, generic gradients).",
+      "expected_output": "Should detect all tasks are frontend. Should dispatch subagents with frontend-design directives from skills/frontend-design/PROMPT.md. Should run design gates after execution (/critique -> /polish -> /normalize). Should read .planning/DESIGN.md for design context during critique. Should check for frontend anti-patterns (AI slop, emoji in UI, generic gradients).",
       "files": [],
       "assertions": [
         {
@@ -2335,7 +2335,7 @@
     },
     {
       "id": 73,
-      "command": "resume-work",
+      "command": "progress",
       "prompt": "I'm coming back to this project after a break, where was I?",
       "expected_output": "Should restore context from STATE.md showing Phase 02 in-progress, identify 02-01 plan with task 2 in-progress (widget system), mention pending todos (rate limiting, fetch wrapper, data-table regression), and suggest next action.",
       "files": [
@@ -3084,7 +3084,7 @@
     },
     {
       "id": 98,
-      "command": "resume-work",
+      "command": "progress",
       "prompt": "picking up where I left off",
       "expected_output": "Should read STATE.md and find it references phase 5 as current_phase. Should scan .planning/phases/ and discover only phases 1-2 exist on disk. Should detect the mismatch (STATE.md points to non-existent phase). Should report the state corruption clearly. Should suggest /health --repair to fix the drift. Should NOT silently proceed as if phase 5 exists.",
       "files": [],
@@ -3292,7 +3292,7 @@
     },
     {
       "id": 104,
-      "command": "resume-work",
+      "command": "progress",
       "prompt": "hey picking this back up, where was I?",
       "expected_output": "Should read STATE.md and find Phase 02 (dashboard) is in-progress as current phase. Should find 02-01-PLAN.md exists without a matching SUMMARY (incomplete). Should detect 3 pending todos (todo-001, todo-002, todo-003). Should present briefing showing Phase 01 complete, Phase 02 in-progress. Should route to continue the unfinished plan (task 2) or fix a regression if one is flagged in todos.",
       "files": [
@@ -3693,7 +3693,7 @@
       "id": 116,
       "command": "plan-work",
       "prompt": "plan adding a user settings page with profile editing form, password change, and notification preferences toggles",
-      "expected_output": "During plan-check (Step 6), should detect interactive frontend features (forms, toggles) and check for playwright.config in the project. Should WARN that no E2E test task exists and suggest adding a Playwright test task. Should offer to create the test task referencing skills/playwright-testing/. Should NOT block.",
+      "expected_output": "During plan-check (Step 6), should detect interactive frontend features (forms, toggles) and check for playwright.config in the project. Should WARN that no E2E test task exists and suggest adding a Playwright test task. Should offer to create the test task referencing .claude/skills/playwright-testing/PROMPT.md. Should NOT block.",
       "files": [],
       "assertions": [
         {

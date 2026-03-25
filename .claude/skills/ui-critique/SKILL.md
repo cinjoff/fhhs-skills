@@ -6,7 +6,7 @@ user-invokable: true
 
 Conduct a holistic design critique, evaluating whether the interface actually works---not just technically, but as a designed experience. Think like a design director giving feedback.
 
-**First**: Read the `skills/frontend-design/` skill to load design principles and the full anti-patterns checklist. This is required context — the anti-patterns list is the foundation for the AI Slop Detection check below.
+**First**: Read `skills/frontend-design/PROMPT.md` to load design principles and the full anti-patterns checklist. This is required context — the anti-patterns list is the foundation for the AI Slop Detection check below.
 
 ## Design Critique
 
