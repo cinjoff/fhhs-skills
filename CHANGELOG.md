@@ -5,6 +5,12 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.21.3] - 2026-03-25
+
+### Fixed
+- **Stale skill references after rename consolidation** — updated help, new-project, sync-upstream, todos, progress, README, and marketplace.json to use current skill names (ui-critique, ui-animate, ui-redesign, ui-test, todos)
+- **shadcn skills install location** — now installs globally to `~/.skills/shadcn` instead of per-project, avoiding repo pollution
+
 ## [1.21.2] - 2026-03-25
 
 ### Changed
