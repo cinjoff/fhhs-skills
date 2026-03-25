@@ -343,6 +343,8 @@ def main():
                         help=f"Parallel workers (default: {MAX_WORKERS})")
     parser.add_argument("--output-dir", type=str, default=None,
                         help="Output directory (default: full-run-N)")
+    parser.add_argument("--commands", type=str, default=None,
+                        help="Comma-separated list of commands to filter evals (e.g., 'build,review,fix')")
     args = parser.parse_args()
 
     # Determine output dir
@@ -376,6 +378,15 @@ def main():
         data = json.load(f)
     evals = data["evals"]
     log(f"Loaded {len(evals)} evals across {len(set(e['command'] for e in evals))} commands")
+
+    # Filter by --commands if provided
+    if args.commands:
+        commands_filter = {c.strip() for c in args.commands.split(",")}
+        evals = [e for e in evals if e["command"] in commands_filter]
+        log(f"Filtered to {len(evals)} evals for commands: {', '.join(sorted(commands_filter))}")
+        if not evals:
+            log("WARNING: No evals match the specified commands. Exiting.")
+            sys.exit(0)
 
     # Pre-load all skill contents
     skill_cache = {}
