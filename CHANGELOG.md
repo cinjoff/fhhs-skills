@@ -5,6 +5,12 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.24.2] - 2026-03-26
+
+### Fixed
+- **Skills discovery** — plugin manifest now declares the correct skills path so all shipped skills are discoverable
+- **Private commands** — `audit-upstream` and `sync-upstream` no longer exposed to plugin users
+
 ## [1.24.1] - 2026-03-26
 
 ### Fixed
