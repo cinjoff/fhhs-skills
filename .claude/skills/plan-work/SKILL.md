@@ -27,12 +27,13 @@ Before beginning any planning work, create native tasks for all planning steps s
 If TaskCreate succeeds, create the following tasks in order and capture their IDs:
 
 1. **"Phase matching"** (activeForm: "Matching to phase")
-2. **"Research"** (activeForm: "Researching")
-3. **"Brainstorm design"** (activeForm: "Brainstorming")
-4. **"Discuss implementation"** (activeForm: "Discussing gray areas")
-5. **"Derive must_haves"** (activeForm: "Deriving must_haves")
-6. **"Create plan"** (activeForm: "Writing plan")
-7. **"Plan-check"** (activeForm: "Validating plan")
+2. **"Complexity assessment"** (activeForm: "Assessing complexity")
+3. **"Research"** (activeForm: "Researching")
+4. **"Brainstorm design"** (activeForm: "Brainstorming")
+5. **"Discuss implementation"** (activeForm: "Discussing gray areas")
+6. **"Derive must_haves"** (activeForm: "Deriving must_haves")
+7. **"Create plan"** (activeForm: "Writing plan")
+8. **"Plan-check"** (activeForm: "Validating plan")
 
 Set up sequential dependencies: each task `addBlockedBy` the previous task's ID (task 2 blocked by task 1, task 3 blocked by task 2, etc.).
 
@@ -56,18 +57,70 @@ Once the target phase is determined, hold it — it determines the output path f
 
 ---
 
+## Step 0.5: Complexity Assessment
+
+> **Task tracking:** `TaskUpdate(complexityAssessmentId, status="in_progress")` — skip if TASKS_AVAILABLE=false.
+
+Before diving in, evaluate the task to suggest appropriate depth for research, discussion, and review.
+
+**Complexity signals to check:**
+
+1. **Task count estimate:** How many files/components will this touch? (quick scan of the codebase area)
+2. **Domain familiarity:** Does the codebase already have patterns for this? (check with quick glob/grep for similar code)
+3. **Architectural impact:** Does this introduce new dependencies, data flows, or system boundaries?
+4. **Multi-session likelihood:** Will this span multiple conversations?
+
+**Depth suggestion matrix:**
+
+| Complexity | Research | Discussion | Review |
+|-----------|----------|------------|--------|
+| **Simple** (1-3 tasks, familiar patterns, single file area) | Skip | Skip | Suggest `/fh:plan-review` (can skip for trivial: rename, typo) |
+| **Medium** (4-8 tasks, some unfamiliar patterns) | Inline research | Identify gray areas | Strongly suggest `/fh:plan-review` |
+| **Complex** (9+ tasks, unfamiliar domain, new architecture, multi-session) | Suggest deep research via phase-researcher agent | Full discussion with decision-locking | Strongly suggest `/fh:plan-review` |
+
+**Present the assessment to the user:** "This looks [simple/medium/complex] — I suggest [depth]. Want to proceed with that depth, or adjust?"
+
+Wait for user confirmation before proceeding. The user can override the suggested depth.
+
+> **Task tracking:** `TaskUpdate(complexityAssessmentId, status="completed")` — skip if TASKS_AVAILABLE=false.
+
+---
+
 ## Step 1: Research (if needed)
 
 > **Task tracking:** `TaskUpdate(researchId, status="in_progress")` — skip if TASKS_AVAILABLE=false.
 
 Check whether the user's request involves unfamiliar APIs, external services, library selection, or technical feasibility questions. If so, research before designing — it prevents brainstorming in a vacuum.
 
-**If research needed:** Announce "This needs technical research before design — researching first." Delegate to a subagent:
+The complexity assessment from Step 0.5 determines the research path:
+
+### Deep research path (complex tasks)
+
+When the complexity assessment suggests deep research, offer to spawn a `gsd-phase-researcher` subagent that produces a structured `.planning/research/YYYY-MM-DD-<topic>-RESEARCH.md` containing:
+- Stack patterns and architecture approaches
+- Pitfalls and known failure modes
+- Code examples from authoritative sources
+- Prescriptive recommendations
+
+This is heavier than inline research but produces reusable artifacts that persist across sessions.
+
+### Codebase exploration path (unfamiliar codebase)
+
+When working in an unfamiliar codebase, suggest dispatching a `code-explorer` agent before brainstorming to understand existing patterns. The agent scans for:
+- Existing abstractions and utilities relevant to the task
+- Naming conventions and file organization patterns
+- Similar features already implemented that can serve as templates
+
+### Inline research path (medium tasks — default)
+
+Announce "This needs technical research before design — researching first." Delegate to a subagent:
 
 Spawn a Task agent with:
 - The specific research questions implied by the user's request
 - Instruction to use Firecrawl for web search and Context7 for library documentation
 - Instruction to write findings to `.planning/research/` with prescriptive recommendations, stack decisions, pitfalls, and code examples
+
+### Skip research (simple tasks)
 
 **If the feature uses well-known patterns**, skip this step and say so. When skipping: `TaskUpdate(researchId, status="completed", metadata={skipped: true, reason: "Well-known patterns, no research needed"})` — skip if TASKS_AVAILABLE=false.
 
@@ -125,11 +178,28 @@ Resolve implementation gray areas before planning:
 
      Any row with all N's = **CRITICAL GAP** that must be addressed in the plan.
 
-6. **Lock decisions** in `.planning/phases/{phase}/{phase}-CONTEXT.md` with "Design Decisions" section
+6. **Categorize and lock decisions** in `.planning/phases/{phase}/{phase}-CONTEXT.md`. After discussing gray areas, explicitly categorize each decision into one of three categories:
+
+   - **Locked** — Claude must follow this in all subsequent sessions. No re-deciding.
+   - **Discretion** — Claude decides within stated bounds. Document the bounds.
+   - **Deferred** — Tracked for later. Not in scope for this plan.
+
+   Write these to CONTEXT.md using a clear three-section format:
+
+   ```markdown
+   ## Locked Decisions
+   - [Decision]: [What was decided and why]
+
+   ## Discretion Areas
+   - [Area]: [Bounds within which Claude can decide]
+
+   ## Deferred Ideas
+   - [Idea]: [Why deferred, when to revisit]
+   ```
+
+   These locked decisions are injected into build subagent prompts via the implementer-prompt template, preventing downstream re-deciding.
 
 **Scope commitment rule:** Once the user selects which gray areas to discuss, commit fully to that selection. Do not lobby for different areas or silently expand scope.
-
-These locked decisions are fed to subagents during `/fh:build` execution — they prevent re-deciding things downstream.
 
 > **Task tracking:** `TaskUpdate(discussId, status="completed")` — skip if TASKS_AVAILABLE=false.
 
@@ -286,11 +356,11 @@ If a check fails, state which check failed, revise the plan, and recheck. After 
 
 After plan approval:
 
-1. **`/fh:plan-review`** (recommended) — Challenge the plan before building. Catches failure modes, edge cases, and architectural issues. Three modes: SCOPE EXPANSION (dream big), HOLD SCOPE (maximum rigor), SCOPE REDUCTION (strip to essentials). **Feedback loop:** plan-review feeds findings back into PLAN.md (`must_haves.truths` with `[review]` prefix) and CONTEXT.md (review decisions + deferred scope). After plan-review completes, `/fh:build` automatically picks up the strengthened plan — no manual merging needed.
-2. **`/fh:build`** — Execute now. Skip review if the plan is straightforward or already reviewed.
-3. **Continue planning** — Plan more phases before building or reviewing.
+1. **`/fh:plan-review`** (default) — Review before building. Covers business alignment, architecture, code quality, tests, and performance. Three modes: SCOPE EXPANSION (dream big), HOLD SCOPE (maximum rigor), SCOPE REDUCTION (strip to essentials). **Feedback loop:** plan-review feeds findings back into PLAN.md (`must_haves.truths` with `[review]` prefix) and CONTEXT.md (review decisions + deferred scope). After plan-review completes, `/fh:build` automatically picks up the strengthened plan — no manual merging needed.
+2. **`/fh:build`** — Skip review — only if this is trivially obvious (single-file rename, typo fix, config-only change with no behavioral impact).
+3. **Continue planning** — Plan more phases before building.
 
-Default to option 1 unless the plan is trivially simple (1 task, well-known patterns).
+**Review is the default for ALL plans.** Only skip review for trivially obvious work where the risk of a missed edge case is near zero. When in doubt, review.
 
 ---
 
