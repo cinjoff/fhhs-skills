@@ -5,7 +5,7 @@
       "id": 1,
       "command": "build",
       "prompt": "ok i just finished planning phase 13 for my saas app. there's a PLAN.md at .planning/phases/13-auth/13-01-PLAN.md with 3 tasks \u2014 two backend (JWT auth + refresh tokens) and one frontend (login form). the backend tasks are independent but the frontend depends on both. execute it",
-      "expected_output": "Should detect GSD mode, find the plan, identify 2 waves (wave 1: 2 parallel backend tasks, wave 2: 1 frontend task), dispatch general-purpose subagents (not gsd-executor), include TDD directives (from internal skills/test-driven-development/PROMPT.md) for backend tasks and frontend-design directives (from internal skills/frontend-design/PROMPT.md) for the login form, run design gates (/critique then /polish) after frontend task, generate SUMMARY.md, update GSD state, and invoke /review --quick for post-build quality checks.",
+      "expected_output": "Should detect GSD mode, find the plan, identify 2 waves (wave 1: 2 parallel backend tasks, wave 2: 1 frontend task), dispatch general-purpose subagents (not gsd-executor), include TDD directives (from internal skills/test-driven-development/PROMPT.md) for backend tasks and frontend-design directives (from internal skills/frontend-design/PROMPT.md) for the login form, run design gates (/critique then /polish) after frontend task, generate SUMMARY.md, update GSD state, and invoke /review --quick for post-build quality checks. Should run verification gate (tests, build check, lint) before writing SUMMARY.md.",
       "files": [],
       "assertions": [
         {
@@ -35,6 +35,10 @@
         {
           "text": "Does NOT invoke requesting-code-review or finishing-a-development-branch directly",
           "type": "guard"
+        },
+        {
+          "text": "Runs verification gate (tests, build, lint) before writing SUMMARY",
+          "type": "behavioral"
         }
       ]
     },
@@ -66,7 +70,7 @@
       "id": 3,
       "command": "plan-work",
       "prompt": "I need to add stripe subscription billing to my app. users should be able to pick a plan, enter payment, and see their current subscription in settings. I've never used the stripe API before",
-      "expected_output": "Should detect research-first need (unfamiliar API: Stripe), run research step BEFORE brainstorming (not after), delegate research to subagent with Firecrawl/Context7, then brainstorm with findings, discuss implementation gray areas, derive must_haves with user-facing truths, create PLAN.md with proper frontmatter, and run plan-check verification loop.",
+      "expected_output": "Should detect research-first need (unfamiliar API: Stripe), run research step BEFORE brainstorming (not after), delegate research to subagent with Firecrawl/Context7, then brainstorm with findings, discuss implementation gray areas, derive must_haves with user-facing truths, create PLAN.md with proper frontmatter, and run plan-check verification loop. Should perform complexity assessment before deciding research path.",
       "files": [],
       "assertions": [
         {
@@ -80,6 +84,10 @@
         {
           "text": "Creates PLAN.md with must_haves frontmatter",
           "type": "output"
+        },
+        {
+          "text": "Performs complexity assessment (Simple/Medium/Complex) before research decision",
+          "type": "behavioral"
         }
       ]
     },
@@ -87,7 +95,7 @@
       "id": 4,
       "command": "plan-work",
       "prompt": "plan adding a dark mode toggle to the settings page. we already use tailwind's dark: prefix and have a ThemeProvider component",
-      "expected_output": "Should detect well-known pattern (no research needed), skip research step, proceed directly to brainstorming, note frontend work and read DESIGN.md, produce a small plan (2-3 tasks, 5-8 files), include checkpoint:human-verify for visual verification.",
+      "expected_output": "Should detect well-known pattern (no research needed), skip research step, proceed directly to brainstorming, note frontend work and read DESIGN.md, produce a small plan (2-3 tasks, 5-8 files), include checkpoint:human-verify for visual verification. Should perform complexity assessment before deciding research path.",
       "files": [],
       "assertions": [
         {
@@ -101,6 +109,10 @@
         {
           "text": "Produces appropriately small plan",
           "type": "output"
+        },
+        {
+          "text": "Performs complexity assessment (Simple/Medium/Complex) before research decision",
+          "type": "behavioral"
         }
       ]
     },
@@ -294,7 +306,7 @@
       "id": 12,
       "command": "plan-work",
       "prompt": "plan adding real-time notifications. we already discussed this in phase 8 and there's a .planning/phases/08-notifications/08-CONTEXT.md with locked decisions about using SSE instead of websockets",
-      "expected_output": "Should detect existing CONTEXT.md, SKIP Step 3 (Discuss Implementation) since decisions are already locked, read the CONTEXT.md and honor the SSE decision in the plan, and NOT re-open the SSE vs websockets discussion. Plan should reference the locked SSE decision.",
+      "expected_output": "Should detect existing CONTEXT.md, SKIP Step 3 (Discuss Implementation) since decisions are already locked, read the CONTEXT.md and honor the SSE decision in the plan, and NOT re-open the SSE vs websockets discussion. Plan should reference the locked SSE decision. Should perform complexity assessment before deciding research path.",
       "files": [],
       "assertions": [
         {
@@ -307,6 +319,10 @@
         },
         {
           "text": "Honors locked SSE decision",
+          "type": "behavioral"
+        },
+        {
+          "text": "Performs complexity assessment (Simple/Medium/Complex) before research decision",
           "type": "behavioral"
         }
       ]
@@ -360,7 +376,7 @@
       "id": 15,
       "command": "plan-work",
       "prompt": "i want to add a feature for exporting reports as PDF. this doesn't match any phase in the roadmap",
-      "expected_output": "Should compare against ROADMAP.md phases, detect no match, ask user: 'This doesn't match any existing phase. Add as a new phase to the roadmap, or fold into the current phase?' Should wait for user choice before proceeding. If new phase chosen, should add phase to ROADMAP.md and create phase directory.",
+      "expected_output": "Should compare against ROADMAP.md phases, detect no match, ask user: 'This doesn't match any existing phase. Add as a new phase to the roadmap, or fold into the current phase?' Should wait for user choice before proceeding. If new phase chosen, should add phase to ROADMAP.md and create phase directory. Should perform complexity assessment before deciding research path.",
       "files": [],
       "assertions": [
         {
@@ -373,6 +389,10 @@
         },
         {
           "text": "Asks user before creating new phase",
+          "type": "behavioral"
+        },
+        {
+          "text": "Performs complexity assessment (Simple/Medium/Complex) before research decision",
           "type": "behavioral"
         }
       ]
@@ -1184,7 +1204,7 @@
       "id": 45,
       "command": "build",
       "prompt": "build the plan (plan has only frontend tasks - React component refactor, new page layout, CSS updates)",
-      "expected_output": "Should detect all tasks are frontend. Should dispatch subagents with frontend-design directives from skills/frontend-design/PROMPT.md. Should run design gates after execution (/critique -> /polish -> /normalize). Should read .planning/DESIGN.md for design context during critique. Should check for frontend anti-patterns (AI slop, emoji in UI, generic gradients).",
+      "expected_output": "Should detect all tasks are frontend. Should dispatch subagents with frontend-design directives from skills/frontend-design/PROMPT.md. Should run design gates after execution (/critique -> /polish -> /normalize). Should read .planning/DESIGN.md for design context during critique. Should check for frontend anti-patterns (AI slop, emoji in UI, generic gradients). Should run verification gate (tests, build check, lint) before writing SUMMARY.md.",
       "files": [],
       "assertions": [
         {
@@ -1206,6 +1226,14 @@
         {
           "text": "Checks for frontend anti-patterns",
           "type": "behavioral"
+        },
+        {
+          "text": "Runs verification gate (tests, build, lint) before writing SUMMARY",
+          "type": "behavioral"
+        },
+        {
+          "text": "Suggests /fh:audit for frontend-heavy work",
+          "type": "behavioral"
         }
       ],
       "scenario_requires": [
@@ -1216,7 +1244,7 @@
       "id": 46,
       "command": "fix",
       "prompt": "the CSS grid layout breaks on tablet. elements overlap at 768px width",
-      "expected_output": "Should triage as MODERATE (2-4 files, single subsystem - CSS/layout). Should use systematic debugging to identify the breakpoint issue. Should apply TDD fix. Should detect frontend work and check for design system consistency. Should run /simplify pass (MODERATE triggers simplify). Should verify fix at the specific breakpoint.",
+      "expected_output": "Should triage as MODERATE (2-4 files, single subsystem - CSS/layout). Should use systematic debugging to identify the breakpoint issue. Should apply TDD fix. Should detect frontend work and check for design system consistency. Should run /simplify pass (MODERATE triggers simplify). Should verify fix at the specific breakpoint. Should run verification gate before generating fix summary.",
       "files": [],
       "assertions": [
         {
@@ -1233,6 +1261,10 @@
         },
         {
           "text": "Verifies at specific breakpoint",
+          "type": "behavioral"
+        },
+        {
+          "text": "Runs verification gate before generating fix summary",
           "type": "behavioral"
         }
       ]
@@ -1500,7 +1532,7 @@
       "id": 56,
       "command": "build",
       "prompt": "Build the auth plan at .planning/phases/01-auth/01-01-PLAN.md. It has 3 tasks \u2014 JWT auth middleware, refresh token rotation (both backend, independent), and a login form that depends on both.",
-      "expected_output": "Should detect GSD mode, find the plan, identify 2 waves (wave 1: 2 parallel backend tasks, wave 2: 1 frontend task). Dispatch general-purpose subagents with Next.js performance rules in prompts (waterfall avoidance, bundle awareness). Spec gates run per wave. Design gates (critique \u2192 polish \u2192 normalize) run for the frontend login form task. Simplify pass runs after all waves. Then invoke /review --quick for post-build quality checks (code-reviewer agent). SUMMARY.md generated with correct frontmatter. PR title follows conventional commit format.",
+      "expected_output": "Should detect GSD mode, find the plan, identify 2 waves (wave 1: 2 parallel backend tasks, wave 2: 1 frontend task). Dispatch general-purpose subagents with Next.js performance rules in prompts (waterfall avoidance, bundle awareness). Spec gates run per wave. Design gates (critique \u2192 polish \u2192 normalize) run for the frontend login form task. Simplify pass runs after all waves. Then invoke /review --quick for post-build quality checks (code-reviewer agent). SUMMARY.md generated with correct frontmatter. PR title follows conventional commit format. Should run verification gate (tests, build check, lint) before writing SUMMARY.md.",
       "files": [
         "evals/fixtures/nextjs-app-deep/next.config.ts",
         "evals/fixtures/nextjs-app-deep/tsconfig.json",
@@ -1572,6 +1604,10 @@
         {
           "text": "GSD state updated in /build Step 6 BEFORE /review invocation",
           "type": "ordering"
+        },
+        {
+          "text": "Runs verification gate (tests, build, lint) before writing SUMMARY",
+          "type": "behavioral"
         }
       ]
     },
@@ -1579,7 +1615,7 @@
       "id": 57,
       "command": "build",
       "prompt": "Execute the API refactor plan at .planning/phases/02-api/02-01-PLAN.md",
-      "expected_output": "Should build the API refactor plan. During /review, security scan finds SQL injection via string concatenation (CRITICAL) and hardcoded JWT secret (CRITICAL) in existing code. CRITICAL findings BLOCK promotion. Fix agent is dispatched to remediate CRITICAL findings (parameterized queries, env-based secrets). After fix, re-scan verifies remediation. MEDIUM findings (missing CORS) are logged but do not block. Promotion proceeds after re-scan passes.",
+      "expected_output": "Should build the API refactor plan. During /review, security scan finds SQL injection via string concatenation (CRITICAL) and hardcoded JWT secret (CRITICAL) in existing code. CRITICAL findings BLOCK promotion. Fix agent is dispatched to remediate CRITICAL findings (parameterized queries, env-based secrets). After fix, re-scan verifies remediation. MEDIUM findings (missing CORS) are logged but do not block. Promotion proceeds after re-scan passes. Should run verification gate (tests, build check, lint) before writing SUMMARY.md.",
       "files": [
         "evals/fixtures/nextjs-app-deep/next.config.ts",
         "evals/fixtures/nextjs-app-deep/tsconfig.json",
@@ -1628,6 +1664,10 @@
         },
         {
           "text": "Fix agent replaces SQL concatenation with parameterized queries",
+          "type": "behavioral"
+        },
+        {
+          "text": "Runs verification gate (tests, build, lint) before writing SUMMARY",
           "type": "behavioral"
         }
       ],
@@ -1689,7 +1729,7 @@
       "id": 59,
       "command": "build",
       "prompt": "Build the auth plan at .planning/phases/01-auth/01-01-PLAN.md",
-      "expected_output": "Should build the auth plan. During spec gate, the gate catches any usage in the subagent output (e.g., function params typed as any). This is flagged as BLOCKING \u2014 not advisory. Fix agent replaces any with specific types (unknown + type guards, or concrete interface types). Fix happens before the next wave starts. as any assertions are also rejected. Suggests unknown or proper type guard as alternatives.",
+      "expected_output": "Should build the auth plan. During spec gate, the gate catches any usage in the subagent output (e.g., function params typed as any). This is flagged as BLOCKING \u2014 not advisory. Fix agent replaces any with specific types (unknown + type guards, or concrete interface types). Fix happens before the next wave starts. as any assertions are also rejected. Suggests unknown or proper type guard as alternatives. Should run verification gate (tests, build check, lint) before writing SUMMARY.md.",
       "files": [
         "evals/fixtures/nextjs-app-deep/next.config.ts",
         "evals/fixtures/nextjs-app-deep/tsconfig.json",
@@ -1730,6 +1770,10 @@
         {
           "text": "Non-exhaustive switch violations in existing code flagged",
           "type": "behavioral"
+        },
+        {
+          "text": "Runs verification gate (tests, build, lint) before writing SUMMARY",
+          "type": "behavioral"
         }
       ],
       "scenario_requires": [
@@ -1740,7 +1784,7 @@
       "id": 60,
       "command": "fix",
       "prompt": "The user profile page crashes when the user has no avatar \u2014 TypeError: Cannot read properties of null (reading 'url'). It's in src/components/profile.tsx",
-      "expected_output": "Should triage as MODERATE (single component, one subsystem). Invokes systematic debugging to locate null reference in profile.tsx (accessing avatar.url when avatar is null). TDD approach: writes failing test first reproducing the null avatar case, then fixes with optional chaining or null check, confirms test passes. Frontend check reads DESIGN.md for fallback avatar styling. Simplify runs before /review. /review runs quality review on the fix diff, security scan on changed files, TS strictness check. Fix commit uses fix(profile): prefix. Does NOT fix unrelated pre-existing issues.",
+      "expected_output": "Should triage as MODERATE (single component, one subsystem). Invokes systematic debugging to locate null reference in profile.tsx (accessing avatar.url when avatar is null). TDD approach: writes failing test first reproducing the null avatar case, then fixes with optional chaining or null check, confirms test passes. Frontend check reads DESIGN.md for fallback avatar styling. Simplify runs before /review. /review runs quality review on the fix diff, security scan on changed files, TS strictness check. Fix commit uses fix(profile): prefix. Does NOT fix unrelated pre-existing issues. Should run verification gate before generating fix summary.",
       "files": [
         "evals/fixtures/nextjs-app-deep/next.config.ts",
         "evals/fixtures/nextjs-app-deep/tsconfig.json",
@@ -1791,6 +1835,10 @@
         },
         {
           "text": "Null reference fix uses optional chaining or type guard (not as any)",
+          "type": "behavioral"
+        },
+        {
+          "text": "Runs verification gate before generating fix summary",
           "type": "behavioral"
         }
       ]
@@ -1995,7 +2043,7 @@
       "id": 65,
       "command": "plan-work",
       "prompt": "Plan and build adding user settings page with a dark mode toggle. The project already has a ThemeProvider and uses Tailwind dark: prefix.",
-      "expected_output": "Should run /plan-work first: skips research (dark mode toggle is well-known pattern), brainstorms design options (toggle placement, persistence strategy, system preference detection), discusses with user, derives must_haves with user-facing truths, creates PLAN.md with proper frontmatter. Then /build: loads Next.js perf rules, dispatches subagents, spec gate per wave, design gates (critique \u2192 polish \u2192 normalize) for frontend components. Design gates run after spec gates. Simplify before /review. /review runs full pipeline (quality + security + TS strictness). SUMMARY.md generated with must_haves verification. PR with conventional commit title.",
+      "expected_output": "Should run /plan-work first: skips research (dark mode toggle is well-known pattern), brainstorms design options (toggle placement, persistence strategy, system preference detection), discusses with user, derives must_haves with user-facing truths, creates PLAN.md with proper frontmatter. Then /build: loads Next.js perf rules, dispatches subagents, spec gate per wave, design gates (critique \u2192 polish \u2192 normalize) for frontend components. Design gates run after spec gates. Simplify before /review. /review runs full pipeline (quality + security + TS strictness). SUMMARY.md generated with must_haves verification. PR with conventional commit title. Should perform complexity assessment before deciding research path.",
       "files": [
         "evals/fixtures/nextjs-app-deep/next.config.ts",
         "evals/fixtures/nextjs-app-deep/tsconfig.json",
@@ -2065,6 +2113,14 @@
         {
           "text": "ThemeProvider and Tailwind dark: prefix acknowledged in plan context",
           "type": "behavioral"
+        },
+        {
+          "text": "Performs complexity assessment (Simple/Medium/Complex) before research decision",
+          "type": "behavioral"
+        },
+        {
+          "text": "Uses three-category decision locking (LOCKED/DISCRETION/DEFERRED)",
+          "type": "output"
         }
       ]
     },
@@ -2072,7 +2128,7 @@
       "id": 66,
       "command": "fix",
       "prompt": "API returns 500 on /api/users and /api/billing simultaneously, and the dashboard shows stale data. Three independent failures.",
-      "expected_output": "Should triage as PARALLEL (3+ independent failures across different subsystems). Dispatches parallel gsd-debugger agents \u2014 one per failing subsystem (users API, billing API, dashboard staleness). Each debugger uses scientific method (hypothesis \u2192 test \u2192 conclude). TDD fix per root cause. Simplify after all fixes. /review security scan catches SQL injection in /api/users route (CRITICAL). BLOCKS on CRITICAL. Fix agent addresses SQL injection. Re-scan after security fix. SUMMARY.md notes all three subsystem fixes plus security remediation.",
+      "expected_output": "Should triage as PARALLEL (3+ independent failures across different subsystems). Dispatches parallel gsd-debugger agents \u2014 one per failing subsystem (users API, billing API, dashboard staleness). Each debugger uses scientific method (hypothesis \u2192 test \u2192 conclude). TDD fix per root cause. Simplify after all fixes. /review security scan catches SQL injection in /api/users route (CRITICAL). BLOCKS on CRITICAL. Fix agent addresses SQL injection. Re-scan after security fix. SUMMARY.md notes all three subsystem fixes plus security remediation. Should run verification gate before generating fix summary.",
       "files": [
         "evals/fixtures/nextjs-app-deep/next.config.ts",
         "evals/fixtures/nextjs-app-deep/tsconfig.json",
@@ -2129,6 +2185,10 @@
         {
           "text": "Does NOT invoke requesting-code-review directly",
           "type": "guard"
+        },
+        {
+          "text": "Runs verification gate before generating fix summary",
+          "type": "behavioral"
         }
       ]
     },
@@ -3022,7 +3082,7 @@
       "id": 96,
       "command": "build",
       "prompt": "build the plan \u2014 it has 2 waves. wave 1 has 2 tasks and wave 2 has 1 task that depends on wave 1",
-      "expected_output": "Should execute wave 1 (2 parallel tasks). When spec gate fails on wave 1 output (tests fail or quality issues), should HALT and NOT dispatch wave 2. Should report spec gate failure with details. Should allow user to fix wave 1 issues before retrying. Should NOT execute wave 2 with known spec issues from wave 1.",
+      "expected_output": "Should execute wave 1 (2 parallel tasks). When spec gate fails on wave 1 output (tests fail or quality issues), should HALT and NOT dispatch wave 2. Should report spec gate failure with details. Should allow user to fix wave 1 issues before retrying. Should NOT execute wave 2 with known spec issues from wave 1. Should run verification gate (tests, build check, lint) before writing SUMMARY.md.",
       "files": [],
       "assertions": [
         {
@@ -3044,6 +3104,10 @@
         {
           "text": "Does NOT execute wave 2 with known spec issues in wave 1",
           "type": "guard"
+        },
+        {
+          "text": "Runs verification gate (tests, build, lint) before writing SUMMARY",
+          "type": "behavioral"
         }
       ],
       "scenario_requires": [
@@ -3054,7 +3118,7 @@
       "id": 97,
       "command": "build",
       "prompt": "build the plan \u2014 all waves completed, running /review now",
-      "expected_output": "Should complete all waves and invoke /review. When /review gate decision is BLOCK (e.g., security CRITICAL or test failures), should NOT mark the phase as complete in STATE.md. Should report the block reason clearly. Should offer a fix-and-retry path (fix the issues, then re-run /review). Should NOT update STATE.md to mark phase done while review is blocked.",
+      "expected_output": "Should complete all waves and invoke /review. When /review gate decision is BLOCK (e.g., security CRITICAL or test failures), should NOT mark the phase as complete in STATE.md. Should report the block reason clearly. Should offer a fix-and-retry path (fix the issues, then re-run /review). Should NOT update STATE.md to mark phase done while review is blocked. Should run verification gate (tests, build check, lint) before writing SUMMARY.md.",
       "files": [],
       "assertions": [
         {
@@ -3076,6 +3140,10 @@
         {
           "text": "Does NOT update STATE.md to phase-done while blocked",
           "type": "guard"
+        },
+        {
+          "text": "Runs verification gate (tests, build, lint) before writing SUMMARY",
+          "type": "behavioral"
         }
       ],
       "scenario_requires": [
@@ -3373,7 +3441,7 @@
       "id": 106,
       "command": "build",
       "prompt": "I just finished planning phase 2, build it, then verify and tell me progress",
-      "expected_output": "Should execute a lifecycle chain: first invoke /build for 02-01-PLAN.md, then on completion invoke /verify for phase 2 deliverables, then invoke /progress showing updated state. Each step must complete before the next starts. /build should invoke /review --quick internally as post-build quality check. Final /progress output should show Phase 02 further along than before (plan executed, summary generated).",
+      "expected_output": "Should execute a lifecycle chain: first invoke /build for 02-01-PLAN.md, then on completion invoke /verify for phase 2 deliverables, then invoke /progress showing updated state. Each step must complete before the next starts. /build should invoke /review --quick internally as post-build quality check. Final /progress output should show Phase 02 further along than before (plan executed, summary generated). Should run verification gate (tests, build check, lint) before writing SUMMARY.md.",
       "files": [
         "evals/fixtures/nextjs-app-deep/.planning/PROJECT.md",
         "evals/fixtures/nextjs-app-deep/.planning/STATE.md",
@@ -3413,6 +3481,10 @@
         {
           "text": "Does NOT skip any step in the chain",
           "type": "guard"
+        },
+        {
+          "text": "Runs verification gate (tests, build, lint) before writing SUMMARY",
+          "type": "behavioral"
         }
       ],
       "scenario_requires": [
@@ -3423,7 +3495,7 @@
       "id": 107,
       "command": "plan-review",
       "prompt": "Review this plan \u2014 I just finished /plan-work and have a PLAN.md at .planning/phases/03-billing/03-01-PLAN.md for adding Stripe subscription billing. It has 4 tasks across backend and frontend.",
-      "expected_output": "Should run pre-review system audit (git log, git diff main, stash list), then enter Step 0 Nuclear Scope Challenge \u2014 challenge whether this is the right problem, check must_haves truths, map existing code leverage, produce dream state mapping. Must present three mode options: SCOPE EXPANSION, HOLD SCOPE, SCOPE REDUCTION with context-dependent default. Must AskUserQuestion for mode selection before proceeding to review sections.",
+      "expected_output": "Should run pre-review system audit (git log, git diff main, stash list), then enter Step 0 Nuclear Scope Challenge \u2014 challenge whether this is the right problem, check must_haves truths, map existing code leverage, produce dream state mapping. Must present three mode options: SCOPE EXPANSION, HOLD SCOPE, SCOPE REDUCTION with context-dependent default. Must AskUserQuestion for mode selection before proceeding to review sections. Should include engineering review sections (Architecture, Code Quality, Test Coverage with diagram, Performance).",
       "files": [],
       "assertions": [
         {
@@ -3445,6 +3517,14 @@
         {
           "text": "Does NOT start implementation or make code changes",
           "type": "guard"
+        },
+        {
+          "text": "Includes engineering architecture review (Section 7)",
+          "type": "behavioral"
+        },
+        {
+          "text": "Includes test coverage analysis with codepath diagram (Section 9)",
+          "type": "output"
         }
       ],
       "scenario_requires": [
@@ -3455,7 +3535,7 @@
       "id": 108,
       "command": "plan-review",
       "prompt": "I chose HOLD SCOPE for the billing plan review. Proceed with the review sections.",
-      "expected_output": "Should commit to HOLD SCOPE mode and proceed through review sections in order: Architecture Review (Section 1), then Error & Rescue Map (Section 2) with a complete table naming specific error types (TimeoutError, RateLimitError, ParseError, etc.), rescue status, rescue action, and user-visible impact for every method/codepath that can fail. Must produce the Error/Rescue Map table with named exceptions \u2014 not generic 'handle errors'. Must AskUserQuestion after each section before proceeding.",
+      "expected_output": "Should commit to HOLD SCOPE mode and proceed through review sections in order: Architecture Review (Section 1), then Error & Rescue Map (Section 2) with a complete table naming specific error types (TimeoutError, RateLimitError, ParseError, etc.), rescue status, rescue action, and user-visible impact for every method/codepath that can fail. Must produce the Error/Rescue Map table with named exceptions \u2014 not generic 'handle errors'. Must AskUserQuestion after each section before proceeding. Should include engineering review sections (Architecture, Code Quality, Test Coverage with diagram, Performance).",
       "files": [],
       "assertions": [
         {
@@ -3477,6 +3557,14 @@
         {
           "text": "AskUserQuestion after each section before proceeding to the next",
           "type": "ordering"
+        },
+        {
+          "text": "Includes engineering architecture review (Section 7)",
+          "type": "behavioral"
+        },
+        {
+          "text": "Includes test coverage analysis with codepath diagram (Section 9)",
+          "type": "output"
         }
       ],
       "scenario_requires": [
@@ -3487,7 +3575,7 @@
       "id": 109,
       "command": "plan-review",
       "prompt": "Review the auth plan at .planning/phases/04-auth/04-01-PLAN.md \u2014 it adds JWT auth, refresh tokens, and a login form. Three architectural issues and a security concern need to be raised.",
-      "expected_output": "Should raise each issue as a separate AskUserQuestion call \u2014 one issue per question, never batched. Each question must present 2-3 concrete lettered options (A, B, C), state the recommended option FIRST with a directive ('Do B. Here's why:'), and explain why that option over others. Must use numbered issues with lettered options (e.g., '1A', '1B'). No yes/no questions. No batching multiple issues into one question.",
+      "expected_output": "Should raise each issue as a separate AskUserQuestion call \u2014 one issue per question, never batched. Each question must present 2-3 concrete lettered options (A, B, C), state the recommended option FIRST with a directive ('Do B. Here's why:'), and explain why that option over others. Must use numbered issues with lettered options (e.g., '1A', '1B'). No yes/no questions. No batching multiple issues into one question. Should include engineering review sections (Architecture, Code Quality, Test Coverage with diagram, Performance).",
       "files": [],
       "assertions": [
         {
@@ -3508,6 +3596,14 @@
         },
         {
           "text": "Labels issues with NUMBER + LETTER format (e.g., '1A', '1B', '2A')",
+          "type": "output"
+        },
+        {
+          "text": "Includes engineering architecture review (Section 7)",
+          "type": "behavioral"
+        },
+        {
+          "text": "Includes test coverage analysis with codepath diagram (Section 9)",
           "type": "output"
         }
       ],
@@ -3548,7 +3644,7 @@
       "id": 111,
       "command": "plan-work",
       "prompt": "plan adding WebSocket real-time notifications to the dashboard. Users should see live updates when team members post comments or complete tasks. We use Next.js with a Node backend.",
-      "expected_output": "Should reach Step 3 (Discuss Implementation) and produce a Failure Modes Registry table with columns: CODEPATH, FAILURE MODE, RESCUED?, TEST?, USER SEES?, LOGGED?. Must map failure modes for WebSocket-specific concerns (connection drop, reconnection, stale state, message ordering, backpressure). Any row with RESCUED=N, TEST=N, USER SEES=Silent must be flagged as CRITICAL GAP. Failure modes from the registry should be included as must_haves.truths in Step 4.",
+      "expected_output": "Should reach Step 3 (Discuss Implementation) and produce a Failure Modes Registry table with columns: CODEPATH, FAILURE MODE, RESCUED?, TEST?, USER SEES?, LOGGED?. Must map failure modes for WebSocket-specific concerns (connection drop, reconnection, stale state, message ordering, backpressure). Any row with RESCUED=N, TEST=N, USER SEES=Silent must be flagged as CRITICAL GAP. Failure modes from the registry should be included as must_haves.truths in Step 4. Should perform complexity assessment before deciding research path.",
       "files": [],
       "assertions": [
         {
@@ -3570,6 +3666,10 @@
         {
           "text": "Step 3 discussion runs before Step 4 must_haves extraction",
           "type": "ordering"
+        },
+        {
+          "text": "Performs complexity assessment (Simple/Medium/Complex) before research decision",
+          "type": "behavioral"
         }
       ]
     },
@@ -3577,7 +3677,7 @@
       "id": 112,
       "command": "plan-work",
       "prompt": "plan adding a user preferences API endpoint. well-known REST patterns, no research needed",
-      "expected_output": "Should create native tasks for all planning steps (Phase matching, Research, Brainstorm, Discuss implementation, Derive must_haves, Create plan, Plan-check) using TaskCreate at the start. Should update tasks to in_progress/completed as each step progresses. Should mark Research as completed with skipped metadata since well-known patterns. Should include graceful degradation (TASKS_AVAILABLE flag).",
+      "expected_output": "Should create native tasks for all planning steps (Phase matching, Research, Brainstorm, Discuss implementation, Derive must_haves, Create plan, Plan-check) using TaskCreate at the start. Should update tasks to in_progress/completed as each step progresses. Should mark Research as completed with skipped metadata since well-known patterns. Should include graceful degradation (TASKS_AVAILABLE flag). Should perform complexity assessment before deciding research path.",
       "files": [],
       "assertions": [
         {
@@ -3595,6 +3695,10 @@
         {
           "text": "Includes graceful degradation if TaskCreate fails",
           "type": "behavioral"
+        },
+        {
+          "text": "Performs complexity assessment (Simple/Medium/Complex) before research decision",
+          "type": "behavioral"
         }
       ],
       "scenario_requires": [
@@ -3605,7 +3709,7 @@
       "id": 113,
       "command": "build",
       "prompt": "execute the plan at .planning/phases/05-api/05-01-PLAN.md. it has 3 tasks in 2 waves \u2014 task 1 and 2 are wave 1, task 3 is wave 2",
-      "expected_output": "Should create native tasks from plan's tasks block using TaskCreate with metadata (wave, phase, plan). Should create pipeline stage tasks (spec gate per wave, design gates, self-check). Should set up wave dependencies via addBlockedBy (wave 2 blocked by wave 1, spec gates blocked by wave tasks). Should thread {TASK_ID} to subagent prompts. Should update task status as subagents complete.",
+      "expected_output": "Should create native tasks from plan's tasks block using TaskCreate with metadata (wave, phase, plan). Should create pipeline stage tasks (spec gate per wave, design gates, self-check). Should set up wave dependencies via addBlockedBy (wave 2 blocked by wave 1, spec gates blocked by wave tasks). Should thread {TASK_ID} to subagent prompts. Should update task status as subagents complete. Should run verification gate (tests, build check, lint) before writing SUMMARY.md.",
       "files": [],
       "assertions": [
         {
@@ -3627,6 +3731,10 @@
         {
           "text": "Includes TASKS_AVAILABLE graceful degradation",
           "type": "behavioral"
+        },
+        {
+          "text": "Runs verification gate (tests, build, lint) before writing SUMMARY",
+          "type": "behavioral"
         }
       ],
       "scenario_requires": [
@@ -3637,7 +3745,7 @@
       "id": 114,
       "command": "plan-work",
       "prompt": "plan adding role-based access control to the API routes. this touches auth middleware, 3 route handlers, and a new permissions table",
-      "expected_output": "After plan creation and plan-check, Step 7 handoff should recommend /fh:plan-review as the default for ALL plans. Should present three options: (1) /fh:plan-review as default, (2) /fh:build only for trivially obvious work (single-file rename, typo fix, config-only), (3) continue planning. Review is the default — only skip for trivially obvious work where risk of missed edge case is near zero.",
+      "expected_output": "After plan creation and plan-check, Step 7 handoff should recommend /fh:plan-review as the default for ALL plans. Should present three options: (1) /fh:plan-review as default, (2) /fh:build only for trivially obvious work (single-file rename, typo fix, config-only), (3) continue planning. Review is the default \u2014 only skip for trivially obvious work where risk of missed edge case is near zero. Should perform complexity assessment before deciding research path.",
       "files": [],
       "assertions": [
         {
@@ -3655,6 +3763,14 @@
         {
           "text": "Mentions plan-review produces error maps and security analysis",
           "type": "output"
+        },
+        {
+          "text": "Performs complexity assessment (Simple/Medium/Complex) before research decision",
+          "type": "behavioral"
+        },
+        {
+          "text": "Uses three-category decision locking (LOCKED/DISCRETION/DEFERRED)",
+          "type": "output"
         }
       ],
       "scenario_requires": [
@@ -3665,7 +3781,7 @@
       "id": 115,
       "command": "plan-work",
       "prompt": "plan adding a discount calculation engine and a coupon validation service. pure business logic, no frontend",
-      "expected_output": "During plan-check (Step 6), should detect that business-logic tasks (discount calculation, coupon validation) involve state/logic and WARN if they lack tdd=true. Should ask the planner to confirm or add tdd=true. Should NOT block \u2014 only warn.",
+      "expected_output": "During plan-check (Step 6), should detect that business-logic tasks (discount calculation, coupon validation) involve state/logic and WARN if they lack tdd=true. Should ask the planner to confirm or add tdd=true. Should NOT block \u2014 only warn. Should perform complexity assessment before deciding research path.",
       "files": [],
       "assertions": [
         {
@@ -3683,6 +3799,10 @@
         {
           "text": "Does NOT block plan creation over missing tdd attribute",
           "type": "guard"
+        },
+        {
+          "text": "Performs complexity assessment (Simple/Medium/Complex) before research decision",
+          "type": "behavioral"
         }
       ],
       "scenario_requires": [
@@ -3693,7 +3813,7 @@
       "id": 116,
       "command": "plan-work",
       "prompt": "plan adding a user settings page with profile editing form, password change, and notification preferences toggles",
-      "expected_output": "During plan-check (Step 6), should detect interactive frontend features (forms, toggles) and check for playwright.config in the project. Should WARN that no E2E test task exists and suggest adding a Playwright test task. Should offer to create the test task referencing .claude/skills/playwright-testing/PROMPT.md. Should NOT block.",
+      "expected_output": "During plan-check (Step 6), should detect interactive frontend features (forms, toggles) and check for playwright.config in the project. Should WARN that no E2E test task exists and suggest adding a Playwright test task. Should offer to create the test task referencing .claude/skills/playwright-testing/PROMPT.md. Should NOT block. Should perform complexity assessment before deciding research path.",
       "files": [],
       "assertions": [
         {
@@ -3715,6 +3835,10 @@
         {
           "text": "Does NOT block plan creation over missing E2E tests",
           "type": "guard"
+        },
+        {
+          "text": "Performs complexity assessment (Simple/Medium/Complex) before research decision",
+          "type": "behavioral"
         }
       ],
       "scenario_requires": [
@@ -3725,7 +3849,7 @@
       "id": 117,
       "command": "build",
       "prompt": "execute the plan. task 1 is marked tdd=true for implementing a rate limiter. after the subagent finishes, the git log shows: 'feat(01-01): implement rate limiter' then 'test(01-01): add rate limiter tests' \u2014 feat before test",
-      "expected_output": "During spec gate (Step 3b), should detect that the tdd=true task has feat commit before test commit. Should emit a WARN (not blocking) about TDD discipline violation \u2014 expected test commit before feat commit (RED before GREEN). Should NOT change the PASS/BLOCKING verdict based on this warning alone.",
+      "expected_output": "During spec gate (Step 3b), should detect that the tdd=true task has feat commit before test commit. Should emit a WARN (not blocking) about TDD discipline violation \u2014 expected test commit before feat commit (RED before GREEN). Should NOT change the PASS/BLOCKING verdict based on this warning alone. Should run verification gate (tests, build check, lint) before writing SUMMARY.md.",
       "files": [],
       "assertions": [
         {
@@ -3743,6 +3867,10 @@
         {
           "text": "References expected RED-GREEN-REFACTOR commit order",
           "type": "output"
+        },
+        {
+          "text": "Runs verification gate (tests, build, lint) before writing SUMMARY",
+          "type": "behavioral"
         }
       ],
       "scenario_requires": [
@@ -4137,6 +4265,14 @@
         {
           "text": "Asks user to select review mode before proceeding",
           "type": "behavioral"
+        },
+        {
+          "text": "Includes engineering architecture review (Section 7)",
+          "type": "behavioral"
+        },
+        {
+          "text": "Includes test coverage analysis with codepath diagram (Section 9)",
+          "type": "output"
         }
       ],
       "scenario_requires": [
@@ -4147,7 +4283,7 @@
       "id": 131,
       "command": "plan-review",
       "prompt": "Stress test this plan but don't expand scope \u2014 hold scope mode",
-      "expected_output": "Should operate in HOLD SCOPE mode without suggesting new features, focus on rigor within existing plan scope, map error paths and failure modes, NOT suggest expanding scope, and produce failure modes registry with CRITICAL GAP identification.",
+      "expected_output": "Should operate in HOLD SCOPE mode without suggesting new features, focus on rigor within existing plan scope, map error paths and failure modes, NOT suggest expanding scope, and produce failure modes registry with CRITICAL GAP identification. Should include engineering review sections (Architecture, Code Quality, Test Coverage with diagram, Performance).",
       "files": [],
       "assertions": [
         {
@@ -4168,6 +4304,14 @@
         },
         {
           "text": "Produces failure modes registry with CRITICAL GAP identification",
+          "type": "output"
+        },
+        {
+          "text": "Includes engineering architecture review (Section 7)",
+          "type": "behavioral"
+        },
+        {
+          "text": "Includes test coverage analysis with codepath diagram (Section 9)",
           "type": "output"
         }
       ],
@@ -4376,7 +4520,7 @@
     {
       "id": 139,
       "command": "health",
-      "prompt": "run a health check, my STATE.md seems wrong — it says phase 3 but ROADMAP.md only has 2 phases",
+      "prompt": "run a health check, my STATE.md seems wrong \u2014 it says phase 3 but ROADMAP.md only has 2 phases",
       "expected_output": "Should detect phase number mismatch between STATE.md and ROADMAP.md, report as error with specific inconsistency details, suggest --repair to fix.",
       "files": [],
       "assertions": [
@@ -4581,7 +4725,7 @@
     {
       "id": 147,
       "command": "setup",
-      "prompt": "setup — I don't have node installed",
+      "prompt": "setup \u2014 I don't have node installed",
       "expected_output": "Should detect missing Node.js, provide platform-appropriate install instructions (Homebrew on macOS), halt further setup steps that depend on Node.js.",
       "files": [],
       "assertions": [
@@ -4606,7 +4750,7 @@
     {
       "id": 148,
       "command": "setup",
-      "prompt": "setup — I already ran this before, everything should be configured",
+      "prompt": "setup \u2014 I already ran this before, everything should be configured",
       "expected_output": "Should detect existing configuration (symlinks, settings.json hooks, TypeScript LSP), report current status, offer to re-run specific steps rather than repeating full setup.",
       "files": [],
       "assertions": [
@@ -4681,8 +4825,8 @@
     {
       "id": 151,
       "command": "plan-review",
-      "prompt": "review the plan but keep it minimal — we're on a tight deadline",
-      "expected_output": "Should detect tight deadline signal and select SCOPE REDUCTION mode, identify cuttable scope, find minimum viable version, not add new features or expand scope.",
+      "prompt": "review the plan but keep it minimal \u2014 we're on a tight deadline",
+      "expected_output": "Should detect tight deadline signal and select SCOPE REDUCTION mode, identify cuttable scope, find minimum viable version, not add new features or expand scope. Should include engineering review sections (Architecture, Code Quality, Test Coverage with diagram, Performance).",
       "files": [],
       "assertions": [
         {
@@ -4704,6 +4848,14 @@
         {
           "text": "Does NOT suggest SCOPE EXPANSION items",
           "type": "guard"
+        },
+        {
+          "text": "Includes engineering architecture review (Section 7)",
+          "type": "behavioral"
+        },
+        {
+          "text": "Includes test coverage analysis with codepath diagram (Section 9)",
+          "type": "output"
         }
       ],
       "scenario_requires": [
@@ -4714,7 +4866,7 @@
       "id": 152,
       "command": "plan-review",
       "prompt": "stress test this plan, especially the error handling",
-      "expected_output": "Should produce Error and Rescue Registry table (operation, error, exception, rescue, user-sees), produce Failure Modes Registry, identify CRITICAL GAPs, feed gaps back as [review] truths in PLAN.md.",
+      "expected_output": "Should produce Error and Rescue Registry table (operation, error, exception, rescue, user-sees), produce Failure Modes Registry, identify CRITICAL GAPs, feed gaps back as [review] truths in PLAN.md. Should include engineering review sections (Architecture, Code Quality, Test Coverage with diagram, Performance).",
       "files": [],
       "assertions": [
         {
@@ -4732,6 +4884,14 @@
         {
           "text": "Feeds critical gaps back as [review] prefixed truths in PLAN.md must_haves",
           "type": "behavioral"
+        },
+        {
+          "text": "Includes engineering architecture review (Section 7)",
+          "type": "behavioral"
+        },
+        {
+          "text": "Includes test coverage analysis with codepath diagram (Section 9)",
+          "type": "output"
         }
       ],
       "scenario_requires": [
@@ -4791,7 +4951,7 @@
     {
       "id": 155,
       "command": "simplify",
-      "prompt": "simplify — I think there's duplicated logic across the API routes",
+      "prompt": "simplify \u2014 I think there's duplicated logic across the API routes",
       "expected_output": "Should scan for duplicated patterns across API routes, identify specific duplications with file paths and line ranges, suggest extraction targets with before/after comparison.",
       "files": [],
       "assertions": [
@@ -5144,7 +5304,7 @@
     {
       "id": 168,
       "command": "distill",
-      "prompt": "this dashboard has too many widgets and controls, users are overwhelmed — simplify it",
+      "prompt": "this dashboard has too many widgets and controls, users are overwhelmed \u2014 simplify it",
       "expected_output": "Should identify essential vs nice-to-have widgets, propose progressive disclosure for secondary content, reduce visual noise while preserving core functionality, suggest where removed items could be relocated.",
       "files": [],
       "assertions": [
@@ -5202,7 +5362,7 @@
     {
       "id": 170,
       "command": "harden",
-      "prompt": "harden the registration form for production — it needs to handle real-world edge cases",
+      "prompt": "harden the registration form for production \u2014 it needs to handle real-world edge cases",
       "expected_output": "Should add text overflow handling (long names, emails), i18n considerations (30% expansion space for translations), inline validation with specific error messages, loading/disabled states during submission, keyboard navigation support.",
       "files": [],
       "assertions": [
@@ -5377,7 +5537,7 @@
       "id": 176,
       "command": "simplify",
       "prompt": "simplify the code changes on this branch",
-      "expected_output": "Should check fallow availability, find it NOT installed, skip fallow silently with no error or mention. Should proceed normally with 3 parallel review agents on the git diff — identical behavior to pre-Fallow simplify.",
+      "expected_output": "Should check fallow availability, find it NOT installed, skip fallow silently with no error or mention. Should proceed normally with 3 parallel review agents on the git diff \u2014 identical behavior to pre-Fallow simplify.",
       "files": [],
       "assertions": [
         {
@@ -5448,7 +5608,7 @@
       "id": 179,
       "command": "build",
       "prompt": "build the plan. fallow is installed. the plan has 1 wave with 2 tasks",
-      "expected_output": "Should run fallow check --changed-since before dispatching spec-gate agent in Step 3b. Should include fallow output in spec-gate prompt for definitive unwired-code detection. Spec gate should use fallow findings as ground truth for unused exports/files.",
+      "expected_output": "Should run fallow check --changed-since before dispatching spec-gate agent in Step 3b. Should include fallow output in spec-gate prompt for definitive unwired-code detection. Spec gate should use fallow findings as ground truth for unused exports/files. Should run verification gate (tests, build check, lint) before writing SUMMARY.md.",
       "files": [],
       "assertions": [
         {
@@ -5461,6 +5621,10 @@
         },
         {
           "text": "Spec gate uses fallow for unwired-code detection",
+          "type": "behavioral"
+        },
+        {
+          "text": "Runs verification gate (tests, build, lint) before writing SUMMARY",
           "type": "behavioral"
         }
       ]
@@ -5908,7 +6072,7 @@
       "files": [],
       "assertions": [
         {
-          "text": "Treats as simple task — no complexity assessment triggered",
+          "text": "Treats as simple task \u2014 no complexity assessment triggered",
           "type": "behavioral"
         },
         {
@@ -5933,15 +6097,15 @@
       "files": [],
       "assertions": [
         {
-          "text": "Mentions locked decisions — firm architectural commitments",
+          "text": "Mentions locked decisions \u2014 firm architectural commitments",
           "type": "output"
         },
         {
-          "text": "Mentions discretion — implementation details left to builder",
+          "text": "Mentions discretion \u2014 implementation details left to builder",
           "type": "output"
         },
         {
-          "text": "Mentions deferred decisions — items needing more information",
+          "text": "Mentions deferred decisions \u2014 items needing more information",
           "type": "output"
         },
         {
@@ -5981,15 +6145,15 @@
       "id": 202,
       "command": "plan-review",
       "prompt": "Review the plan at .planning/phases/06-search/06-01-PLAN.md for adding full-text search with Elasticsearch integration, query parsing, and result ranking. The plan has 5 tasks across indexing, querying, and UI.",
-      "expected_output": "Should cover BOTH business alignment (scope challenge, strategic fit, whether search is the right investment) AND engineering rigor (architecture review, code quality assessment, test coverage analysis, performance considerations). Must not limit review to only business/scope questions — engineering sections must appear with concrete technical analysis.",
+      "expected_output": "Should cover BOTH business alignment (scope challenge, strategic fit, whether search is the right investment) AND engineering rigor (architecture review, code quality assessment, test coverage analysis, performance considerations). Must not limit review to only business/scope questions \u2014 engineering sections must appear with concrete technical analysis.",
       "files": [],
       "assertions": [
         {
-          "text": "Covers business alignment — scope challenge and strategic fit",
+          "text": "Covers business alignment \u2014 scope challenge and strategic fit",
           "type": "behavioral"
         },
         {
-          "text": "Covers engineering rigor — architecture review with technical analysis",
+          "text": "Covers engineering rigor \u2014 architecture review with technical analysis",
           "type": "behavioral"
         },
         {
@@ -6140,6 +6304,116 @@
       ],
       "scenario_requires": [
         "gsd_project"
+      ]
+    },
+    {
+      "id": 208,
+      "command": "plan-work",
+      "prompt": "Read .claude/skills/plan-work/SKILL.md and confirm it integrates the phase researcher agent and research output template. Does it reference gsd-phase-researcher and XX-RESEARCH.md?",
+      "expected_output": "Should confirm that plan-work/SKILL.md references gsd-phase-researcher as the research agent and XX-RESEARCH.md as the research output filename template. These are required for the research-first planning pipeline.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "plan-work SKILL.md contains gsd-phase-researcher reference",
+          "type": "output"
+        },
+        {
+          "text": "plan-work SKILL.md contains XX-RESEARCH.md filename template",
+          "type": "output"
+        }
+      ]
+    },
+    {
+      "id": 209,
+      "command": "plan-work",
+      "prompt": "Read .claude/skills/plan-work/SKILL.md and check whether it includes the CONTEXT.md contract block that defines what CONTEXT.md must contain for each phase.",
+      "expected_output": "Should confirm that plan-work/SKILL.md includes a CONTEXT.md Contract section that specifies the required structure and contents of CONTEXT.md files produced during planning.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "plan-work SKILL.md contains CONTEXT.md Contract section",
+          "type": "output"
+        }
+      ]
+    },
+    {
+      "id": 210,
+      "command": "new-project",
+      "prompt": "Read .claude/skills/new-project/SKILL.md and verify it integrates both gsd-project-researcher and gsd-research-synthesizer agents for the project bootstrap research pipeline.",
+      "expected_output": "Should confirm that new-project/SKILL.md references gsd-project-researcher for conducting project-level research and gsd-research-synthesizer for consolidating research findings into actionable project context.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "new-project SKILL.md contains gsd-project-researcher reference",
+          "type": "output"
+        },
+        {
+          "text": "new-project SKILL.md contains gsd-research-synthesizer reference",
+          "type": "output"
+        }
+      ]
+    },
+    {
+      "id": 211,
+      "command": "plan-review",
+      "prompt": "Read .claude/skills/plan-review/SKILL.md and check whether the PRE-REVIEW section (before Step 0) references RESEARCH.md so reviewers are aware of research context.",
+      "expected_output": "Should confirm that plan-review/SKILL.md mentions RESEARCH.md in the pre-review section before Step 0, ensuring reviewers consider research findings when evaluating plans.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "plan-review SKILL.md references RESEARCH.md in pre-review section",
+          "type": "output"
+        }
+      ]
+    },
+    {
+      "id": 212,
+      "command": "plan-review",
+      "prompt": "Read .claude/skills/plan-review/SKILL.md and verify it uses unified [review] tag in Step B decisions and does NOT contain legacy section names 'Review Decisions' or 'NOT in scope'.",
+      "expected_output": "Should confirm that plan-review/SKILL.md uses [review] tag for decisions in Step B, and does NOT contain the legacy 'Review Decisions' section name or the legacy 'NOT in scope' label. These were replaced with unified decision formatting.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "plan-review SKILL.md contains [review] tag in Step B decisions",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT contain legacy Review Decisions section name",
+          "type": "guard"
+        },
+        {
+          "text": "Does NOT contain legacy NOT in scope label",
+          "type": "guard"
+        }
+      ]
+    },
+    {
+      "id": 213,
+      "command": "build",
+      "prompt": "Read .claude/skills/build/SKILL.md and verify it references the canonical CONTEXT.md section names: Decisions, Discretion Areas, and Deferred Ideas. Confirm it does NOT use legacy names like 'Design Decisions' or 'NOT in scope'.",
+      "expected_output": "Should confirm that build/SKILL.md references the canonical section names 'Decisions', 'Discretion Areas', and 'Deferred Ideas' from CONTEXT.md. Should NOT contain the legacy 'Design Decisions' or 'NOT in scope' labels which were replaced with unified naming.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "build SKILL.md contains Decisions section reference",
+          "type": "output"
+        },
+        {
+          "text": "build SKILL.md contains Discretion Areas section reference",
+          "type": "output"
+        },
+        {
+          "text": "build SKILL.md contains Deferred Ideas section reference",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT contain legacy Design Decisions label",
+          "type": "guard"
+        },
+        {
+          "text": "Does NOT contain legacy NOT in scope label",
+          "type": "guard"
+        }
       ]
     }
   ]
