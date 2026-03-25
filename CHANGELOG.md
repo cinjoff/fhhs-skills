@@ -5,6 +5,14 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.24.1] - 2026-03-26
+
+### Fixed
+- **Broken skill registration after update** — `/fh:update` now uses uninstall+reinstall cycle to clear stale cached skill names and `gitCommitSha`, ensuring all skills appear under `/fh:` prefix
+- **`/fh:audit-upstream` missing from slash commands** — added missing `fh:` name prefix and `user-invokable` field
+- **`/fh:ui-branding` missing from slash commands** — fixed `user-invocable` typo to `user-invokable`
+- **Old version cache accumulation** — `/fh:update` now cleans up previous version caches
+
 ## [1.24.0] - 2026-03-26
 
 ### Added
