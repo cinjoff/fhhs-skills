@@ -1,7 +1,7 @@
 ---
 name: fh:progress
 description: Where am I? Shows project status and what to do next. Also resumes previous sessions.
-user-invokable: true
+user-invocable: true
 ---
 
 <required_reading>

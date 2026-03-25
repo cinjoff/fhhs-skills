@@ -1,7 +1,7 @@
 ---
 name: fh:fix
 description: Fix a bug. Finds the root cause, writes a test, and patches it.
-user-invokable: true
+user-invocable: true
 ---
 
 Auto-triage and fix bugs with TDD discipline.

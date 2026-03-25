@@ -1,7 +1,7 @@
 ---
 name: fh:refactor
 description: Reorganize code without changing what it does. Keeps tests passing at every step.
-user-invokable: true
+user-invocable: true
 ---
 
 Restructure existing code safely. Not a bug (use /fh:fix). Not new functionality (use /fh:build). Behavior preservation is the iron law.

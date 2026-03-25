@@ -1,7 +1,7 @@
 ---
 name: fh:nextjs-perf
 description: Next.js and React performance patterns forked from Vercel React Best Practices. Referenced by /fh:build subagents and /fh:refactor reviews when working on Next.js projects.
-user-invokable: false
+user-invocable: false
 ---
 
 # Next.js Performance Rules

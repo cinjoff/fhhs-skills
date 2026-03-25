@@ -1,7 +1,7 @@
 ---
 name: fh:ui-redesign
 description: Change the look and feel of your project. Updates your design guidelines and direction.
-user-invokable: true
+user-invocable: true
 ---
 
 Review and update the art direction for this project. Can be used for initial setup or to change existing design direction.

@@ -1,7 +1,7 @@
 ---
 name: fh:review
 description: Code review. Checks quality, security, and whether the code actually achieves the goal. Use --quick for a fast check.
-user-invokable: true
+user-invocable: true
 ---
 
 Comprehensive code review — quality, architecture, security, goal verification, gap analysis.

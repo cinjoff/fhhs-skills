@@ -1,7 +1,7 @@
 ---
 name: fh:secure
 description: Scan for OWASP Top 10 security vulnerabilities. Use when the user says 'security scan', 'check security', 'audit security', or before promoting changes.
-user-invokable: false
+user-invocable: false
 ---
 
 Scan for OWASP Top 10 security vulnerabilities using parallel scanning agents.

@@ -1,7 +1,7 @@
 ---
 name: fh:new-project
 description: Bootstrap a new tracked project with design framework, conventions, and GSD roadmap. Use when the user says 'new project', 'start a project', 'bootstrap', 'set up a new app', or 'initialize'. Creates .planning/ structure and CLAUDE.md.
-user-invokable: true
+user-invocable: true
 ---
 
 Bootstrap a new project with opinionated defaults, design framework, and full GSD tracking.
