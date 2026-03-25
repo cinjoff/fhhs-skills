@@ -415,7 +415,7 @@
       "id": 17,
       "command": "ui-critique",
       "prompt": "critique the dashboard page. it's at src/app/dashboard/page.tsx",
-      "expected_output": "Should read skills/frontend-design/PROMPT.mdPROMPT.md for design principles and anti-patterns, then evaluate the dashboard page across all dimensions (AI slop detection, visual hierarchy, information architecture, emotional resonance, etc.). Should produce a structured critique report with Anti-Patterns Verdict, Overall Impression, What's Working, Priority Issues with severity, and specific fix commands (/polish, /simplify, etc.).",
+      "expected_output": "Should read skills/frontend-design/PROMPT.md for design principles and anti-patterns, then evaluate the dashboard page across all dimensions (AI slop detection, visual hierarchy, information architecture, emotional resonance, etc.). Should produce a structured critique report with Anti-Patterns Verdict, Overall Impression, What's Working, Priority Issues with severity, and specific fix commands (/polish, /simplify, etc.).",
       "files": [],
       "assertions": [
         {
