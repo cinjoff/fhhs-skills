@@ -1,25 +1,67 @@
 # Upstream Capability Index
 
-> Last audit: 2026-03-25 | Sources: 8 | Total capabilities: 120+ | Integration coverage: ~72%
+> Last audit: 2026-03-25 (deep) | Sources: 8 | Total capabilities: ~80 distinct | Active in pipelines: ~21 | Dead weight: ~47
 
 ## Source Summary
 
-| # | Source | Version | Type | Overall | Skills/Capabilities | Integrated |
-|---|--------|---------|------|---------|--------------------:|----------:|
-| 1 | [superpowers](superpowers.md) | 4.3.1 | Engineering discipline | A | 14 | 14 (100%) |
-| 2 | [impeccable](impeccable.md) | 1.2.0 | Design quality | A | 18 | 18 (100%) |
-| 3 | [gsd](gsd.md) | 1.22.4 | Project execution | A | 12 agents + 34 workflows | ~60% |
-| 4 | [gstack](gstack.md) | 0.3.3 | Production safety | B+ | 10 | 3 (~30%) |
-| 5 | [feature-dev](feature-dev.md) | 55b58ec6 | Feature workflow | B | 1 workflow + 3 agents | 3 (100%) |
-| 6 | [claude-md-management](claude-md-management.md) | 1.0.0 | Knowledge mgmt | B | 1 | 1 (100%) |
-| 7 | [playwright-best-practices](playwright-best-practices.md) | b4b0fd3c | Testing reference | A | 1 + 35 refs | 1 (100%) |
-| 8 | [vercel-react-best-practices](vercel-react-best-practices.md) | 64bee5b7 | Performance rules | B+ | 1 + 58 rules | 1 (100%) |
+| # | Source | Version | Type | Quality | Capabilities | Active | Dead |
+|---|--------|---------|------|---------|-------------:|-------:|-----:|
+| 1 | [superpowers](superpowers.md) | 4.3.1 | Engineering discipline | A | 14 skills | 7 | 4 |
+| 2 | [impeccable](impeccable.md) | 1.2.0 | Design quality | A | 18 skills | 5+2c | 10 |
+| 3 | [gsd](gsd.md) | 1.22.4 | Project execution | A | 12 agents + 34 workflows | ~9+1c | ~36 |
+| 4 | [gstack](gstack.md) | 0.3.3 | Production safety | B+ | 10 skills | 2 | 6 |
+| 5 | [feature-dev](feature-dev.md) | 55b58ec6 | Feature workflow | B | 1 workflow + 3 agents | 3 | 0 |
+| 6 | [claude-md-management](claude-md-management.md) | 1.0.0 | Knowledge mgmt | B | 1 skill + 3 refs | 1 | 0 |
+| 7 | [playwright-best-practices](playwright-best-practices.md) | b4b0fd3c | Testing reference | A | 1 skill + 35 refs | 1 | 0 |
+| 8 | [vercel-react-best-practices](vercel-react-best-practices.md) | 64bee5b7 | Performance rules | B+ | 1 skill + 58 rules | 0 | 1 |
+
+---
+
+## Pipeline Usage Reality
+
+### Actively Wired (triggered in normal workflow)
+
+| Capability | Source | Used by | What it does |
+|-----------|--------|---------|-------------|
+| brainstorming | Superpowers | /fh:plan-work | Socratic design dialogue before coding |
+| test-driven-development | Superpowers | /fh:build, /fh:fix | RED-GREEN-REFACTOR enforcement |
+| systematic-debugging | Superpowers | /fh:fix | 4-phase root cause methodology |
+| simplify | Superpowers | /fh:build, /fh:fix, /fh:refactor | Post-implementation code review |
+| dispatching-parallel-agents | Superpowers | /fh:build | Parallel subagent dispatch |
+| frontend-design | Impeccable | /fh:build, /fh:fix | Design quality with anti-patterns |
+| code-explorer/architect/reviewer | Feature-dev | /fh:build, /fh:review | Exploration, design, review agents |
+| gsd-planner | GSD | /fh:plan-work, /fh:build | Goal-backward planning |
+| gsd-executor | GSD | /fh:build, /fh:quick | Atomic execution with deviation handling |
+| gsd-plan-checker | GSD | /fh:plan-work | Plan quality gate |
+| gsd-roadmapper | GSD | /fh:new-project | Roadmap from requirements |
+| gsd-codebase-mapper | GSD | /fh:map-codebase | Codebase documentation |
+| claude-md-improver | claude-md-mgmt | /fh:revise-claude-md | CLAUDE.md quality auditing |
+| plan-ceo-review | gstack | /fh:plan-review | Business alignment review |
+| plan-eng-review | gstack | /fh:plan-review | Engineering risk review (always-on alongside CEO review) |
+| verification-before-completion | Superpowers | /fh:build Step 5, /fh:fix Step 4 | Evidence-before-claims verification gate |
+| discuss-phase (decision-locking) | GSD | /fh:plan-work Step 3 | CONTEXT.md with locked/discretion/deferred decisions |
+
+### Conditionally Triggered (under specific conditions)
+
+| Capability | Source | Trigger condition |
+|-----------|--------|-------------------|
+| ui-critique, polish, normalize, animate | Impeccable | Build design gates (visual ratio > 40%) |
+| playwright-testing | Playwright | Interactive features in build/fix/plan |
+| finishing-a-development-branch | Superpowers | Post-review branch promotion |
+| audit | Impeccable | Build suggests /fh:audit for frontend-heavy work |
+| harden | Impeccable | Build suggests /fh:harden for production frontend |
+| gsd-phase-researcher | GSD | plan-work suggests deep research for complex tasks |
+
+### High-Value Gaps (should be wired)
+
+| Capability | Source | Why it matters | Recommended integration |
+|-----------|--------|---------------|------------------------|
+| **gsd-verifier** | GSD | Goal-backward verification (exists → substantive → wired) catches incomplete work | Wire into /fh:build completion |
+| **receiving-code-review** | Superpowers | Anti-performative-agreement discipline | Wire into /fh:review for external feedback |
 
 ---
 
 ## SDLC Coverage Matrix
-
-Maps which upstream sources cover each SDLC phase and how fhhs exposes them.
 
 | SDLC Phase | superpowers | impeccable | gsd | gstack | feature-dev | claude-md | playwright | vercel-react | fhhs Exposure |
 |------------|:-----------:|:----------:|:---:|:------:|:-----------:|:---------:|:----------:|:------------:|---------------|
@@ -30,7 +72,7 @@ Maps which upstream sources cover each SDLC phase and how fhhs exposes them.
 | Testing | ✅ | ✅ | | ✅ | | | ✅ | | /fh:ui-test, /fh:playwright-testing |
 | Review | ✅ | ✅ | | ✅ | ✅ | | | ✅ | /fh:review, /fh:ui-critique |
 | Debugging | ✅ | | ✅ | | | | | | /fh:fix (internal skills) |
-| Verification | ✅ | | ✅ | | | | | | /fh:build (spec gate) |
+| Verification | ✅ | | ✅ ⚠️ | | | | | | verification-before-completion wired in build/fix |
 | Integration | ✅ | | ✅ | | | | | | /fh:build (branch finishing) |
 | Deploy | | | | ✅ | | | | | ⬜ Not exposed |
 | Performance | | ✅ | | | | | | ✅ | /fh:nextjs-perf, /fh:optimize |
@@ -41,80 +83,75 @@ Maps which upstream sources cover each SDLC phase and how fhhs exposes them.
 
 ## Subagent Dispatch Matrix
 
-Which `/fh:*` skills dispatch which agents via the Task tool.
-
-| /fh: Skill | Agents Dispatched | Source |
-|------------|-------------------|--------|
-| /fh:build | gsd-planner, gsd-executor, gsd-verifier, gsd-plan-checker | gsd |
-| /fh:build | code-reviewer (spec gate) | superpowers |
-| /fh:plan-work | gsd-planner, gsd-plan-checker | gsd |
-| /fh:fix | gsd-debugger | gsd |
-| /fh:research | gsd-phase-researcher, gsd-project-researcher, gsd-research-synthesizer | gsd |
-| /fh:map-codebase | gsd-codebase-mapper | gsd |
-| /fh:review | code-reviewer | feature-dev, superpowers |
-| /fh:progress | (reads state, no agent dispatch) | gsd |
-| /fh:health | (reads state, no agent dispatch) | gsd |
-| /fh:quick | gsd-executor | gsd |
-| /fh:ui-redesign | code-explorer, code-architect | feature-dev |
+| /fh: Skill | Agents Dispatched | Source | Status |
+|------------|-------------------|--------|--------|
+| /fh:build | gsd-planner, gsd-executor, gsd-verifier, gsd-plan-checker | gsd | ✅ Active |
+| /fh:build | code-reviewer (spec gate) | superpowers | ✅ Active |
+| /fh:plan-work | gsd-planner, gsd-plan-checker | gsd | ✅ Active |
+| /fh:fix | gsd-debugger | gsd | ✅ Active |
+| /fh:research | gsd-phase-researcher, gsd-project-researcher | gsd | ⚠️ Simplified |
+| /fh:map-codebase | gsd-codebase-mapper | gsd | ✅ Active |
+| /fh:review | code-reviewer | feature-dev, superpowers | ✅ Active |
+| /fh:quick | gsd-executor | gsd | ✅ Active |
 
 ---
 
-## Command Exposure Map
+## Consolidated Recommendations
 
-GSD workflows mapped to their `/fh:*` equivalents or internal use.
+### Strengthen /fh:plan-work (HIGH PRIORITY)
 
-| GSD Command | fhhs Equivalent | Status |
-|-------------|-----------------|--------|
-| new-project | /fh:new-project | ✅ Direct |
-| plan-phase | /fh:plan-work | ✅ Direct |
-| execute-phase | /fh:build | ✅ Composite |
-| verify-work | (internal to /fh:build) | 🔀 Internal |
-| verify-phase | (internal to /fh:build) | 🔀 Internal |
-| progress | /fh:progress | ✅ Direct |
-| health | /fh:health | ✅ Direct |
-| quick | /fh:quick | ✅ Direct |
-| settings | /fh:settings | ✅ Direct |
-| set-profile | /fh:settings | ✅ Merged |
-| map-codebase | /fh:map-codebase | ✅ Direct |
-| add-todo | /fh:todos | ✅ Merged |
-| check-todos | /fh:todos | ✅ Merged |
-| discuss-phase | (absorbed into /fh:plan-work) | 🔀 Absorbed |
-| research-phase | /fh:research | 🔀 Absorbed |
-| discovery-phase | /fh:research | 🔀 Absorbed |
-| resume-project | (via /fh:progress) | 🔀 Partial |
-| execute-plan | (internal to /fh:build) | 🔀 Internal |
-| validate-phase | — | ⬜ Not exposed |
-| pause-work | — | ⬜ Not exposed |
-| new-milestone | — | ⬜ Not exposed |
-| complete-milestone | — | ⬜ Not exposed |
-| audit-milestone | — | ⬜ Not exposed |
-| add-phase | — | ⬜ Not exposed |
-| insert-phase | — | ⬜ Not exposed |
-| remove-phase | — | ⬜ Not exposed |
-| add-tests | — | ⬜ Not exposed |
-| diagnose-issues | — | ⬜ Not exposed |
-| plan-milestone-gaps | — | ⬜ Not exposed |
-| list-phase-assumptions | — | ⬜ Not exposed |
+`/fh:plan-work` should become smarter about when to involve deeper research and review:
+
+1. **Complexity detection** — Evaluate the task and suggest appropriate depth:
+   - Simple (1-3 tasks, familiar domain): brainstorm → plan → go
+   - Medium (4-8 tasks): brainstorm → plan → offer plan-review
+   - Complex (9+ tasks, unfamiliar domain, architectural decisions): suggest deep research + brainstorm → plan → eng-review + CEO-review
+
+2. **Deep research trigger** — ✅ **DONE (Phase 3.5, conditional)** — plan-work suggests spawning gsd-phase-researcher for complex tasks requiring deep domain investigation
+
+3. **Decision-locking** — ✅ **DONE (Phase 3.5)** — plan-work Step 3 produces CONTEXT.md with locked/discretion/deferred decisions
+
+4. **Engineering review** — ✅ **DONE (Phase 3.5)** — plan-eng-review integrated into /fh:plan-review (always runs both business + engineering)
+
+5. **Codebase exploration** — For unfamiliar codebases, suggest code-explorer dispatch before brainstorming
+
+### Strengthen /fh:new-project (MEDIUM PRIORITY)
+
+6. **Deep research mode** — Offer option to spawn 4 parallel researchers (stack, features, architecture, pitfalls) for projects in unfamiliar domains, using GSD's project-researcher infrastructure
+
+### Wire Verification (HIGH PRIORITY)
+
+7. **verification-before-completion** → ✅ **DONE (Phase 3.5)** — wired into /fh:build Step 5 and /fh:fix Step 4
+8. **gsd-verifier** → `/fh:build` completion (goal-backward: did we achieve what the plan said?)
+
+### Wire Design Quality (MEDIUM PRIORITY)
+
+9. **audit** → ✅ **DONE (Phase 3.5, conditional)** — build suggests /fh:audit for frontend-heavy work
+10. **harden** → ✅ **DONE (Phase 3.5, conditional)** — build suggests /fh:harden for production frontend
+
+### Consider Pruning (LOW PRIORITY)
+
+11. Evaluate whether shipping 12 dead Impeccable commands (bolder, quieter, colorize, delight, extract, adapt, onboard, distill, optimize, clarify, ui-redesign) is worth the token cost vs manual invocation value
 
 ---
 
 ## Gap Registry
 
-Capabilities available upstream but not yet integrated into fhhs.
-
-| ID | Capability | Source | SDLC Phase | Priority | Notes |
-|----|-----------|--------|------------|----------|-------|
-| G1 | plan-eng-review | gstack | Planning | High | CEO review exists (/fh:plan-review), eng review does not |
-| G2 | ship (deploy automation) | gstack | Deploy | Medium | No deploy phase coverage at all in fhhs |
-| G3 | retro (retrospective) | gstack | Retro | Medium | Post-project learning loop missing |
-| G4 | browse (browser testing) | gstack | Testing | Low | Heavy dependency (Playwright runtime), questionable ROI |
-| G5 | pause-work / resume | gsd | State | Low | State persistence across sessions partially handled by /fh:progress |
-| G6 | milestone management | gsd | Planning | Low | new/complete/audit-milestone — multi-milestone projects rare |
-| G7 | phase CRUD (add/insert/remove) | gsd | Planning | Low | Plan mutation during execution — edge case |
-| G8 | add-tests | gsd | Testing | Medium | Explicit test addition workflow not surfaced |
-| G9 | diagnose-issues | gsd | Debugging | Low | Overlaps with /fh:fix + systematic-debugging |
-| G10 | validate-phase | gsd | Planning | Low | Pre-execution validation, partially in plan-checker |
-| G11 | gsd-nyquist-auditor | gsd | Testing | Low | Test coverage auditor — integrated but unused |
+| ID | Capability | Source | Priority | Status | Notes |
+|----|-----------|--------|----------|--------|-------|
+| G1 | plan-eng-review | gstack | **High** | ✅ Closed (2026-03-25) | Integrated into /fh:plan-review — always runs both business + engineering |
+| G2 | verification-before-completion | superpowers | **High** | ✅ Closed (2026-03-25) | Wired into /fh:build Step 5 and /fh:fix Step 4 |
+| G3 | gsd-verifier (goal-backward) | gsd | **High** | ⚠️ Not wired | Should be in build completion |
+| G4 | gsd-phase-researcher (deep) | gsd | **High** | ✅ Closed (2026-03-25) | Conditional — plan-work suggests for complex tasks |
+| G5 | discuss-phase (decision-locking) | gsd | **High** | ✅ Closed (2026-03-25) | plan-work Step 3 produces CONTEXT.md with locked decisions |
+| G6 | audit (design quality) | impeccable | **Medium** | ✅ Closed (2026-03-25) | Conditional — build suggests /fh:audit for frontend-heavy work |
+| G7 | harden (production resilience) | impeccable | **Medium** | ✅ Closed (2026-03-25) | Conditional — build suggests /fh:harden for production frontend |
+| G8 | receiving-code-review | superpowers | **Medium** | ⬜ Not wired | Wire into review for external feedback |
+| G9 | ship (deploy automation) | gstack | Low | ⬜ Available | No deploy phase in fhhs |
+| G10 | retro (retrospective) | gstack | Low | ⬜ Available | Post-milestone learning loop |
+| G11 | browse (browser testing) | gstack | Low | ⬜ Available | Heavy dependency |
+| G12 | milestone management | gsd | Low | ⬜ Available | Edge case for large projects |
+| G13 | vercel-react (perf rules) | vercel-react | Low | ⬜ Not wired | Narrow applicability |
 
 ---
 
@@ -123,3 +160,5 @@ Capabilities available upstream but not yet integrated into fhhs.
 | Date | Action | Details |
 |------|--------|---------|
 | 2026-03-25 | Initial index created | Full catalog of 8 upstream sources |
+| 2026-03-25 | **Deep audit** | Pipeline usage analysis: ~15 active, ~12 conditional, ~53 dead. Identified 8 high-value gaps. Recommendations for strengthening plan-work/new-project with deeper research/discussion/review. All per-source docs updated with deep capability descriptions, real usage status, and actionable recommendations. |
+| 2026-03-25 | **Phase 3.5 integrations** | Closed 6 gaps: G1 plan-eng-review (active in plan-review), G2 verification-before-completion (active in build/fix), G4 gsd-phase-researcher (conditional in plan-work), G5 discuss-phase decision-locking (active in plan-work), G6 audit (conditional in build), G7 harden (conditional in build). Active ~15→~21, Dead ~53→~47. |

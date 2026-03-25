@@ -128,44 +128,102 @@ upstream/superpowers-4.3.1/
   └── writing-skills ──────────── meta: creating new skills
 ```
 
+## Deep Capability Descriptions
+
+### Planning & Discovery Skills
+
+| Skill | What It Actually Does | Value Proposition | fhhs Usage |
+|-------|----------------------|-------------------|------------|
+| **brainstorming** | Socratic design dialogue: explore context → ask clarifying questions one-at-a-time → propose 2-3 approaches → present design in sections → get user approval → write design doc to `docs/plans/`. Hard gate: NO code without approved design, even for "simple" projects. | Prevents coding without thinking. Forces exploration of alternatives before commitment. Simple projects are where unexamined assumptions cause the most wasted work. | **ACTIVE** — wired in `/fh:plan-work` Step 2. Subagents read `skills/brainstorming/PROMPT.md` before design phase. |
+| **writing-plans** | Break approved design into bite-sized tasks (2-5 min each) with exact file paths, complete code snippets, test commands, verification steps. Output to `docs/plans/`. Principles: DRY, YAGNI, TDD, frequent commits. | Eliminates ambiguity. Every task is independently executable with clear done criteria. Makes work parallelizable across subagents. | **INTERNAL** — pattern absorbed into `/fh:plan-work` planning format. |
+| **executing-plans** | Batch execution model (default 3 tasks at a time) with human checkpoints between batches. Requires git worktree isolation. Reviews plan critically before starting. | Controlled execution with regular review gates. Human stays in the loop without micromanaging. | **INTERNAL** — alternative to subagent model. Available but subagent-driven preferred. |
+
+### Execution Skills
+
+| Skill | What It Actually Does | Value Proposition | fhhs Usage |
+|-------|----------------------|-------------------|------------|
+| **subagent-driven-development** | Fresh subagent per task (prevents context pollution) + two-stage review: (1) spec compliance first, (2) code quality second. Implementer asks questions before coding, self-reviews after. | Best quality through isolation: fresh agent = no accumulated assumptions. Two-stage review catches both "did it do what was asked?" and "is the code good?" | **DEAD as skill** — pattern fully absorbed into `/fh:build` which implements fresh-agent-per-task with spec-gate. The skill itself is never referenced. |
+| **dispatching-parallel-agents** | Identify 3+ independent problem domains → spawn one agent per domain → integrate results. For debugging: 6 failures across 3 files → 3 agents → all fixed concurrently. | Massive time savings on multi-domain problems. Prevents sequential analysis waste. | **ACTIVE** — wired in `/fh:build` for parallel task dispatch. |
+| **using-git-worktrees** | Create isolated git worktree with systematic directory selection (priority: existing > CLAUDE.md > ask), safety verification (must be gitignored), auto-detect project type (Node/Rust/Python/Go), run setup, verify clean baseline tests. | Reliable workspace isolation for parallel branch work without switching. | **INTERNAL** — referenced in executing-plans. Available for manual invocation. |
+| **finishing-a-development-branch** | Verify all tests pass → present 4 options (merge locally / create PR / keep branch / discard) → execute chosen option → clean up worktree if applicable. | Structured completion prevents accidental work loss. Every branch gets a deliberate ending. | **CONDITIONAL** — referenced in `/fh:review` Step 9 for post-review branch promotion. |
+
+### Quality & Discipline Skills
+
+| Skill | What It Actually Does | Value Proposition | fhhs Usage |
+|-------|----------------------|-------------------|------------|
+| **test-driven-development** | Iron law: NO production code without failing test first. RED (write failing test, verify it fails) → GREEN (minimal code to pass) → REFACTOR (clean up, keep green). Includes 10+ rationalization rebuttals ("too simple to test", "just a UI change", etc.) and explicit anti-pattern catalog. | Prevents untested code. Forces design clarity through test-first thinking. The rationalization barriers are key — they close the loopholes engineers use to skip TDD. | **ACTIVE** — wired in `/fh:build` (subagent context), `/fh:fix` Step 2, `/fh:plan-work` plan frontmatter. Core discipline skill. |
+| **systematic-debugging** | Mandatory 4-phase process: (1) Root cause investigation (read errors, reproduce, check recent changes, trace data flow), (2) Pattern analysis (find working examples, compare, identify differences), (3) Hypothesis testing (form single hypothesis, test minimally), (4) Implementation (create failing test, single fix, verify). 7+ rationalization rebuttals. Supporting refs: root-cause-tracing.md, defense-in-depth.md, condition-based-waiting.md. | Prevents symptom-fixing. "ALWAYS find root cause before attempting fixes. Symptom fixes are failure." The 4-phase structure prevents the common pattern of trying random fixes. | **ACTIVE** — wired in `/fh:fix` Step 1 for moderate/complex bugs. |
+| **verification-before-completion** | Gate function: (1) IDENTIFY verification command, (2) RUN fresh and complete, (3) READ full output, (4) VERIFY claim matches output, (5) ONLY THEN claim success. Catches: "should work", "probably passes", satisfaction expressions before verification, trusting agent reports without evidence. | Prevents dishonest completion claims. "Evidence before claims, always." Without this, agents claim success based on vibes. | **ACTIVE** — wired in `/fh:build` Step 5 and `/fh:fix` Step 4 (Phase 3.5). |
+| **requesting-code-review** | When to request review (mandatory: after each task, before merge; optional: when stuck). How to dispatch code-reviewer subagent with structured template (WHAT, PLAN, BASE_SHA, HEAD_SHA, DESCRIPTION). | Early review prevents issue cascading. Structured review requests get better reviews. | **DEAD** — pattern exists in `/fh:build` spec-gate but this skill is never referenced directly. |
+| **receiving-code-review** | Technical evaluation discipline. Forbidden: "You're absolutely right!", "Great point!", blind implementation. Required: READ → UNDERSTAND → VERIFY → EVALUATE → RESPOND → IMPLEMENT. Handles YAGNI: grep codebase before implementing "professional" suggestions. Be skeptical of external review. | Prevents performative agreement. Ensures code review remains technical discipline, not social performance. | **DEAD** — never referenced. **MEDIUM-VALUE GAP**: would improve `/fh:review` when processing external feedback. |
+
+### Meta Skills
+
+| Skill | What It Actually Does | Value Proposition | fhhs Usage |
+|-------|----------------------|-------------------|------------|
+| **using-superpowers** | Meta-skill: mandatory skill check before ANY action (even 1% chance). 12+ rationalization rebuttals. Process skills first (brainstorming, debugging), then implementation skills. | Ensures the skill system is actually used. Without this, agents skip skills and go straight to coding. | **DEAD** — fhhs has its own skill dispatch via SKILL.md descriptions. Not needed. |
+| **writing-skills** | TDD applied to skill creation: write failing test (subagent pressure scenario) → write skill → close loopholes (rationalization barriers). Skill structure: YAML frontmatter, overview, when-to-use, patterns. Testing methodology: pressure scenarios with subagents as "tests". | Quality skill authoring. The testing methodology (subagent pressure scenarios) is genuinely unique. | **DEAD in pipelines** — but valuable as reference when YOU are authoring skills. Keep as internal reference. |
+
 ## Skills Table
 
 | Skill | SDLC Phase | Quality | Status | fhhs Equivalent | Notes |
 |-------|-----------|---------|--------|-----------------|-------|
-| brainstorming | Planning | A | ✅ Forked | skills/brainstorming/PROMPT.md | Divergent thinking methodology |
-| writing-plans | Planning | A | ✅ Forked | Absorbed into /fh:plan-work | Structured plan authoring |
-| test-driven-development | Testing | A | ✅ Forked | skills/test-driven-development/ | TDD enforcement |
-| systematic-debugging | Debugging | A | ✅ Forked | skills/systematic-debugging/ | Root-cause analysis method |
-| subagent-driven-development | Building | A | ✅ Forked | skills/subagent-driven-development/ | Core SDD orchestration |
-| executing-plans | Building | B | ✅ Forked | skills/executing-plans/ | Plan execution methodology |
-| dispatching-parallel-agents | Building | A | ✅ Forked | skills/dispatching-parallel-agents/ | Parallel Task dispatch |
-| requesting-code-review | Review | B | ✅ Forked | skills/requesting-code-review/ | Review initiation |
-| receiving-code-review | Review | A | ✅ Forked | skills/receiving-code-review/ | Processing feedback |
-| verification-before-completion | Verification | A | ✅ Forked | skills/verification-before-completion/ | Pre-completion gate |
-| finishing-a-development-branch | Integration | B | ✅ Forked | skills/finishing-a-development-branch/ | Branch cleanup |
-| using-git-worktrees | Setup | B | ✅ Forked | skills/using-git-worktrees/ | Worktree isolation |
-| using-superpowers | Meta | B | ✅ Forked | skills/using-superpowers/ | Plugin usage guide |
-| writing-skills | Meta | A | ✅ Forked | skills/writing-skills/ | Skill authoring guide |
+| brainstorming | Planning | A | ✅ Active | skills/brainstorming/PROMPT.md | Core ideation methodology |
+| writing-plans | Planning | A | ✅ Internal | Absorbed into /fh:plan-work | Plan authoring pattern |
+| test-driven-development | Testing | A | ✅ Active | skills/test-driven-development/ | Core discipline skill |
+| systematic-debugging | Debugging | A | ✅ Active | skills/systematic-debugging/ | Root-cause methodology |
+| subagent-driven-development | Building | A | 🔀 Pattern absorbed | Pattern in /fh:build | Skill itself unused |
+| executing-plans | Building | B | ✅ Internal | skills/executing-plans/ | Alternative execution mode |
+| dispatching-parallel-agents | Building | A | ✅ Active | skills/dispatching-parallel-agents/ | Parallel dispatch |
+| requesting-code-review | Review | B | ⚠️ Dead | skills/requesting-code-review/ | Pattern in build, skill unused |
+| receiving-code-review | Review | A | ⚠️ Dead | skills/receiving-code-review/ | Valuable but not wired |
+| verification-before-completion | Verification | A | ✅ **Active** | skills/verification-before-completion/ | Wired in build Step 5, fix Step 4 |
+| finishing-a-development-branch | Integration | B | ✅ Conditional | skills/finishing-a-development-branch/ | Post-review workflow |
+| using-git-worktrees | Setup | B | ✅ Internal | skills/using-git-worktrees/ | Workspace isolation |
+| using-superpowers | Meta | B | ⬜ Not needed | skills/using-superpowers/ | fhhs has own dispatch |
+| writing-skills | Meta | A | ⬜ Reference only | skills/writing-skills/ | Useful for skill authoring |
 
 ## Supporting Assets Table
 
 | Asset | Type | Used by | Status | Notes |
 |-------|------|---------|--------|-------|
-| root-cause-tracing.md | Reference | systematic-debugging | ✅ Forked | RCA methodology |
-| defense-in-depth.md | Reference | systematic-debugging | ✅ Forked | Layered fix strategy |
-| condition-based-waiting.md (+.ts) | Reference + Example | systematic-debugging | ✅ Forked | Async wait patterns |
-| testing-anti-patterns.md | Reference | test-driven-development | ✅ Forked | Anti-pattern catalog |
-| implementer-prompt.md | Prompt | subagent-driven-development | ✅ Forked | Subagent implementer |
-| spec-reviewer-prompt.md | Prompt | subagent-driven-development | ✅ Forked | Spec validation gate |
-| code-quality-reviewer-prompt.md | Prompt | subagent-driven-development | ✅ Forked | Quality review gate |
-| anthropic-best-practices.md | Reference | writing-skills | ✅ Forked | Prompt engineering ref |
-| persuasion-principles.md | Reference | writing-skills | ✅ Forked | Writing reference |
-| graphviz-conventions.dot | Template | writing-skills | ✅ Forked | Graph conventions |
-| render-graphs.js | Utility | writing-skills | ✅ Forked | Graphviz renderer |
-| code-reviewer.md | Agent | requesting-code-review | ✅ Forked | Reviewer persona |
+| root-cause-tracing.md | Reference | systematic-debugging | ✅ Active | RCA methodology |
+| defense-in-depth.md | Reference | systematic-debugging | ✅ Active | Layered fix strategy |
+| condition-based-waiting.md (+.ts) | Reference + Example | systematic-debugging | ✅ Active | Async wait patterns |
+| testing-anti-patterns.md | Reference | test-driven-development | ✅ Active | Anti-pattern catalog |
+| implementer-prompt.md | Prompt | subagent-driven-development | ✅ Active | Used by /fh:build |
+| spec-reviewer-prompt.md | Prompt | subagent-driven-development | ✅ Active | Used by /fh:build |
+| code-quality-reviewer-prompt.md | Prompt | subagent-driven-development | ✅ Active | Used by /fh:build |
+| anthropic-best-practices.md | Reference | writing-skills | ⬜ Reference | Useful for skill authoring |
+| persuasion-principles.md | Reference | writing-skills | ⬜ Reference | Writing reference |
+| testing-skills-with-subagents.md | Reference | writing-skills | ⬜ Reference | Skill testing methodology |
+| code-reviewer.md | Agent | requesting-code-review | ✅ Active | Reviewer persona |
 | skills-core.js | Library | Plugin runtime | 🚫 N/A | Claude Code plugin loader |
 | hooks/ | Hooks | Session init | 🚫 N/A | Not applicable to fhhs model |
 
 ## Assessment
 
-Superpowers is the backbone of fhhs's engineering methodology. Its pipeline model — ideation through shipping — provides the structural discipline that all other upstreams plug into. The SDD model with spec-reviewed, independently-implemented subagents is the single most valuable pattern in the entire upstream catalog. All 14 skills are fully integrated as internal forks. The only weakness is that some skills (executing-plans, using-superpowers) are somewhat generic and could benefit from tighter integration with GSD's state machine. The test suite is comprehensive but platform-specific (Claude Code plugin tests) and not directly usable by fhhs.
+Superpowers is the backbone of fhhs's engineering methodology. Its pipeline model — ideation through shipping — provides the structural discipline that all other upstreams plug into. The SDD model with spec-reviewed, independently-implemented subagents is the single most valuable pattern in the entire upstream catalog.
+
+### What's Working
+
+7 of 14 skills are actively wired and regularly triggered: brainstorming, TDD, systematic-debugging, simplify, dispatching-parallel-agents, verification-before-completion, and the SDD subagent prompts (implementer, spec-reviewer, quality-reviewer). These form the quality backbone of `/fh:build`, `/fh:fix`, and `/fh:plan-work`.
+
+### What's Underused (High-Value Gaps)
+
+1. **receiving-code-review** — The anti-performative-agreement discipline would improve how `/fh:review` processes external feedback. Currently nothing prevents blind "Great point!" responses to review comments.
+
+### What's Dead Weight
+
+- **using-superpowers** — fhhs has its own skill dispatch. This meta-skill is for standalone Superpowers users.
+- **subagent-driven-development** — The pattern is fully absorbed into `/fh:build`. The skill file itself adds no value.
+- **requesting-code-review** — The review request pattern exists in build's spec-gate. The skill adds nothing.
+
+### Recommendations
+
+| Priority | Action | Impact |
+|----------|--------|--------|
+| ~~High~~ | ~~Wire verification-before-completion into `/fh:build` final step and `/fh:fix` final step~~ | ✅ **DONE** (Phase 3.5) |
+| **Medium** | Wire receiving-code-review into `/fh:review` when processing external/Greptile feedback | Prevents performative agreement |
+| **Low** | Keep writing-skills as reference for plugin development (you), don't ship | Useful for skill authoring |
+| **None** | Remove using-superpowers from shipped skills if shipped | Token savings, no functionality loss |
