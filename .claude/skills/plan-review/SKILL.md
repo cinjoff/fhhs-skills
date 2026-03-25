@@ -1,6 +1,6 @@
 ---
 name: fh:plan-review
-description: Stress-test a plan. Challenges assumptions and looks for blind spots before you commit.
+description: Stress-test a plan. Challenges business alignment AND engineering rigor — architecture, code quality, tests, performance — before you commit.
 user-invokable: true
 allowed-tools:
   - Read
@@ -28,7 +28,13 @@ Do NOT make any code changes. Do NOT start implementation. Your only job is to r
 
 You are not here to rubber-stamp this plan. You are here to make it extraordinary, catch every landmine before it explodes, and ensure that when this ships, it ships at the highest possible standard.
 
-But your posture depends on what the user needs:
+Every review evaluates from TWO perspectives:
+- **Business alignment (CEO lens):** "Is this the right thing to build?" — scope, strategic fit, failure modes
+- **Engineering rigor (EM lens):** "Can we build this reliably?" — architecture, code quality, tests, performance
+
+Both lenses run in every review. The existing scope challenge (Step 0) and review modes (SCOPE EXPANSION / HOLD / REDUCTION) apply to both lenses.
+
+Your posture depends on what the user needs:
 
 * **SCOPE EXPANSION:** You are building a cathedral. Envision the platonic ideal. Push scope UP. Ask "what would make this 10x better for 2x the effort?" The answer to "should we also build X?" is "yes, if it serves the vision." You have permission to dream.
 * **HOLD SCOPE:** You are a rigorous reviewer. The plan's scope is accepted. Your job is to make it bulletproof — catch every failure mode, test every edge case, map every error path. Do not silently reduce OR expand.
@@ -54,9 +60,9 @@ But your posture depends on what the user needs:
 
 ## Priority Hierarchy Under Context Pressure
 
-Step 0 > System audit > Error/rescue map > Test diagram > Failure modes > Opinionated recommendations > Everything else.
+Step 0 > System audit > Error/rescue map > Test diagram > Failure modes > Engineering sections > Opinionated recommendations > Everything else.
 
-Never skip Step 0, the system audit, the error/rescue map, or the failure modes section. These are the highest-leverage outputs.
+Never skip Step 0, the system audit, the error/rescue map, or the failure modes section. These are the highest-leverage outputs. Engineering sections (7-10) are mandatory in every review.
 
 ---
 
@@ -318,6 +324,83 @@ Evaluate:
 
 ---
 
+## Engineering Review Sections (4 sections, after business review)
+
+These sections evaluate engineering rigor. They run in every review, after the business-alignment sections above.
+
+### Section 7: Engineering Architecture Review
+Evaluate the plan's technical architecture with production-grade rigor:
+* System design and component boundaries — are responsibilities cleanly separated?
+* Dependency graph and coupling concerns — draw the graph, flag tight coupling
+* Data flow patterns and potential bottlenecks — where will throughput constrain?
+* Scaling characteristics and single points of failure — what breaks at 10x load?
+* Security architecture (auth, data access, API boundaries) — are trust boundaries explicit?
+* For each new codepath: describe one realistic production failure scenario and whether the plan accounts for it
+* ASCII diagrams for non-trivial flows (mandatory)
+
+**STOP.** AskUserQuestion once per issue. Do NOT batch. Recommend + WHY. If no issues or fix is obvious, state what you'll do and move on — don't waste a question. Do NOT proceed until user responds.
+
+### Section 8: Code Quality Review
+Evaluate the plan's impact on code quality:
+* DRY violations — flag aggressively. If the plan introduces logic that already exists elsewhere, call it out.
+* Error handling patterns and missing edge cases — are errors handled specifically (named types) or generically?
+* Over-engineered areas — abstractions without justification, premature generalization
+* Under-engineered areas — shortcuts that will bite within 3 months
+* Existing code/patterns that already solve sub-problems — reuse vs rebuild decision for each
+* Existing ASCII diagrams in touched files — are they still accurate after this plan ships? If not, flag for update.
+
+**STOP.** AskUserQuestion once per issue. Do NOT batch. Recommend + WHY. If no issues or fix is obvious, state what you'll do and move on — don't waste a question. Do NOT proceed until user responds.
+
+### Section 9: Engineering Test Review
+Diagram ALL new items this plan introduces and verify test coverage for each:
+```
+  NEW UX FLOWS:           [list] → test exists? [Y/N]
+  NEW DATA FLOWS:         [list] → test exists? [Y/N]
+  NEW CODEPATHS:          [list] → test exists? [Y/N]
+  NEW BRANCHING LOGIC:    [list] → test exists? [Y/N]
+```
+
+For skill/prompt changes specifically: verify eval coverage exists. If the plan modifies a skill in `.claude/skills/`, check that a corresponding eval exists in `evals/`.
+
+Produce the **test diagram** — ASCII art showing all new codepaths and their test coverage status:
+```
+  ┌──────────────────────────────────────────────┐
+  │           TEST COVERAGE DIAGRAM              │
+  ├──────────────────┬───────────┬───────────────┤
+  │ CODEPATH         │ TEST TYPE │ STATUS        │
+  ├──────────────────┼───────────┼───────────────┤
+  │ [codepath name]  │ Unit      │ ✓ Covered     │
+  │ [codepath name]  │ Eval      │ ✗ MISSING     │
+  │ [codepath name]  │ Integ.    │ ✓ Covered     │
+  └──────────────────┴───────────┴───────────────┘
+```
+
+**STOP.** AskUserQuestion once per issue. Do NOT batch. Recommend + WHY. If no issues or fix is obvious, state what you'll do and move on — don't waste a question. Do NOT proceed until user responds.
+
+### Section 10: Performance Review
+Evaluate performance implications of the plan:
+* N+1 queries and database access patterns — trace every DB call path, flag repeated queries in loops
+* Memory-usage concerns — large data structures, unbounded collections, retained references
+* Caching opportunities — repeated computations or lookups that could be cached
+* Slow or high-complexity code paths — O(n²) or worse algorithms, blocking I/O in hot paths
+
+For each finding: describe the concern, estimate severity (High/Med/Low), and propose mitigation.
+
+**STOP.** AskUserQuestion once per issue. Do NOT batch. Recommend + WHY. If no issues or fix is obvious, state what you'll do and move on — don't waste a question. Do NOT proceed until user responds.
+
+---
+
+## SMALL CHANGE Mode (compressed review)
+
+If the plan is a small, focused change (touches ≤3 files, single concern), compress the review:
+
+**Business sections (1-6):** Pick one issue from each section that has findings. Present all in a single batch.
+**Engineering sections (7-10):** Pick one issue from each engineering section that has findings. Include in the same single batch.
+
+Keep the single-batch format but ensure both business and engineering lenses are represented. Skip sections with no findings — don't force issues that don't exist.
+
+---
+
 ## CRITICAL RULE — How to ask questions
 
 Every AskUserQuestion MUST: (1) present 2-3 concrete lettered options, (2) state which option you recommend FIRST, (3) explain in 1-2 sentences WHY that option over the others, mapping to engineering preferences. No batching multiple issues into one question. No yes/no questions. Open-ended questions are allowed ONLY when you have genuine ambiguity about developer intent, architecture direction, 12-month goals, or what the end user wants — and you must explain what specifically is ambiguous.
@@ -389,11 +472,15 @@ Any row with RESCUED=N, TEST=N, USER SEES=Silent → **CRITICAL GAP** → must b
 ### Delight Opportunities (EXPANSION mode only)
 Identify at least 5 "bonus chunk" opportunities (<30 min each) that would make users think "oh nice, they thought of that." Present each delight opportunity as its own individual AskUserQuestion. Never batch them. For each one, describe what it is, why it would delight users, and effort estimate. Then present options: **A)** Add to plan backlog **B)** Skip **C)** Build it now in this PR. Items added to backlog go into CONTEXT.md "NOT in scope" with rationale "delight opportunity — deferred."
 
+### Test Diagram (mandatory, always produced)
+ASCII art diagram showing all new codepaths and their test coverage status. Produced during Section 9 (Engineering Test Review) and included here for reference. This is a required output in every review, not just engineering-focused ones.
+
 ### Diagrams (mandatory, produce all that apply)
 1. System architecture
 2. Data flow (including shadow paths)
 3. State machine
 4. Error flow
+5. Test coverage diagram (from Section 9)
 
 Include diagrams in both the PLAN.md `<context>` block (so executors see them) and the human-reference summary.
 
@@ -411,6 +498,11 @@ Include diagrams in both the PLAN.md `<context>` block (so executors see them) a
   | Section 4  (Data/UX) | ___ edge cases mapped, ___ unhandled        |
   | Section 5  (Tests)   | Diagram produced, ___ gaps                  |
   | Section 6  (Future)  | Reversibility: _/5, debt items: ___         |
+  +--------------------------------------------------------------------+
+  | Section 7  (Eng Arch)| ___ issues found                            |
+  | Section 8  (Code Ql) | ___ DRY violations, ___ over/under-eng      |
+  | Section 9  (Eng Test)| Test diagram produced, ___ gaps              |
+  | Section 10 (Perf)    | ___ issues found, ___ High severity          |
   +--------------------------------------------------------------------+
   | PLAN.md updated      | ___ truths added, ___ artifacts added        |
   | CONTEXT.md updated   | ___ decisions locked, ___ items deferred     |
@@ -463,3 +555,5 @@ If any AskUserQuestion goes unanswered, note it here. Never silently default.
   │ planning    │              │              │                    │
   └─────────────┴──────────────┴──────────────┴────────────────────┘
 ```
+
+_Engineering review sections adapted from gstack plan-eng-review (v0.3.3)_
