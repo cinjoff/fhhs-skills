@@ -5746,6 +5746,130 @@
           "type": "output"
         }
       ]
+    },
+    {
+      "id": 194,
+      "command": "sync-upstream",
+      "prompt": "sync upstream superpowers",
+      "expected_output": "Should run pre-sync validation, detect the missing forked skill path, report it in the validation table, and ask user to fix before proceeding.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Runs pre-sync validation before checking for updates",
+          "type": "behavioral"
+        },
+        {
+          "text": "Detects missing forked skill path",
+          "type": "behavioral"
+        },
+        {
+          "text": "Reports missing path in validation table",
+          "type": "output"
+        },
+        {
+          "text": "Does not proceed to Step 1 without user confirmation",
+          "type": "guard"
+        },
+        {
+          "text": "Suggests fixing the missing path or force-proceeding",
+          "type": "output"
+        }
+      ],
+      "scenario_requires": [
+        "missing_forked_skill_path"
+      ]
+    },
+    {
+      "id": 195,
+      "command": "sync-upstream",
+      "prompt": "sync upstream gsd",
+      "expected_output": "Should detect missing snapshot directory for gsd, report it as FAIL in validation table, not proceed to fetch changes without snapshot baseline, and suggest downloading current snapshot first.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects missing snapshot directory for gsd",
+          "type": "behavioral"
+        },
+        {
+          "text": "Reports snapshot status as FAIL in validation table",
+          "type": "output"
+        },
+        {
+          "text": "Does not proceed to fetch changes without snapshot baseline",
+          "type": "guard"
+        },
+        {
+          "text": "Suggests downloading current snapshot first",
+          "type": "output"
+        }
+      ],
+      "scenario_requires": [
+        "missing_upstream_snapshot_directory"
+      ]
+    },
+    {
+      "id": 196,
+      "command": "sync-upstream",
+      "prompt": "sync upstream impeccable",
+      "expected_output": "Should map impeccable's forked_to paths to eval commands (polish, normalize, harden, adapt, etc.), announce targeted eval run, report eval pass/fail count, create git checkpoint before modifying files, and offer rollback if evals fail.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Maps impeccable forked skills to eval commands",
+          "type": "behavioral"
+        },
+        {
+          "text": "Runs targeted evals only for affected commands, not full suite",
+          "type": "behavioral"
+        },
+        {
+          "text": "Reports eval pass/fail count",
+          "type": "output"
+        },
+        {
+          "text": "Creates git checkpoint before modifying files",
+          "type": "behavioral"
+        },
+        {
+          "text": "Offers rollback if evals fail",
+          "type": "behavioral"
+        }
+      ],
+      "scenario_requires": [
+        "successful_patch_reapplication"
+      ]
+    },
+    {
+      "id": 197,
+      "command": "sync-upstream",
+      "prompt": "sync upstream gsd",
+      "expected_output": "Should detect eval failures after patch reapplication, show which specific evals failed, offer git rollback to pre-sync checkpoint, not commit changes when evals fail, and present options: fix and re-run, revert, or commit anyway.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects eval failures after patch reapplication",
+          "type": "behavioral"
+        },
+        {
+          "text": "Shows which specific evals failed",
+          "type": "output"
+        },
+        {
+          "text": "Offers git rollback to pre-sync checkpoint",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does not commit changes when evals fail",
+          "type": "guard"
+        },
+        {
+          "text": "Presents options: fix and re-run, revert, or commit anyway",
+          "type": "output"
+        }
+      ],
+      "scenario_requires": [
+        "post_sync_eval_failures"
+      ]
     }
   ]
 }
