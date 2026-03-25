@@ -8,7 +8,7 @@
 |---|--------|---------|------|---------|--------------------:|----------:|
 | 1 | [superpowers](superpowers.md) | 4.3.1 | Engineering discipline | A | 14 | 14 (100%) |
 | 2 | [impeccable](impeccable.md) | 1.2.0 | Design quality | A | 18 | 18 (100%) |
-| 3 | [gsd](gsd.md) | 1.22.4 | Project execution | A | 12 agents + 27 workflows | ~60% |
+| 3 | [gsd](gsd.md) | 1.22.4 | Project execution | A | 12 agents + 34 workflows | ~60% |
 | 4 | [gstack](gstack.md) | 0.3.3 | Production safety | B+ | 10 | 3 (~30%) |
 | 5 | [feature-dev](feature-dev.md) | 55b58ec6 | Feature workflow | B | 1 workflow + 3 agents | 3 (100%) |
 | 6 | [claude-md-management](claude-md-management.md) | 1.0.0 | Knowledge mgmt | B | 1 | 1 (100%) |

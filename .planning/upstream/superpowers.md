@@ -65,7 +65,7 @@ upstream/superpowers-4.3.1/
 │   │   ├── defense-in-depth.md                   ← layered fix strategy
 │   │   ├── find-polluter.sh                      ← test pollution finder
 │   │   ├── root-cause-tracing.md                 ← RCA methodology
-│   │   └── test-*.md                             ← pressure test scenarios (×3)
+│   │   └── test-*.md                             ← test scenarios (×4)
 │   ├── test-driven-development/
 │   │   ├── UPSTREAM-SKILL.md                     ← TDD methodology
 │   │   └── testing-anti-patterns.md              ← anti-pattern catalog
