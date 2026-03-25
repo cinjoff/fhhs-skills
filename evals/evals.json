@@ -5870,6 +5870,172 @@
       "scenario_requires": [
         "post_sync_eval_failures"
       ]
+    },
+    {
+      "id": 198,
+      "command": "plan-work",
+      "prompt": "Plan building a real-time collaboration system with WebSocket, CRDT, and presence indicators",
+      "expected_output": "Should trigger complexity assessment for unfamiliar domain (CRDT, real-time collaboration). Should suggest deep research before planning, flag multiple unfamiliar technologies (WebSocket orchestration, CRDT conflict resolution, presence protocol). Should NOT skip research or treat as a well-known pattern.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Triggers complexity assessment identifying unfamiliar domain (CRDT, real-time sync)",
+          "type": "behavioral"
+        },
+        {
+          "text": "Suggests deep research before proceeding with planning",
+          "type": "behavioral"
+        },
+        {
+          "text": "Identifies multiple unfamiliar technologies requiring investigation",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT skip research or treat as well-known pattern",
+          "type": "guard"
+        }
+      ]
+    },
+    {
+      "id": 199,
+      "command": "plan-work",
+      "prompt": "Plan renaming the /fh:tracker command to /fh:dashboard",
+      "expected_output": "Should treat as a simple, well-known task (file rename + cross-reference update). Should NOT trigger deep research or complexity assessment. Should proceed directly to planning without research step. Plan should be small (few tasks, grep for old references, update paths).",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Treats as simple task — no complexity assessment triggered",
+          "type": "behavioral"
+        },
+        {
+          "text": "Skips deep research step for well-known rename pattern",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT suggest unfamiliar domain or deep research",
+          "type": "guard"
+        },
+        {
+          "text": "Produces appropriately small plan for a rename operation",
+          "type": "output"
+        }
+      ]
+    },
+    {
+      "id": 200,
+      "command": "plan-work",
+      "prompt": "Plan a new authentication system with JWT tokens, refresh token rotation, and role-based access control",
+      "expected_output": "Should produce decision-locking output in CONTEXT.md format. Should categorize decisions as locked (firm commitments), discretion (implementer can choose), or deferred (decide later). Locked decisions should include key architectural choices. Discretion items should cover implementation details. Deferred items should note what needs more info.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Mentions locked decisions — firm architectural commitments",
+          "type": "output"
+        },
+        {
+          "text": "Mentions discretion — implementation details left to builder",
+          "type": "output"
+        },
+        {
+          "text": "Mentions deferred decisions — items needing more information",
+          "type": "output"
+        },
+        {
+          "text": "Decision categories appear in planning output (CONTEXT.md format)",
+          "type": "behavioral"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ]
+    },
+    {
+      "id": 201,
+      "command": "plan-work",
+      "prompt": "Plan adding a notification preferences API with email and push notification channels. Standard REST patterns, 3-4 tasks.",
+      "expected_output": "Should default handoff to /fh:plan-review after planning completes. Should present /fh:plan-review as the default next step. Should only present /fh:build as a skip-review option for trivial work, not as the default. The notification preferences API is non-trivial enough to warrant review.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Handoff defaults to /fh:plan-review as the next step",
+          "type": "behavioral"
+        },
+        {
+          "text": "Presents /fh:build as skip-review option, not the default",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT default to /fh:build for non-trivial work",
+          "type": "guard"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ]
+    },
+    {
+      "id": 202,
+      "command": "plan-review",
+      "prompt": "Review the plan at .planning/phases/06-search/06-01-PLAN.md for adding full-text search with Elasticsearch integration, query parsing, and result ranking. The plan has 5 tasks across indexing, querying, and UI.",
+      "expected_output": "Should cover BOTH business alignment (scope challenge, strategic fit, whether search is the right investment) AND engineering rigor (architecture review, code quality assessment, test coverage analysis, performance considerations). Must not limit review to only business/scope questions — engineering sections must appear with concrete technical analysis.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Covers business alignment — scope challenge and strategic fit",
+          "type": "behavioral"
+        },
+        {
+          "text": "Covers engineering rigor — architecture review with technical analysis",
+          "type": "behavioral"
+        },
+        {
+          "text": "Includes code quality assessment in engineering sections",
+          "type": "output"
+        },
+        {
+          "text": "Includes test coverage analysis in engineering sections",
+          "type": "output"
+        },
+        {
+          "text": "Includes performance considerations in engineering sections",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT limit review to only business/scope questions",
+          "type": "guard"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ]
+    },
+    {
+      "id": 203,
+      "command": "plan-review",
+      "prompt": "Review the plan for adding a new payment webhook handler with Stripe event processing, idempotency checks, and retry logic. The plan introduces 4 new codepaths across webhook receiver, event processor, payment state machine, and notification dispatcher.",
+      "expected_output": "Should produce engineering review sections that include an ASCII test diagram showing coverage status for the new codepaths. The test diagram should map each codepath (webhook receiver, event processor, payment state machine, notification dispatcher) and indicate test coverage status (covered, missing, partial). Must visualize coverage gaps, not just list them.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Produces ASCII test diagram showing coverage status per codepath",
+          "type": "output"
+        },
+        {
+          "text": "Test diagram maps each new codepath introduced by the plan",
+          "type": "output"
+        },
+        {
+          "text": "Test diagram indicates coverage status (covered, missing, partial) for each codepath",
+          "type": "output"
+        },
+        {
+          "text": "Visualizes coverage gaps in diagram form, not just as a text list",
+          "type": "behavioral"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ]
     }
   ]
 }
