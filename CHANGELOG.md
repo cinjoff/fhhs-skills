@@ -5,6 +5,31 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.23.0] - 2026-03-25
+
+### Added
+- **Research agent integration in `/fh:plan-work`** — complex tasks spawn `gsd-phase-researcher` for deep domain research with confidence gates; medium tasks use inline research subagents
+- **Domain research in `/fh:new-project`** — optional Step 5 spawns parallel project researchers (Features, Pitfalls, and conditionally Stack/Architecture), synthesizes results, and feeds them into requirements definition
+- **Research-aware `/fh:plan-review`** — loads RESEARCH.md and verifies plan alignment with research findings (stack, pitfalls, hand-rolled solutions)
+- **Respect-but-flag protocol** — plan-review respects locked decisions by default but may surface evidence-based concerns for user decision
+- **CONTEXT.md contract** — 3 canonical sections (Decisions, Discretion Areas, Deferred Ideas) enforced across the core loop with contract block in plan-work
+- **Complexity assessment in `/fh:plan-work`** — Step 0.5 evaluates task scope and suggests appropriate research/review depth
+- **Engineering review in `/fh:plan-review`** — architecture, code quality, tests, and performance sections complement existing business alignment review
+- **Verification gates in `/fh:build` and `/fh:fix`** — no success claims without fresh test/build/lint evidence
+- **Design quality suggestions in `/fh:build`** — suggests `/fh:audit` for frontend-heavy builds and `/fh:harden` for production-bound work
+- **`/fh:audit-upstream` skill** — maintains upstream capability index after syncs
+- **Upstream sync validation** — pre-validation, git checkpoint, and post-sync regression detection in `/fh:sync-upstream`
+- **16 new evals** (IDs 198-213) covering complexity assessment, decision-locking, engineering review, verification gates, and contract alignment
+
+### Changed
+- **Unified CONTEXT.md sections** — replaces fragmented naming (Design Decisions, Review Decisions, Locked Decisions, NOT in scope) with 3 canonical sections aligned to CLI template
+- **plan-review updates Decisions directly** — appends with `[review]` prefix instead of separate Review Decisions section
+
+### Fixed
+- **Corrupted eval 17** — corrected expected_output
+- **16 missing COMMAND_MAP entries** — adds entries for all shipped skills, removes stale resume-work
+- **Upstream registry paths** — corrects forked_to paths for shipped skills
+
 ## [1.22.2] - 2026-03-25
 
 ### Fixed
