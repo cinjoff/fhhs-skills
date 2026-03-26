@@ -294,7 +294,6 @@ function runClaudeSession(prompt, opts) {
 
     let stdout = '';
     let stderr = '';
-    let softFired = false;
     const sessionStart = Date.now();
 
     child.stdout.on('data', (data) => { stdout += data.toString(); });
@@ -302,7 +301,6 @@ function runClaudeSession(prompt, opts) {
 
     // Soft timeout: warn but continue
     const softTimer = setTimeout(() => {
-      softFired = true;
       const elapsedMin = Math.round((Date.now() - sessionStart) / 60000);
       log(`  ⚠ SOFT TIMEOUT: session running for ${elapsedMin}min (threshold: ${SOFT_TIMEOUT_MS / 60000}min)`);
     }, SOFT_TIMEOUT_MS);
