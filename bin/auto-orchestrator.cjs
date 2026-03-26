@@ -53,16 +53,20 @@ function parseArgs(argv) {
   for (let i = 0; i < args.length; i++) {
     switch (args[i]) {
       case '--project-dir':
-        opts.projectDir = path.resolve(args[++i]);
+        if (++i >= args.length) fatal('--project-dir requires a value');
+        opts.projectDir = path.resolve(args[i]);
         break;
       case '--start-phase':
-        opts.startPhase = args[++i];
+        if (++i >= args.length) fatal('--start-phase requires a value');
+        opts.startPhase = args[i];
         break;
       case '--end-phase':
-        opts.endPhase = args[++i];
+        if (++i >= args.length) fatal('--end-phase requires a value');
+        opts.endPhase = args[i];
         break;
       case '--budget':
-        opts.budget = parseFloat(args[++i]);
+        if (++i >= args.length) fatal('--budget requires a value');
+        opts.budget = parseFloat(args[i]);
         break;
       case '--dry-run':
         opts.dryRun = true;
@@ -194,8 +198,12 @@ function findLatestPlan(projectDir, phaseId) {
 
 function summaryExists(planPath) {
   if (!planPath) return false;
-  const summaryPath = planPath.replace('-PLAN.md', '-SUMMARY.md').replace('PLAN.md', 'SUMMARY.md');
-  return fs.existsSync(summaryPath);
+  const dir = path.dirname(planPath);
+  const base = path.basename(planPath);
+  const summaryBase = base.includes('-PLAN.md')
+    ? base.replace('-PLAN.md', '-SUMMARY.md')
+    : base.replace('PLAN.md', 'SUMMARY.md');
+  return fs.existsSync(path.join(dir, summaryBase));
 }
 
 // ─── Auto-State (Crash Recovery) ──────────────────────────────────────────────
@@ -652,6 +660,13 @@ async function main() {
     process.exit(0);
   }
 
+  // Preflight: verify claude CLI is available
+  try {
+    require('child_process').execSync('claude --version', { stdio: 'pipe' });
+  } catch {
+    fatal('claude CLI not found on PATH. Install Claude Code first.');
+  }
+
   // Handle --resume
   let resumeState = null;
   if (opts.resume) {
@@ -803,25 +818,51 @@ async function main() {
           stepResult.stdout || ''
         );
         totalCostEstimate += sessionCost;
-        log(`    Cost estimate: $${sessionCost.toFixed(4)} (running total: $${totalCostEstimate.toFixed(2)})`);
+        log(`    Cost estimate: ~$${sessionCost.toFixed(4)} (running total: ~$${totalCostEstimate.toFixed(2)} — minimum estimate, actual cost higher)`);
       }
 
       if (stepSucceeded) {
         completedSteps.push(step);
       }
 
-      // Post-step verification
+      // Post-step verification — treat missing artifacts as step failure, not fatal
       if (step === 'plan-work' && stepSucceeded) {
         currentPlanPath = findLatestPlan(projectDir, phase.id);
         if (!currentPlanPath) {
-          fatal(`plan-work did not produce a PLAN.md for phase ${phase.id}`);
+          log(`  ✗ plan-work succeeded but no PLAN.md found — treating as failure`);
+          stepSucceeded = false;
+          completedSteps.pop(); // remove plan-work from completed
+          const decId = nextDecisionId(projectDir);
+          appendDecision(projectDir, {
+            id: decId,
+            title: `plan-work produced no PLAN.md for phase ${phase.id}`,
+            status: 'ACTIVE ⚠ NEEDS REVIEW',
+            confidence: 'LOW',
+            context: `plan-work exited 0 but no PLAN.md was created in the phase directory`,
+            decision: `Phase ${phase.id} cannot continue without a plan. Stopping phase.`,
+            affects: `Phase ${phase.id}`,
+          });
+          break; // exit steps loop — phase is incomplete
         }
         log(`    Plan created: ${path.relative(projectDir, currentPlanPath)}`);
       }
 
       if (step === 'build' && stepSucceeded) {
         if (!summaryExists(currentPlanPath)) {
-          fatal(`build did not produce SUMMARY.md for phase ${phase.id}`);
+          log(`  ✗ build succeeded but no SUMMARY.md found — treating as failure`);
+          stepSucceeded = false;
+          completedSteps.pop(); // remove build from completed
+          const decId = nextDecisionId(projectDir);
+          appendDecision(projectDir, {
+            id: decId,
+            title: `build produced no SUMMARY.md for phase ${phase.id}`,
+            status: 'ACTIVE ⚠ NEEDS REVIEW',
+            confidence: 'LOW',
+            context: `build exited 0 but no SUMMARY.md was created`,
+            decision: `Phase ${phase.id} build incomplete. Stopping phase.`,
+            affects: `Phase ${phase.id}`,
+          });
+          break; // exit steps loop — phase is incomplete
         }
         plansExecuted++;
         log('    SUMMARY.md verified');
@@ -832,7 +873,24 @@ async function main() {
       }
     }
 
-    // Phase complete — update STATE.md
+    // Only mark phase complete if critical steps succeeded
+    const criticalSteps = ['plan-work', 'plan-review', 'build'];
+    const criticalsMissing = criticalSteps.filter(s => !completedSteps.includes(s));
+    if (criticalsMissing.length > 0) {
+      log(`Phase ${phase.id} INCOMPLETE — missing critical steps: ${criticalsMissing.join(', ')}`);
+      log(`  Saving state for --resume. Run again to retry.`);
+      saveAutoState(projectDir, {
+        phase: phase.id,
+        step: criticalsMissing[0],
+        plan: currentPlanPath ? path.relative(projectDir, currentPlanPath) : null,
+        started_at: new Date().toISOString(),
+        steps_completed: completedSteps,
+        total_cost_estimate: totalCostEstimate,
+        retry_count: retryCount,
+      });
+      break; // exit phases loop — don't continue to next phase
+    }
+
     updateStateViaGsd(projectDir, phase.id);
     log(`Phase ${phase.id} complete\n`);
   }
