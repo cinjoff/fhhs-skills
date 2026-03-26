@@ -5,6 +5,23 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.25.0] - 2026-03-26
+
+### Added
+- **Brand-aware shadcn preset generation** — `/fh:new-project` Step 2b extracts colors, fonts, and style from user-provided references (websites, images, brand guidelines) and generates a shadcn preset with a live preview URL at `ui.shadcn.com/create`
+- **Task tracking in setup** — `/fh:setup` enables `CLAUDE_CODE_ENABLE_TASKS` for native task tracking used by `/fh:plan-work` and `/fh:build`
+
+### Changed
+- **Setup LSP guidance** — improved instructions for Conductor and non-interactive environments
+- **Update skill** — expanded flow with better version detection and fallbacks
+- **Help command table** — consolidates `/fh:add-todo` and `/fh:check-todos` into `/fh:todos`
+
+### Fixed
+- **Upstream registry path** — corrects `forked_to` path for revise-claude-md
+
+### Removed
+- **Duplicate `commands/` directory** — files already shipped under `.claude/skills/` and `.claude/commands/`
+
 ## [1.24.6] - 2026-03-26
 
 ### Fixed

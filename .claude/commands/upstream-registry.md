@@ -111,5 +111,5 @@ versions, diff changes, and guide patch reapplication.
 | version_source | `commit` |
 | monorepo_path | `plugins/claude-md-management` |
 | compare_paths | `skills/`, `commands/` |
-| forked_to | `skills/claude-md-improver`, `commands/revise-claude-md` |
+| forked_to | `skills/claude-md-improver`, `.claude/skills/revise-claude-md` |
 | eval_commands | `revise-claude-md` |
