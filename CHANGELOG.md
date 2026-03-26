@@ -5,6 +5,11 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.24.5] - 2026-03-26
+
+### Changed
+- **Supabase project creation** — defaults project name to the repo name instead of requiring manual input
+
 ## [1.24.4] - 2026-03-26
 
 ### Fixed
