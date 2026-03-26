@@ -461,6 +461,28 @@ After writing settings.json:
 
 ---
 
+## Pre-PR Security Hook (optional)
+
+To run security scanning automatically before creating PRs, add to `.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "pattern": "gh pr create",
+        "action": "Run /fh:secure on changed files before PR creation"
+      }
+    ]
+  }
+}
+```
+
+This ensures `/fh:secure` runs before every PR. For on-demand scanning, run `/fh:secure` directly.
+
+---
+
 ## Step 6: claude-mem (Persistent Memory)
 
 ```
@@ -575,6 +597,20 @@ After displaying:
 
 ---
 
+## Step 6b: context-mode (Long Sessions and Autonomous Execution)
+
+For long sessions and autonomous execution, consider installing context-mode:
+
+```bash
+claude plugin install mksglu/context-mode
+```
+
+context-mode helps Claude maintain consistent behavior across long sessions and autonomous workflows. It complements fhhs-skills' GSD state tracking by providing session-level context continuity.
+
+This is optional but recommended if you use `/fh:auto` or run multi-phase builds.
+
+---
+
 ## Step 7: shadcn Skills
 
 ```
@@ -640,7 +676,7 @@ If the install fails (e.g. network issue, npx not available), show a warning but
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-[Fallow](https://docs.fallow.tools/) provides deterministic static analysis — dead-code detection, circular dependency analysis, code duplication, and complexity metrics. Used by `/fh:simplify`, `/fh:review`, `/fh:fix`, and `/fh:build` (spec gate) to inject ground truth findings into review agents.
+[Fallow](https://docs.fallow.tools/) provides deterministic static analysis — dead-code detection, circular dependency analysis, code duplication, and complexity metrics. Used by `/fh:review` and `/fh:simplify` to inject ground truth findings into review agents.
 
 ### Check and install
 
@@ -691,9 +727,8 @@ If the install fails, show a warning but don't block setup:
 
     pnpm install -g fallow   # or: npm install -g fallow
 
-  Without Fallow, /fh:simplify, /fh:review, /fh:fix, and /fh:build
-  still work but use LLM-only analysis instead of deterministic
-  static analysis.
+  Without Fallow, /fh:review and /fh:simplify still work but use
+  LLM-only analysis instead of deterministic static analysis.
 ```
 
 ---

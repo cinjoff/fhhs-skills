@@ -71,7 +71,7 @@ Never skip Step 0, the system audit, the error/rescue map, or the failure modes 
 Before doing anything else, run a system audit. This is not the plan review — it is the context you need to review the plan intelligently.
 
 Run the following commands:
-```
+```bash
 git log --oneline -30                          # Recent history
 git diff main --stat                           # What's already changed
 git stash list                                 # Any stashed work

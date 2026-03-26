@@ -74,7 +74,7 @@ Before diving in, evaluate the task to suggest appropriate depth for research, d
 
 | Complexity | Research | Discussion | Review |
 |-----------|----------|------------|--------|
-| **Simple** (1-3 tasks, familiar patterns, single file area) | Skip | Skip | Suggest `/fh:plan-review` (can skip for trivial: rename, typo) |
+| **Simple** (1-3 tasks, familiar patterns, single file area) | Skip | Skip brainstorm (Step 2). Identify 1-2 gray areas only. | Suggest `/fh:plan-review` (can skip for trivial: rename, typo) |
 | **Medium** (4-8 tasks, some unfamiliar patterns) | Inline research | Identify gray areas | Strongly suggest `/fh:plan-review` |
 | **Complex** (9+ tasks, unfamiliar domain, new architecture, multi-session) | Suggest deep research via phase-researcher agent | Full discussion with decision-locking | Strongly suggest `/fh:plan-review` |
 
@@ -150,6 +150,8 @@ If the user mentions wanting an isolated branch or worktree, set up a git worktr
 ## Step 2: Brainstorm
 
 > **Task tracking:** `TaskUpdate(brainstormId, status="in_progress")` — skip if TASKS_AVAILABLE=false.
+
+**Skip if complexity is Simple.** Jump to Step 3 (Discuss Implementation) with abbreviated scope: identify 1-2 gray areas, lock decisions, proceed to plan creation. When skipping: `TaskUpdate(brainstormId, status="completed", metadata={skipped: true, reason: "Simple complexity — brainstorm skipped"})` — skip if TASKS_AVAILABLE=false.
 
 **Skip if:** A phase-specific CONTEXT.md already exists AND a design doc for this topic already exists in `.planning/designs/`. The design was already approved — proceed to Step 3. When skipping: `TaskUpdate(brainstormId, status="completed", metadata={skipped: true, reason: "Design already exists"})` — skip if TASKS_AVAILABLE=false.
 
@@ -347,14 +349,22 @@ requirements: []        # GSD only — requirement IDs from ROADMAP
 
 ### Planning rules
 
-- Scope each plan to **2-3 tasks** (keeps execution context under 50%)
+Read plan limits from `.planning/config.json` (fall back to defaults if not set):
+- `plan_limits.tasks_per_plan`: min-max range (default: [4, 6])
+- `plan_limits.files_per_plan`: min-max range (default: [8, 15])
+- `plan_limits.words_per_plan`: max words (default: 2500)
+- `plan_limits.context_target`: percentage (default: 60)
+
+Scope each plan to **{tasks_per_plan} tasks** (keeps execution context under {context_target}%).
+Target **{files_per_plan} files** total across tasks.
+Keep plan total under **{words_per_plan} words**.
+
 - Each task has: files, action, verify, done
 - Mark tasks `tdd="true"` when they involve logic, state, or behavior — the executor will follow `skills/test-driven-development/PROMPT.md` for these
 - Set `wave` numbers for parallelization (independent tasks = same wave)
+- Test tasks can be marked `wave: same` as their implementation task when they test independent interfaces (the test doesn't need the implementation output to run).
 - If frontend: add `type="checkpoint:human-verify"` for key visual moments
 - Reference only the specific source files each task needs (not the whole codebase)
-- Target **5-8 files** total across tasks
-- Keep plan total under **1500 words**
 
 ### Context optimization
 
@@ -386,7 +396,7 @@ These catch schema issues (missing frontmatter fields, malformed tasks) automati
 1. **Requirement coverage** (GSD only): every requirement ID from ROADMAP referenced in `requirements` has at least one task covering it.
 2. **Task completeness**: every `<task>` has non-empty `<files>`, `<action>`, `<verify>`, and `<done>`.
 3. **Dependency correctness**: no circular dependencies in `depends_on`; wave numbers are consistent (a task cannot depend on a higher or equal wave).
-4. **Scope sanity**: 2-3 tasks, 5-8 files in `files_modified`, plan body under 1500 words.
+4. **Scope sanity**: task count within `tasks_per_plan` range, file count within `files_per_plan` range in `files_modified`, plan body under `words_per_plan` words (read limits from `.planning/config.json` `plan_limits` section; defaults: 4-6 tasks, 8-15 files, 2500 words, 60% context).
 5. **must_haves trace**: every truth in `must_haves.truths` maps to at least one task's `<done>` criteria. Every artifact in `must_haves.artifacts` appears in `files_modified`.
 6. **Context compliance** (GSD only): plan does not contradict locked decisions in CONTEXT.md; plan does not include work deferred in CONTEXT.md.
 7. **TDD coverage WARN**: For each task in the plan that creates or modifies `.ts`, `.js`, `.tsx`, `.jsx` files (excluding config, types-only, constants-only files): if the task involves business logic, state management, or data transformation and does NOT have `tdd="true"`, emit a WARN: 'Task N ({name}) modifies business logic but lacks tdd=true. Confirm this is intentional or add tdd=true.' Present the list of flagged tasks and ask the user to confirm or fix. This is advisory — do not block plan creation.
