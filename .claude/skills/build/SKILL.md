@@ -22,6 +22,22 @@ You are a **lean orchestrator**. Stay under 15% context usage. Delegate all heav
 
 ---
 
+## Step 0.5: Codebase Freshness Check
+
+If `.planning/codebase/.last-mapped` exists:
+```bash
+MAPPED_SHA=$(cat .planning/codebase/.last-mapped 2>/dev/null)
+if [ -n "$MAPPED_SHA" ]; then
+  CHANGED=$(git diff --stat "$MAPPED_SHA" HEAD -- '*.ts' '*.tsx' '*.js' '*.jsx' '*.py' '*.go' '*.rs' 2>/dev/null | tail -1)
+  [ -n "$CHANGED" ] && echo "STALE: $CHANGED" || echo "FRESH"
+fi
+```
+If STALE, warn: "Codebase mapping is outdated ($CHANGED). Consider `/fh:map-codebase` for fresh context."
+If `.planning/codebase/` doesn't exist, skip silently.
+Advisory only — never block.
+
+---
+
 ## Step 1: Find the Plan
 
 Locate the plan to execute:
@@ -75,6 +91,14 @@ Use the structured template at `references/implementer-prompt.md`. Fill its plac
 - `{TASK_NAME}` — Task identifier for deferred items format.
 - `{TASK_ID}` — Native task ID if tracking is active. Empty string otherwise.
 - `{DECISIONS_CONTEXT}` — From Step 2 if prepared. Otherwise empty string.
+
+### Context-Mode Acceleration
+
+Before reading CONTEXT.md and DECISIONS.md files directly, check if ctx_search is available:
+- If available: use `ctx_search` with queries like "locked decisions for phase {phase}" and "decisions affecting {files}" to retrieve relevant entries. This is faster and consumes less context than reading full files.
+- If not available: fall back to the existing pattern of reading the files directly.
+
+The ctx_search results replace the file reads — they provide the same information in a more compact, relevance-ranked format.
 
 The template tells subagents to self-discover relevant skill context (Playwright, Next.js, frontend design) by reading skill files when their task involves those domains. No orchestrator pre-processing needed.
 

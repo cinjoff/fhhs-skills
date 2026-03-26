@@ -86,6 +86,22 @@ Wait for user confirmation before proceeding. The user can override the suggeste
 
 ---
 
+## Step 0.6: Codebase Freshness Check
+
+If `.planning/codebase/.last-mapped` exists:
+```bash
+MAPPED_SHA=$(cat .planning/codebase/.last-mapped 2>/dev/null)
+if [ -n "$MAPPED_SHA" ]; then
+  CHANGED=$(git diff --stat "$MAPPED_SHA" HEAD -- '*.ts' '*.tsx' '*.js' '*.jsx' '*.py' '*.go' '*.rs' 2>/dev/null | tail -1)
+  [ -n "$CHANGED" ] && echo "STALE: $CHANGED" || echo "FRESH"
+fi
+```
+If STALE, warn: "Codebase mapping is outdated ($CHANGED). Consider `/fh:map-codebase` for fresh context."
+If `.planning/codebase/` doesn't exist, skip silently.
+Advisory only — never block.
+
+---
+
 ## Step 1: Research (if needed)
 
 > **Task tracking:** `TaskUpdate(researchId, status="in_progress")` — skip if TASKS_AVAILABLE=false.
@@ -136,6 +152,14 @@ Spawn a Task agent with:
 - The specific research questions implied by the user's request
 - Instruction to use Firecrawl for web search and Context7 for library documentation
 - Instruction to write findings to `.planning/phases/XX-name/XX-RESEARCH.md` with prescriptive recommendations, stack decisions, pitfalls, and code examples
+
+### Context-Mode Acceleration
+
+When scouting the codebase for reusable assets, existing patterns, or prior decisions:
+- If ctx_search is available: search the indexed codebase mapping for architecture patterns, conventions, and existing abstractions before grepping the actual codebase. Also search for prior decisions related to the current gray areas.
+- If not available: use the existing Grep/Glob/Read pattern.
+
+ctx_search is faster for broad "what exists?" queries. Use Grep/Glob for precise "where exactly?" lookups.
 
 ### Skip research (simple tasks)
 
@@ -199,6 +223,14 @@ Then continue to Step 4.
 ### Normal (interactive) mode
 
 Resolve implementation gray areas before planning:
+
+### Context-Mode Acceleration
+
+When scouting the codebase for reusable assets, existing patterns, or prior decisions:
+- If ctx_search is available: search the indexed codebase mapping for architecture patterns, conventions, and existing abstractions before grepping the actual codebase. Also search for prior decisions related to the current gray areas.
+- If not available: use the existing Grep/Glob/Read pattern.
+
+ctx_search is faster for broad "what exists?" queries. Use Grep/Glob for precise "where exactly?" lookups.
 
 1. **Scout codebase** for reusable assets — existing components, utilities, patterns that could be leveraged. Use LSP `workspaceSymbol` to find relevant abstractions by name, and `findReferences` to see how existing patterns are used. Also check for `playwright.config.*` in the project root. If present, note it — frontend interactive features should consider E2E test tasks during planning.
 2. **Identify 3-4 gray areas** specific to this phase — layout choices, data flow decisions, error handling approaches, integration patterns
