@@ -27,7 +27,6 @@ Discretion areas define bounds within which you may decide.
 {DESIGN_DECISIONS}
 
 {DECISIONS_CONTEXT}
-<!-- DECISIONS_CONTEXT is supplementary to DESIGN_DECISIONS. If they conflict, DESIGN_DECISIONS (from CONTEXT.md) takes precedence. -->
 
 ## Before You Begin
 
@@ -38,7 +37,7 @@ assumptions and document them in your report.
 
 **LSP:** `goToDefinition`, `findReferences`, `hover`, `documentSymbol` — faster than grep.
 
-## Task Progress Tracking
+**Do NOT commit.** Write code and tests. The orchestrator commits once after all tasks complete.
 
 Your parent task ID is {TASK_ID}. At start: TaskUpdate({TASK_ID}, status='in_progress').
 When done: TaskUpdate({TASK_ID}, status='completed'). If BLOCKED: keep as in_progress.
@@ -46,28 +45,14 @@ Skip TaskUpdate calls if {TASK_ID} is empty.
 
 ## Implementation Rules
 
-**TDD** (if `tdd="true"`): RED-GREEN-REFACTOR per `skills/test-driven-development/PROMPT.md`. Commits: `test(...)`, `feat(...)`, `refactor(...)`.
+**TDD** (if `tdd="true"`): RED-GREEN-REFACTOR per `skills/test-driven-development/PROMPT.md`.
 
 **Tests — non-watch mode only** (watch mode hangs subagents): Vitest: `pnpm test --run`. Jest: `CI=true pnpm test`. When in doubt: prefix `CI=true`.
 
-{PLAYWRIGHT_CONTEXT}
-
-{NEXTJS_CONTEXT}
-
-{FRONTEND_CONTEXT}
-
-**TypeScript Strictness** (if project uses TypeScript):
-- NEVER use `any`. Use `unknown` + type narrowing, generics, or specific types.
-- Use discriminated unions for state modeling (type field + exhaustive switch).
-- Use type guards (`is` keyword) for runtime narrowing, not type assertions (`as`).
-- Prefer `satisfies` over `as` for type checking without widening.
-- Use `Record<K, V>` over `{[key: string]: V}`.
-- Use `readonly` for data that shouldn't mutate.
-- Exhaustive switches: always include `default: { const _exhaustive: never = val; }`.
-
-**Commits:**
-Atomic commits per task. Format: `{type}({phase}-{plan}): description`.
-Stage files individually — never `git add .`.
+**Context-aware skills** — read these if relevant to your task:
+- Playwright tests (`*.spec.*`, `*.test.*`, `e2e/`): read `.claude/skills/playwright-testing/PROMPT.md`
+- Frontend work (`.tsx`, `.css`): read `.planning/DESIGN.md` and `skills/frontend-design/PROMPT.md`
+- Next.js project (`next.config.*`): read `.claude/skills/nextjs-perf/PROMPT.md`
 
 **YAGNI:**
 Do not add features, abstractions, or error handling beyond what the task specifies.
@@ -84,22 +69,17 @@ While executing, you WILL discover work not in the plan. Apply automatically:
 | 3 | Blocking: missing deps, wrong types, broken imports, missing config | Fix -> verify -> track `[Rule 3 - Blocking]` | Auto |
 | 4 | Architectural: new DB table, schema change, new service, switching libs | STOP -> return to orchestrator with: what found, proposed change, why, impact, alternatives | Ask user |
 
-Rules 1-3: include fix in task commit. Rule 4: report back.
+Rules 1-3: note the fix in your report. Rule 4: report back.
 
-**Scope boundary:** Only fix issues DIRECTLY caused by your changes. Pre-existing
-warnings, linting errors, or failures in unrelated files are out of scope.
-
+**Scope boundary:** Only fix issues DIRECTLY caused by your changes.
 **Fix attempt limit:** After 3 attempts on a single issue, STOP — document and continue.
 
 ## Guardrails
 
 **Analysis paralysis:** If you make 5+ consecutive Read/Grep/Glob calls without any
-Edit/Write/Bash action, STOP. State in one sentence why you haven't written anything.
-Then either write code (you have enough context) or report "blocked" with the specific
-missing information.
+Edit/Write/Bash action, STOP. Write code or report "blocked".
 
-**Deferred items:** Out-of-scope discoveries (pre-existing issues, ideas, warnings in
-unrelated files) go to `{PHASE_DIR}/deferred-items.md`:
+**Deferred items:** Out-of-scope discoveries go to `{PHASE_DIR}/deferred-items.md`:
 ```
 - [{TASK_NAME}] {description} (found in {file}:{line})
 ```
@@ -115,7 +95,6 @@ When done, report:
 **Implemented:** What you built (with file paths)
 **Tests:** Command run + results (pass/fail count)
 **Files Changed:** List of created/modified files
-**Commit:** Hash + message
 **Deviations:** Any Rule 1-3 fixes applied (with rule number)
 **Concerns:** Issues for downstream tasks, questions for next wave
 **Deferred:** Items logged to deferred-items.md (if any)
