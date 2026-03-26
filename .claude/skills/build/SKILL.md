@@ -94,18 +94,15 @@ Use the structured template at `references/implementer-prompt.md`. Fill its plac
 - `{TASK_TEXT}` — Full task content (files, action, verify, done). Copy the text, don't reference the plan file.
 - `{CLAUDE_MD_SECTIONS}` — Relevant sections from CLAUDE.md for this task type (UI work → CONVENTIONS.md + DESIGN.md; new files → STRUCTURE.md; API work → ARCHITECTURE.md; tests → TESTING.md).
 - `{DESIGN_DECISIONS}` — If `.planning/phases/{phase}/{phase}-CONTEXT.md` exists, include the "Decisions" and "Discretion Areas" sections. These are locked — subagents must not contradict them. Also include the "Deferred Ideas" section as a scope boundary — subagents must not implement deferred items listed there.
-- `{DESIGN_MD_CONTENT}` — For frontend tasks only: include `.planning/DESIGN.md` content (small, ~30 lines).
 - `{PHASE_DIR}` — Path to `.planning/phases/{phase}/` for deferred items logging.
 - `{TASK_NAME}` — Task identifier for deferred items format.
 - `{TASK_ID}` — The native task ID for this task (from Step 1b). Subagents can use this ID for sub-task tracking via TaskCreate/TaskUpdate. Pass empty string if `TASKS_AVAILABLE=false`.
 - `{DECISIONS_CONTEXT}` — If prepared in Step 2 (AUTO_MODE=true with matching decisions), inject here. Otherwise empty string.
+- `{PLAYWRIGHT_CONTEXT}` — If task files match `*.spec.*`, `*.test.*`, `e2e/`, or `playwright.config.*`: read `.claude/skills/playwright-testing/PROMPT.md` and inject here. Otherwise empty string.
+- `{NEXTJS_CONTEXT}` — If `next.config.*` exists in project root: read `.claude/skills/nextjs-perf/PROMPT.md` and inject here. Otherwise empty string.
+- `{FRONTEND_CONTEXT}` — If task touches `.tsx`, `.css` files: read `.planning/DESIGN.md` + reference `skills/frontend-design/PROMPT.md` and inject here. Otherwise empty string.
 
-The template includes all behavioral directives (TDD, frontend, commits, YAGNI), deviation rules 1-4, guardrails (analysis paralysis, scope boundary, deferred items), self-review checklist, and structured report format.
-
-**Conditional context injection — verify the template activates these for each task:**
-- **Playwright:** If task `<files>` contain `*.spec.*`, `*.test.*`, `e2e/`, or `playwright.config.*`, the template directs subagents to read `.claude/skills/playwright-testing/PROMPT.md` (POM, role-based locators, auto-waiting). Verify this context is relevant before dispatch — don't include Playwright weight for non-test tasks.
-- **Next.js perf:** If `next.config.*` exists in the project root, the template directs subagents to read `.claude/skills/nextjs-perf/PROMPT.md` (waterfall avoidance, Suspense boundaries, barrel import awareness, caching). No action needed if the project doesn't use Next.js.
-- **TypeScript strictness:** The template includes inline TS rules for all TypeScript projects. Subagents should follow them during implementation.
+The template includes all behavioral directives (TDD, commits, YAGNI), deviation rules 1-4, guardrails (analysis paralysis, scope boundary, deferred items), self-review checklist, and structured report format. TypeScript strictness rules are inline in the template for all TS projects.
 
 ### Checkpoint protocol
 
