@@ -4,20 +4,8 @@
 
 const fs = require('fs');
 const path = require('path');
-const { escapeRegex, loadConfig, getMilestoneInfo, getMilestonePhaseFilter, output, error } = require('./core.cjs');
+const { escapeRegex, loadConfig, getMilestoneInfo, getMilestonePhaseFilter, findPhaseInternal, output, error } = require('./core.cjs');
 const { extractFrontmatter, reconstructFrontmatter } = require('./frontmatter.cjs');
-
-// Shared helper: extract a field value from STATE.md content.
-// Supports both **Field:** bold and plain Field: format.
-function stateExtractField(content, fieldName) {
-  const escaped = escapeRegex(fieldName);
-  const boldPattern = new RegExp(`\\*\\*${escaped}:\\*\\*\\s*(.+)`, 'i');
-  const boldMatch = content.match(boldPattern);
-  if (boldMatch) return boldMatch[1].trim();
-  const plainPattern = new RegExp(`^${escaped}:\\s*(.+)`, 'im');
-  const plainMatch = content.match(plainPattern);
-  return plainMatch ? plainMatch[1].trim() : null;
-}
 
 function cmdStateLoad(cwd, raw) {
   const config = loadConfig(cwd);
@@ -794,7 +782,6 @@ function cmdStateFinalizePlan(cwd, options, raw) {
   // ── Read ROADMAP.md once, update plan progress, write once ───────────────
   const roadmapPath = path.join(cwd, '.planning', 'ROADMAP.md');
   if (fs.existsSync(roadmapPath)) {
-    const { findPhaseInternal, escapeRegex: esc } = require('./core.cjs');
     const phaseInfo = findPhaseInternal(cwd, phase);
     if (phaseInfo) {
       const planCount = phaseInfo.plans.length;
@@ -804,7 +791,7 @@ function cmdStateFinalizePlan(cwd, options, raw) {
         const status = isComplete ? 'Complete' : summaryCount > 0 ? 'In Progress' : 'Planned';
         const todayDate = new Date().toISOString().split('T')[0];
         let roadmapContent = fs.readFileSync(roadmapPath, 'utf-8');
-        const phaseEscaped = esc(phase);
+        const phaseEscaped = escapeRegex(phase);
         const tablePattern = new RegExp(
           `(\\|\\s*${phaseEscaped}\\.?\\s[^|]*\\|)[^|]*(\\|)\\s*[^|]*(\\|)\\s*[^|]*(\\|)`,
           'i'

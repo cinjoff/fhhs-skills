@@ -129,12 +129,16 @@ function loadConfig(cwd) {
       parallelization,
       brave_search: get('brave_search') ?? defaults.brave_search,
       model_overrides: parsed.model_overrides || null,
-      plan_limits: {
-        tasks_per_plan: get('plan_limits')?.tasks_per_plan ?? defaults.plan_limits.tasks_per_plan,
-        files_per_plan: get('plan_limits')?.files_per_plan ?? defaults.plan_limits.files_per_plan,
-        words_per_plan: get('plan_limits')?.words_per_plan ?? defaults.plan_limits.words_per_plan,
-        context_target: get('plan_limits')?.context_target ?? defaults.plan_limits.context_target,
-      },
+      plan_limits: (() => {
+        const pl = get('plan_limits') ?? {};
+        const d = defaults.plan_limits;
+        return {
+          tasks_per_plan: pl.tasks_per_plan ?? d.tasks_per_plan,
+          files_per_plan: pl.files_per_plan ?? d.files_per_plan,
+          words_per_plan: pl.words_per_plan ?? d.words_per_plan,
+          context_target: pl.context_target ?? d.context_target,
+        };
+      })(),
     };
   } catch {
     return defaults;
