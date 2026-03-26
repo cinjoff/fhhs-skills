@@ -6212,6 +6212,74 @@
           "type": "behavioral"
         }
       ]
+    },
+    {
+      "id": 222,
+      "command": "plan-review",
+      "prompt": "Run /fh:plan-review on phase 08 (payments feature). There is a .planning/DECISIONS.md with auto-decisions including D-005 which says 'Selected: a) Use Stripe SDK' with Phase: 08-payments. However, CONTEXT.md for this phase has a locked decision saying 'Use PayPal API for payments'. How should plan-review handle this inconsistency?",
+      "expected_output": "Should flag the inconsistency between DECISIONS.md (Stripe SDK) and CONTEXT.md (PayPal API) as BLOCKING in the PRE-REVIEW cross-check, since they contradict each other.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Flags inconsistency between DECISIONS.md and CONTEXT.md as BLOCKING",
+          "type": "behavioral"
+        },
+        {
+          "text": "Cross-references both files during PRE-REVIEW",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 223,
+      "command": "build",
+      "prompt": "During /fh:build spec gate for wave 2, the DECISIONS_CONTEXT includes a decision D-012 with 'Affects: src/lib/date-utils.ts' and 'Selected: a) Use date-fns library'. The wave 2 diff shows src/lib/date-utils.ts was modified but contains hand-rolled date parsing instead of date-fns. What should the spec gate report?",
+      "expected_output": "Should flag as WARNING that the implementation may not follow the auto-decision D-012 which selected date-fns, since structural check shows the Affects file was modified but the pattern may differ.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "References Decision Consistency Check or decision contradiction",
+          "type": "output"
+        },
+        {
+          "text": "Uses WARNING severity not BLOCKING for structural check",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 224,
+      "command": "fix",
+      "prompt": "A bug in the date formatting was caused by an auto-decided pattern (D-012: use date-fns for all date operations). The fix replaces date-fns usage with Intl.DateTimeFormat for locale-aware formatting. .planning/DECISIONS.md exists with D-012 active. What should /fh:fix Step 4 do regarding DECISIONS.md?",
+      "expected_output": "Should log a CORRECTED entry to DECISIONS.md referencing D-012 as the original, with step='fix Step 4', corrected_by='agent', explaining that date-fns caused the locale bug and Intl.DateTimeFormat is the correction.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Logs CORRECTED entry to DECISIONS.md",
+          "type": "behavioral"
+        },
+        {
+          "text": "References the original decision ID",
+          "type": "output"
+        }
+      ]
+    },
+    {
+      "id": 225,
+      "command": "build",
+      "prompt": "Running /fh:build for phase 05-dashboard with AUTO_MODE=true. Phase 02-auth has decision D-003 with 'Affects: src/middleware/auth.ts, src/lib/session.ts'. Phase 05's plan modifies src/middleware/auth.ts. How should build Step 2 handle this cross-phase decision?",
+      "expected_output": "Should discover D-003 from phase 02-auth via Affects field scanning since src/middleware/auth.ts is in the current plan's files_modified. Include it as a cross-phase decision in DECISIONS_CONTEXT so subagents see the auth constraint.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Discovers cross-phase decision via Affects field",
+          "type": "behavioral"
+        },
+        {
+          "text": "Includes cross-phase decision in DECISIONS_CONTEXT",
+          "type": "output"
+        }
+      ]
     }
   ]
 }
