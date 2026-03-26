@@ -389,11 +389,12 @@ If multiple orgs, ask the user which one to use.
 
 Ask the user for a preferred region. Common options: `us-east-1`, `eu-west-1`, `eu-central-1`, `ap-southeast-1`.
 
-Generate a strong database password and create the project:
+Generate a strong database password and create the project. Default the project name to the repo name:
 
 ```bash
 DB_PASSWORD="$(openssl rand -base64 32)"
-supabase projects create "<project-name>" \
+PROJECT_NAME="$(basename "$(pwd)")"
+supabase projects create "$PROJECT_NAME" \
   --org-id "<org-id>" \
   --region "<region>" \
   --db-password "$DB_PASSWORD"
@@ -406,7 +407,7 @@ Save the `DB_PASSWORD` — it's needed for linking.
 The project takes ~60-90 seconds to become available after creation. Poll until keys are retrievable:
 
 ```bash
-PROJECT_REF=$(supabase projects list | grep "<project-name>" | awk '{print $5}')
+PROJECT_REF=$(supabase projects list | grep "$PROJECT_NAME" | awk '{print $5}')
 
 # Poll for readiness (max 2 minutes)
 for i in $(seq 1 12); do
