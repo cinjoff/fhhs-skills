@@ -5,6 +5,15 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.24.6] - 2026-03-26
+
+### Fixed
+- **Starter template cloning** — pulls template files into existing repos via clone+rsync instead of `gh repo create --template` which fails when a repo already exists
+- **Template ordering** — moves template scaffolding before Supabase setup so `supabase init` runs on top of a real Next.js project
+- **Vercel worktree compatibility** — works around Vercel CLI rejecting `.git` files in git worktrees by temporarily symlinking to the real git dir
+- **`vercel env add` flags** — removes invalid `--yes` flag that caused errors
+- **Worktree env sharing** — copies `.env.local` and `.vercel/` to the main repo so future worktrees have access
+
 ## [1.24.5] - 2026-03-26
 
 ### Changed
