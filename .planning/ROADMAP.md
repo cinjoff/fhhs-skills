@@ -3,7 +3,7 @@ type: roadmap
 project: fhhs-skills
 version: v1
 created: "2026-03-25"
-phases: 6
+phases: 7
 ---
 
 # Roadmap
@@ -76,3 +76,13 @@ phases: 6
 - Release process is automated (version bump, changelog, tag, GitHub release)
 - Plugin update mechanism works reliably (`/fh:update`)
 - Community feedback loop established
+
+## Phase 7: Autonomous Execution & Harness Engineering
+**Goal:** Users can invoke `/fh:auto` with a project description and walk away — the system produces a working codebase with multi-milestone roadmap, executed phases, and a DECISIONS.md audit trail, without human intervention.
+
+- DECISIONS.md as append-only autonomous decision journal with confidence flagging and correction cascade
+- `/fh:new-project --auto` with deep research, scope-expansion roadmap, elaborate multi-milestone output
+- Autonomous loop: plan-work → plan-review (HOLD SCOPE) → build → review per phase
+- Headless orchestrator using `claude -p` for process-isolated agent sessions with crash recovery
+- Stuck detection, timeout supervision, and cost tracking
+- Decision correction cascade: human corrects a decision, system identifies downstream impact
