@@ -632,7 +632,73 @@ If the install fails (e.g. network issue, npx not available), show a warning but
 
 ---
 
-## Step 8: Conductor Configuration
+## Step 8: Fallow (Static Analysis)
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ FHHS ► FALLOW
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+[Fallow](https://docs.fallow.tools/) provides deterministic static analysis — dead-code detection, circular dependency analysis, code duplication, and complexity metrics. Used by `/fh:simplify`, `/fh:review`, `/fh:fix`, and `/fh:build` (spec gate) to inject ground truth findings into review agents.
+
+### Check and install
+
+```bash
+command -v fallow >/dev/null 2>&1 && echo "INSTALLED $(fallow --version 2>/dev/null)" || echo "NOT_INSTALLED"
+```
+
+If `INSTALLED`:
+
+```
+✓ Fallow installed
+```
+
+If `NOT_INSTALLED`:
+
+Detect the project's package manager to install with the right tool:
+
+```bash
+if [ -f pnpm-lock.yaml ]; then
+  PKG_MGR="pnpm"
+elif [ -f yarn.lock ]; then
+  PKG_MGR="yarn"
+else
+  PKG_MGR="npm"
+fi
+echo "PKG_MGR=$PKG_MGR"
+```
+
+```
+◆ Installing Fallow via $PKG_MGR...
+```
+
+```bash
+$PKG_MGR install -g fallow
+```
+
+Verify:
+
+```bash
+fallow --version && echo "✓ Fallow ready"
+```
+
+If the install fails, show a warning but don't block setup:
+
+```
+⚠ Could not install Fallow automatically.
+  You can install it manually later:
+
+    pnpm install -g fallow   # or: npm install -g fallow
+
+  Without Fallow, /fh:simplify, /fh:review, /fh:fix, and /fh:build
+  still work but use LLM-only analysis instead of deterministic
+  static analysis.
+```
+
+---
+
+## Step 9: Conductor Configuration
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -643,7 +709,7 @@ If the install fails (e.g. network issue, npx not available), show a warning but
 
 [Conductor](https://conductor.build) lets you run multiple Claude Code agents in parallel workspaces. Each workspace gets a copy of your git files plus isolated setup/run scripts. This step checks whether Conductor is installed and reminds the user to configure it per-project.
 
-### 8a: Detect Conductor
+### 9a: Detect Conductor
 
 ```bash
 # Check if the Conductor app exists
@@ -658,9 +724,9 @@ If `NOT_INSTALLED`:
   Download from https://conductor.build if interested.
 ```
 
-Skip to Step 9.
+Skip to Step 10.
 
-### 8b: Conductor awareness
+### 9b: Conductor awareness
 
 If installed, display:
 
@@ -689,7 +755,7 @@ If installed, display:
 
     {
       "scripts": {
-        "setup": "npm install && cp \"$CONDUCTOR_ROOT_PATH/.env.local\" .env.local 2>/dev/null; true; node -e \"var fs=require('fs'),f='.claude/settings.json',s={};try{s=JSON.parse(fs.readFileSync(f,'utf8'))}catch{}s.env=Object.assign(s.env||{},{CLAUDE_CODE_TASK_LIST_ID:process.env.CONDUCTOR_WORKSPACE_NAME||'default'});fs.writeFileSync(f,JSON.stringify(s,null,2)+'\\n')\"",
+        "setup": "npm install && ln -sf \"$CONDUCTOR_ROOT_PATH/.env.local\" .env.local 2>/dev/null; true; ln -sf \"$CONDUCTOR_ROOT_PATH/.vercel\" .vercel 2>/dev/null; true; node -e \"var fs=require('fs'),f='.claude/settings.json',s={};try{s=JSON.parse(fs.readFileSync(f,'utf8'))}catch{}s.env=Object.assign(s.env||{},{CLAUDE_CODE_TASK_LIST_ID:process.env.CONDUCTOR_WORKSPACE_NAME||'default'});fs.writeFileSync(f,JSON.stringify(s,null,2)+'\\n')\"",
         "run": "npm run dev -- --port $CONDUCTOR_PORT",
         "archive": "rm -rf \"$HOME/.claude/tasks/${CONDUCTOR_WORKSPACE_NAME}\" 2>/dev/null; true"
       },
@@ -706,7 +772,7 @@ If installed, display:
 
 ---
 
-## Step 9: Summary
+## Step 10: Summary
 
 Display the summary banner as **direct text output** (not via Bash — Bash output gets collapsed by Claude Code and users won't see it). Output this exactly:
 
@@ -747,6 +813,7 @@ Then present the status table and next steps as regular markdown text:
 | CLI Tools                  | ✓ linked                 |
 | Hooks                      | ✓ statusline + update check + context monitor |
 | claude-mem                 | ✓ installed / ○ skipped (optional)       |
+| Fallow                     | ✓ installed / ⚠ manual install needed    |
 | shadcn skills              | ✓ installed / ⚠ manual install needed    |
 | Conductor                  | ✓ detected / ○ not installed (optional) |
 

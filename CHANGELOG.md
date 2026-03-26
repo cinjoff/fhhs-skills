@@ -5,6 +5,17 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.26.0] - 2026-03-26
+
+### Added
+- **Fallow static analysis in setup** — `/fh:setup` Step 8 installs Fallow with package manager detection (pnpm/yarn/npm)
+- **Fallow in fix skill** — `/fh:fix` runs `fallow check` + `fallow health` before triage for deterministic dead-code, circular dependency, and complexity findings
+- **Supabase DATABASE_URL with pooler** — `/fh:new-project` resets the DB password after Supabase setup and writes `DATABASE_URL` with the pooler connection string to `.env.local` and Vercel
+
+### Changed
+- **Worktree .env.local sync** — Conductor setup scripts use `ln -sf` instead of `cp` for `.env.local` and `.vercel/`, keeping all worktrees in bidirectional sync
+- **Setup step numbering** — Fallow is Step 8, Conductor is Step 9, Summary is Step 10
+
 ## [1.25.0] - 2026-03-26
 
 ### Added
