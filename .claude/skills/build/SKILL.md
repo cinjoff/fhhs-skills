@@ -99,46 +99,27 @@ Additionally, scan ALL decisions in DECISIONS.md (regardless of Phase) where the
 
 ## Step 3: Execute Waves
 
-For each wave, dispatch **one subagent per task** using the Task tool with **`subagent_type: "general-purpose"`** (follow `skills/dispatching-parallel-agents/PROMPT.md` for prompt quality when dispatching parallel tasks).
+For each wave, dispatch **one subagent per task** using the Task tool with **`subagent_type: "general-purpose"`**.
 
 ### Subagent prompt
 
-Use the structured template at `references/implementer-prompt.md`. Fill its placeholders:
+Use the structured template at `references/implementer-prompt.md`. Before dispatch, pre-process the template:
+
+- If task `<files>` match `*.spec.*`, `*.test.*`, `e2e/`, or `playwright.config.*`: read `.claude/skills/playwright-testing/PROMPT.md`, inject as `{PLAYWRIGHT_CONTEXT}`. Otherwise replace with empty string.
+- If `next.config.*` exists in the project root: read `.claude/skills/nextjs-perf/PROMPT.md`, inject as `{NEXTJS_CONTEXT}`. Otherwise replace with empty string.
+- If task touches `.tsx` or `.css` files: read `.planning/DESIGN.md` and reference `skills/frontend-design/PROMPT.md`, inject combined content as `{FRONTEND_CONTEXT}`. Otherwise replace with empty string.
+
+Then fill the remaining placeholders:
 
 - `{TASK_TEXT}` — Full task content (files, action, verify, done). Copy the text, don't reference the plan file.
 - `{CLAUDE_MD_SECTIONS}` — Relevant sections from CLAUDE.md for this task type (UI work → CONVENTIONS.md + DESIGN.md; new files → STRUCTURE.md; API work → ARCHITECTURE.md; tests → TESTING.md).
 - `{DESIGN_DECISIONS}` — If `.planning/phases/{phase}/{phase}-CONTEXT.md` exists, include the "Decisions" and "Discretion Areas" sections. These are locked — subagents must not contradict them. Also include the "Deferred Ideas" section as a scope boundary — subagents must not implement deferred items listed there.
-- `{DESIGN_MD_CONTENT}` — For frontend tasks only: include `.planning/DESIGN.md` content (small, ~30 lines).
 - `{PHASE_DIR}` — Path to `.planning/phases/{phase}/` for deferred items logging.
 - `{TASK_NAME}` — Task identifier for deferred items format.
-- `{TASK_ID}` — The native task ID for this task (from Step 1b). Subagents can use this ID for sub-task tracking via TaskCreate/TaskUpdate. Pass empty string if `TASKS_AVAILABLE=false`.
+- `{TASK_ID}` — The native task ID for this task (from Step 1b). Pass empty string if `TASKS_AVAILABLE=false`.
 - `{DECISIONS_CONTEXT}` — If prepared in Step 2 (AUTO_MODE=true with matching decisions), inject here. Otherwise empty string.
 
-The template includes all behavioral directives (TDD, frontend, commits, YAGNI), deviation rules 1-4, guardrails (analysis paralysis, scope boundary, deferred items), self-review checklist, and structured report format.
-
-**Conditional context injection — verify the template activates these for each task:**
-- **Playwright:** If task `<files>` contain `*.spec.*`, `*.test.*`, `e2e/`, or `playwright.config.*`, the template directs subagents to read `.claude/skills/playwright-testing/PROMPT.md` (POM, role-based locators, auto-waiting). Verify this context is relevant before dispatch — don't include Playwright weight for non-test tasks.
-- **Next.js perf:** If `next.config.*` exists in the project root, the template directs subagents to read `.claude/skills/nextjs-perf/PROMPT.md` (waterfall avoidance, Suspense boundaries, barrel import awareness, caching). No action needed if the project doesn't use Next.js.
-- **TypeScript strictness:** The template includes inline TS rules for all TypeScript projects. These are enforced at the spec gate (Step 3b) — subagents should follow them during implementation.
-
-### Skill context for subagents
-
-Before dispatching the first wave, collect skill metadata for subagent prompts:
-
-If `.claude/skills/` exists:
-1. List all skill directories
-2. Read each SKILL.md's frontmatter only (name + description, ~2 lines each)
-3. Format as a compact skill index block:
-   ```
-   Available project skills (read SKILL.md in full if relevant to your task):
-   - adapt: Adapt designs to different screen sizes and devices
-   - playwright-testing: Playwright testing patterns and best practices
-   - nextjs-perf: Next.js and React performance patterns
-   ...
-   ```
-4. Store as `{SKILL_INDEX}` — injected into every subagent prompt via the implementer template
-
-This replaces per-subagent skill directory scanning. Each subagent sees the full menu but only deep-reads what's relevant.
+The template includes all behavioral directives (TDD, commits, YAGNI), deviation rules 1-4, guardrails (analysis paralysis, scope boundary, deferred items), self-review checklist, and structured report format.
 
 ### Checkpoint protocol
 
@@ -455,7 +436,7 @@ After all tasks complete (including spec gates and design gates), read `skills/s
 - **Efficiency**: redundant computations, missed concurrency, N+1 patterns, hot-path bloat
 - **Code hygiene**: parameter sprawl, copy-paste with variation, stringly-typed code, unnecessary nesting
 
-It runs 3 parallel review agents (reuse, quality, efficiency) on the git diff, then fixes issues directly. Let it run and apply fixes. Skip false positives without debate.
+It runs 1 review agent that reviews sequentially through reuse, quality, and efficiency lenses on the git diff, then fixes issues directly. Let it run and apply fixes. Skip false positives without debate.
 
 **Commit:** `refactor({phase}-{plan}): simplify pass`
 
@@ -502,10 +483,9 @@ If user prefers to skip the branch finishing (more work planned), report what wa
 - **Task subagents:** Fresh context each. Load only what that task needs. Use `references/implementer-prompt.md` template.
 - **Spec gate agents:** Get the wave diff and task specs only. Don't load full plan history.
 - **Integration checker:** Runs in background. Gets phase SUMMARYs and source directory structure.
-- **Simplify agents:** Run on the git diff only. 3 parallel agents (reuse, quality, efficiency) — lightweight, no plan context needed.
+- **Simplify agents:** Run on the git diff only. 1 agent reviews sequentially through reuse, quality, and efficiency lenses — lightweight, no plan context needed.
 - **Post-build review:** `/fh:review --quick` dispatches 1 code-reviewer agent on the diff. Adds ~1 subagent turn, no security scan overhead.
-- **`.planning/DESIGN.md`** is small (~30 lines) — safe to include in every frontend subagent prompt.
-- **Skill index:** Collect once (Step 3), inject into every subagent prompt as `{SKILL_INDEX}`. Subagents deep-read only what's relevant.
+- **`.planning/DESIGN.md`** is small (~30 lines) — safe to include in frontend subagent prompts via `{FRONTEND_CONTEXT}`.
 - **Codebase docs per task type:**
   - UI work -> CONVENTIONS.md + DESIGN.md
   - New files -> STRUCTURE.md
