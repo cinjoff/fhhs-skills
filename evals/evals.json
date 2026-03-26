@@ -6280,6 +6280,119 @@
           "type": "output"
         }
       ]
+    },
+    {
+      "id": 226,
+      "command": "auto",
+      "prompt": "A claude -p session dispatched by auto-orchestrator.cjs for phase 03 task 2 has been running for 18 minutes with no output. The soft timeout is 15 minutes and hard timeout is 20 minutes. How should the auto orchestrator handle this stuck session?",
+      "expected_output": "Should detect the stuck session via soft timeout at 15 minutes and emit a warning. If still unresponsive at 20 minutes hard timeout, send SIGTERM to the claude -p process. Log a decision to DECISIONS.md with confidence: LOW and flag: NEEDS REVIEW explaining the timeout and which task was interrupted.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects stuck session via soft timeout and emits warning",
+          "type": "behavioral"
+        },
+        {
+          "text": "Sends SIGTERM on hard timeout",
+          "type": "behavioral"
+        },
+        {
+          "text": "Logs decision with LOW confidence",
+          "type": "output"
+        },
+        {
+          "text": "Flags decision as NEEDS REVIEW",
+          "type": "output"
+        }
+      ]
+    },
+    {
+      "id": 227,
+      "command": "auto",
+      "prompt": "Running auto-orchestrator.cjs with --budget 5 (dollars). After completing phase 02 tasks 1-3, the cumulative cost estimate is $4.20. Phase 02 task 4 is estimated at $1.50. How should the auto orchestrator handle this budget situation?",
+      "expected_output": "Should track cost per session and cumulative total. When cumulative estimate ($4.20 + $1.50 = $5.70) exceeds the --budget 5 ceiling, gracefully stop before dispatching task 4. Log a decision explaining the budget ceiling was reached and remaining tasks were deferred.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Tracks cost per session and cumulative total",
+          "type": "behavioral"
+        },
+        {
+          "text": "Gracefully stops when cumulative estimate exceeds budget ceiling",
+          "type": "behavioral"
+        },
+        {
+          "text": "Logs decision about budget ceiling reached",
+          "type": "output"
+        }
+      ]
+    },
+    {
+      "id": 228,
+      "command": "build",
+      "prompt": "A decision D-015 was just CORRECTED from 'use Redux for state management' to 'use Zustand for state management'. The Affects field lists: src/store/index.ts, src/components/Dashboard.tsx, src/hooks/useAuth.ts. How should the decision correction cascade handle downstream impact?",
+      "expected_output": "Should perform cascade analysis on the listed Affects artifacts. Categorize each as mechanical (simple find-replace of imports/usage) or architectural (structural changes needed). Check that each artifact exists on disk. Log a cascade decision documenting the analysis and categorization of each affected file.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Categorizes downstream impact as mechanical or architectural",
+          "type": "behavioral"
+        },
+        {
+          "text": "Checks artifact existence on disk",
+          "type": "behavioral"
+        },
+        {
+          "text": "Logs cascade decision documenting affected files",
+          "type": "output"
+        }
+      ]
+    },
+    {
+      "id": 229,
+      "command": "new-project",
+      "prompt": "Run /fh:new-project --auto \"A marketplace for artisan crafts\" in an empty directory. How should new-project handle the --auto flag with the provided description?",
+      "expected_output": "Should detect AUTO_PROJECT mode from --auto flag. Derive answers to vision questions (target users, core value prop, key features) from the description 'A marketplace for artisan crafts' instead of asking the user interactively. Generate a scope expansion roadmap based on the derived vision. Should not prompt the user for any interactive input.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects AUTO_PROJECT mode from --auto flag",
+          "type": "behavioral"
+        },
+        {
+          "text": "Auto-answers vision questions derived from description",
+          "type": "behavioral"
+        },
+        {
+          "text": "Generates scope expansion roadmap",
+          "type": "output"
+        },
+        {
+          "text": "Does not prompt user for interactive input",
+          "type": "guard"
+        }
+      ]
+    },
+    {
+      "id": 230,
+      "command": "new-project",
+      "prompt": "After /fh:new-project --auto completes all setup steps (PROJECT.md, ROADMAP.md, STATE.md created), what should happen next to continue the auto workflow?",
+      "expected_output": "Should chain to auto-orchestrator.cjs after setup completes. Set workflow.auto_advance=true so the orchestrator knows to proceed without user confirmation. The transition should be seamless — new-project finishes setup then hands off to auto mode for plan-and-build execution.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Chains to auto-orchestrator.cjs after setup",
+          "type": "behavioral"
+        },
+        {
+          "text": "Sets workflow.auto_advance=true",
+          "type": "output"
+        },
+        {
+          "text": "Transitions seamlessly from setup to auto execution",
+          "type": "behavioral"
+        }
+      ]
     }
   ]
 }
