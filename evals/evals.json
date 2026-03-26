@@ -5,7 +5,7 @@
       "id": 1,
       "command": "build",
       "prompt": "ok i just finished planning phase 13 for my saas app. there's a PLAN.md at .planning/phases/13-auth/13-01-PLAN.md with 3 tasks \u2014 two backend (JWT auth + refresh tokens) and one frontend (login form). the backend tasks are independent but the frontend depends on both. execute it",
-      "expected_output": "Should detect GSD mode, find the plan, identify 2 waves (wave 1: 2 parallel backend tasks, wave 2: 1 frontend task), dispatch general-purpose subagents (not gsd-executor), include TDD directives (from internal skills/test-driven-development/PROMPT.md) for backend tasks and frontend-design directives (from internal skills/frontend-design/PROMPT.md) for the login form, run design gates (/critique then /polish) after frontend task, generate SUMMARY.md, update GSD state, and invoke /review --quick for post-build quality checks. Should run verification gate (tests, build check, lint) before writing SUMMARY.md.",
+      "expected_output": "Should detect GSD mode, find the plan, identify 2 waves (wave 1: 2 parallel backend tasks, wave 2: 1 frontend task), dispatch general-purpose subagents (not gsd-executor) with model: sonnet, include TDD directives (from internal skills/test-driven-development/PROMPT.md) for backend tasks and frontend-design directives (from internal skills/frontend-design/PROMPT.md) for the login form, generate SUMMARY.md, update GSD state, run phase completion gates (goal verification, design quality gates for frontend, verification-before-completion), and invoke /review --quick for post-build quality checks. Should run verification gate (tests, build check, lint) before writing SUMMARY.md.",
       "files": [],
       "assertions": [
         {
@@ -21,7 +21,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Runs design gates for frontend task",
+          "text": "Dispatches subagents with model: sonnet",
           "type": "behavioral"
         },
         {
@@ -456,7 +456,7 @@
       "id": 18,
       "command": "simplify",
       "prompt": "simplify the changes I just made",
-      "expected_output": "Should invoke skills/simplify/PROMPT.md which runs 3 parallel review agents on the git diff (code reuse, code quality, efficiency). Should fix issues directly and commit with 'refactor(scope): simplify pass'. Should NOT read full codebase - only operates on changed files from git diff.",
+      "expected_output": "Should invoke skills/simplify/PROMPT.md which runs 1 review agent on the git diff, reviewing sequentially through 3 lenses (code reuse, code quality, efficiency). Should fix issues directly and commit with 'refactor(scope): simplify pass'. Should NOT read full codebase - only operates on changed files from git diff.",
       "files": [],
       "assertions": [
         {
@@ -464,7 +464,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Runs 3 parallel review agents",
+          "text": "Runs 1 review agent with 3 sequential lenses (reuse, quality, efficiency)",
           "type": "behavioral"
         },
         {
@@ -481,7 +481,7 @@
       "id": 19,
       "command": "simplify",
       "prompt": "clean up the auth module after refactoring",
-      "expected_output": "Should invoke skills/simplify/PROMPT.md with the auth module as scope. Should check git diff for recent auth-related changes and run 3 parallel agents. If no git diff exists for auth files, should inform user there are no recent changes to simplify.",
+      "expected_output": "Should invoke skills/simplify/PROMPT.md with the auth module as scope. Should check git diff for recent auth-related changes and run 1 review agent sequentially through 3 lenses. If no git diff exists for auth files, should inform user there are no recent changes to simplify.",
       "files": [],
       "assertions": [
         {
@@ -708,146 +708,6 @@
       ],
       "scenario_requires": [
         "gsd_project"
-      ]
-    },
-    {
-      "id": 28,
-      "command": "quick",
-      "prompt": "quick add a loading spinner to the submit button in the contact form",
-      "expected_output": "Should parse arguments (no flags), use description 'add a loading spinner to the submit button in the contact form', run gsd-tools init quick, create .planning/quick/NNN-slug/ directory, spawn gsd-planner in quick mode (not quick-full), spawn gsd-executor, update STATE.md Quick Tasks Completed table, commit artifacts, show completion banner.",
-      "files": [],
-      "assertions": [
-        {
-          "text": "Parses description correctly (no flags)",
-          "type": "behavioral"
-        },
-        {
-          "text": "Uses gsd-tools init quick",
-          "type": "behavioral"
-        },
-        {
-          "text": "Spawns gsd-planner (quick mode, not quick-full)",
-          "type": "behavioral"
-        },
-        {
-          "text": "Spawns gsd-executor",
-          "type": "behavioral"
-        },
-        {
-          "text": "Creates .planning/quick/ directory",
-          "type": "output"
-        },
-        {
-          "text": "Updates STATE.md Quick Tasks table",
-          "type": "output"
-        },
-        {
-          "text": "No Status column in table (not --full)",
-          "type": "output"
-        }
-      ],
-      "scenario_requires": [
-        "gsd_project"
-      ]
-    },
-    {
-      "id": 29,
-      "command": "quick",
-      "prompt": "quick --discuss --full implement rate limiting on the /api/upload endpoint",
-      "expected_output": "Should parse both flags (--discuss and --full). Should show DISCUSS + FULL banner. In discuss phase: identify 2-4 gray areas about rate limiting (e.g., rate limits per user/IP, response when limited, storage for counters). Present gray areas via AskUserQuestion with multiSelect. Capture decisions in CONTEXT.md. Then spawn gsd-planner in quick-full mode with CONTEXT.md reference. Run plan-checker loop (max 2 iterations). Spawn gsd-executor. Run verification via gsd-verifier. Update STATE.md with Status column. Show completion banner with verification status.",
-      "files": [],
-      "assertions": [
-        {
-          "text": "Parses --discuss and --full flags",
-          "type": "behavioral"
-        },
-        {
-          "text": "Shows DISCUSS + FULL banner",
-          "type": "output"
-        },
-        {
-          "text": "Identifies domain-specific gray areas for rate limiting",
-          "type": "behavioral"
-        },
-        {
-          "text": "Writes CONTEXT.md with locked decisions",
-          "type": "output"
-        },
-        {
-          "text": "Spawns gsd-planner in quick-full mode",
-          "type": "behavioral"
-        },
-        {
-          "text": "Runs plan-checker (max 2 iterations)",
-          "type": "behavioral"
-        },
-        {
-          "text": "Runs gsd-verifier",
-          "type": "behavioral"
-        },
-        {
-          "text": "STATE.md table includes Status column",
-          "type": "output"
-        }
-      ],
-      "scenario_requires": [
-        "gsd_project"
-      ]
-    },
-    {
-      "id": 30,
-      "command": "quick",
-      "prompt": "quick --full rename the UserProfile component to AccountProfile everywhere",
-      "expected_output": "Should parse --full flag. Spawn gsd-planner in quick-full mode (must generate must_haves). Run plan-checker. Spawn gsd-executor. Run gsd-verifier. CONTEXT.md should NOT be created (no --discuss). STATE.md should have Status column.",
-      "files": [],
-      "assertions": [
-        {
-          "text": "Uses quick-full mode for planner",
-          "type": "behavioral"
-        },
-        {
-          "text": "Plan has must_haves in frontmatter",
-          "type": "output"
-        },
-        {
-          "text": "Runs plan-checker",
-          "type": "behavioral"
-        },
-        {
-          "text": "Runs gsd-verifier",
-          "type": "behavioral"
-        },
-        {
-          "text": "No CONTEXT.md created (no --discuss)",
-          "type": "guard"
-        }
-      ],
-      "scenario_requires": [
-        "gsd_project"
-      ]
-    },
-    {
-      "id": 31,
-      "command": "quick",
-      "prompt": "quick fix the typo in the footer (no .planning/ROADMAP.md exists)",
-      "expected_output": "Should detect ROADMAP.md is missing from gsd-tools init quick response (roadmap_exists=false). Should error and tell user that quick mode requires an active project with ROADMAP.md. Should suggest /new-project. Should NOT proceed.",
-      "files": [],
-      "assertions": [
-        {
-          "text": "Detects missing ROADMAP.md",
-          "type": "guard"
-        },
-        {
-          "text": "Suggests /new-project",
-          "type": "output"
-        },
-        {
-          "text": "Does NOT proceed with task",
-          "type": "guard"
-        }
-      ],
-      "scenario_requires": [
-        "no_gsd_project"
       ]
     },
     {
@@ -1204,7 +1064,7 @@
       "id": 45,
       "command": "build",
       "prompt": "build the plan (plan has only frontend tasks - React component refactor, new page layout, CSS updates)",
-      "expected_output": "Should detect all tasks are frontend. Should dispatch subagents with frontend-design directives from skills/frontend-design/PROMPT.md. Should run design gates after execution (/critique -> /polish -> /normalize). Should read .planning/DESIGN.md for design context during critique. Should check for frontend anti-patterns (AI slop, emoji in UI, generic gradients). Should run verification gate (tests, build check, lint) before writing SUMMARY.md.",
+      "expected_output": "Should detect all tasks are frontend. Should dispatch subagents (model: sonnet) with frontend-design directives from skills/frontend-design/PROMPT.md. Phase completion Gate 2 runs design quality gates (critique -> polish -> normalize) since visual ratio > 30%. Should read .planning/DESIGN.md for design context. Should check for frontend anti-patterns (AI slop, emoji in UI, generic gradients). Should run verification gate (tests, build check, lint) before writing SUMMARY.md.",
       "files": [],
       "assertions": [
         {
@@ -1216,11 +1076,11 @@
           "type": "behavioral"
         },
         {
-          "text": "Runs design gates: critique -> polish -> normalize",
+          "text": "Phase completion Gate 2 runs design quality gates: critique -> polish -> normalize",
           "type": "behavioral"
         },
         {
-          "text": "Reads DESIGN.md during design gates",
+          "text": "Reads DESIGN.md during design quality gates",
           "type": "behavioral"
         },
         {
@@ -1295,43 +1155,6 @@
       ],
       "scenario_requires": [
         "gsd_project"
-      ]
-    },
-    {
-      "id": 48,
-      "command": "quick",
-      "prompt": "quick --discuss add webhook support for new user signups",
-      "expected_output": "Should parse --discuss flag (no --full). Should show DISCUSS banner. Should identify gray areas specific to webhooks (e.g., payload format, retry policy, authentication/signing, which events to support). Should present gray areas via AskUserQuestion with multiSelect. Should capture decisions in CONTEXT.md. Should spawn gsd-planner in standard quick mode (NOT quick-full). Should NOT run plan-checker or verifier (no --full). STATE.md table should NOT have Status column.",
-      "files": [],
-      "assertions": [
-        {
-          "text": "Parses --discuss without --full",
-          "type": "behavioral"
-        },
-        {
-          "text": "Shows DISCUSS banner (not DISCUSS + FULL)",
-          "type": "output"
-        },
-        {
-          "text": "Identifies webhook-specific gray areas",
-          "type": "behavioral"
-        },
-        {
-          "text": "Writes CONTEXT.md",
-          "type": "output"
-        },
-        {
-          "text": "Uses standard quick mode (not quick-full)",
-          "type": "behavioral"
-        },
-        {
-          "text": "Does NOT run plan-checker",
-          "type": "guard"
-        },
-        {
-          "text": "Does NOT run verifier",
-          "type": "guard"
-        }
       ]
     },
     {
@@ -1532,7 +1355,7 @@
       "id": 56,
       "command": "build",
       "prompt": "Build the auth plan at .planning/phases/01-auth/01-01-PLAN.md. It has 3 tasks \u2014 JWT auth middleware, refresh token rotation (both backend, independent), and a login form that depends on both.",
-      "expected_output": "Should detect GSD mode, find the plan, identify 2 waves (wave 1: 2 parallel backend tasks, wave 2: 1 frontend task). Dispatch general-purpose subagents with Next.js performance rules in prompts (waterfall avoidance, bundle awareness). Spec gates run per wave. Design gates (critique \u2192 polish \u2192 normalize) run for the frontend login form task. Simplify pass runs after all waves. Then invoke /review --quick for post-build quality checks (code-reviewer agent). SUMMARY.md generated with correct frontmatter. PR title follows conventional commit format. Should run verification gate (tests, build check, lint) before writing SUMMARY.md.",
+      "expected_output": "Should detect GSD mode, find the plan, identify 2 waves (wave 1: 2 parallel backend tasks, wave 2: 1 frontend task). Dispatch general-purpose subagents (model: sonnet) with Next.js performance rules in prompts (waterfall avoidance, bundle awareness). Simplify pass runs after all waves. Phase completion gates run: goal verification, design quality gates (critique \u2192 polish \u2192 normalize) for the frontend login form (high visual ratio), and verification-before-completion. Then invoke /review --quick for post-build quality checks (quality + gap analysis agents). SUMMARY.md generated with correct frontmatter. PR title follows conventional commit format. Should run verification gate (tests, build check, lint) before writing SUMMARY.md.",
       "files": [
         "evals/fixtures/nextjs-app-deep/next.config.ts",
         "evals/fixtures/nextjs-app-deep/tsconfig.json",
@@ -1550,7 +1373,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Spec gates run BEFORE design gates",
+          "text": "Phase completion gates run: goal verification then design quality gates then verification-before-completion",
           "type": "ordering"
         },
         {
@@ -1558,15 +1381,15 @@
           "type": "ordering"
         },
         {
-          "text": "/review runs quality \u2192 security \u2192 gate \u2192 promote in sequence",
+          "text": "/review runs quality \u2192 gap analysis \u2192 gate \u2192 promote in sequence",
           "type": "ordering"
         },
         {
-          "text": "Dispatches code-reviewer agent for quality review",
+          "text": "Dispatches subagents with model: sonnet",
           "type": "behavioral"
         },
         {
-          "text": "Dispatches 4 parallel agents for security scan",
+          "text": "/review runs quality and gap analysis agents (not security scan)",
           "type": "behavioral"
         },
         {
@@ -1574,7 +1397,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Checks for any usage in diff (TS strictness)",
+          "text": "Spec verification runs as part of /review (Step 1.8) for GSD projects",
           "type": "behavioral"
         },
         {
@@ -1598,11 +1421,11 @@
           "type": "behavioral"
         },
         {
-          "text": "Design gates run for frontend task (critique \u2192 polish \u2192 normalize)",
+          "text": "Design quality gates run at phase completion (critique \u2192 polish \u2192 normalize) when visual ratio > 30%",
           "type": "behavioral"
         },
         {
-          "text": "GSD state updated in /build Step 6 BEFORE /review invocation",
+          "text": "GSD state updated in /build Step 5 BEFORE phase completion gates and /review invocation",
           "type": "ordering"
         },
         {
@@ -1615,7 +1438,7 @@
       "id": 57,
       "command": "build",
       "prompt": "Execute the API refactor plan at .planning/phases/02-api/02-01-PLAN.md",
-      "expected_output": "Should build the API refactor plan. During /review, security scan finds SQL injection via string concatenation (CRITICAL) and hardcoded JWT secret (CRITICAL) in existing code. CRITICAL findings BLOCK promotion. Fix agent is dispatched to remediate CRITICAL findings (parameterized queries, env-based secrets). After fix, re-scan verifies remediation. MEDIUM findings (missing CORS) are logged but do not block. Promotion proceeds after re-scan passes. Should run verification gate (tests, build check, lint) before writing SUMMARY.md.",
+      "expected_output": "Should build the API refactor plan. Dispatches subagents with model: sonnet. /review runs quality and gap analysis agents. Security vulnerabilities (SQL injection, hardcoded secrets) would be caught by /fh:secure (not part of /review pipeline). Should run verification gate (tests, build check, lint) before writing SUMMARY.md.",
       "files": [
         "evals/fixtures/nextjs-app-deep/next.config.ts",
         "evals/fixtures/nextjs-app-deep/tsconfig.json",
@@ -1631,40 +1454,16 @@
       ],
       "assertions": [
         {
-          "text": "Security scan dispatches 4 parallel agents",
+          "text": "Dispatches subagents with model: sonnet",
           "type": "behavioral"
         },
         {
-          "text": "Identifies SQL string concatenation as CRITICAL",
+          "text": "/review runs quality and gap analysis agents (not security scan)",
           "type": "behavioral"
         },
         {
-          "text": "Identifies hardcoded JWT secret as CRITICAL",
-          "type": "behavioral"
-        },
-        {
-          "text": "BLOCKS promotion on CRITICAL findings",
+          "text": "Security vulnerabilities are NOT part of /review pipeline (use /fh:secure for that)",
           "type": "guard"
-        },
-        {
-          "text": "Dispatches fix agent to remediate CRITICAL findings",
-          "type": "behavioral"
-        },
-        {
-          "text": "Re-scans after fix before promoting",
-          "type": "ordering"
-        },
-        {
-          "text": "Review report includes security findings with file:line references",
-          "type": "output"
-        },
-        {
-          "text": "MEDIUM findings (missing CORS) logged but do not block promotion",
-          "type": "behavioral"
-        },
-        {
-          "text": "Fix agent replaces SQL concatenation with parameterized queries",
-          "type": "behavioral"
         },
         {
           "text": "Runs verification gate (tests, build, lint) before writing SUMMARY",
@@ -1672,15 +1471,14 @@
         }
       ],
       "scenario_requires": [
-        "gsd_project",
-        "vulnerable_fixtures"
+        "gsd_project"
       ]
     },
     {
       "id": 58,
       "command": "build",
       "prompt": "Build the dashboard plan at .planning/phases/02-dashboard/02-01-PLAN.md",
-      "expected_output": "Should identify 2 waves. Wave 1 is the component task (no Playwright involvement) \u2014 subagent prompt should NOT include Playwright guidance. Wave 2 is the Playwright test task \u2014 subagent detects *.spec.* files in task and loads Playwright guidance (Page Object Model, locator strategies, auto-waiting). Spec gates run per wave. /review runs after both waves. SUMMARY.md notes Playwright tests written.",
+      "expected_output": "Should identify 2 waves. Wave 1 is the component task (no Playwright involvement) \u2014 subagent prompt should NOT include Playwright guidance. Wave 2 is the Playwright test task \u2014 subagent detects *.spec.* files in task and loads Playwright guidance (Page Object Model, locator strategies, auto-waiting). /review --quick runs after both waves. Phase completion Gate 2 runs design quality gates for the component task (frontend). SUMMARY.md notes Playwright tests written.",
       "files": [
         "evals/fixtures/nextjs-app-deep/next.config.ts",
         "evals/fixtures/nextjs-app-deep/tsconfig.json",
@@ -1717,7 +1515,7 @@
           "type": "output"
         },
         {
-          "text": "Design gates run for component task in wave 1 (frontend)",
+          "text": "Phase completion Gate 2 runs design quality gates for frontend task",
           "type": "behavioral"
         }
       ],
@@ -1729,7 +1527,7 @@
       "id": 59,
       "command": "build",
       "prompt": "Build the auth plan at .planning/phases/01-auth/01-01-PLAN.md",
-      "expected_output": "Should build the auth plan. During spec gate, the gate catches any usage in the subagent output (e.g., function params typed as any). This is flagged as BLOCKING \u2014 not advisory. Fix agent replaces any with specific types (unknown + type guards, or concrete interface types). Fix happens before the next wave starts. as any assertions are also rejected. Suggests unknown or proper type guard as alternatives. Should run verification gate (tests, build check, lint) before writing SUMMARY.md.",
+      "expected_output": "Should build the auth plan with subagents (model: sonnet). /review --quick runs after build. During spec verification (Step 1.8 of /review), the spec verification agent catches any usage in the diff (e.g., function params typed as any). This is flagged as BLOCKING. Spec verification also catches as any assertions. Suggests unknown or proper type guard as alternatives. Should run verification gate (tests, build check, lint) before writing SUMMARY.md.",
       "files": [
         "evals/fixtures/nextjs-app-deep/next.config.ts",
         "evals/fixtures/nextjs-app-deep/tsconfig.json",
@@ -1744,20 +1542,12 @@
       ],
       "assertions": [
         {
-          "text": "Spec gate checks for any type usage in subagent output",
+          "text": "Spec verification (in /review Step 1.8) checks for any type usage in diff",
           "type": "behavioral"
         },
         {
-          "text": "Flags any as BLOCKING (not just advisory)",
+          "text": "Spec verification flags any as BLOCKING",
           "type": "behavioral"
-        },
-        {
-          "text": "Fix agent replaces any with specific type (unknown + type guard or concrete type)",
-          "type": "behavioral"
-        },
-        {
-          "text": "Fix happens before next wave starts",
-          "type": "ordering"
         },
         {
           "text": "Does not accept as any assertions",
@@ -1768,7 +1558,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Non-exhaustive switch violations in existing code flagged",
+          "text": "Dispatches subagents with model: sonnet",
           "type": "behavioral"
         },
         {
@@ -1784,7 +1574,7 @@
       "id": 60,
       "command": "fix",
       "prompt": "The user profile page crashes when the user has no avatar \u2014 TypeError: Cannot read properties of null (reading 'url'). It's in src/components/profile.tsx",
-      "expected_output": "Should triage as MODERATE (single component, one subsystem). Invokes systematic debugging to locate null reference in profile.tsx (accessing avatar.url when avatar is null). TDD approach: writes failing test first reproducing the null avatar case, then fixes with optional chaining or null check, confirms test passes. Frontend check reads DESIGN.md for fallback avatar styling. Simplify runs before /review. /review runs quality review on the fix diff, security scan on changed files, TS strictness check. Fix commit uses fix(profile): prefix. Does NOT fix unrelated pre-existing issues. Should run verification gate before generating fix summary.",
+      "expected_output": "Should triage as MODERATE (single component, one subsystem). Invokes systematic debugging to locate null reference in profile.tsx (accessing avatar.url when avatar is null). TDD approach: writes failing test first reproducing the null avatar case, then fixes with optional chaining or null check, confirms test passes. Frontend check reads DESIGN.md for fallback avatar styling. Simplify runs before /review. /review runs quality review and gap analysis on the fix diff. Fix commit uses fix(profile): prefix. Does NOT fix unrelated pre-existing issues. Should run verification gate before generating fix summary.",
       "files": [
         "evals/fixtures/nextjs-app-deep/next.config.ts",
         "evals/fixtures/nextjs-app-deep/tsconfig.json",
@@ -1814,15 +1604,15 @@
           "type": "ordering"
         },
         {
-          "text": "/review runs quality review on fix diff",
+          "text": "/review runs quality review and gap analysis on fix diff",
           "type": "behavioral"
         },
         {
-          "text": "/review runs security scan on changed files",
-          "type": "behavioral"
+          "text": "Does NOT run security scan in /review (use /fh:secure for that)",
+          "type": "guard"
         },
         {
-          "text": "/review checks for any in diff (TS strictness)",
+          "text": "Spec verification (Step 1.8) checks for any in diff for GSD projects",
           "type": "behavioral"
         },
         {
@@ -1847,7 +1637,7 @@
       "id": 61,
       "command": "refactor",
       "prompt": "Refactor the auth module to extract token management into a separate service. src/lib/auth.ts currently handles JWT signing, verification, session management, and refresh token rotation \u2014 split token concerns out into src/lib/token-service.ts",
-      "expected_output": "Should scope with LSP findReferences to map blast radius (all files importing from auth.ts). Captures baseline test suite (must be GREEN). Plans atomic steps ordered safest-first (create new file, move functions, update imports, remove old code). Executes with tests green at every step \u2014 reverts immediately if tests go red. Simplify pass after completion. /review runs quality review (behavior preservation focus), security scan (extracted auth service), TS strictness check, and if Next.js files touched, perf patterns. Atomic commits with refactor(auth): prefix.",
+      "expected_output": "Should scope with LSP findReferences to map blast radius (all files importing from auth.ts). Captures baseline test suite (must be GREEN). Plans atomic steps ordered safest-first (create new file, move functions, update imports, remove old code). Executes with tests green at every step \u2014 reverts immediately if tests go red. Simplify pass after completion. /review runs quality review (behavior preservation focus) and gap analysis. If Next.js files touched, includes perf patterns. Atomic commits with refactor(auth): prefix.",
       "files": [
         "evals/fixtures/nextjs-app-deep/next.config.ts",
         "evals/fixtures/nextjs-app-deep/tsconfig.json",
@@ -1881,11 +1671,11 @@
           "type": "behavioral"
         },
         {
-          "text": "/review security scan checks extracted auth service",
+          "text": "/review gap analysis checks for untested paths in extracted auth service",
           "type": "behavioral"
         },
         {
-          "text": "/review checks for any introduced during refactoring",
+          "text": "Spec verification in /review checks for any introduced during refactoring",
           "type": "behavioral"
         },
         {
@@ -1965,7 +1755,7 @@
       "id": 63,
       "command": "review",
       "prompt": "Review my changes before creating a PR",
-      "expected_output": "Should run the full /review pipeline: code quality review first (code-reviewer agent), then security scan (4 parallel agents), then TS strictness check (any usage in diff). Gate decision aggregates all findings. If Next.js project detected, includes perf patterns in review. Review report includes quality score, security findings, and TS strictness results. Presents promotion options (PR/merge/keep/discard from finishing-a-development-branch). PR title enforces conventional commit format.",
+      "expected_output": "Should run the full /review pipeline: spec verification (Step 1.8, GSD projects), then 2 parallel agents — Agent 1 (code quality + architecture) and Agent 2 (gap analysis). Gate decision aggregates all findings. If Next.js project detected, includes perf patterns in review. Review report includes quality score, spec verification results, and gap analysis. Presents promotion options (PR/merge/keep/discard from finishing-a-development-branch). PR title enforces conventional commit format. Security scanning is handled by /fh:secure, not /review.",
       "files": [
         "evals/fixtures/nextjs-app-deep/next.config.ts",
         "evals/fixtures/nextjs-app-deep/tsconfig.json",
@@ -1974,31 +1764,31 @@
       ],
       "assertions": [
         {
-          "text": "Quality review runs first (code-reviewer agent)",
+          "text": "Spec verification (Step 1.8) runs for GSD projects before agent dispatch",
           "type": "ordering"
         },
         {
-          "text": "Security scan runs second (4 parallel agents)",
-          "type": "ordering"
+          "text": "Dispatches 2 parallel agents: Agent 1 (quality + architecture) and Agent 2 (gap analysis)",
+          "type": "behavioral"
         },
         {
           "text": "Runs evidence verification (tests, build, lint with fresh output and exit codes) before gate decision",
           "type": "behavioral"
         },
         {
-          "text": "Gate decision aggregates quality + security + TS strictness results",
+          "text": "Gate decision aggregates quality + spec verification + gap analysis results",
           "type": "ordering"
         },
         {
-          "text": "Checks diff for any usage (TS strictness)",
-          "type": "behavioral"
+          "text": "Does NOT run security scan (security is /fh:secure, not /review)",
+          "type": "guard"
         },
         {
           "text": "Detects Next.js project and includes perf patterns in review",
           "type": "behavioral"
         },
         {
-          "text": "Review report includes quality score, security findings, TS strictness",
+          "text": "Review report includes quality score, spec verification results, gap analysis",
           "type": "output"
         },
         {
@@ -2043,7 +1833,7 @@
       "id": 65,
       "command": "plan-work",
       "prompt": "Plan and build adding user settings page with a dark mode toggle. The project already has a ThemeProvider and uses Tailwind dark: prefix.",
-      "expected_output": "Should run /plan-work first: skips research (dark mode toggle is well-known pattern), brainstorms design options (toggle placement, persistence strategy, system preference detection), discusses with user, derives must_haves with user-facing truths, creates PLAN.md with proper frontmatter. Then /build: loads Next.js perf rules, dispatches subagents, spec gate per wave, design gates (critique \u2192 polish \u2192 normalize) for frontend components. Design gates run after spec gates. Simplify before /review. /review runs full pipeline (quality + security + TS strictness). SUMMARY.md generated with must_haves verification. PR with conventional commit title. Should perform complexity assessment before deciding research path.",
+      "expected_output": "Should run /plan-work first: skips research (dark mode toggle is well-known pattern), brainstorms design options (toggle placement, persistence strategy, system preference detection), discusses with user, derives must_haves with user-facing truths, creates PLAN.md with proper frontmatter. Then /build: loads Next.js perf rules, dispatches subagents (model: sonnet), phase completion gates include design quality gates (critique \u2192 polish \u2192 normalize) for frontend components and verification-before-completion. Simplify before /review. /review runs full pipeline (quality + gap analysis + spec verification). SUMMARY.md generated with must_haves verification. PR with conventional commit title. Should perform complexity assessment before deciding research path.",
       "files": [
         "evals/fixtures/nextjs-app-deep/next.config.ts",
         "evals/fixtures/nextjs-app-deep/tsconfig.json",
@@ -2075,32 +1865,28 @@
           "type": "behavioral"
         },
         {
-          "text": "Spec gate runs per wave",
+          "text": "Phase completion gates run at end of phase: goal verification, design quality gates, verification-before-completion",
           "type": "behavioral"
         },
         {
-          "text": "Design gates run (critique \u2192 polish \u2192 normalize) for frontend components",
+          "text": "Design quality gates (critique \u2192 polish \u2192 normalize) run at phase completion for frontend-heavy work",
           "type": "behavioral"
-        },
-        {
-          "text": "Design gates run after spec gates",
-          "type": "ordering"
         },
         {
           "text": "Simplify before /review",
           "type": "ordering"
         },
         {
-          "text": "/review runs quality review on full diff",
+          "text": "/review runs quality and gap analysis agents",
           "type": "behavioral"
         },
         {
-          "text": "/review runs security scan",
+          "text": "/review spec verification (Step 1.8) runs for GSD projects",
           "type": "behavioral"
         },
         {
-          "text": "/review runs TS strictness check",
-          "type": "behavioral"
+          "text": "Does NOT run security scan in /review pipeline (use /fh:secure for security)",
+          "type": "guard"
         },
         {
           "text": "SUMMARY.md generated with must_haves verification",
@@ -2128,7 +1914,7 @@
       "id": 66,
       "command": "fix",
       "prompt": "API returns 500 on /api/users and /api/billing simultaneously, and the dashboard shows stale data. Three independent failures.",
-      "expected_output": "Should triage as PARALLEL (3+ independent failures across different subsystems). Dispatches parallel gsd-debugger agents \u2014 one per failing subsystem (users API, billing API, dashboard staleness). Each debugger uses scientific method (hypothesis \u2192 test \u2192 conclude). TDD fix per root cause. Simplify after all fixes. /review security scan catches SQL injection in /api/users route (CRITICAL). BLOCKS on CRITICAL. Fix agent addresses SQL injection. Re-scan after security fix. SUMMARY.md notes all three subsystem fixes plus security remediation. Should run verification gate before generating fix summary.",
+      "expected_output": "Should triage as PARALLEL (3+ independent failures across different subsystems). Dispatches parallel gsd-debugger agents \u2014 one per failing subsystem (users API, billing API, dashboard staleness). Each debugger uses scientific method (hypothesis \u2192 test \u2192 conclude). TDD fix per root cause. Simplify after all fixes. /review runs quality and gap analysis on the fix diff. Security vulnerabilities in /api/users would be caught by /fh:secure (not /review). SUMMARY.md notes all three subsystem fixes. Should run verification gate before generating fix summary.",
       "files": [
         "evals/fixtures/nextjs-app-deep/next.config.ts",
         "evals/fixtures/nextjs-app-deep/tsconfig.json",
@@ -2163,23 +1949,19 @@
           "type": "ordering"
         },
         {
-          "text": "/review security scan catches SQL injection in /api/users",
+          "text": "/review runs quality and gap analysis (not security scan)",
           "type": "behavioral"
         },
         {
-          "text": "/review BLOCKS on CRITICAL security finding",
+          "text": "Does NOT run security scan in /review (use /fh:secure for that)",
+          "type": "guard"
+        },
+        {
+          "text": "Fix agent addresses root cause bugs per subsystem",
           "type": "behavioral"
         },
         {
-          "text": "Fix agent addresses CRITICAL finding (SQL injection)",
-          "type": "behavioral"
-        },
-        {
-          "text": "Re-scan after security fix before promoting",
-          "type": "ordering"
-        },
-        {
-          "text": "SUMMARY.md notes all three subsystem fixes plus security remediation",
+          "text": "SUMMARY.md notes all three subsystem fixes",
           "type": "output"
         },
         {
@@ -2649,7 +2431,7 @@
       "id": 81,
       "command": "review",
       "prompt": "review my changes \u2014 I only touched CSS files (globals.css and a few component styles)",
-      "expected_output": "Should run full review pipeline: quality review (code-reviewer), security scan (should find minimal issues in CSS-only changes), evidence verification (tests, build, lint). TS strictness check should report 'No any found' since CSS has no TS. Should detect frontend work and suggest /fh:verify-ui for visual verification. Should NOT include Next.js perf patterns for CSS-only changes unless components were touched.",
+      "expected_output": "Should run full review pipeline: quality review (code-reviewer), gap analysis, evidence verification (tests, build, lint). Spec verification (Step 1.8) skips silently since no PLAN.md in scope. Should detect frontend work and suggest /fh:verify-ui for visual verification. Should NOT include Next.js perf patterns for CSS-only changes unless components were touched. Security scan is not part of /review pipeline.",
       "files": [],
       "assertions": [
         {
@@ -2657,12 +2439,12 @@
           "type": "behavioral"
         },
         {
-          "text": "Security scan runs but finds minimal/no issues in CSS",
-          "type": "behavioral"
+          "text": "Does NOT run security scan (security is /fh:secure, not /review)",
+          "type": "guard"
         },
         {
-          "text": "TS strictness check reports no violations (CSS only)",
-          "type": "output"
+          "text": "Spec verification skips silently (no PLAN.md in scope for CSS-only changes)",
+          "type": "behavioral"
         },
         {
           "text": "Suggests /fh:verify-ui for visual verification (frontend work detected)",
@@ -2678,11 +2460,11 @@
       "id": 82,
       "command": "review",
       "prompt": "review \u2014 the diff has several uses of 'any' type in the new service files",
-      "expected_output": "Should run TS strictness check (Step 4) and detect 'any' usage in added lines. Should flag each instance with file and line. Should BLOCK promotion because 'any' in new code is a blocking finding per the gate decision table. Should recommend replacing with proper types (unknown + type guards or concrete interfaces). Should NOT proceed to promotion until any usage is fixed.",
+      "expected_output": "Should run spec verification (Step 1.8) for GSD projects, which checks TypeScript strictness including 'any' usage in added lines. Should flag each instance with file and line. Should BLOCK promotion because 'any' in new code is a blocking finding. For non-GSD projects, spec verification skips but quality agent (Agent 1) may also flag 'any' usage as a code quality concern. Should recommend replacing with proper types (unknown + type guards or concrete interfaces).",
       "files": [],
       "assertions": [
         {
-          "text": "TS strictness grep detects any usage in diff",
+          "text": "Spec verification (Step 1.8) detects any usage in diff",
           "type": "behavioral"
         },
         {
@@ -2736,7 +2518,7 @@
       "id": 84,
       "command": "review",
       "prompt": "review \u2014 I think everything is clean, ready to create a PR",
-      "expected_output": "Should run full pipeline: quality review, security scan, evidence verification, TS strictness. If all pass: generate review report (quality score, security status, verification evidence, TS strictness results). Gate decision PASS. Invoke finishing-a-development-branch with promotion options (PR/merge/keep/discard). PR title should follow conventional commit format type(scope): summary. Should present the 4 options to user.",
+      "expected_output": "Should run full pipeline: spec verification (Step 1.8, GSD projects), quality + gap analysis agents (Step 2), evidence verification (Step 3). If all pass: generate review report (quality score, spec verification results, gap analysis, verification evidence). Gate decision PASS. Invoke finishing-a-development-branch with promotion options (PR/merge/keep/discard). PR title should follow conventional commit format type(scope): summary. Should present the 4 options to user.",
       "files": [],
       "assertions": [
         {
@@ -2764,12 +2546,16 @@
     {
       "id": 85,
       "command": "review",
-      "prompt": "review the changes (security scan finds HIGH but no CRITICAL issues)",
-      "expected_output": "Should run full pipeline. Security scan returns WARN (HIGH findings but no CRITICAL). Code quality review passes. Evidence verification passes. Gate decision should be WARN \u2014 log HIGH findings in report, recommend fixing, but proceed to promotion unless user wants to fix first. Should present findings with severity and file:line references. Should still allow promotion.",
+      "prompt": "review the changes (gap analysis finds several untested code paths and one TODO left in the diff)",
+      "expected_output": "Should run full pipeline. Gap analysis agent (Agent 2) returns WARN findings: untested code paths and a TODO/FIXME left in the diff. Code quality review passes. Evidence verification passes. Gate decision should be WARN \u2014 log gap findings in report, recommend fixing, but proceed to promotion unless user wants to fix first. Should present gap findings with file:line references. Should still allow promotion.",
       "files": [],
       "assertions": [
         {
-          "text": "Security scan returns WARN (HIGH, no CRITICAL)",
+          "text": "Gap analysis agent detects untested code paths",
+          "type": "behavioral"
+        },
+        {
+          "text": "Gap analysis detects TODO/FIXME left in diff",
           "type": "behavioral"
         },
         {
@@ -2777,7 +2563,7 @@
           "type": "output"
         },
         {
-          "text": "HIGH findings logged with severity and file references",
+          "text": "Gap findings logged with file references",
           "type": "output"
         },
         {
@@ -2785,7 +2571,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Recommends fixing HIGH findings but does not require it",
+          "text": "Recommends addressing gap findings but does not require it",
           "type": "output"
         }
       ]
@@ -2794,7 +2580,7 @@
       "id": 86,
       "command": "review",
       "prompt": "review \u2014 this is a Next.js project and I changed several API routes and a page component",
-      "expected_output": "Should detect Next.js project (checks for next.config.*). Should include nextjs-perf skill patterns in the code quality review criteria (client-side waterfalls, caching patterns, unnecessary client components, barrel import bundle bloat). Security scan should focus on API routes. Evidence verification should include build check. TS strictness check should run on the diff. Review report should mention Next.js-specific findings if any.",
+      "expected_output": "Should detect Next.js project (checks for next.config.*). Should include nextjs-perf skill patterns in the code quality review criteria (client-side waterfalls, caching patterns, unnecessary client components, barrel import bundle bloat). Gap analysis agent covers API route completeness. Evidence verification should include build check. Review report should mention Next.js-specific findings if any. Security scan is not part of /review pipeline.",
       "files": [
         "evals/fixtures/nextjs-app-deep/next.config.ts",
         "evals/fixtures/nextjs-app-deep/tsconfig.json",
@@ -2814,8 +2600,12 @@
           "type": "behavioral"
         },
         {
-          "text": "Security scan focuses on API route changes",
+          "text": "Gap analysis covers API route completeness and error handling",
           "type": "behavioral"
+        },
+        {
+          "text": "Does NOT run security scan (use /fh:secure for that)",
+          "type": "guard"
         },
         {
           "text": "Review report generated with all sections",
@@ -2856,7 +2646,7 @@
       "id": 88,
       "command": "review",
       "prompt": "review (no changes on current branch \u2014 clean diff)",
-      "expected_output": "Should detect empty diff (no changes from merge-base to HEAD). Should report there's nothing to review. Should NOT dispatch code-reviewer, security agents, or run verification. Should NOT offer promotion options.",
+      "expected_output": "Should detect empty diff (no changes from merge-base to HEAD). Should report there's nothing to review. Should NOT dispatch code-reviewer, gap analysis agents, or run verification. Should NOT offer promotion options.",
       "files": [],
       "assertions": [
         {
@@ -2881,7 +2671,7 @@
       "id": 89,
       "command": "review",
       "prompt": "review \u2014 this is NOT a GSD project (no .planning/ directory)",
-      "expected_output": "Should run the full review pipeline regardless of GSD status. /review is a pure quality gate \u2014 it does NOT require .planning/PROJECT.md. Should run quality review, security scan, evidence verification, TS strictness. Should proceed to promotion options normally. Should NOT suggest /new-project or refuse to run.",
+      "expected_output": "Should run the full review pipeline regardless of GSD status. /review is a pure quality gate \u2014 it does NOT require .planning/PROJECT.md. Should run quality review and gap analysis agents (Step 2), evidence verification (Step 3). Spec verification (Step 1.8) skips silently since no .planning/ directory. Should proceed to promotion options normally. Should NOT suggest /new-project or refuse to run.",
       "files": [],
       "assertions": [
         {
@@ -2992,7 +2782,7 @@
       "id": 93,
       "command": "fix",
       "prompt": "add a new button to the header for notifications",
-      "expected_output": "Should recognize this is NOT a bug \u2014 it's a feature request. Should NOT proceed with TDD triage (no failing test to write, no bug to reproduce). Should redirect the user to /quick for a small addition or /plan-work for a planned feature. Should explain why /fix is the wrong tool for this task.",
+      "expected_output": "Should recognize this is NOT a bug \u2014 it's a feature request. Should NOT proceed with TDD triage (no failing test to write, no bug to reproduce). Should redirect the user to /plan-work for a planned feature. Should explain why /fix is the wrong tool for this task.",
       "files": [],
       "assertions": [
         {
@@ -3008,7 +2798,7 @@
           "type": "guard"
         },
         {
-          "text": "Redirects to /quick or /plan-work",
+          "text": "Redirects to /plan-work for feature additions",
           "type": "output"
         },
         {
@@ -3082,7 +2872,7 @@
       "id": 96,
       "command": "build",
       "prompt": "build the plan \u2014 it has 2 waves. wave 1 has 2 tasks and wave 2 has 1 task that depends on wave 1",
-      "expected_output": "Should execute wave 1 (2 parallel tasks). When spec gate fails on wave 1 output (tests fail or quality issues), should HALT and NOT dispatch wave 2. Should report spec gate failure with details. Should allow user to fix wave 1 issues before retrying. Should NOT execute wave 2 with known spec issues from wave 1. Should run verification gate (tests, build check, lint) before writing SUMMARY.md.",
+      "expected_output": "Should execute wave 1 (2 parallel tasks). After all waves complete, /review --quick runs spec verification (Step 1.8). If spec verification finds BLOCKING issues in the diff, /review reports them and blocks promotion. User must fix before proceeding to review completion. Should run verification gate (tests, build check, lint) before writing SUMMARY.md.",
       "files": [],
       "assertions": [
         {
@@ -3090,19 +2880,15 @@
           "type": "behavioral"
         },
         {
-          "text": "Runs spec gate on wave 1 output",
+          "text": "Dispatches all waves, does NOT gate between waves",
           "type": "behavioral"
         },
         {
-          "text": "Halts wave 2 dispatch on wave 1 spec failure",
-          "type": "guard"
+          "text": "Spec verification runs in /review Step 1.8 after all waves complete",
+          "type": "behavioral"
         },
         {
-          "text": "Reports spec gate failure with details",
-          "type": "output"
-        },
-        {
-          "text": "Does NOT execute wave 2 with known spec issues in wave 1",
+          "text": "/review blocks promotion if spec verification finds BLOCKING issues",
           "type": "guard"
         },
         {
@@ -3250,7 +3036,7 @@
       "id": 101,
       "command": "review",
       "prompt": "review these changed files \u2014 auth, API routes, and the comment card. check for security issues especially",
-      "expected_output": "Should run security scan and detect SQL injection in api/users/route.ts (string-interpolated query), hardcoded secrets in auth.ts (JWT_SECRET inline), XSS vulnerability in comment-card.tsx (dangerouslySetInnerHTML on user content), and exposed env values in .env.example. Should BLOCK on CRITICAL findings (SQL injection, hardcoded secrets). Should generate a review report with file:line references for each finding. Should recommend fixes for each issue.",
+      "expected_output": "Should redirect user to /fh:secure for security scanning \u2014 /review does not run security scan. /review should run quality review (Agent 1) and gap analysis (Agent 2). Gap analysis may surface incomplete error handling or unguarded inputs as code quality concerns. The user should be informed that /fh:secure is the right tool for security vulnerability detection.",
       "files": [
         "evals/fixtures/nextjs-app-deep/src/lib/auth.ts",
         "evals/fixtures/nextjs-app-deep/src/app/api/users/route.ts",
@@ -3263,28 +3049,20 @@
       ],
       "assertions": [
         {
-          "text": "Detects SQL injection in api/users/route.ts (string-interpolated query)",
-          "type": "behavioral"
-        },
-        {
-          "text": "Detects hardcoded JWT secret in auth.ts",
-          "type": "behavioral"
-        },
-        {
-          "text": "Detects XSS vulnerability in comment-card.tsx (dangerouslySetInnerHTML)",
-          "type": "behavioral"
-        },
-        {
-          "text": "BLOCKs on CRITICAL security findings",
-          "type": "output"
-        },
-        {
-          "text": "Generates review report with file:line references",
-          "type": "output"
-        },
-        {
-          "text": "Does NOT approve the review with unresolved CRITICALs",
+          "text": "Does NOT run security scan in /review pipeline",
           "type": "guard"
+        },
+        {
+          "text": "Runs quality review (Agent 1) and gap analysis (Agent 2)",
+          "type": "behavioral"
+        },
+        {
+          "text": "Informs user that /fh:secure is the tool for security vulnerability detection",
+          "type": "output"
+        },
+        {
+          "text": "Generates review report with quality findings",
+          "type": "output"
         }
       ]
     },
@@ -3292,7 +3070,7 @@
       "id": 102,
       "command": "review",
       "prompt": "review these frontend component changes \u2014 sidebar, metric card, and user form",
-      "expected_output": "Should run security scan but find minimal security issues in pure frontend components. Quality review should catch design anti-patterns: sidebar uses hardcoded colors instead of CSS variables, user-form uses raw HTML inputs instead of shadcn components, metric-card may lack responsive handling. Should suggest /verify-ui for visual verification of component changes. Should reference DESIGN.md conventions.",
+      "expected_output": "Should run quality review and gap analysis. Quality review should catch design anti-patterns: sidebar uses hardcoded colors instead of CSS variables, user-form uses raw HTML inputs instead of shadcn components, metric-card may lack responsive handling. Should suggest /verify-ui for visual verification of component changes. Should reference DESIGN.md conventions. Does not run security scan (/fh:secure handles that).",
       "files": [
         "evals/fixtures/nextjs-app-deep/src/components/sidebar.tsx",
         "evals/fixtures/nextjs-app-deep/src/components/metric-card.tsx",
@@ -3302,8 +3080,8 @@
       ],
       "assertions": [
         {
-          "text": "Security scan finds minimal/no critical issues in frontend components",
-          "type": "behavioral"
+          "text": "Does NOT run security scan (use /fh:secure for that)",
+          "type": "guard"
         },
         {
           "text": "Detects design anti-patterns (hardcoded colors, raw HTML inputs)",
@@ -3327,7 +3105,7 @@
       "id": 103,
       "command": "simplify",
       "prompt": "simplify these files \u2014 the data table is massive, utils is a grab bag, and the API module repeats itself",
-      "expected_output": "Should detect: data-table.tsx is a god component (180+ lines mixing search, sort, pagination, rendering) needing decomposition. utils.ts is a kitchen-sink module (cn() plus unrelated helpers) needing extraction. api.ts has duplicated fetch patterns that should use a shared wrapper. Should run 3 parallel review agents scoped to git diff. Should produce concrete split/extract recommendations with before/after outlines.",
+      "expected_output": "Should detect: data-table.tsx is a god component (180+ lines mixing search, sort, pagination, rendering) needing decomposition. utils.ts is a kitchen-sink module (cn() plus unrelated helpers) needing extraction. api.ts has duplicated fetch patterns that should use a shared wrapper. Should run 1 review agent with 3 sequential lenses scoped to git diff. Should produce concrete split/extract recommendations with before/after outlines.",
       "files": [
         "evals/fixtures/nextjs-app-deep/src/components/data-table.tsx",
         "evals/fixtures/nextjs-app-deep/src/lib/utils.ts",
@@ -3349,7 +3127,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Runs parallel review agents on the changed file scope",
+          "text": "Runs 1 review agent with 3 sequential lenses on the changed file scope",
           "type": "behavioral"
         },
         {
@@ -3615,7 +3393,7 @@
       "id": 110,
       "command": "review",
       "prompt": "review my changes \u2014 I touched auth middleware, two API routes, and the user settings page",
-      "expected_output": "Should run the full /review pipeline including the production safety checklist. Code quality agent (Agent 1) must reference skills/review/references/production-safety-checklist.md for the two-pass safety review. The agent must honor the checklist's explicit suppressions section to reduce noise on known-safe patterns. Security scan (Agent 2) runs separately. Gate decision aggregates all findings including production safety results.",
+      "expected_output": "Should run the full /review pipeline including the production safety checklist. Code quality agent (Agent 1) must reference skills/review/references/production-safety-checklist.md for the two-pass safety review. The agent must honor the checklist's explicit suppressions section to reduce noise on known-safe patterns. Gap analysis (Agent 2) runs separately. Gate decision aggregates all findings including production safety results.",
       "files": [],
       "assertions": [
         {
@@ -3631,7 +3409,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Does NOT duplicate security scan concerns already covered by Agent 2",
+          "text": "Does NOT duplicate gap analysis concerns already covered by Agent 2",
           "type": "guard"
         },
         {
@@ -3709,7 +3487,7 @@
       "id": 113,
       "command": "build",
       "prompt": "execute the plan at .planning/phases/05-api/05-01-PLAN.md. it has 3 tasks in 2 waves \u2014 task 1 and 2 are wave 1, task 3 is wave 2",
-      "expected_output": "Should create native tasks from plan's tasks block using TaskCreate with metadata (wave, phase, plan). Should create pipeline stage tasks (spec gate per wave, design gates, self-check). Should set up wave dependencies via addBlockedBy (wave 2 blocked by wave 1, spec gates blocked by wave tasks). Should thread {TASK_ID} to subagent prompts. Should update task status as subagents complete. Should run verification gate (tests, build check, lint) before writing SUMMARY.md.",
+      "expected_output": "Should create native tasks from plan's tasks block using TaskCreate with metadata (wave, phase, plan). Should create pipeline stage tasks (verification task, review task). Should set up wave dependencies via addBlockedBy (wave 2 blocked by wave 1). Should thread {TASK_ID} to subagent prompts. Should update task status as subagents complete. Should run verification gate (tests, build check, lint) before writing SUMMARY.md.",
       "files": [],
       "assertions": [
         {
@@ -3717,7 +3495,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Creates pipeline stage tasks (spec gate, self-check)",
+          "text": "Creates pipeline stage tasks (verification, review)",
           "type": "behavioral"
         },
         {
@@ -4401,88 +4179,6 @@
         {
           "text": "Displays progress for each phase with current status indicators",
           "type": "behavioral"
-        }
-      ],
-      "scenario_requires": [
-        "gsd_project"
-      ]
-    },
-    {
-      "id": 135,
-      "command": "quick",
-      "prompt": "quick --discuss add a loading spinner to the submit button",
-      "expected_output": "Should parse --discuss flag, run lightweight discussion phase identifying 2-3 gray areas, ask user to pick which to discuss, lock decisions in CONTEXT.md, THEN proceed to planning.",
-      "files": [],
-      "assertions": [
-        {
-          "text": "Parses --discuss flag and enters discussion phase",
-          "type": "behavioral"
-        },
-        {
-          "text": "Identifies gray areas and asks user to select which to discuss",
-          "type": "behavioral"
-        },
-        {
-          "text": "Creates CONTEXT.md with locked decisions before planning",
-          "type": "ordering"
-        },
-        {
-          "text": "Does NOT skip discussion and go straight to planning",
-          "type": "guard"
-        }
-      ]
-    },
-    {
-      "id": 136,
-      "command": "quick",
-      "prompt": "quick --full fix the padding on the card grid",
-      "expected_output": "Should parse --full flag, create plan, run plan-checker loop (max 2 iterations), execute, then run verifier and write VERIFICATION.md.",
-      "files": [],
-      "assertions": [
-        {
-          "text": "Parses --full flag",
-          "type": "behavioral"
-        },
-        {
-          "text": "Runs plan-checker with max 2 revision iterations",
-          "type": "behavioral"
-        },
-        {
-          "text": "Runs verifier after execution",
-          "type": "ordering"
-        },
-        {
-          "text": "Writes VERIFICATION.md with evidence",
-          "type": "output"
-        }
-      ]
-    },
-    {
-      "id": 137,
-      "command": "quick",
-      "prompt": "quick --discuss --full add error handling to the API route",
-      "expected_output": "Should combine both flags: discussion phase first (gray areas then lock decisions), then plan with checker loop, then execute, then verify.",
-      "files": [],
-      "assertions": [
-        {
-          "text": "Runs discussion phase before planning",
-          "type": "ordering"
-        },
-        {
-          "text": "Runs plan-checker after planning",
-          "type": "ordering"
-        },
-        {
-          "text": "Runs verifier after execution",
-          "type": "ordering"
-        },
-        {
-          "text": "Follows ordering: discuss then plan then check then execute then verify",
-          "type": "ordering"
-        },
-        {
-          "text": "Does NOT skip any phase when both flags present",
-          "type": "guard"
         }
       ],
       "scenario_requires": [
@@ -5512,7 +5208,7 @@
       "id": 176,
       "command": "simplify",
       "prompt": "simplify the code changes on this branch",
-      "expected_output": "Should check fallow availability, find it NOT installed, skip fallow silently with no error or mention. Should proceed normally with 3 parallel review agents on the git diff \u2014 identical behavior to pre-Fallow simplify.",
+      "expected_output": "Should check fallow availability, find it NOT installed, skip fallow silently with no error or mention. Should proceed normally with 1 review agent on the git diff running 3 sequential lenses \u2014 identical behavior to pre-Fallow simplify.",
       "files": [],
       "assertions": [
         {
@@ -5528,7 +5224,7 @@
           "type": "guard"
         },
         {
-          "text": "Runs 3 parallel review agents on git diff",
+          "text": "Runs 1 review agent with 3 sequential lenses on git diff",
           "type": "behavioral"
         }
       ]
@@ -5850,15 +5546,15 @@
       "id": 204,
       "command": "build",
       "prompt": "Build the user profile settings page. It has 3 tasks: settings form component, API integration, and validation logic. Execute the plan at .planning/phases/09-settings/09-01-PLAN.md",
-      "expected_output": "Should reference verification-before-completion in the build pipeline. Must run a verification gate with fresh evidence (e.g., tests pass, lint clean, app runs) BEFORE writing SUMMARY.md. The verification gate ensures claimed success is backed by actual proof, not just completing task steps.",
+      "expected_output": "Should run verification gate (tests, lint, build) BEFORE writing SUMMARY.md. Phase completion runs Gate 3 (Verification-Before-Completion) with fresh evidence before marking phase done. The verification gate ensures claimed success is backed by actual proof, not just completing task steps.",
       "files": [],
       "assertions": [
         {
-          "text": "References verification-before-completion in the build pipeline",
+          "text": "Runs verification gate (tests, lint, build) before writing SUMMARY",
           "type": "behavioral"
         },
         {
-          "text": "Runs verification gate before writing SUMMARY",
+          "text": "Phase completion runs Gate 3 (Verification-Before-Completion) with fresh evidence",
           "type": "behavioral"
         },
         {
@@ -5878,16 +5574,16 @@
       "id": 205,
       "command": "fix",
       "prompt": "Fix the broken pagination in the search results page. Users report that clicking page 2 reloads page 1 instead.",
-      "expected_output": "Should reference verification-before-completion in the fix pipeline. Must run a verification gate confirming the fix actually resolves the issue before generating the summary. Verification should include running relevant tests or demonstrating the fix with fresh evidence, not just applying the code change.",
+      "expected_output": "Should run a verification gate confirming the fix actually resolves the issue before generating the summary. Verification should include running relevant tests or demonstrating the fix with fresh evidence, not just applying the code change.",
       "files": [],
       "assertions": [
         {
-          "text": "References verification-before-completion in the fix pipeline",
+          "text": "Runs verification gate (tests, build, lint) before generating summary",
           "type": "behavioral"
         },
         {
-          "text": "Runs verification gate before generating summary",
-          "type": "behavioral"
+          "text": "Does not generate summary without passing verification",
+          "type": "guard"
         },
         {
           "text": "Verifies the fix with fresh evidence before claiming completion",
@@ -6391,6 +6087,151 @@
         {
           "text": "Transitions seamlessly from setup to auto execution",
           "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 231,
+      "command": "build",
+      "prompt": "execute the plan at .planning/phases/03-billing/03-01-PLAN.md",
+      "expected_output": "Should dispatch general-purpose subagents with model: sonnet for all task execution. Haiku model is used only for GSD state updates (Step 5). Subagents should not be dispatched with haiku or opus — sonnet is the implementer model.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Dispatches Task tool subagents with model: sonnet",
+          "type": "behavioral"
+        },
+        {
+          "text": "Uses model: haiku only for GSD state updates (Step 5)",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT dispatch implementer subagents with haiku or opus",
+          "type": "guard"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ]
+    },
+    {
+      "id": 232,
+      "command": "simplify",
+      "prompt": "simplify the payment module changes",
+      "expected_output": "Should dispatch 1 review agent that runs 3 lenses (reuse, quality, efficiency) sequentially on the git diff. Does NOT dispatch 3 parallel agents. The single agent runs all three lenses in order and fixes issues found.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Dispatches exactly 1 review agent",
+          "type": "behavioral"
+        },
+        {
+          "text": "Agent runs reuse, quality, and efficiency lenses sequentially (not in parallel)",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT dispatch 3 parallel agents",
+          "type": "guard"
+        },
+        {
+          "text": "Operates on git diff only",
+          "type": "context_discipline"
+        }
+      ]
+    },
+    {
+      "id": 233,
+      "command": "review",
+      "prompt": "review my changes before creating a PR. this is a GSD project with a PLAN.md at .planning/phases/04-payments/04-01-PLAN.md",
+      "expected_output": "Should run spec verification (Step 1.8) since .planning/ directory exists with PLAN.md files. Spec verification dispatches one code-reviewer agent using spec-gate-prompt.md. Agent checks: missing requirements, stubs/placeholders, unwired code, TypeScript strictness (any usage), wrong behavior. Results feed into Step 5 aggregation. A BLOCKING result from spec verification blocks the gate decision.",
+      "files": [
+        "evals/fixtures/nextjs-app-deep/.planning/PROJECT.md",
+        "evals/fixtures/nextjs-app-deep/.planning/phases/01-auth/01-01-PLAN.md"
+      ],
+      "assertions": [
+        {
+          "text": "Runs spec verification (Step 1.8) for GSD project",
+          "type": "behavioral"
+        },
+        {
+          "text": "Spec verification dispatches one code-reviewer agent",
+          "type": "behavioral"
+        },
+        {
+          "text": "Spec verification checks for TypeScript strictness (any usage), stubs, and missing requirements",
+          "type": "behavioral"
+        },
+        {
+          "text": "BLOCKING spec verification result blocks the gate decision",
+          "type": "guard"
+        },
+        {
+          "text": "Does NOT run security scan (security is /fh:secure)",
+          "type": "guard"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ]
+    },
+    {
+      "id": 234,
+      "command": "build",
+      "prompt": "all plans in phase 05 are complete. check phase completion",
+      "expected_output": "Should run phase completion detection (Step 6). Gate 1: goal verification (must_haves truths, artifacts, key-links). Gate 2: design quality gates (ui-critique + harden then polish + adapt then normalize) only if visual ratio > 30% or phase targets UI. Gate 3: Verification-Before-Completion (fresh tests, build, lint). Only after all gates pass should phase be marked complete via gsd-tools.cjs phase complete.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Runs Gate 1 (goal verification) before Gate 2",
+          "type": "ordering"
+        },
+        {
+          "text": "Gate 2 runs design quality gates only when visual ratio > 30% or phase targets UI",
+          "type": "behavioral"
+        },
+        {
+          "text": "Gate 3 (Verification-Before-Completion) runs fresh tests, build, lint before marking phase done",
+          "type": "behavioral"
+        },
+        {
+          "text": "All three gates must pass before gsd-tools.cjs phase complete is run",
+          "type": "ordering"
+        },
+        {
+          "text": "Reports failures and stops if any gate fails",
+          "type": "guard"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ]
+    },
+    {
+      "id": 235,
+      "command": "plan-work",
+      "prompt": "plan fixing the button label typo on the settings page from 'Subbmit' to 'Submit'",
+      "expected_output": "Should assess complexity as Simple (1 task, single file, trivial pattern). Should skip brainstorm (Step 2) entirely — Simple complexity skips brainstorming. Should jump directly to Step 3 (Discuss Implementation) with abbreviated scope: identify 1-2 gray areas only. Handoff should still recommend /fh:plan-review, but note this is trivially obvious work where /fh:build directly is acceptable.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Assesses complexity as Simple",
+          "type": "behavioral"
+        },
+        {
+          "text": "Skips brainstorm (Step 2) for Simple complexity",
+          "type": "behavioral"
+        },
+        {
+          "text": "Jumps directly to Step 3 (Discuss Implementation) with abbreviated scope",
+          "type": "ordering"
+        },
+        {
+          "text": "Identifies only 1-2 gray areas (not full brainstorm)",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT run a full brainstorm session for trivial work",
+          "type": "guard"
         }
       ]
     }
