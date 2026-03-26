@@ -90,7 +90,7 @@ Subagents create their own sub-tasks for granular progress. If task tools are un
 
 | Command | What it does |
 |---------|-------------|
-| `/fh:new-project` | Set up a project with vision, tech stack, design language, domain research, and roadmap. Default stack uses the [fh-starter-project](https://github.com/cinjoff/fh-starter-project) template |
+| `/fh:new-project` | Set up a project with vision, tech stack, design language, domain research, and roadmap. Default stack uses the [fh-starter-project](https://github.com/cinjoff/fh-starter-project) template with Better Auth, Resend email, optional organizations, and shadcn/ui |
 | `/fh:plan-work` | Brainstorm, research, and produce an execution-ready plan |
 | `/fh:plan-review` | Stress-test a plan — business + engineering alignment, research verification, respect-but-flag for locked decisions |
 | `/fh:build` | Execute a plan with parallel subagents, TDD, design gates, and verification |
@@ -160,6 +160,24 @@ Phase management, milestone lifecycle, and test generation are handled automatic
 | `/fh:help` | Command reference and architecture guide |
 
 </details>
+
+## `/new-project` — What Gets Set Up
+
+The default stack is **Next.js + TypeScript + Tailwind + shadcn/ui + Supabase + Better Auth + Vercel**.
+
+During setup, `/fh:new-project` handles:
+
+- **Brand-aware design system** — extracts colors, fonts, and style from your brand references and generates a custom shadcn preset
+- **Better Auth** — generates `BETTER_AUTH_SECRET`, configures auth env vars
+- **Resend email** — installs the Resend CLI, walks you through signup, and creates a project-scoped sending key for email verification and password resets
+- **Organizations** — opt-in for multi-tenant support (teams, roles, invitations)
+- **Supabase** — creates project, configures API keys, sets up `DATABASE_URL` with pooler
+- **Vercel** — links project, syncs env vars, enables auto-deploys
+- **shadcn/ui skills** — installs agent skills globally so Claude Code understands your components
+- **Observability** — scaffolds local Sentry error tracking (SQLite-backed)
+- **Conductor** — detects workspaces, creates `conductor.json` with `.env.local` symlinks
+
+Everything is optional — skip what you don't need and add it later.
 
 ## How It Works
 
