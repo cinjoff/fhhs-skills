@@ -5,6 +5,15 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.27.1] - 2026-03-26
+
+### Fixed
+- **Package manager detection** — `/fh:new-project` detects pnpm/yarn/bun from lockfile instead of hardcoding npm, fixing sentry-local `better-sqlite3` native binding failures on pnpm projects
+- **Native binding rebuild** — adds explicit `$PM rebuild better-sqlite3` step after install to ensure `.node` binary compiles for the current platform
+
+### Changed
+- **Default package manager** — new projects without a lockfile default to pnpm instead of npm
+
 ## [1.27.0] - 2026-03-26
 
 ### Added
