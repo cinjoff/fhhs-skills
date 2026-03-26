@@ -41,6 +41,12 @@ Ask: **"Need user authentication or a database?"**
 - Yes → add Supabase to the stack
 - No → skip
 
+If the user said Yes to auth, ask: **"Want organizations, teams, and roles? (multi-tenant support)"**
+- Yes → set `wants_organizations = true`
+- No → skip
+
+Track `wants_organizations` alongside `uses_default_stack`.
+
 Ask: **"Any changes to the default stack?"**
 
 Lock the final tech stack decisions. These go into PROJECT.md.
@@ -293,6 +299,24 @@ Install dependencies:
 ```bash
 npm install
 ```
+
+### 3b: Install shadcn skills globally (if needed)
+
+**Only run if `uses_default_stack` is true.**
+
+Check if already installed:
+
+```bash
+[ -d "$HOME/.skills/shadcn" ] && echo "INSTALLED" || echo "NOT_INSTALLED"
+```
+
+If `NOT_INSTALLED`:
+
+```bash
+cd "$HOME" && npx skills add shadcn/ui
+```
+
+Show: `✓ shadcn skills installed globally (~/.skills/shadcn)` or `✓ shadcn skills already installed`.
 
 Commit the template scaffolding:
 
@@ -763,7 +787,120 @@ Add these environment variables in Vercel Dashboard → Settings → Environment
 Mark SUPABASE_SERVICE_ROLE_KEY and DATABASE_URL as "Sensitive" in Vercel.
 ```
 
-### 8f: Observability Setup
+### 8f: Better Auth & Email Setup (conditional)
+
+**Only run this step if the user chose auth in Step 2.** If not, skip to 8g.
+
+#### 1. Generate BETTER_AUTH_SECRET
+
+```bash
+BETTER_AUTH_SECRET="$(openssl rand -base64 32)"
+```
+
+#### 2. Write auth env vars to .env.local
+
+```bash
+cat >> .env.local <<EOF
+
+# Better Auth
+BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
+BETTER_AUTH_URL=http://localhost:3000
+EOF
+```
+
+#### 3. Enable organizations (if selected)
+
+If `wants_organizations` is true, also append:
+
+```bash
+cat >> .env.local <<EOF
+ENABLE_ORGANIZATIONS=true
+EOF
+```
+
+#### 4. Transactional email setup (optional)
+
+Ask: **"Want to configure Resend for email verification and password resets? (emails are logged to console without it)"**
+
+- No → skip, emails fall back to console.log in dev
+- Yes → proceed with Resend CLI setup:
+
+**4a. Install Resend CLI if needed:**
+
+```bash
+command -v resend >/dev/null 2>&1 && echo "OK" || npm install -g resend-cli
+```
+
+**4b. Authenticate — prompt user to sign up if needed:**
+
+```
+╔══════════════════════════════════════════════════════════════╗
+║  Resend Setup                                                ║
+╚══════════════════════════════════════════════════════════════╝
+
+Sign up at resend.com if you haven't already, then paste
+your API key from the dashboard (resend.com/api-keys).
+
+This is a one-time step — after this, the CLI handles everything.
+
+──────────────────────────────────────────────────────────────
+→ Paste your Resend API key (or Enter to skip):
+──────────────────────────────────────────────────────────────
+```
+
+If user provides a key, authenticate the CLI:
+
+```bash
+resend login --key "<pasted-key>"
+```
+
+**4c. Create a project-scoped sending key via CLI:**
+
+```bash
+PROJECT_NAME="$(basename "$(pwd)")"
+RESEND_RESULT=$(resend api-keys create --name "${PROJECT_NAME}-sending" --permission sending_access --json)
+RESEND_API_KEY=$(echo "$RESEND_RESULT" | node -e "process.stdin.on('data',d=>console.log(JSON.parse(d).token))")
+```
+
+Append to .env.local:
+
+```bash
+cat >> .env.local <<EOF
+
+# Resend (transactional email)
+RESEND_API_KEY=${RESEND_API_KEY}
+EOF
+```
+
+This creates a least-privilege sending-only key scoped to the project, rather than using the user's full-access dashboard key.
+
+#### 5. Sync to Vercel (if available)
+
+```bash
+echo "$BETTER_AUTH_SECRET" | vercel env add BETTER_AUTH_SECRET production
+```
+
+And `RESEND_API_KEY` if configured. Mark both as Sensitive.
+
+#### 6. Manual checkpoint (if Vercel unavailable)
+
+If the `vercel` CLI is unavailable (Step 8c was skipped), show a checkpoint listing the env vars to add manually:
+
+```
+╔══════════════════════════════════════════════════════════════╗
+║  CHECKPOINT: Add auth env vars to Vercel                     ║
+╚══════════════════════════════════════════════════════════════╝
+
+Add these environment variables in Vercel Dashboard → Settings → Environment Variables:
+
+  BETTER_AUTH_SECRET  = <generated secret>
+  BETTER_AUTH_URL     = <your production URL>
+  RESEND_API_KEY      = <sending key> (if configured)
+
+Mark BETTER_AUTH_SECRET and RESEND_API_KEY as "Sensitive" in Vercel.
+```
+
+### 8g: Observability Setup
 
 Scaffold local Sentry-compatible error tracking. This captures browser and server errors to a local SQLite store that agents can query during debugging.
 
@@ -797,7 +934,7 @@ NEXT_PUBLIC_SENTRY_LOCAL=true
 
 Note in the Phase 1 plan that `app/layout.tsx` needs to call `initSentryClient()` from `lib/sentry-local`. This happens during scaffolding, not here — we just create the library files.
 
-### 8g: Copy gitignored files to main repo (worktree only)
+### 8h: Copy gitignored files to main repo (worktree only)
 
 **Only run this step if the project is in a git worktree** (`.git` is a file, not a directory). Gitignored files like `.env.local` and `.vercel/` are not shared across worktrees, so copy them to the main repo so future worktrees can access them.
 
@@ -903,8 +1040,12 @@ Project initialized:
 - CLAUDE.md                 — project conventions
 - GitHub repo               — <repo-url> (private)
 - Starter template          — cinjoff/fh-starter-project (if default stack)
+- shadcn skills             — global agent context for components (if installed)
 - Vercel project            — linked (auto-deploys on push to main)
 - Supabase project          — <project-url> (if set up)
+- Better Auth               — secret generated, auth API at /api/auth/[...all] (if auth enabled)
+- Resend                    — API key configured for transactional email (if set up)
+- Organizations             — multi-tenant support enabled (if enabled)
 - .env.local                — API keys + DATABASE_URL configured (if Supabase)
 - lib/sentry-local.ts       — local error tracking (Sentry SDK → SQLite)
 - lib/sentry-local-query.mjs — error query CLI for agents
@@ -923,4 +1064,13 @@ If Supabase was set up, add this reminder:
   - Enable Row Level Security (RLS) on every table you create
   - The anon key is safe for client-side use ONLY with RLS enabled
   - The service_role key bypasses RLS — use only in server-side code
+```
+
+If Resend was configured, add this reminder:
+
+```
+Resend note:
+  - Verify your sending domain at resend.com/domains for production use
+  - Development emails work immediately with the API key
+  - Without RESEND_API_KEY, emails are logged to console (safe for dev)
 ```
