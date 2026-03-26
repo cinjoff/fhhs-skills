@@ -100,6 +100,14 @@ This contains decisions from plan-work's discussion phase.
 - Present as an AskUserQuestion with options: Keep decision / Revise.
 - If user keeps it, move on. Do not revisit.
 
+### DECISIONS.md Cross-Check
+If `.planning/DECISIONS.md` exists, read it. Filter entries for the current phase (by Phase field matching the phase directory name, plus Phase='project'). Cross-reference each decision against CONTEXT.md's Decisions section:
+- Flag as BLOCKING any decision in DECISIONS.md that is not reflected in CONTEXT.md
+- Flag as BLOCKING any CONTEXT.md locked decision that contradicts a DECISIONS.md entry
+- Note discrepancies in the System Audit report
+
+Skip this check silently if `.planning/DECISIONS.md` does not exist (non-auto-mode projects won't have it).
+
 ### Research Alignment Check
 Check if `.planning/phases/{phase}/{phase}-RESEARCH.md` exists.
 If it does, read it and verify during the review that:
@@ -480,6 +488,9 @@ original entry in-place and add `[revised in review]` suffix.
 **"Deferred Ideas" section** — Append items considered and explicitly
 deferred during review, with one-line rationale each.
 
+### DECISIONS.md Update (auto-mode only)
+If AUTO_MODE is true AND `.planning/DECISIONS.md` exists, also log each review decision to `.planning/DECISIONS.md` using the decision entry format from `.claude/skills/build/references/decisions-template.md`. Use `step='plan-review Step B'`, `confidence=HIGH` (human-reviewed). This ensures the append-only journal captures review-phase decisions alongside planning-phase ones.
+
 ### Step C: Human-Reference Summary
 
 Write a lightweight summary to `.planning/designs/review-YYYY-MM-DD-<topic>.md` for audit trail. This file is for **human reference only** — no downstream skill reads it. Include:
@@ -536,7 +547,7 @@ Include diagrams in both the PLAN.md `<context>` block (so executors see them) a
   | Section 10 (Perf)    | ___ issues found, ___ High severity          |
   +--------------------------------------------------------------------+
   | PLAN.md updated      | ___ truths added, ___ artifacts added        |
-  | CONTEXT.md updated   | ___ decisions locked, ___ items deferred     |
+  | CONTEXT.md updated   | ___ decisions locked, ___ items deferred, ___ decisions logged to DECISIONS.md |
   | Error/rescue registry| ___ methods, ___ CRITICAL GAPS → PLAN.md    |
   | Failure modes        | ___ total, ___ CRITICAL GAPS → PLAN.md      |
   | Delight opportunities| ___ identified (EXPANSION only)             |

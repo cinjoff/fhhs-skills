@@ -182,6 +182,8 @@ AUTO_MODE=$(node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs config-get workfl
 
 If `AUTO_MODE` is `"true"`, skip interactive gray area discussion. Instead:
 
+**Crash reconciliation:** Before scouting, search `.planning/DECISIONS.md` for entries where Phase matches the current phase directory name AND Step starts with 'plan-work'. If such entries exist BUT the corresponding CONTEXT.md does not exist or is incomplete (missing one of the three canonical sections: Decisions, Discretion Areas, Deferred Ideas), this indicates a prior crash. Warn: 'Prior plan-work decisions found for this phase but CONTEXT.md is incomplete — resuming from existing decisions.' Reuse the existing decisions to populate CONTEXT.md rather than re-deciding. Only auto-decide gray areas not covered by existing entries.
+
 a) **Scout and identify** the same 3-4 gray areas by scanning the codebase (existing components, utilities, patterns, data flows) — same scouting as the normal path below.
 b) **Auto-decide** each gray area using best judgment, following the heuristics in `.claude/skills/build/references/decisions-template.md` (match existing patterns > reversible > simpler > well-documented libs > fewer deps > keep doors open).
 c) **Log each decision** to `.planning/DECISIONS.md` using the decision entry format from the template. Create the file first if it doesn't exist, or recover if corrupt — see the template's "Subagent Instructions: Creating DECISIONS.md" section. Use `step='plan-work Step 3'` in each entry.
