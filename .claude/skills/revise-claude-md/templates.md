@@ -180,6 +180,15 @@ Design tokens and aesthetic direction in `.planning/DESIGN.md`.
 ## Gotchas
 
 - <project-specific gotcha>
+
+# Compact Instructions
+
+When compacting, preserve:
+- Current GSD phase and plan number from .planning/STATE.md
+- All locked decisions from the active phase CONTEXT.md
+- File paths modified so far in this session
+- Test failures and their root causes
+- Any requirements or constraints the user stated this session
 ```
 
 ---

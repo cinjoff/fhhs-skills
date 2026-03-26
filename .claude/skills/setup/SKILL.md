@@ -598,17 +598,37 @@ After displaying:
 
 ---
 
-## Step 6b: context-mode (Long Sessions and Autonomous Execution)
+## Step 6b: context-mode (Context Optimization)
 
-For long sessions and autonomous execution, consider installing context-mode:
+context-mode is a companion plugin that dramatically improves session efficiency:
+- **Session Continuity**: Tracks files, decisions, tasks, and errors in SQLite. When context compacts, your working state rebuilds automatically.
+- **Context Saving**: Tool outputs are sandboxed — raw data never enters context. 315 KB of output becomes 5.4 KB (98% reduction).
+- **Knowledge Base**: Index project docs, specs, and codebase mapping into FTS5 for instant BM25-ranked search via `ctx_search`.
 
+Install automatically:
 ```bash
-claude plugin install mksglu/context-mode
+claude plugin marketplace add mksglu/context-mode 2>/dev/null
+claude plugin install context-mode@context-mode 2>/dev/null && echo "OK context-mode" || echo "FAILED context-mode"
 ```
 
-context-mode helps Claude maintain consistent behavior across long sessions and autonomous workflows. It complements fhhs-skills' GSD state tracking by providing session-level context continuity.
+If OK, display:
+```
+✓ context-mode installed — session continuity + context saving active
+  fhhs-skills will use ctx_search/ctx_index for faster lookups automatically
+```
 
-This is optional but recommended if you use `/fh:auto` or run multi-phase builds.
+If FAILED (e.g. running inside Conductor or non-interactive env where `claude plugin` doesn't work), tell the user:
+```
+⚠ Could not install context-mode automatically.
+  Install manually in a Claude Code session:
+
+    /plugin marketplace add mksglu/context-mode
+    /plugin install context-mode@context-mode
+
+  Then run /context-mode:ctx-doctor to verify.
+```
+
+Do NOT ask the user whether to install — just install it. It's a recommended companion that fhhs-skills actively uses.
 
 ---
 

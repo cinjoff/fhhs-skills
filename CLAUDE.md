@@ -49,3 +49,12 @@ Claude Code plugin composing upstream skills (Superpowers, Impeccable, GSD) into
 - `.planning/ROADMAP.md` — phased plan
 - `.planning/STATE.md` — current position
 - `.planning/REQUIREMENTS.md` — work items
+
+# Compact Instructions
+
+When compacting, preserve:
+- Current phase and plan from .planning/STATE.md
+- Locked decisions from active phase CONTEXT.md
+- Files modified in this session
+- Eval failures and their root causes
+- Plugin shipping boundary constraints (.claude/skills/ only)
