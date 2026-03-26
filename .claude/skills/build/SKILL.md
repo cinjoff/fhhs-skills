@@ -14,14 +14,11 @@ You are a **lean orchestrator**. Stay under 15% context usage. Delegate all heav
 
 > **Execution pipeline — fresh subagents for tasks, specialized agents for review:**
 > Task execution: **`general-purpose`** subagents with structured prompt from `references/implementer-prompt.md` (co-located with this skill). Fresh context per task, no GSD state overhead.
-> Spec gates: **`code-reviewer`** agent after each wave — adversarial spec verification using `references/spec-gate-prompt.md` (co-located with this skill).
-> Simplify: `skills/simplify/PROMPT.md` after all waves — code reuse, efficiency, hygiene.
-> Integration check: **`gsd-integration-checker`** background agent for multi-phase wiring.
-> Phase verification: **`gsd-verifier`** agent for goal-backward verification.
+> Review: `/fh:review --quick` runs in parallel with simplify after execution.
 > Do not use `gsd-executor` or `gsd-planner` — their state management conflicts with this orchestrator.
 
 > **GSD project context:**
-> Read `.planning/PROJECT.md`, `STATE.md`, and `ROADMAP.md` for current position. All state updates, roadmap updates, and commit helpers use `gsd-tools.cjs`.
+> Read `STATE.md` and `ROADMAP.md` for current position. All state updates, roadmap updates, and commit helpers use `gsd-tools.cjs`.
 
 ---
 
@@ -57,20 +54,7 @@ Parse the plan's `<tasks>` block and create a native task for each plan task usi
 - **metadata:** `{wave: N, phase: "XX-name", plan: NN, taskIndex: N}`
 - **activeForm:** derived from task name (e.g., "Implementing auth middleware")
 
-### Create pipeline stage tasks
-
-Also create tasks for pipeline stages that run after wave execution:
-- "Spec gate Wave N" — one per wave
-- "Design gates" (if applicable based on visual change expectations)
-- "Self-check + SUMMARY"
-- "GSD state updates"
-
-### Set up wave dependencies
-
-Use `addBlockedBy` to express wave ordering:
-- Wave 2 tasks are blocked by all Wave 1 tasks
-- Spec gate for Wave N is blocked by all Wave N tasks
-- Wave N+1 tasks are blocked by Spec gate Wave N
+If `CLAUDE_CODE_TASK_LIST_ID` is set, tasks persist across sessions — the same task list will be reused on resume.
 
 Store the mapping of plan task index → native task ID for use in subsequent steps.
 
@@ -81,6 +65,8 @@ Store the mapping of plan task index → native task ID for use in subsequent st
 Group tasks by their `wave` number (or dependency order if no waves specified):
 - Wave 1: tasks with no dependencies (can run in parallel)
 - Wave 2+: tasks that depend on earlier waves
+
+Test tasks marked `wave: same` as their implementation task run in the same wave when they test independent interfaces.
 
 Report the execution plan to the user: "N tasks in M waves. Wave 1 has X parallel tasks."
 
@@ -99,31 +85,46 @@ Additionally, scan ALL decisions in DECISIONS.md (regardless of Phase) where the
 
 ## Step 3: Execute Waves
 
-For each wave, dispatch **one subagent per task** using the Task tool with **`subagent_type: "general-purpose"`**.
+For each wave, dispatch **one subagent per task** using the Task tool with **`subagent_type: "general-purpose"`** and **`model: "sonnet"`**.
 
 ### Subagent prompt
 
-Use the structured template at `references/implementer-prompt.md`. Before dispatch, pre-process the template:
-
-- If task `<files>` match `*.spec.*`, `*.test.*`, `e2e/`, or `playwright.config.*`: read `.claude/skills/playwright-testing/PROMPT.md`, inject as `{PLAYWRIGHT_CONTEXT}`. Otherwise replace with empty string.
-- If `next.config.*` exists in the project root: read `.claude/skills/nextjs-perf/PROMPT.md`, inject as `{NEXTJS_CONTEXT}`. Otherwise replace with empty string.
-- If task touches `.tsx` or `.css` files: read `.planning/DESIGN.md` and reference `skills/frontend-design/PROMPT.md`, inject combined content as `{FRONTEND_CONTEXT}`. Otherwise replace with empty string.
-
-Then fill the remaining placeholders:
+Use the structured template at `references/implementer-prompt.md`. Fill its placeholders:
 
 - `{TASK_TEXT}` — Full task content (files, action, verify, done). Copy the text, don't reference the plan file.
 - `{CLAUDE_MD_SECTIONS}` — Relevant sections from CLAUDE.md for this task type (UI work → CONVENTIONS.md + DESIGN.md; new files → STRUCTURE.md; API work → ARCHITECTURE.md; tests → TESTING.md).
 - `{DESIGN_DECISIONS}` — If `.planning/phases/{phase}/{phase}-CONTEXT.md` exists, include the "Decisions" and "Discretion Areas" sections. These are locked — subagents must not contradict them. Also include the "Deferred Ideas" section as a scope boundary — subagents must not implement deferred items listed there.
+- `{DESIGN_MD_CONTENT}` — For frontend tasks only: include `.planning/DESIGN.md` content (small, ~30 lines).
 - `{PHASE_DIR}` — Path to `.planning/phases/{phase}/` for deferred items logging.
 - `{TASK_NAME}` — Task identifier for deferred items format.
-- `{TASK_ID}` — The native task ID for this task (from Step 1b). Pass empty string if `TASKS_AVAILABLE=false`.
+- `{TASK_ID}` — The native task ID for this task (from Step 1b). Subagents can use this ID for sub-task tracking via TaskCreate/TaskUpdate. Pass empty string if `TASKS_AVAILABLE=false`.
 - `{DECISIONS_CONTEXT}` — If prepared in Step 2 (AUTO_MODE=true with matching decisions), inject here. Otherwise empty string.
 
-The template includes all behavioral directives (TDD, commits, YAGNI), deviation rules 1-4, guardrails (analysis paralysis, scope boundary, deferred items), self-review checklist, and structured report format.
+The template includes all behavioral directives (TDD, frontend, commits, YAGNI), deviation rules 1-4, guardrails (analysis paralysis, scope boundary, deferred items), self-review checklist, and structured report format.
+
+**Conditional context injection — verify the template activates these for each task:**
+- **Playwright:** If task `<files>` contain `*.spec.*`, `*.test.*`, `e2e/`, or `playwright.config.*`, the template directs subagents to read `.claude/skills/playwright-testing/PROMPT.md` (POM, role-based locators, auto-waiting). Verify this context is relevant before dispatch — don't include Playwright weight for non-test tasks.
+- **Next.js perf:** If `next.config.*` exists in the project root, the template directs subagents to read `.claude/skills/nextjs-perf/PROMPT.md` (waterfall avoidance, Suspense boundaries, barrel import awareness, caching). No action needed if the project doesn't use Next.js.
+- **TypeScript strictness:** The template includes inline TS rules for all TypeScript projects. Subagents should follow them during implementation.
 
 ### Checkpoint protocol
 
-If a task has `type="checkpoint:*"`, read `references/checkpoint-protocol.md` (co-located with this skill) for the full protocol. It covers checkpoint types (human-verify, decision, human-action), return format, auto-mode behavior, standard mode continuation, and authentication gate handling.
+If a task has `type="checkpoint:*"`, handle inline:
+
+- `checkpoint:human-verify` — Show the subagent's output (screenshot/command output), await user approval. In auto-mode: auto-approve (confidence=MEDIUM).
+- `checkpoint:decision` — Present options with pros/cons, await user choice. In auto-mode: auto-select first option (confidence=MEDIUM).
+- `checkpoint:human-action` — Describe the manual step needed, await confirmation. In auto-mode: STOP (auth gates cannot be automated).
+
+**Return format when a checkpoint is reached:**
+```
+CHECKPOINT REACHED
+Type: [human-verify | decision | human-action]
+Progress: {completed}/{total} tasks
+Completed Tasks: [task | commit hash | key files] per task
+Current Task: [name, status, blocker]
+Checkpoint Details: [type-specific content]
+Awaiting: [what user needs to do]
+```
 
 When auto-approving checkpoints in auto mode, log each auto-approval as a decision in `.planning/DECISIONS.md`:
 - For `checkpoint:human-verify` auto-approvals: `confidence=MEDIUM`
@@ -136,7 +137,7 @@ Use `step='build checkpoint'` in the decision entry. Follow the decision entry f
 
 **After subagent returns successfully:** `TaskUpdate(taskId, status: "completed")`.
 
-**If subagent reports BLOCKED:** `TaskUpdate(taskId, status: "in_progress", metadata: {blocked: true, blocker: "reason"})`. Then propagate: for all tasks in subsequent waves that depend on this task (via the wave dependency chain from Step 1b), call `TaskUpdate(dependentTaskId, addBlockedBy: [taskId])`.
+**If subagent reports BLOCKED:** `TaskUpdate(taskId, status: "in_progress", metadata: {blocked: true, blocker: "reason"})`.
 
 **For independent tasks in the same wave:** dispatch subagents in parallel.
 **For sequential waves:** wait for all tasks in current wave before starting next.
@@ -169,10 +170,10 @@ Once all tasks are accounted for (completed, or explicitly skipped with user sig
 
 1. **Spot-check:** verify key files from subagent reports exist on disk (`[ -f path ]`), check `git log` for expected commits
 2. **Done criteria check:** compare each task's `done` criteria against subagent output — flag mismatches
-3. **Record wave SHA:** `WAVE_END_SHA=$(git rev-parse HEAD)` — needed for spec gate
-4. **Report** results to user before spec gate
+3. **Record wave SHA:** `WAVE_END_SHA=$(git rev-parse HEAD)`
+4. **Report** results to user
 
-(GSD state updates happen once in Step 6, not per-wave. Don't edit STATE.md during execution.)
+(GSD state updates happen once in Step 5, not per-wave. Don't edit STATE.md during execution.)
 
 ### After-wave error check
 
@@ -186,181 +187,23 @@ If new errors appeared:
 - **Runtime errors during build** — these may indicate the just-built code has issues
 - Surface the errors to the orchestrator: "N new runtime errors detected during Wave X execution"
 - Include in the wave report alongside spot-check results
-- These errors inform the spec gate — if the code runs but produces errors, that's a spec concern
+- These errors inform the next wave — if the code runs but produces errors, that's a quality concern
 
 If the query script or db doesn't exist, skip silently.
 
 ---
 
-## Step 3b: Per-Wave Spec Gate
+## Step 4: Verification + SUMMARY
 
-**After each wave completes and passes spot-check, run a spec gate before starting the next wave.**
+Run verification commands directly:
 
-This catches spec deviations before dependent waves build on wrong foundations. Run for ALL waves including the final wave.
+1. **Test suite:** `npm test` (or the project's test command from package.json or CLAUDE.md)
+2. **Build check:** `npm run build` (if the project has a build step)
+3. **Lint:** `npm run lint` (if the project has a linter)
 
-### Fallow static analysis (if available)
+Run each command fresh and complete. Check exit codes and count failures.
 
-Before dispatching the spec-gate agent, run Fallow to provide ground truth data for unwired code detection:
-
-```bash
-if command -v fallow &>/dev/null; then
-  FALLOW_OUTPUT=$(fallow check --changed-since {WAVE_START_SHA} --format json --quiet 2>/dev/null) || FALLOW_OUTPUT=""
-fi
-```
-
-When dispatching the spec-gate agent, if `FALLOW_OUTPUT` is non-empty, include it in the agent prompt under a `## Fallow Static Analysis` section. If empty, omit the section entirely.
-
-### Dispatch spec reviewer
-
-If `TASKS_AVAILABLE`, update the spec gate task: `TaskUpdate(specGateTaskId, status: "in_progress", activeForm: "Running spec gate Wave N")`.
-
-Use the template at `references/spec-gate-prompt.md` with **`subagent_type: "code-reviewer"`** (specialized agent). Fill placeholders:
-
-- `{WAVE_NUMBER}` — Current wave number
-- `{TASK_SPECS}` — Done criteria and key requirements for each task in the wave
-- `{SUBAGENT_REPORTS}` — What each task subagent reported (from their structured reports)
-- `{WAVE_START_SHA}` — SHA before wave started
-- Wave diff: `git diff {WAVE_START_SHA}..{WAVE_END_SHA}`
-
-**If wave had multiple tasks:** dispatch one spec reviewer for the entire wave (reviews the combined diff). This is faster than per-task reviewers and catches cross-task issues within the wave.
-
-### Inline TypeScript strictness — BLOCKING criteria
-
-The spec gate template checks TypeScript strictness. These are the BLOCKING rules the gate enforces on every wave diff:
-
-| Pattern | Verdict | Required fix |
-|---------|---------|-------------|
-| `any` type usage (explicit or implicit via missing annotations) | **BLOCK** | Replace with `unknown` + type guard, generic, or concrete type |
-| `as any` or `as unknown as X` type assertions | **BLOCK** | Use type guard (`is` keyword), `satisfies`, or fix the type mismatch |
-| Non-exhaustive `switch` on union/enum without `default: { const _: never = val; }` | **BLOCK** | Add exhaustive default or `satisfies never` check |
-| Type assertion (`as T`) where a type guard would work | **WARN** | Suggest type guard — not blocking but flag it |
-
-These rules are also in the implementer-prompt template so subagents should catch most issues during implementation. The spec gate is the backstop.
-
-### Handle results
-
-**PASS:** Update `WAVE_START_SHA=$WAVE_END_SHA`. If `TASKS_AVAILABLE`, update the spec gate task: `TaskUpdate(specGateTaskId, status: "completed")`. Continue to next wave.
-
-**BLOCKING:** For each blocking issue:
-1. Dispatch a fix agent (`general-purpose`) with: the spec reviewer's finding + original task spec + current code
-2. Fix agents for independent issues run in parallel
-3. After fixes: quick re-verify (file exists, test passes, `git diff` shows the fix)
-4. Do NOT re-run the full spec gate — the fix is targeted
-5. Update `WAVE_START_SHA=$(git rev-parse HEAD)`. Continue to next wave.
-
-**Report** spec gate result to user: "Wave N spec gate: PASS" or "Wave N spec gate: N issues fixed"
-
----
-
-## Step 4: Design Gates + Background Integration Check
-
-### Background integration check (multi-phase projects)
-
-**If previous phases exist** (completed phases in `.planning/phases/`), dispatch `gsd-integration-checker` as a **background agent** before starting design gates:
-
-- **Agent type:** `gsd-integration-checker` (specialized), `run_in_background: true`
-- **Prompt:** "Check cross-phase wiring between completed phases and the current phase. Focus on: exports used, APIs called, auth protection, data flows. Provide structured report."
-- **Input:** Phase SUMMARYs from completed phases + current wave commits
-- Results collected after design gates complete (Step 4b)
-
-**Skip if:** This is the first phase, or no previous phases have SUMMARYs.
-
-### Design gates (visual-heavy changes only)
-
-Calculate visual change ratio:
-- Count files changed that are visual (`.tsx`, `.css`, `.scss`, component files)
-- Count total files changed
-- Visual ratio = visual files / total files
-
-**Trigger design gates when:** visual ratio > 40% AND visual file count >= 3
-**Skip when:** ratio is low (backend-heavy build) or only 1-2 visual files touched (minor tweaks)
-
-If `TASKS_AVAILABLE` and a "Design gates" task was created, update it: `TaskUpdate(designGateTaskId, status: "in_progress", activeForm: "Running design gates")` when triggered, or `TaskUpdate(designGateTaskId, status: "completed", metadata: {skipped: true})` when skipped.
-
-When triggered, run the design pipeline (ui-critique → polish → normalize) below.
-When skipped, note: "Design gates skipped (N/M files visual). Run /fh:ui-critique manually if needed."
-
-After all waves complete (including spec gates) and BEFORE self-check, run the design quality pipeline:
-
-**Context for all design gate subagents:** If `.planning/phases/{phase}/{phase}-CONTEXT.md` exists, include its "Decisions" and "Discretion Areas" sections. These are locked design choices that ui-critique/polish/normalize must respect.
-
-### Critique
-Dispatch subagent to invoke `/fh:ui-critique` on modified frontend files.
-Input: file list + `.planning/DESIGN.md` + anti-pattern reference from `skills/frontend-design/PROMPT.md`.
-Fix Critical and High issues. Commit: `style({phase}-{plan}): address design critique`
-
-### Polish
-Dispatch subagent to invoke `/fh:polish` on modified files (excluding areas fixed by critique).
-Commit: `style({phase}-{plan}): polish pass`
-
-### Normalize (if design system exists)
-If `.planning/DESIGN.md` defines design tokens or a component system:
-Dispatch subagent to invoke `/fh:normalize` against the design system.
-Commit: `style({phase}-{plan}): normalize to design system`
-Skip if no design system defined.
-
-After all design gate sub-steps complete, if `TASKS_AVAILABLE`: `TaskUpdate(designGateTaskId, status: "completed")`.
-
-### Consider Animate (optional)
-Suggest (don't auto-run) based on the work:
-- `/fh:ui-animate` — if transitions, state changes, or interaction-heavy elements
-Ask user before proceeding.
-
-Uses design quality commands (`/fh:ui-critique`, `/fh:polish`, `/fh:normalize`) and `skills/frontend-design/PROMPT.md` — all built into this plugin.
-
-### Consider Audit (frontend-heavy builds)
-If the build involved 5+ frontend files and the work is user-facing:
-Suggest `/fh:audit` for comprehensive quality checks (accessibility, performance, theming, responsive).
-"Frontend-heavy build detected. Run `/fh:audit` for a11y/perf/responsive quality check?"
-Don't auto-run — ask user before proceeding.
-
-### Consider Harden (production-bound frontend)
-If the build is for production deployment (not a prototype or internal tool):
-Suggest `/fh:harden` for production resilience (text overflow, i18n, RTL, network errors, edge cases).
-"Production-bound frontend work. Run `/fh:harden` for edge case resilience?"
-Don't auto-run — ask user before proceeding.
-
-### Step 4b: Collect integration check results
-
-**If a background integration check was dispatched:** collect its results now. If critical wiring issues found (orphaned exports, broken data flows), flag to user before proceeding. Integration findings feed into Step 9 (post-build review).
-
----
-
-## Step 5: Self-Check + Generate SUMMARY.md
-
-If `TASKS_AVAILABLE`, update the "Self-check + SUMMARY" pipeline task: `TaskUpdate(selfCheckTaskId, status: "in_progress", activeForm: "Running self-check and generating SUMMARY")`.
-
-### Verification gate
-
-Before claiming build success, read `skills/verification-before-completion/PROMPT.md`
-and follow its gate function:
-
-1. **IDENTIFY** verification commands for this build:
-   - Test suite: run the project's test command (from package.json or CLAUDE.md)
-   - Build check: if the project has a build step, run it
-   - Lint: if the project has a linter, run it
-2. **RUN** each command fresh and complete
-3. **READ** full output — check exit codes, count failures
-4. **VERIFY** all pass before proceeding to SUMMARY generation
-
-If any verification fails: flag in SUMMARY under "Issues Encountered" with the
-actual output. Do NOT claim the build succeeded if verification failed.
-
-### Self-check
-
-Before writing SUMMARY, verify all claims:
-
-1. **Check created files exist:**
-```bash
-[ -f "path/to/file" ] && echo "FOUND" || echo "MISSING"
-```
-
-2. **Check commits exist:**
-```bash
-git log --oneline --all --grep="{phase}-{plan}" | head -10
-```
-
-If any checks fail, flag in SUMMARY under "Issues Encountered".
+If any verification fails: flag in SUMMARY under "Issues Encountered" with the actual output. Do NOT claim the build succeeded if verification failed.
 
 ### Generate SUMMARY.md
 
@@ -368,23 +211,23 @@ Read `references/summary-template.md` (co-located with this skill) for the full 
 
 **Commit:** `docs({phase}-{plan}): complete {description}`
 
-If `TASKS_AVAILABLE`: `TaskUpdate(selfCheckTaskId, status: "completed")`.
+If `TASKS_AVAILABLE`: update the summary task to `status: "completed"`.
 
 ---
 
-## Step 6: GSD State Updates
+## Step 5: GSD State Updates
 
 **Skip this step if not in GSD mode.**
 
-If `TASKS_AVAILABLE`, update the "GSD state updates" pipeline task: `TaskUpdate(gsdStateTaskId, status: "in_progress", activeForm: "Updating GSD state")`.
-
 After SUMMARY.md is committed, read `references/gsd-state-updates.md` (co-located with this skill) and run all state update commands. This covers: advance-plan, update-progress, record-metric, add-decision, record-session, and roadmap update.
 
-If `TASKS_AVAILABLE`: `TaskUpdate(gsdStateTaskId, status: "completed")`. If GSD mode was skipped: `TaskUpdate(gsdStateTaskId, status: "completed", metadata: {skipped: true})`.
+These run once at plan completion. No state writes during wave execution.
+
+Use **`model: "haiku"`** for this step — mechanical state updates don't require deep reasoning.
 
 ---
 
-## Step 7: Phase Completion Detection + Dual Verification
+## Step 6: Phase Completion Detection
 
 **GSD mode — use gsd-tools for completeness check:**
 
@@ -392,74 +235,36 @@ If `TASKS_AVAILABLE`: `TaskUpdate(gsdStateTaskId, status: "completed")`. If GSD 
 node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs verify phase-completeness "${PHASE_NUM}"
 ```
 
-**If NOT all plans complete:** Report "Plan X of Y complete, Z remaining." Continue to Step 8.
+**If NOT all plans complete:** Report "Plan X of Y complete, Z remaining." Continue to Step 7.
 
-**If ALL plans complete (phase done):** Run dual verification before proceeding.
+**If ALL plans complete (phase done):**
 
-### Goal-backward verification
+Run: `gsd-tools.cjs phase complete "${PHASE_NUM}"` — atomically updates STATE.md and ROADMAP.md. "Phase verified. Ready for next phase."
 
-**GSD mode — use gsd-tools verification suite:**
-
-```bash
-node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs verify artifacts "${PLAN_PATH}"
-node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs verify key-links "${PLAN_PATH}"
-```
-
-Then manually verify:
-1. For each `must_haves.truth` — find evidence (file exists, content matches, test passes)
-2. Requirements coverage — every requirement ID from ROADMAP appears in at least one SUMMARY's `requirements-completed`
-
-### Evidence-based verification
-
-- Run fresh test suites, check exit codes
-- Verify all expected artifacts exist
-- Build check if applicable
-- No claims without proof
-
-### Output
-
-Write `{phase}-VERIFICATION.md` with truth table, artifacts, key links, requirements coverage, and anti-patterns. Use `gsd-tools.cjs template fill verification` if available.
-
-### Phase completion (GSD mode)
-
-**If PASSED:** `gsd-tools.cjs phase complete "${PHASE_NUM}"` — atomically updates STATE.md and ROADMAP.md. "Phase verified. Ready for next phase."
-
-**If FAILED:** Report gaps. Suggest `/fh:plan-work` for closure or `/fh:fix` for bugs.
+If gaps remain, report them. Suggest `/fh:plan-work` for closure or `/fh:fix` for bugs.
 
 ---
 
-## Step 8: Simplify
+## Step 7: Simplify + Review (parallel)
 
-After all tasks complete (including spec gates and design gates), read `skills/simplify/PROMPT.md` and follow it on the implementation diff. This catches:
+Dispatch both in parallel:
 
-- **Code reuse**: newly written code that duplicates existing utilities or helpers
-- **Efficiency**: redundant computations, missed concurrency, N+1 patterns, hot-path bloat
-- **Code hygiene**: parameter sprawl, copy-paste with variation, stringly-typed code, unnecessary nesting
-
-It runs 1 review agent that reviews sequentially through reuse, quality, and efficiency lenses on the git diff, then fixes issues directly. Let it run and apply fixes. Skip false positives without debate.
+**Simplify** — Dispatch 1 subagent that reads `skills/simplify/PROMPT.md` and runs all three lenses (reuse, efficiency, hygiene) sequentially on the implementation diff. Let it apply fixes.
 
 **Commit:** `refactor({phase}-{plan}): simplify pass`
 
----
+**Review** — Auto-invoke `/fh:review --quick` — this runs code quality + architecture analysis. It catches naming issues, structural problems, test quality gaps, and cross-file inconsistencies.
 
-## Step 9: Post-Build Review
-
-Auto-invoke `/fh:review --quick` — this runs code quality + architecture analysis without the full security scan. It catches naming issues, structural problems, test quality gaps, and cross-file inconsistencies before they accumulate.
-
-If the review surfaces issues:
-- **BLOCK** findings → fix before continuing
-- **WARN** findings → report to user, continue if they approve
+Collect both results. If either surfaces BLOCK findings → fix before continuing.
 
 **Frontend QA routing:** If the build involved frontend changes (`.tsx`, `.css`, `.html` files), suggest:
 "Frontend changes detected. Run `/fh:ui-test` for visual verification, or `/fh:ui-test --qa` for diff-aware functional testing."
 
-After the review, report what was built:
+After both complete, report what was built:
 - Tasks completed, commits made, key files created/modified
-- Design gates: ran / skipped (with reason)
-- Integration check results (if ran)
 - Review findings summary
 
-For deeper scrutiny, suggest `/fh:review` (adds security scan + gap analysis).
+For deeper scrutiny, suggest `/fh:review` (adds gap analysis).
 
 **GSD completion (if GSD active):**
 
@@ -480,12 +285,11 @@ If user prefers to skip the branch finishing (more work planned), report what wa
 ## Context Budget Rules
 
 - **Orchestrator (you):** Stay lean. Don't read source files. Don't load more than 2 `.planning/` files at a time. Delegate all file reading to subagents.
-- **Task subagents:** Fresh context each. Load only what that task needs. Use `references/implementer-prompt.md` template.
-- **Spec gate agents:** Get the wave diff and task specs only. Don't load full plan history.
-- **Integration checker:** Runs in background. Gets phase SUMMARYs and source directory structure.
-- **Simplify agents:** Run on the git diff only. 1 agent reviews sequentially through reuse, quality, and efficiency lenses — lightweight, no plan context needed.
-- **Post-build review:** `/fh:review --quick` dispatches 1 code-reviewer agent on the diff. Adds ~1 subagent turn, no security scan overhead.
-- **`.planning/DESIGN.md`** is small (~30 lines) — safe to include in frontend subagent prompts via `{FRONTEND_CONTEXT}`.
+- **Task subagents (Sonnet):** Fresh context each. Load only what that task needs. Use `references/implementer-prompt.md` template.
+- **Simplify agent:** Runs on the git diff only. Single agent, 3 lenses sequentially — lightweight, no plan context needed.
+- **Post-build review:** `/fh:review --quick` dispatches 1 code-reviewer agent on the diff. Adds ~1 subagent turn.
+- **GSD state updates (Haiku):** Mechanical commands — advance-plan, update-progress, record-metric.
+- **`.planning/DESIGN.md`** is small (~30 lines) — safe to include in every frontend subagent prompt.
 - **Codebase docs per task type:**
   - UI work -> CONVENTIONS.md + DESIGN.md
   - New files -> STRUCTURE.md
@@ -498,6 +302,6 @@ If user prefers to skip the branch finishing (more work planned), report what wa
 
 If context is running low, prioritize in this order:
 
-Step 3 (execute waves) > Step 3b (spec gate) > Step 7 (phase completion) > Step 5 (self-check) > Step 8 (simplify) > Step 9 (post-build review) > Step 4 (design gates) > Step 6 (GSD state).
+Step 3 (execute waves) > Step 4 (verification + SUMMARY) > Step 6 (phase completion) > Step 7 (simplify + review) > Step 5 (GSD state).
 
-Never skip Step 3 or Step 3b.
+Never skip Step 3 or Step 4.

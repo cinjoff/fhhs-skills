@@ -118,10 +118,10 @@ CLAUDE.md:    /fh:revise-claude-md (after sessions or /fh:revise-claude-md audit
 Every composite that executes code enforces these via built-in skills:
 
 1. **TDD** — no production code without a failing test first
-2. **Per-wave spec gates** — adversarial spec verification after each wave
-3. **Quality review** — code quality, security, architecture review
+2. **Post-build code review** — code quality and architecture review via `/fh:review --quick`
+3. **Quality review** — code quality and architecture review
 4. **Simplify** — code reuse, efficiency, and hygiene
-5. **Verification-before-completion** — no claims without fresh evidence
+5. **Tests/build/lint verification** — no claims without fresh evidence
 6. **Fresh subagents** — structured prompts with self-review and analysis paralysis guard
 7. **YAGNI** — no features, abstractions, or error handling beyond what's specified
 
