@@ -116,6 +116,12 @@ Results feed into Step 5 aggregation as "Spec verification" findings. A BLOCKING
 
 If no PLAN.md is in scope: skip this step silently.
 
+### Context-Mode Acceleration
+
+When reading PLAN.md for must_haves verification or checking goal criteria:
+- If ctx_search is available: use `ctx_search` with queries like "must_haves for plan {plan}" and "done criteria for {phase}". Returns relevant entries without loading full plan files.
+- If not available: fall back to reading the files directly.
+
 ---
 
 ## Step 2: Dispatch Analysis (full and --quick modes)
