@@ -2,6 +2,7 @@
 name: fh:secure
 description: Scan for OWASP Top 10 security vulnerabilities. Use when the user says 'security scan', 'check security', 'audit security', or before promoting changes.
 user-invocable: false
+disable-model-invocation: true
 ---
 
 Scan for OWASP Top 10 security vulnerabilities using parallel scanning agents.
@@ -19,9 +20,9 @@ Determine scan target:
 **Default (changed files):**
 ```bash
 MERGE_BASE=$(git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null || echo "HEAD~1")
-git diff --name-only $MERGE_BASE..HEAD
-git diff --name-only --staged
-git diff --name-only
+git diff --name-only $MERGE_BASE..HEAD -- ':!.planning/' ':!*.lock' ':!.next/' ':!*.map'
+git diff --name-only --staged -- ':!.planning/' ':!*.lock' ':!.next/' ':!*.map'
+git diff --name-only -- ':!.planning/' ':!*.lock' ':!.next/' ':!*.map'
 ```
 Combine into a deduplicated file list. Filter to source files only (`.ts`, `.tsx`, `.js`, `.jsx`, `.py`, `.go`, `.rs`, `.java`, `.sql`, `.env*`, `.yml`, `.yaml`, `.json`).
 

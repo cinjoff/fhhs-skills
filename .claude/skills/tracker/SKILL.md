@@ -2,6 +2,7 @@
 name: fh:tracker
 description: Visual dashboard of your project's progress — phases, milestones, and status.
 user-invocable: true
+disable-model-invocation: true
 ---
 
 Launch the visual project tracker dashboard.

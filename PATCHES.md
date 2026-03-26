@@ -302,3 +302,130 @@ No changes. (Template variables adopted from upstream v1.2.0.)
 | 3 | Added GSD project context detection in session learnings mode | Ensures updates respect `.planning/` structure |
 
 Upstream reference: `upstream/claude-md-management-1.0.0/`
+
+## Build Pipeline Optimization (build-pipeline-optimization branch)
+
+Cross-cutting changes from the build pipeline optimization effort, affecting
+multiple skills and agents.
+
+### build (`/fh:build`)
+| # | Change | Rationale |
+|---|--------|-----------|
+| 1 | Pipeline reduced from 9 steps to 7 steps — removed separate spec gate step, separate design gates step, and self-check step | Spec gate moved to `/fh:review` Step 1.8; design gates integrated into phase completion (Step 6); self-check was redundant with verification |
+| 2 | Added `model: "sonnet"` for subagent dispatch | Explicit model pinning for task subagents — consistent performance at lower cost |
+| 3 | Single commit after all waves complete (no per-task commits) | Reduces commit noise; orchestrator makes one cohesive commit per plan |
+| 4 | Added `{DECISIONS_CONTEXT}` placeholder for auto-mode decision injection | Auto-mode injects last 10 DECISIONS.md entries for the phase so subagents respect prior decisions |
+| 5 | Added Step 0.5: Codebase Freshness Check (`.planning/codebase/.last-mapped`) | Advisory warning when codebase mapping is stale — suggests `/fh:map-codebase` |
+| 6 | Plan limits read from `.planning/config.json` instead of hardcoded | Per-project tuning of task count, file count, word limit, and context target |
+| 7 | `implementer-prompt.md` compacted (132→69 lines), removed SKILL_INDEX | Smaller prompt = more subagent context for actual work; skill discovery is self-serve |
+| 8 | `checkpoint-protocol.md` deleted, `decisions-template.md` added | Checkpoint logic inlined into SKILL.md; decisions template needed for auto-mode logging |
+| 9 | `spec-gate-prompt.md` added decision consistency check section | Auto-mode: structurally verifies decisions' Affects fields match modified files |
+| 10 | DIFF_EXCLUDE pattern added to all git diffs | Excludes `.planning/`, lock files, `.next/`, source maps — reduces noise in diffs |
+
+### review (`/fh:review`)
+| # | Change | Rationale |
+|---|--------|-----------|
+| 1 | Security scan (4 parallel OWASP sub-scanners) removed from default pipeline | Moved to dedicated `/fh:secure` skill — keeps review focused on quality + gaps |
+| 2 | TypeScript Strictness Check removed as separate step | TS strictness checks integrated into spec-gate-prompt and code-quality agent |
+| 3 | Added Step 1.8: Spec Verification for GSD projects | Uses `code-reviewer` + `spec-gate-prompt.md` to catch spec deviations, stubs, unwired code |
+| 4 | Full mode: 3 agents → 2 agents (Quality + Gap, no Security) | Security agent removed — `/fh:secure` handles it on demand or via pre-PR hook |
+| 5 | DIFF_EXCLUDE pattern added to all git diffs | Excludes `.planning/`, lock files, `.next/`, source maps |
+| 6 | `spec-gate-prompt.md` added to review references | Reused from build — same prompt drives review Step 1.8 spec verification |
+| 7 | Added Step 1.7: Static Analysis (Fallow integration) | Deterministic findings from Fallow augment review agents when available |
+| 8 | Added Context-Mode Acceleration for must_haves verification | Uses `ctx_search` for faster plan lookups when context-mode plugin is installed |
+
+### simplify (`/fh:simplify` and `skills/simplify/PROMPT.md`)
+| # | Change | Rationale |
+|---|--------|-----------|
+| 1 | Changed from 3 parallel agents to 1 sequential agent with 3 review lenses | Reduces context fragmentation — single agent sees full diff across all lenses |
+| 2 | Added `disable-model-invocation: true` to `/fh:simplify` frontmatter | Prevents auto-detection from triggering standalone invocation |
+| 3 | DIFF_EXCLUDE pattern added to git diff in PROMPT.md | Consistent with cross-cutting DIFF_EXCLUDE pattern |
+
+### quick (`/fh:quick`) — DELETED
+| # | Change | Rationale |
+|---|--------|-----------|
+| 1 | Entire skill removed | Quick tasks now handled by simplified plan-work flow (Step 0.5 complexity assessment routes simple tasks through abbreviated path) |
+
+### auto (`/fh:auto`) — NEW
+| # | Change | Rationale |
+|---|--------|-----------|
+| 1 | New autonomous execution skill | Runs plan-work → plan-review → build → review for each phase without human intervention |
+| 2 | Uses `claude -p` for process-isolated sessions | Fresh context per step — no context exhaustion across multi-phase runs |
+| 3 | State persisted to `.planning/.auto-state.json` | Crash recovery via `--resume` flag |
+| 4 | Decisions logged to `.planning/DECISIONS.md` with confidence levels | Append-only decision journal for traceability and human review |
+| 5 | `--budget` flag for cost tracking | Passed to orchestrator as cost ceiling in dollars |
+| 6 | `--check-corrections` mode for decision correction cascade | Processes `CORRECTED` entries in DECISIONS.md, auto-fixes mechanical corrections |
+| 7 | Stuck detection (10min warning, 45min kill) | Prevents runaway sessions from consuming budget |
+
+### plan-work (`/fh:plan-work`)
+| # | Change | Rationale |
+|---|--------|-----------|
+| 1 | Added Step 0.6: Codebase Freshness Check | Advisory warning when codebase mapping is stale |
+| 2 | Added ctx_search acceleration (indexed codebase lookup) | Faster and more compact than reading full `.planning/` files when context-mode is installed |
+| 3 | Added AUTO_MODE branch in Step 3 (auto-decides gray areas) | Autonomous execution path — auto-decides gray areas using heuristics from decisions-template.md |
+| 4 | Plan limits from `.planning/config.json` instead of hardcoded defaults | Per-project tuning; defaults: 4-6 tasks, 8-15 files, 2500 words, 60% context |
+| 5 | Added crash reconciliation in AUTO_MODE Step 3 | Detects prior plan-work decisions in DECISIONS.md when CONTEXT.md is incomplete, reuses them instead of re-deciding |
+
+### plan-review (`/fh:plan-review`)
+| # | Change | Rationale |
+|---|--------|-----------|
+| 1 | Added DECISIONS.md Cross-Check step in PRE-REVIEW | Flags BLOCKING if DECISIONS.md entries conflict with CONTEXT.md locked decisions |
+| 2 | Added decision logging to DECISIONS.md (auto-mode only) | Review decisions logged with `step='plan-review Step B'`, `confidence=HIGH` |
+| 3 | Added Codebase Freshness Check | Advisory warning when codebase mapping is stale |
+| 4 | Added Context-Mode Acceleration for CONTEXT.md/DECISIONS.md/RESEARCH.md reads | Uses `ctx_search` for faster lookups when context-mode plugin is installed |
+
+### fix (`/fh:fix`)
+| # | Change | Rationale |
+|---|--------|-----------|
+| 1 | Added Step 0½: Fallow static analysis integration | Deterministic findings (unused exports, complexity metrics) augment triage |
+| 2 | Added DECISIONS.md Correction logging in Step 4 | If root cause relates to an active decision, logs `[CORRECTED]` entry to DECISIONS.md |
+| 3 | Added Codebase Freshness Check | Advisory warning when codebase mapping is stale |
+| 4 | Added Context-Mode Acceleration in Step 3 | Uses `ctx_search` for faster DECISIONS.md and DESIGN.md lookups |
+
+### setup (`/fh:setup`)
+| # | Change | Rationale |
+|---|--------|-----------|
+| 1 | Added Step 6b: context-mode plugin install | Auto-installs mksglu/context-mode companion plugin for session continuity and ctx_search |
+| 2 | Added Step 8: Fallow static analysis install | Detects package manager, installs Fallow globally for deterministic code analysis |
+| 3 | Added pre-PR security hook configuration section | Documents how to configure PreToolUse hook to run `/fh:secure` before `gh pr create` |
+| 4 | Conductor setup: `cp` → `ln -sf` for `.env.local` and `.vercel/` | Symlinks keep all worktrees in sync bidirectionally for gitignored files |
+
+### new-project (`/fh:new-project`)
+| # | Change | Rationale |
+|---|--------|-----------|
+| 1 | Added `--auto` flag for fully autonomous project creation | Derives all vision/stack answers from project description, logs decisions to DECISIONS.md |
+| 2 | Added Step 2a: package manager detection from lockfile | Uses pnpm/yarn/bun/npm based on lockfile presence; defaults to pnpm for new projects |
+| 3 | Added Step 3b: shadcn skills auto-install | Installs shadcn/ui skills globally when using default stack |
+| 4 | Added Better Auth + Resend email integration options | Auth and email integration offered during stack confirmation |
+| 5 | Added organization support (opt-in multi-tenant) | `wants_organizations` flag for teams/roles support when auth is selected |
+| 6 | Conductor setup: `cp` → `ln -sf` for env files in conductor.json templates | Symlinks for gitignored files across all framework templates (Next.js, Rails, Django, Phoenix, Vite) |
+
+### verification-before-completion (internal skill)
+| # | Change | Rationale |
+|---|--------|-----------|
+| 1 | Condensed from 105→35 lines | Removed verbose examples; kept the gate function and common failures table |
+
+### code-reviewer (agent)
+| # | Change | Rationale |
+|---|--------|-----------|
+| 4 | Added DIFF_EXCLUDE pattern to git diff commands | Excludes `.planning/`, lock files, `.next/`, source maps from review diffs |
+
+### gsd-planner (agent)
+| # | Change | Rationale |
+|---|--------|-----------|
+| 2 | Plan limits read from `.planning/config.json` instead of hardcoded | Per-project tuning consistent with plan-work changes |
+
+### Cross-cutting: `disable-model-invocation: true`
+| # | Change | Rationale |
+|---|--------|-----------|
+| 1 | Added `disable-model-invocation: true` to 21 skills (16 Impeccable design skills + 5 utility skills) | Prevents Claude from auto-detecting and invoking these skills based on conversation content; they should only run when explicitly invoked or dispatched by a composite |
+
+Affected skills (16 Impeccable): adapt, audit, bolder, clarify, colorize, delight, distill, extract, harden, normalize, onboard, optimize, polish, quieter, simplify, secure.
+Affected skills (5 utility): setup, help, settings, tracker, update.
+
+### Cross-cutting: DIFF_EXCLUDE pattern
+| # | Change | Rationale |
+|---|--------|-----------|
+| 1 | Added `DIFF_EXCLUDE="-- ':!.planning/' ':!*.lock' ':!pnpm-lock.yaml' ':!package-lock.json' ':!yarn.lock' ':!.next/' ':!*.map'"` across all git diff commands | Planning files, lockfiles, build output, and source maps waste tokens in diffs — excluded globally |
+
+Affected skills: build, review, simplify, fix. Affected agents: code-reviewer. Affected references: spec-gate-prompt.md, implementer-prompt.md (via PROMPT.md).

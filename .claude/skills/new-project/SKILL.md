@@ -1080,6 +1080,18 @@ Commit: `chore: add conductor.json for workspace configuration`
 
 ---
 
+## Step 8¾: Map Codebase (conditional)
+
+**Only run this step if `uses_default_stack` is true** (starter template was cloned in Step 3).
+
+The starter template has enough code to produce a useful codebase map. Running it now means context-mode is immediately valuable from the first `/fh:plan-work` call.
+
+Invoke `/fh:map-codebase` — it spawns 4 parallel mapper agents, writes `.planning/codebase/` docs, creates `.claude/rules/`, indexes into FTS5 via `ctx_index` (if context-mode installed), and records the freshness SHA.
+
+If `uses_default_stack` is false (custom stack), skip — the codebase doesn't exist yet and will be scaffolded in Phase 1. The user can run `/fh:map-codebase` after scaffolding.
+
+---
+
 ## Step 9: Handoff
 
 Report to the user:
@@ -1095,6 +1107,7 @@ Project initialized:
 - CLAUDE.md                 — project conventions
 - GitHub repo               — <repo-url> (private)
 - Starter template          — cinjoff/fh-starter-project (if default stack)
+- .planning/codebase/       — codebase mapping indexed (if default stack)
 - shadcn skills             — global agent context for components (if installed)
 - Vercel project            — linked (auto-deploys on push to main)
 - Supabase project          — <project-url> (if set up)

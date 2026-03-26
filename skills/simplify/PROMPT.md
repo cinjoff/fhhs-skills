@@ -10,13 +10,15 @@ Review all changed files for reuse, quality, and efficiency. Fix any issues foun
 
 ## Phase 1: Identify Changes
 
-Run `git diff` (or `git diff HEAD` if there are staged changes) to see what changed. If there are no git changes, review the most recently modified files that the user mentioned or that you edited earlier in this conversation.
+Run `git diff -- ':!.planning/' ':!*.lock' ':!pnpm-lock.yaml' ':!package-lock.json' ':!yarn.lock' ':!.next/' ':!*.map'` (or with `HEAD` if there are staged changes) to see what changed. If there are no git changes, review the most recently modified files that the user mentioned or that you edited earlier in this conversation.
 
-## Phase 2: Launch Three Review Agents in Parallel
+## Phase 2: Launch One Review Agent
 
-Use the Agent tool to launch all three agents concurrently in a single message. Pass each agent the full diff so it has the complete context.
+Use the Agent tool to launch a single review agent. Pass the full diff so it has complete context.
 
-### Agent 1: Code Reuse Review
+The agent reviews sequentially through three lenses:
+
+### Lens 1: Code Reuse
 
 **Use LSP for discovery:** `workspaceSymbol` to find existing utilities by name, `findReferences` to verify a candidate is actually used elsewhere (not dead code), `goToDefinition` to inspect whether an existing function already handles the same logic.
 
@@ -26,7 +28,7 @@ For each change:
 2. **Flag any new function that duplicates existing functionality.** Use `goToDefinition` on imports to check if the dependency already exposes the needed helper. Suggest the existing function to use instead.
 3. **Flag any inline logic that could use an existing utility** — hand-rolled string manipulation, manual path handling, custom environment checks, ad-hoc type guards, and similar patterns are common candidates.
 
-### Agent 2: Code Quality Review
+### Lens 2: Code Quality
 
 **Use LSP for structure:** `documentSymbol` to understand file layout, `findReferences` to check if a parameter or export is actually consumed anywhere, `hover` for type info when checking stringly-typed code.
 
@@ -39,7 +41,7 @@ Review the same changes for hacky patterns:
 5. **Stringly-typed code**: using raw strings where constants, enums (string unions), or branded types already exist in the codebase
 6. **Unnecessary JSX nesting**: wrapper Boxes/elements that add no layout value — check if inner component props (flexShrink, alignItems, etc.) already provide the needed behavior
 
-### Agent 3: Efficiency Review
+### Lens 3: Efficiency
 
 **Use LSP for tracing:** `incomingCalls`/`outgoingCalls` to map call graphs and spot N+1 patterns, `findReferences` to find all callers of a hot function, `goToDefinition` to trace data flow through layers.
 
@@ -54,6 +56,6 @@ Review the same changes for efficiency:
 
 ## Phase 3: Fix Issues
 
-Wait for all three agents to complete. Aggregate their findings and fix each issue directly. If a finding is a false positive or not worth addressing, note it and move on — do not argue with the finding, just skip it.
+Fix each issue found. Skip false positives without debate.
 
 When done, briefly summarize what was fixed (or confirm the code was already clean).

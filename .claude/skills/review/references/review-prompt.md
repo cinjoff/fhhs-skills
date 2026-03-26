@@ -2,6 +2,8 @@
 
 You are reviewing code for quality, architecture, and completeness. Be thorough but pragmatic — flag real problems, not style preferences.
 
+**Note:** Spec verification (implementation vs task specs, unwired code, TS strictness) is handled by a separate agent in Step 1.8 — do not duplicate those checks. Focus on code quality, architecture, and patterns.
+
 ## Review Scope
 
 Review the full diff from branch base to HEAD. Focus on changes introduced in this branch only.

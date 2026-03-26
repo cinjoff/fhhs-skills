@@ -110,6 +110,10 @@
  *   state record-session               Update session continuity
  *     --stopped-at "..."
  *     [--resume-file path]
+ *   state finalize-plan                Batch post-plan state update (6-in-1)
+ *     --phase N --plan M --duration Xmin
+ *     [--tasks N] [--files N]
+ *     [--decision "TEXT"]
  *
  * Compound Commands (workflow-specific initialization):
  *   init execute-phase <phase>         All context for execute-phase workflow
@@ -240,6 +244,21 @@ async function main() {
         state.cmdStateRecordSession(cwd, {
           stopped_at: stoppedIdx !== -1 ? args[stoppedIdx + 1] : null,
           resume_file: resumeIdx !== -1 ? args[resumeIdx + 1] : 'None',
+        }, raw);
+      } else if (subcommand === 'finalize-plan') {
+        const phaseIdx = args.indexOf('--phase');
+        const planIdx = args.indexOf('--plan');
+        const durationIdx = args.indexOf('--duration');
+        const tasksIdx = args.indexOf('--tasks');
+        const filesIdx = args.indexOf('--files');
+        const decisionIdx = args.indexOf('--decision');
+        state.cmdStateFinalizePlan(cwd, {
+          phase: phaseIdx !== -1 ? args[phaseIdx + 1] : null,
+          plan: planIdx !== -1 ? args[planIdx + 1] : null,
+          duration: durationIdx !== -1 ? args[durationIdx + 1] : null,
+          tasks: tasksIdx !== -1 ? args[tasksIdx + 1] : null,
+          files: filesIdx !== -1 ? args[filesIdx + 1] : null,
+          decision: decisionIdx !== -1 ? args[decisionIdx + 1] : null,
         }, raw);
       } else {
         state.cmdStateLoad(cwd, raw);

@@ -211,6 +211,75 @@ wc -l .planning/codebase/*.md
 
 If any documents missing or empty, note which agents may have failed.
 
+Continue to finalize_context.
+</step>
+
+<step name="finalize_context">
+Create path-scoped rules, index documents, and record git SHA.
+
+**3a. Create .claude/rules/ with path-scoped references:**
+
+```bash
+mkdir -p .claude/rules
+```
+
+Write `.claude/rules/gsd-planning.md`:
+```markdown
+---
+paths:
+  - ".planning/**"
+---
+GSD project tracking is active. See @.planning/STATE.md for current position and @.planning/ROADMAP.md for phase goals.
+When making decisions, check the active phase CONTEXT.md for locked decisions.
+```
+
+Write `.claude/rules/codebase-context.md`:
+```markdown
+---
+paths:
+  - "src/**"
+  - "lib/**"
+  - "app/**"
+  - "components/**"
+  - "pages/**"
+---
+Codebase mapping available. Before grepping for architecture info, check:
+- @.planning/codebase/ARCHITECTURE.md for patterns and data flow
+- @.planning/codebase/CONVENTIONS.md for code style
+- @.planning/codebase/STRUCTURE.md for file organization
+- @.planning/codebase/TESTING.md for test patterns
+```
+
+**3b. Index into FTS5 via ctx_index (if context-mode available):**
+
+Check if `ctx_index` MCP tool is available. If not available, skip silently — the `.claude/rules/` files provide fallback context. If available, index two categories:
+
+**Codebase documents:** Read each `.planning/codebase/*.md` file and call `ctx_index` with `title="codebase:{filename}"` (e.g. `codebase:ARCHITECTURE.md`) and `content=file content`.
+
+**Planning documents:** Index the core `.planning/` files that skills read repeatedly:
+
+| File | Index title | Why |
+|------|-------------|-----|
+| `.planning/PROJECT.md` | `planning:PROJECT` | Vision, scope, success criteria — read by progress, plan-work, plan-review |
+| `.planning/ROADMAP.md` | `planning:ROADMAP` | Phase goals, ordering — read by progress, plan-work, build |
+| `.planning/STATE.md` | `planning:STATE` | Current position — read by almost every skill |
+| `.planning/DESIGN.md` | `planning:DESIGN` | Design language — read by build, fix, review |
+| `.planning/REQUIREMENTS.md` | `planning:REQUIREMENTS` | Work items — read by plan-work |
+| `.planning/DECISIONS.md` | `planning:DECISIONS` | Decision journal — read by build, plan-work, plan-review, fix |
+
+For each file: if it exists, read it and call `ctx_index` with the title and content. Skip missing files silently. After indexing, write a manifest for cache invalidation:
+
+```bash
+# Generate content hashes for indexed .planning/ files
+md5sum .planning/PROJECT.md .planning/ROADMAP.md .planning/STATE.md .planning/DESIGN.md .planning/REQUIREMENTS.md .planning/DECISIONS.md 2>/dev/null > .planning/codebase/.planning-index-manifest
+```
+
+**3c. Record git SHA for freshness:**
+
+```bash
+git rev-parse HEAD > .planning/codebase/.last-mapped
+```
+
 Continue to scan_for_secrets.
 </step>
 
@@ -313,6 +382,10 @@ End workflow.
 - Agents write documents directly (orchestrator doesn't receive document contents)
 - Read agent output files to collect confirmations
 - All 7 codebase documents exist
+- .claude/rules/gsd-planning.md and .claude/rules/codebase-context.md created with path-scoped frontmatter
+- ctx_index called for each codebase document AND each existing .planning/ file when context-mode is available, skipped silently otherwise
+- .planning/codebase/.planning-index-manifest written with content hashes for cache invalidation
+- .planning/codebase/.last-mapped written with current git SHA
 - Clear completion summary with line counts
 - User offered clear next steps in GSD style
 </success_criteria>

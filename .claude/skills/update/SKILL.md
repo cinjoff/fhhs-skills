@@ -2,6 +2,7 @@
 name: fh:update
 description: Check for updates and install the latest version. Use when the user says 'update', 'upgrade', 'check for updates', or 'get latest version'.
 user-invocable: true
+disable-model-invocation: true
 ---
 
 Update the fhhs-skills plugin to the latest version.

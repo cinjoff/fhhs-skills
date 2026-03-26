@@ -60,6 +60,32 @@ If a current phase name is known (from `.planning/STATE.md` or later from GSD in
 Budget: less than 3% context for this entire substep.
 </step>
 
+<step name="reindex_planning">
+**Re-index stale .planning/ files in the background (fire-and-forget):**
+
+Check if `ctx_index` MCP tool is available AND `.planning/codebase/.planning-index-manifest` exists. If either is missing, skip silently.
+
+If both exist, spawn a background subagent with `model: "haiku"` and `run_in_background: true`:
+
+```
+Agent(
+  model="haiku",
+  run_in_background=true,
+  description="Re-index stale .planning/ files",
+  prompt="You are a lightweight re-indexing agent. Compare .planning/ file hashes against the manifest and re-index any that changed.
+
+1. Run: md5sum .planning/PROJECT.md .planning/ROADMAP.md .planning/STATE.md .planning/DESIGN.md .planning/REQUIREMENTS.md .planning/DECISIONS.md 2>/dev/null > /tmp/.planning-current-hashes
+2. Run: diff .planning/codebase/.planning-index-manifest /tmp/.planning-current-hashes 2>/dev/null
+3. For each file where the hash differs (or is new): read it and call ctx_index with title='planning:{NAME}' (e.g. planning:STATE) and the file content.
+4. If no files changed, do nothing.
+5. Update manifest: cp /tmp/.planning-current-hashes .planning/codebase/.planning-index-manifest
+6. Return a one-line summary: 'Re-indexed N files' or 'All files fresh'."
+)
+```
+
+Do NOT wait for this agent to complete. Continue immediately to init_context. The re-index runs in the background while the user sees their progress report.
+</step>
+
 <step name="init_context">
 **Load GSD progress context (conditional -- skipped if no project):**
 

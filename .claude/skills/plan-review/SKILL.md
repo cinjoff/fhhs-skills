@@ -66,12 +66,28 @@ Never skip Step 0, the system audit, the error/rescue map, or the failure modes 
 
 ---
 
+## Codebase Freshness Check
+
+If `.planning/codebase/.last-mapped` exists:
+```bash
+MAPPED_SHA=$(cat .planning/codebase/.last-mapped 2>/dev/null)
+if [ -n "$MAPPED_SHA" ]; then
+  CHANGED=$(git diff --stat "$MAPPED_SHA" HEAD -- '*.ts' '*.tsx' '*.js' '*.jsx' '*.py' '*.go' '*.rs' 2>/dev/null | tail -1)
+  [ -n "$CHANGED" ] && echo "STALE: $CHANGED" || echo "FRESH"
+fi
+```
+If STALE, warn: "Codebase mapping is outdated ($CHANGED). Consider `/fh:map-codebase` for fresh context."
+If `.planning/codebase/` doesn't exist, skip silently.
+Advisory only — never block.
+
+---
+
 ## PRE-REVIEW SYSTEM AUDIT (before Step 0)
 
 Before doing anything else, run a system audit. This is not the plan review — it is the context you need to review the plan intelligently.
 
 Run the following commands:
-```
+```bash
 git log --oneline -30                          # Recent history
 git diff main --stat                           # What's already changed
 git stash list                                 # Any stashed work
@@ -116,6 +132,14 @@ If it does, read it and verify during the review that:
 - The plan doesn't hand-roll solutions for problems listed in "Don't Hand-Roll"
 - LOW confidence findings from research are handled with appropriate caution
 If misalignment is found, surface it as an issue during Architecture Review (Section 1).
+
+### Context-Mode Acceleration
+
+Before reading CONTEXT.md, DECISIONS.md, and RESEARCH.md files directly, check if ctx_search is available:
+- If available: use `ctx_search` with targeted queries like "locked decisions for phase {phase}", "research pitfalls for {topic}", and "design context for {project}". This retrieves relevant entries in a compact, relevance-ranked format.
+- If not available: fall back to reading the files directly.
+
+ctx_search is especially valuable for plan-review since it reads more .planning/ state than any other skill.
 
 ### Taste Calibration (EXPANSION mode only)
 Read `.planning/DESIGN.md` for the project's design context and taste references. Use it to calibrate your recommendations — align with established design language and patterns rather than discovering them from scratch.

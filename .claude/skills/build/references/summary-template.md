@@ -57,7 +57,6 @@ completed: {ISO timestamp}
 | Decisions Made | Table: Decision \| Rationale \| Alternatives Considered |
 | Deviations from Plan | All deviation entries with rule number, description, fix, commit |
 | Issues Encountered | Problems hit and how resolved (or "None") |
-| Self-Check | PASSED or FAILED with details |
 | Next Phase Readiness | What downstream plans can now proceed |
 
 If design gates ran (frontend): also capture critique fixes, polish commit, normalize commit in Task Commits table and design deviations in Deviations section.

@@ -2,6 +2,7 @@
 name: fh:setup
 description: Welcome to fhhs-skills. Run once after installing this plugin for an overview. Use when the user says 'setup', 'get started', or 'what is this plugin'.
 user-invocable: true
+disable-model-invocation: true
 ---
 
 $ARGUMENTS
@@ -461,6 +462,28 @@ After writing settings.json:
 
 ---
 
+## Pre-PR Security Hook (optional)
+
+To run security scanning automatically before creating PRs, add to `.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "pattern": "gh pr create",
+        "action": "Run /fh:secure on changed files before PR creation"
+      }
+    ]
+  }
+}
+```
+
+This ensures `/fh:secure` runs before every PR. For on-demand scanning, run `/fh:secure` directly.
+
+---
+
 ## Step 6: claude-mem (Persistent Memory)
 
 ```
@@ -575,6 +598,40 @@ After displaying:
 
 ---
 
+## Step 6b: context-mode (Context Optimization)
+
+context-mode is a companion plugin that dramatically improves session efficiency:
+- **Session Continuity**: Tracks files, decisions, tasks, and errors in SQLite. When context compacts, your working state rebuilds automatically.
+- **Context Saving**: Tool outputs are sandboxed — raw data never enters context. 315 KB of output becomes 5.4 KB (98% reduction).
+- **Knowledge Base**: Index project docs, specs, and codebase mapping into FTS5 for instant BM25-ranked search via `ctx_search`.
+
+Install automatically:
+```bash
+claude plugin marketplace add mksglu/context-mode 2>/dev/null
+claude plugin install context-mode@context-mode 2>/dev/null && echo "OK context-mode" || echo "FAILED context-mode"
+```
+
+If OK, display:
+```
+✓ context-mode installed — session continuity + context saving active
+  fhhs-skills will use ctx_search/ctx_index for faster lookups automatically
+```
+
+If FAILED (e.g. running inside Conductor or non-interactive env where `claude plugin` doesn't work), tell the user:
+```
+⚠ Could not install context-mode automatically.
+  Install manually in a Claude Code session:
+
+    /plugin marketplace add mksglu/context-mode
+    /plugin install context-mode@context-mode
+
+  Then run /context-mode:ctx-doctor to verify.
+```
+
+Do NOT ask the user whether to install — just install it. It's a recommended companion that fhhs-skills actively uses.
+
+---
+
 ## Step 7: shadcn Skills
 
 ```
@@ -640,7 +697,7 @@ If the install fails (e.g. network issue, npx not available), show a warning but
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-[Fallow](https://docs.fallow.tools/) provides deterministic static analysis — dead-code detection, circular dependency analysis, code duplication, and complexity metrics. Used by `/fh:simplify`, `/fh:review`, `/fh:fix`, and `/fh:build` (spec gate) to inject ground truth findings into review agents.
+[Fallow](https://docs.fallow.tools/) provides deterministic static analysis — dead-code detection, circular dependency analysis, code duplication, and complexity metrics. Used by `/fh:review` and `/fh:simplify` to inject ground truth findings into review agents.
 
 ### Check and install
 
@@ -691,9 +748,8 @@ If the install fails, show a warning but don't block setup:
 
     pnpm install -g fallow   # or: npm install -g fallow
 
-  Without Fallow, /fh:simplify, /fh:review, /fh:fix, and /fh:build
-  still work but use LLM-only analysis instead of deterministic
-  static analysis.
+  Without Fallow, /fh:review and /fh:simplify still work but use
+  LLM-only analysis instead of deterministic static analysis.
 ```
 
 ---

@@ -2,6 +2,7 @@
 name: fh:help
 description: Display the fhhs-skills command reference and architecture guide. Use when the user says 'help', 'what commands', 'show commands', 'how do composites work', 'skills guide', or needs an overview of available commands and how they fit together.
 user-invocable: true
+disable-model-invocation: true
 ---
 
 Output ONLY the reference content below. Do NOT add project-specific analysis, git status, next-step suggestions, or any commentary.
@@ -61,7 +62,6 @@ Output ONLY the reference content below. Do NOT add project-specific analysis, g
 
 | Command | What it does |
 |---------|-------------|
-| `/fh:quick` | Do a small task with tracking guarantees |
 | `/fh:todos` | Track things to do — add or review pending todos |
 
 Phase management, milestone lifecycle, and test generation are handled automatically by `/fh:plan`, `/fh:build`, and `/fh:verify`.
@@ -118,10 +118,10 @@ CLAUDE.md:    /fh:revise-claude-md (after sessions or /fh:revise-claude-md audit
 Every composite that executes code enforces these via built-in skills:
 
 1. **TDD** — no production code without a failing test first
-2. **Per-wave spec gates** — adversarial spec verification after each wave
-3. **Quality review** — code quality, security, architecture review
+2. **Post-build code review** — code quality and architecture review via `/fh:review --quick`
+3. **Quality review** — code quality and architecture review
 4. **Simplify** — code reuse, efficiency, and hygiene
-5. **Verification-before-completion** — no claims without fresh evidence
+5. **Tests/build/lint verification** — no claims without fresh evidence
 6. **Fresh subagents** — structured prompts with self-review and analysis paralysis guard
 7. **YAGNI** — no features, abstractions, or error handling beyond what's specified
 

@@ -14,6 +14,22 @@ This command runs in a single context by default. Escalates to parallel agents w
 
 ---
 
+## Codebase Freshness Check
+
+If `.planning/codebase/.last-mapped` exists:
+```bash
+MAPPED_SHA=$(cat .planning/codebase/.last-mapped 2>/dev/null)
+if [ -n "$MAPPED_SHA" ]; then
+  CHANGED=$(git diff --stat "$MAPPED_SHA" HEAD -- '*.ts' '*.tsx' '*.js' '*.jsx' '*.py' '*.go' '*.rs' 2>/dev/null | tail -1)
+  [ -n "$CHANGED" ] && echo "STALE: $CHANGED" || echo "FRESH"
+fi
+```
+If STALE, warn: "Codebase mapping is outdated ($CHANGED). Consider `/fh:map-codebase` for fresh context."
+If `.planning/codebase/` doesn't exist, skip silently.
+Advisory only — never block.
+
+---
+
 ## Step 0: Check Runtime Errors
 
 Before triaging from code alone, check if the local error store has runtime context.
@@ -118,6 +134,12 @@ Commit: `fix: [root cause and what was wrong]`
 If the fix touches `.tsx`, `.css`, components, or styles:
 - Read `.planning/DESIGN.md` for design context
 - Quick check: does the fix maintain visual consistency?
+
+### Context-Mode Acceleration
+
+When checking DECISIONS.md for related entries or reading DESIGN.md for frontend context:
+- If ctx_search is available: use `ctx_search` with queries like "decisions affecting {file}" and "design context for {component}". Faster and more compact than reading full files.
+- If not available: fall back to reading the files directly.
 - Check against `skills/frontend-design/PROMPT.md` anti-patterns — no generic cards, cyan-on-dark, purple gradients, or other AI slop introduced by the fix
 - If significant UI change, suggest `/fh:ui-test`
 

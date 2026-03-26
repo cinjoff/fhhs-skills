@@ -28,7 +28,7 @@ If the prompt contains a `<files_to_read>` block, you MUST use the `Read` tool t
 
 **Core responsibilities:**
 - **FIRST: Parse and honor user decisions from CONTEXT.md** (locked decisions are NON-NEGOTIABLE)
-- Decompose phases into parallel-optimized plans with 2-3 tasks each
+- Decompose phases into parallel-optimized plans (read task/file/word limits from `.planning/config.json` `plan_limits` section; defaults: 4-6 tasks, 8-15 files, 2500 words, 60% context)
 - Build dependency graphs and assign execution waves
 - Derive must-haves using goal-backward methodology
 - Handle both standard planning and gap closure mode
@@ -106,7 +106,7 @@ PLAN.md IS the prompt (not a document that becomes one). Contains:
 | 50-70% | DEGRADING | Efficiency mode begins |
 | 70%+ | POOR | Rushed, minimal |
 
-**Rule:** Plans should complete within ~50% context. More plans, smaller scope, consistent quality. Each plan: 2-3 tasks max.
+**Rule:** Read task/file/word limits from `.planning/config.json` `plan_limits` section (defaults: 4-6 tasks, 8-15 files, 2500 words, 60% context). More plans, smaller scope, consistent quality.
 
 ## Ship Fast
 
@@ -352,7 +352,7 @@ No overlap → can run parallel. File in multiple plans → later plan depends o
 
 Plans should complete within ~50% context (not 80%). No context anxiety, quality maintained start to finish, room for unexpected complexity.
 
-**Each plan: 2-3 tasks maximum.**
+**Each plan:** Read task/file/word limits from `.planning/config.json` `plan_limits` section (defaults: 4-6 tasks, 8-15 files, 2500 words, 60% context).
 
 | Task Complexity | Tasks/Plan | Context/Task | Total |
 |-----------------|------------|--------------|-------|
@@ -1123,7 +1123,7 @@ Rules:
 1. Same-wave tasks with no file conflicts → parallel plans
 2. Shared files → same plan or sequential plans
 3. Checkpoint tasks → `autonomous: false`
-4. Each plan: 2-3 tasks, single concern, ~50% context target
+4. Each plan: single concern, read task/file/word limits from `.planning/config.json` `plan_limits` section (defaults: 4-6 tasks, 8-15 files, 2500 words, 60% context)
 </step>
 
 <step name="derive_must_haves">
@@ -1136,7 +1136,7 @@ Apply goal-backward methodology (see goal_backward section):
 </step>
 
 <step name="estimate_scope">
-Verify each plan fits context budget: 2-3 tasks, ~50% target. Split if necessary. Check granularity setting.
+Verify each plan fits context budget using limits from `.planning/config.json` `plan_limits` (defaults: 4-6 tasks, 8-15 files, 2500 words, 60% context). Split if necessary. Check granularity setting.
 </step>
 
 <step name="confirm_breakdown">
@@ -1287,7 +1287,7 @@ Phase planning complete when:
 - [ ] Each plan: depends_on, files_modified, autonomous, must_haves in frontmatter
 - [ ] Each plan: user_setup declared if external services involved
 - [ ] Each plan: Objective, context, tasks, verification, success criteria, output
-- [ ] Each plan: 2-3 tasks (~50% context)
+- [ ] Each plan: task count within limits from `.planning/config.json` `plan_limits` (defaults: 4-6 tasks, 8-15 files, 2500 words, 60% context)
 - [ ] Each task: Type, Files (if auto), Action, Verify, Done
 - [ ] Checkpoints properly structured
 - [ ] Wave structure maximizes parallelism
