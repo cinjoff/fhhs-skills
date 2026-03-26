@@ -29,8 +29,12 @@ Determine the diff range, file list, and project type.
 
 ```bash
 BASE_BRANCH=$(git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null || echo "HEAD~10")
-git diff --stat $BASE_BRANCH..HEAD
+# Exclude noise from diffs — plans are provided separately, lock files and build output waste tokens
+DIFF_EXCLUDE="-- ':!.planning/' ':!*.lock' ':!pnpm-lock.yaml' ':!package-lock.json' ':!yarn.lock' ':!.next/' ':!*.map'"
+git diff --stat $BASE_BRANCH..HEAD $DIFF_EXCLUDE
 ```
+
+Use `$DIFF_EXCLUDE` on ALL `git diff` commands throughout this skill (Steps 1.8, 2, etc.).
 
 Detect project type:
 - **Next.js** — `next.config.*` exists
@@ -98,7 +102,7 @@ Dispatch one `code-reviewer` agent using `references/spec-gate-prompt.md` (co-lo
 
 Agent receives:
 - **Task specs:** done criteria from the relevant PLAN.md tasks
-- **Branch diff:** `git diff $BASE_BRANCH..HEAD`
+- **Branch diff:** `git diff $BASE_BRANCH..HEAD $DIFF_EXCLUDE`
 - **Fallow output:** if available from Step 1.7, include `FALLOW_CHECK` under the `{FALLOW_OUTPUT}` placeholder
 
 Agent checks:
@@ -124,7 +128,7 @@ Based on mode, dispatch parallel subagents. Each agent receives ONLY the diff + 
 - Prompt: `skills/review/references/review-prompt.md`
 - Also include: `skills/review/references/production-safety-checklist.md` (two-pass safety review)
 - If Fallow data is available from Step 1.7, include it in the agent prompt under '## Static Analysis Findings'
-- Input: full diff (`git diff $BASE_BRANCH..HEAD`)
+- Input: full diff (`git diff $BASE_BRANCH..HEAD $DIFF_EXCLUDE`)
 - Covers: naming, structure, error handling, DRY, complexity, test quality, cross-file consistency, dependency direction, separation of concerns, abstraction quality, API design, cross-cutting concerns
 - If Next.js: include `.claude/skills/nextjs-perf/PROMPT.md` criteria
 - **Note:** The production safety checklist has an explicit suppressions section — the subagent must honor it to reduce noise.

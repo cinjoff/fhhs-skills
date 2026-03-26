@@ -19,7 +19,7 @@ You are SKEPTICAL. Your job is to catch issues before they reach code review.
 ## Git Diff
 
 ```bash
-git diff {BASE_BRANCH}..HEAD
+git diff {BASE_BRANCH}..HEAD -- ':!.planning/' ':!*.lock' ':!pnpm-lock.yaml' ':!package-lock.json' ':!yarn.lock' ':!.next/' ':!*.map'
 ```
 
 ## Fallow Static Analysis (if provided)

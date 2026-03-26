@@ -23,7 +23,7 @@ You are SKEPTICAL. Your job is to catch issues before they propagate to dependen
 ## Git Diff for This Wave
 
 ```bash
-git diff {WAVE_START_SHA}..HEAD
+git diff {WAVE_START_SHA}..HEAD -- ':!.planning/' ':!*.lock' ':!pnpm-lock.yaml' ':!package-lock.json' ':!yarn.lock' ':!.next/' ':!*.map'
 ```
 
 ## CRITICAL: Do Not Trust Reports

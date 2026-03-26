@@ -29,7 +29,7 @@ Before dispatching the 3 review agents, check if Fallow is installed and gather 
 ```bash
 if command -v fallow &>/dev/null; then
   BASE=$(git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null || echo "HEAD~10")
-  DIFF_FILES=$(git diff --name-only "$BASE"..HEAD)
+  DIFF_FILES=$(git diff --name-only "$BASE"..HEAD -- ':!.planning/' ':!*.lock' ':!pnpm-lock.yaml' ':!package-lock.json' ':!yarn.lock' ':!.next/' ':!*.map')
   FALLOW_CHECK=$(fallow check --changed-since "$BASE" --format json --quiet 2>/dev/null) || FALLOW_CHECK=""
   FALLOW_DUPES=$(fallow dupes --mode semantic --format json --quiet 2>/dev/null) || FALLOW_DUPES=""
   FALLOW_HEALTH=$(fallow health --format json --quiet 2>/dev/null) || FALLOW_HEALTH=""
