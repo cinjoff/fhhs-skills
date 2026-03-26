@@ -960,12 +960,13 @@ $PM add @sentry/browser @sentry/node @sentry/core better-sqlite3
 $PM add -D @types/better-sqlite3
 ```
 
-After installing, **rebuild native bindings** to ensure `better-sqlite3` compiles its `.node` binary for the current platform:
+After installing, **ensure native bindings are present** for `better-sqlite3`. The package requires a platform-specific `.node` binary. Run both steps:
 ```bash
+cd node_modules/better-sqlite3 && npx prebuild-install && cd ../..
 $PM rebuild better-sqlite3
 ```
 
-If the rebuild fails, the user likely needs build tools: `xcode-select --install` (macOS) or `sudo apt-get install build-essential python3` (Linux).
+`prebuild-install` downloads a pre-compiled binary for the current platform (fastest, no build tools needed). The `rebuild` step ensures the package manager links it correctly. If `prebuild-install` fails (e.g. no matching prebuilt binary), the rebuild will compile from source — this requires build tools: `xcode-select --install` (macOS) or `sudo apt-get install build-essential python3` (Linux).
 
 #### Scaffold files
 
