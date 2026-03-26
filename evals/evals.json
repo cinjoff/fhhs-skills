@@ -6102,8 +6102,8 @@
     {
       "id": 216,
       "command": "build",
-      "prompt": "Run /fh:build for phase 07 with AUTO_MODE=true. There is a DECISIONS.md in the phase directory with 3 decisions from planning. Execute the plan.",
-      "expected_output": "Should read DECISIONS.md from the phase directory, filter decisions relevant to the current phase, and inject them into the build context via DECISIONS_CONTEXT so subagents respect prior auto-decisions.",
+      "prompt": "Run /fh:build for phase 07 with AUTO_MODE=true. There is a DECISIONS.md at .planning/DECISIONS.md with 3 decisions from planning (Phase: 07-auto-mode). Execute the plan.",
+      "expected_output": "Should read DECISIONS.md from .planning/DECISIONS.md, filter decisions relevant to the current phase, and inject them into the build context via DECISIONS_CONTEXT so subagents respect prior auto-decisions.",
       "files": [],
       "assertions": [
         {

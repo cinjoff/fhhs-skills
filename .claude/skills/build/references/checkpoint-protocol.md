@@ -32,7 +32,7 @@ Awaiting: [what user needs to do]
 - `checkpoint:human-action` → Stop normally. Auth gates cannot be automated.
 
 Log each auto-approval/auto-selection to `.planning/DECISIONS.md` using the decision entry format from `decisions-template.md` (co-located in this directory).
-- For `checkpoint:human-verify`: `confidence=HIGH`, `rationale='Auto-approved — visual verification passed by evaluator.'`
+- For `checkpoint:human-verify`: `confidence=MEDIUM`, `rationale='Auto-approved without human verification — assumes implementation matches spec.'`
 - For `checkpoint:decision`: `confidence=MEDIUM`, `rationale='Auto-selected recommended option from planner.'`
 
 ## Standard mode

@@ -36,7 +36,7 @@ Each decision is an H3 block under `## Decision Log`:
 ```markdown
 ### D-{NNN}: {title}
 
-- **Phase:** {phase identifier, or "project" for cross-phase decisions}
+- **Phase:** {phase directory name, e.g. "07-auto-mode", or "project" for cross-phase decisions}
 - **Step:** {which skill/step made this decision, e.g., "plan-work Step 3", "build Wave 2"}
 - **Context:** {what prompted the decision — 1-2 sentences}
 - **Options considered:**
@@ -107,7 +107,7 @@ heuristics have higher priority).
   template above (fill in project name and today's date), add `## Decision Log`,
   then append the decision entry.
 - If `.planning/DECISIONS.md` exists but is **corrupt or unparseable** (missing
-  frontmatter, garbled content), rename it to `DECISIONS.md.bak`, create a fresh
+  frontmatter, garbled content), rename it to `DECISIONS.md.bak.{YYYY-MM-DD-HHmmss}`, create a fresh
   file with frontmatter and `## Decision Log`, add a note under a `## Recovery`
   section documenting that the previous file was backed up, then append the
   decision entry.
@@ -117,9 +117,9 @@ heuristics have higher priority).
 1. Read the existing `DECISIONS.md`.
 2. Find the last `### D-{NNN}:` entry and extract the number.
    - If no entries exist yet, start at `D-001`.
-3. Increment by 1 to get the new ID (zero-padded to 3 digits: `D-001`, `D-012`, `D-123`).
+3. Increment by 1 to get the new ID (zero-padded to 3 digits: `D-001`, `D-012`, `D-123`). IDs above 999 overflow to 4+ digits naturally — no special handling needed.
 4. Append the new decision block at the **end** of the file, after all existing entries.
-5. **Never edit or delete existing entries** (except updating Status on correction — see above).
+5. **Never edit or delete existing entries.**
 
 ### Concurrency
 
