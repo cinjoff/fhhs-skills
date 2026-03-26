@@ -6132,6 +6132,86 @@
           "type": "output"
         }
       ]
+    },
+    {
+      "id": 218,
+      "command": "auto",
+      "prompt": "I want to run my project autonomously. The project has a .planning/ directory with ROADMAP.md showing 3 remaining phases and STATE.md indicating current position at phase 04. Run autonomously through all remaining phases.",
+      "expected_output": "Should trigger the auto skill, validate that .planning/ state is consistent (ROADMAP.md and STATE.md exist and agree), set AUTO_MODE=true, and orchestrate by shelling out to /fh:plan-work and /fh:build for each phase in sequence.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Validates .planning/ state before starting (checks ROADMAP.md and STATE.md)",
+          "type": "behavioral"
+        },
+        {
+          "text": "Sets AUTO_MODE or auto_advance to true",
+          "type": "behavioral"
+        },
+        {
+          "text": "Shells out to plan-work and build skills for orchestration",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 219,
+      "command": "auto",
+      "prompt": "I'd like to do a dry run of /fh:auto for my project. Show me what would happen without actually executing anything. The project has phases 05 through 08 remaining.",
+      "expected_output": "Should list each remaining phase with its planned steps (plan-work then build) without executing any of them. Should show the execution order and any dependencies between phases.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Lists phases and steps without executing them",
+          "type": "behavioral"
+        },
+        {
+          "text": "Shows execution plan or order for remaining phases",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT invoke plan-work or build during dry run",
+          "type": "guard"
+        }
+      ]
+    },
+    {
+      "id": 220,
+      "command": "auto",
+      "prompt": "My /fh:auto run crashed midway through phase 06. There's an .auto-state.json file recording that phases 04 and 05 completed successfully and phase 06 was in progress at the build step. Resume from where it left off.",
+      "expected_output": "Should read .auto-state.json, identify completed phases (04, 05), skip them, and resume phase 06 from the build step rather than re-running plan-work for that phase.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Reads .auto-state.json to determine progress",
+          "type": "behavioral"
+        },
+        {
+          "text": "Skips already-completed phases (04, 05)",
+          "type": "behavioral"
+        },
+        {
+          "text": "Resumes phase 06 from build step, not from the beginning",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 221,
+      "command": "auto",
+      "prompt": "The /fh:auto run has completed all remaining phases (05 through 08) successfully. What cleanup should happen after the auto run finishes?",
+      "expected_output": "Should reset workflow.auto_advance to false (or remove AUTO_MODE) so subsequent manual invocations of plan-work and build behave normally. Should update STATE.md to reflect completion.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Resets auto_advance or AUTO_MODE to false on completion",
+          "type": "behavioral"
+        },
+        {
+          "text": "Updates STATE.md to reflect completed position",
+          "type": "behavioral"
+        }
+      ]
     }
   ]
 }
