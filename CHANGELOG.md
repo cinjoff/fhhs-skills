@@ -5,6 +5,23 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.29.0] - 2026-03-27
+
+### Added
+- **`.planning/` indexing in context-mode** — `/fh:map-codebase` now indexes PROJECT, ROADMAP, STATE, DESIGN, REQUIREMENTS, and DECISIONS into FTS5 alongside codebase docs, with manifest-based cache invalidation
+- **Background re-indexing in `/fh:progress`** — stale `.planning/` files are re-indexed via a fire-and-forget haiku subagent at session start, zero blocking
+- **Auto map-codebase after scaffold** — `/fh:new-project` runs `/fh:map-codebase` automatically when using the default starter template (Step 8¾), making context-mode immediately valuable
+
+### Changed
+- **Build pipeline** — 9 steps reduced to 7. Spec gate moved to `/fh:review` Step 1.8, design gates folded into phase completion, subagents pinned to `model: sonnet`
+- **Review restructured** — security scan removed from default pipeline (use `/fh:secure`), spec verification added, 3 agents reduced to 2 (quality + gap)
+- **Simplify consolidated** — 3 parallel agents replaced with 1 sequential agent applying 3 lenses (reuse, quality, efficiency)
+- **DIFF_EXCLUDE everywhere** — `.planning/`, lockfiles, `.next/`, source maps stripped from all git diffs across build, review, simplify, fix
+- **21 skills marked `disable-model-invocation`** — prevents auto-detection waste, saves 1.5-2.5k tokens/session
+
+### Removed
+- **`/fh:quick`** — quick tasks now handled by simplified `/fh:plan-work` flow
+
 ## [1.28.0] - 2026-03-26
 
 ### Added
