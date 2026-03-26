@@ -6056,6 +6056,82 @@
           "type": "guard"
         }
       ]
+    },
+    {
+      "id": 214,
+      "command": "plan-work",
+      "prompt": "I have workflow.auto_advance=true set in my GSD config. I'm planning a new feature (user notifications) for phase 09. Run /fh:plan-work to plan this phase. There are gray areas around notification delivery timing and retry strategy.",
+      "expected_output": "Should auto-decide gray areas without interactive discussion since AUTO_MODE is true, log decisions to DECISIONS.md with rationale and confidence, create CONTEXT.md, and skip interactive gray-area discussion with the user.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Mentions logging decisions to DECISIONS.md",
+          "type": "output"
+        },
+        {
+          "text": "References auto-decide or auto mode behavior",
+          "type": "behavioral"
+        },
+        {
+          "text": "Creates CONTEXT.md as part of planning output",
+          "type": "output"
+        },
+        {
+          "text": "Skips interactive discussion of gray areas",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 215,
+      "command": "plan-work",
+      "prompt": "Plan phase 05 for my project (search feature). There are gray areas around fuzzy matching vs exact matching and result ranking. Use default config with no auto_advance setting.",
+      "expected_output": "Should present gray areas to the user interactively and ask for input on each decision. Should NOT mention auto-deciding or DECISIONS.md auto-logging since AUTO_MODE is not enabled.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Does NOT mention auto-decide or auto mode",
+          "type": "guard"
+        },
+        {
+          "text": "Asks user about gray areas or discusses them interactively",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 216,
+      "command": "build",
+      "prompt": "Run /fh:build for phase 07 with AUTO_MODE=true. There is a DECISIONS.md in the phase directory with 3 decisions from planning. Execute the plan.",
+      "expected_output": "Should read DECISIONS.md from the phase directory, filter decisions relevant to the current phase, and inject them into the build context via DECISIONS_CONTEXT so subagents respect prior auto-decisions.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Reads DECISIONS.md for prior decisions",
+          "type": "behavioral"
+        },
+        {
+          "text": "References DECISIONS_CONTEXT or phase-filtered decision injection",
+          "type": "output"
+        }
+      ]
+    },
+    {
+      "id": 217,
+      "command": "build",
+      "prompt": "During /fh:build in auto mode, a checkpoint:human-verify gate is reached for a database migration task. AUTO_MODE is true. How should this checkpoint be handled?",
+      "expected_output": "Should auto-approve the checkpoint and log the auto-approval to DECISIONS.md with confidence HIGH, recording what was approved and why auto-approval was applied.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Logs auto-approval to DECISIONS.md",
+          "type": "behavioral"
+        },
+        {
+          "text": "Records confidence level for auto-approval",
+          "type": "output"
+        }
+      ]
     }
   ]
 }
