@@ -558,10 +558,22 @@ EOF
 
 > Adapt the `"framework"` value if the user chose a different stack in Step 2 (e.g. `"vite"`, `"remix"`, `null` for static).
 
-Now link the project to Vercel:
+**Worktree compatibility:** The Vercel CLI requires `.git` to be a directory, but git worktrees (used by Conductor and other tools) use a `.git` file pointing to the main repo. Work around this before linking:
 
 ```bash
+if [ -f .git ]; then
+  GIT_COMMON_DIR=$(git rev-parse --git-common-dir)
+  mv .git .git.worktree.bak
+  ln -s "$GIT_COMMON_DIR" .git
+  WORKTREE_FIX=true
+fi
+
 vercel link --yes --project "$(basename "$(pwd)")"
+
+if [ "$WORKTREE_FIX" = true ]; then
+  rm .git
+  mv .git.worktree.bak .git
+fi
 ```
 
 This writes `.vercel/project.json` with the project and org IDs, and Vercel will know to use the Next.js build preset.
