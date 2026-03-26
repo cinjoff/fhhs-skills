@@ -67,6 +67,22 @@ Lock the final tech stack decisions. These go into PROJECT.md.
 
 If `AUTO_PROJECT` is true, use default stack. Auto-decide auth/organizations based on whether the description implies user accounts, login, teams, etc. Log decisions to `.planning/DECISIONS.md`.
 
+### 2a: Detect Package Manager
+
+Detect the project's package manager from the lockfile in the working directory. This determines all install/run commands for the rest of the setup.
+
+```bash
+if [ -f pnpm-lock.yaml ]; then echo "pnpm"
+elif [ -f yarn.lock ]; then echo "yarn"
+elif [ -f bun.lockb ] || [ -f bun.lock ]; then echo "bun"
+else echo "npm"
+fi
+```
+
+Track the result as `$PM` for the rest of the flow. Use `$PM install`, `$PM run`, `$PM add`, `$PM add -D` (or equivalent) instead of hardcoded `npm` commands. For pnpm: `pnpm add` / `pnpm add -D`. For yarn: `yarn add` / `yarn add -D`. For bun: `bun add` / `bun add -d`.
+
+If no lockfile exists yet (brand new project), ask the user which package manager to use, defaulting to **pnpm**.
+
 ### 2b: shadcn/ui Preset — Brand-Aware Generation
 
 If the tech stack includes Shadcn/ui (the default), generate a custom design system preset from the user's brand identity.
@@ -279,7 +295,7 @@ or:
 After shadcn init: verify components.json uses Phosphor Icons.
 If preset specified a different icon library:
   1. Edit components.json: set "iconLibrary": "phosphor"
-  2. Install: npm install @phosphor-icons/react
+  2. Install: $PM add @phosphor-icons/react
 ```
 
 **Track `uses_default_stack`:** If the user accepted the default stack as-is (no framework/tooling substitutions — adding Supabase doesn't count as a change), set `uses_default_stack = true`. This determines whether the starter template is used in Step 3.
@@ -314,10 +330,10 @@ rsync -a --exclude='.git' "$TMPDIR/starter/" ./
 rm -rf "$TMPDIR"
 ```
 
-Install dependencies:
+Install dependencies using the detected package manager (`$PM`):
 
 ```bash
-npm install
+$PM install
 ```
 
 ### 3b: Install shadcn skills globally (if needed)
@@ -938,11 +954,18 @@ Scaffold local Sentry-compatible error tracking. This captures browser and serve
 
 #### Dependencies
 
-Note in `.planning/REQUIREMENTS.md` that Phase 1 scaffolding must include:
+Note in `.planning/REQUIREMENTS.md` that Phase 1 scaffolding must include (using `$PM` from Step 2a):
+```bash
+$PM add @sentry/browser @sentry/node @sentry/core better-sqlite3
+$PM add -D @types/better-sqlite3
 ```
-npm install @sentry/browser @sentry/node @sentry/core better-sqlite3
-npm install -D @types/better-sqlite3
+
+After installing, **rebuild native bindings** to ensure `better-sqlite3` compiles its `.node` binary for the current platform:
+```bash
+$PM rebuild better-sqlite3
 ```
+
+If the rebuild fails, the user likely needs build tools: `xcode-select --install` (macOS) or `sudo apt-get install build-essential python3` (Linux).
 
 #### Scaffold files
 
@@ -1001,8 +1024,8 @@ If Conductor is detected, create `conductor.json` in the project root with scrip
 ```json
 {
   "scripts": {
-    "setup": "npm install && [ -f \"$CONDUCTOR_ROOT_PATH/.env.local\" ] && ln -sf \"$CONDUCTOR_ROOT_PATH/.env.local\" .env.local || true; [ -d \"$CONDUCTOR_ROOT_PATH/.vercel\" ] && ln -sf \"$CONDUCTOR_ROOT_PATH/.vercel\" .vercel || true; node -e \"var fs=require('fs'),f='.claude/settings.json',s={};try{s=JSON.parse(fs.readFileSync(f,'utf8'))}catch{}s.env=Object.assign(s.env||{},{CLAUDE_CODE_TASK_LIST_ID:process.env.CONDUCTOR_WORKSPACE_NAME||'default'});fs.writeFileSync(f,JSON.stringify(s,null,2)+'\\n')\"",
-    "run": "npm run dev -- --port $CONDUCTOR_PORT",
+    "setup": "$PM install && [ -f \"$CONDUCTOR_ROOT_PATH/.env.local\" ] && ln -sf \"$CONDUCTOR_ROOT_PATH/.env.local\" .env.local || true; [ -d \"$CONDUCTOR_ROOT_PATH/.vercel\" ] && ln -sf \"$CONDUCTOR_ROOT_PATH/.vercel\" .vercel || true; node -e \"var fs=require('fs'),f='.claude/settings.json',s={};try{s=JSON.parse(fs.readFileSync(f,'utf8'))}catch{}s.env=Object.assign(s.env||{},{CLAUDE_CODE_TASK_LIST_ID:process.env.CONDUCTOR_WORKSPACE_NAME||'default'});fs.writeFileSync(f,JSON.stringify(s,null,2)+'\\n')\"",
+    "run": "$PM run dev -- --port $CONDUCTOR_PORT",
     "archive": "rm -rf \"$HOME/.claude/tasks/${CONDUCTOR_WORKSPACE_NAME}\" 2>/dev/null; true"
   },
   "env": {
@@ -1021,18 +1044,18 @@ If Conductor is detected, create `conductor.json` in the project root with scrip
 
 > **Why `ln -sf` for `.env.local` and `.vercel/`?** These are gitignored files, so git operations never touch them — symlinks are safe and keep all worktrees in sync bidirectionally. When the user updates `.env.local` in any worktree, all others see the change immediately. This is different from git-tracked files, where symlinks into `$CONDUCTOR_ROOT_PATH` could break during checkout.
 
-**For other common stacks** — adapt the scripts:
+**For other common stacks** — adapt the scripts (replace `$PM` with the detected package manager from Step 2a):
 
 | Stack | Setup script | Run script |
 |-------|-------------|------------|
-| Next.js | `npm install && ln -sf "$CONDUCTOR_ROOT_PATH/.env.local" .env.local 2>/dev/null; true` | `npm run dev -- --port $CONDUCTOR_PORT` |
+| Next.js | `$PM install && ln -sf "$CONDUCTOR_ROOT_PATH/.env.local" .env.local 2>/dev/null; true` | `$PM run dev -- --port $CONDUCTOR_PORT` |
 | Rails | `bundle install && ln -sf "$CONDUCTOR_ROOT_PATH/.env" .env 2>/dev/null; true` | `bin/rails server -p $CONDUCTOR_PORT` |
 | Django | `pip install -r requirements.txt && ln -sf "$CONDUCTOR_ROOT_PATH/.env" .env 2>/dev/null; true` | `python manage.py runserver $CONDUCTOR_PORT` |
 | Phoenix | `mix deps.get && ln -sf "$CONDUCTOR_ROOT_PATH/.env" .env 2>/dev/null; true` | `mix phx.server` (uses `PORT=$CONDUCTOR_PORT`) |
-| Vite | `npm install && ln -sf "$CONDUCTOR_ROOT_PATH/.env" .env 2>/dev/null; true` | `npm run dev -- --port $CONDUCTOR_PORT` |
+| Vite | `$PM install && ln -sf "$CONDUCTOR_ROOT_PATH/.env" .env 2>/dev/null; true` | `$PM run dev -- --port $CONDUCTOR_PORT` |
 
 The setup script should:
-1. Install dependencies (`npm install` handles per-worktree `node_modules` correctly)
+1. Install dependencies (`$PM install` handles per-worktree `node_modules` correctly)
 2. Copy `.env` (or `.env.local`) from `$CONDUCTOR_ROOT_PATH` if it exists
 
 The run script should:
