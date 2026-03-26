@@ -10,7 +10,7 @@ $ARGUMENTS
 
 You are a **lean orchestrator**. Guide the user through setup, delegate heavy work to framework skills.
 
-> **Dependency check:** All tools are built into this plugin — engineering disciplines, design quality commands, GSD CLI (`gsd-tools.cjs`), and TypeScript LSP. GSD will be initialized per-project in Step 6.
+> **Dependency check:** All tools are built into this plugin — engineering disciplines, design quality commands, GSD CLI (`gsd-tools.cjs`), and TypeScript LSP. GSD will be initialized per-project in Step 7.
 
 ---
 
@@ -25,7 +25,7 @@ Delegate to the GSD new-project questioning flow. Ask the user one question at a
 5. **Constraints:** Timeline, team size, budget, technical constraints?
 6. **Success criteria:** How do you know it worked?
 
-Save answers — they feed into PROJECT.md in Step 6.
+Save answers — they feed into PROJECT.md in Step 7.
 
 ---
 
@@ -45,11 +45,56 @@ Ask: **"Any changes to the default stack?"**
 
 Lock the final tech stack decisions. These go into PROJECT.md.
 
-**Track `uses_default_stack`:** If the user accepted the default stack as-is (no framework/tooling substitutions — adding Supabase doesn't count as a change), set `uses_default_stack = true`. This determines whether the starter template repo is used in Step 7.
+**Track `uses_default_stack`:** If the user accepted the default stack as-is (no framework/tooling substitutions — adding Supabase doesn't count as a change), set `uses_default_stack = true`. This determines whether the starter template is used in Step 3.
 
 ---
 
-## Step 3: Design Framework
+## Step 3: Scaffold from Starter Template (conditional)
+
+**Only run this step if `uses_default_stack` is true.**
+
+If `uses_default_stack` is false, skip to Step 4.
+
+Check `gh` availability:
+
+```bash
+command -v gh >/dev/null 2>&1 && echo "OK" || echo "MISSING"
+```
+
+If `gh` is MISSING: show a warning and skip. The user can run `brew install gh && gh auth login` to enable this later. The project will be scaffolded manually in Phase 1 instead.
+
+Pull starter template files into the project. The repo likely already exists (with commits and a remote), so we clone the template separately and copy its files in:
+
+```bash
+# Clone template into a temp directory
+TMPDIR=$(mktemp -d)
+gh repo clone cinjoff/fh-starter-project "$TMPDIR/starter" -- --depth 1
+
+# Copy template files into the project (excluding .git)
+rsync -a --exclude='.git' "$TMPDIR/starter/" ./
+
+# Clean up
+rm -rf "$TMPDIR"
+```
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Commit the template scaffolding:
+
+```bash
+git add -A
+git commit -m "feat: scaffold from fh-starter-project template"
+```
+
+Do NOT push yet — later steps (Supabase, planning files) will commit on top.
+
+---
+
+## Step 4: Design Framework (optional)
 
 Invoke `/fh:ui-branding`.
 
@@ -65,14 +110,14 @@ If the user wants to skip this step and set up design later, allow it. They can 
 
 ---
 
-## Step 4: CLAUDE.md Generation
+## Step 5: CLAUDE.md Generation
 
-Invoke `/fh:revise-claude-md init` — this generates a high-quality CLAUDE.md from the context gathered in Steps 1-3 using the templates co-located in the `revise-claude-md` skill directory.
+Invoke `/fh:revise-claude-md init` — this generates a high-quality CLAUDE.md from the context gathered in Steps 1-4 using the templates co-located in the `revise-claude-md` skill directory.
 
 Pass it:
 - Project name and description (from Step 1)
 - Tech stack (from Step 2)
-- Whether `.planning/DESIGN.md` was created (from Step 3)
+- Whether `.planning/DESIGN.md` was created (from Step 4)
 
 The `/fh:revise-claude-md` skill's co-located `templates.md` has the fhhs-skills Project template. CLAUDE.md should include: tech stack, commands adapted to the chosen framework, architecture, code style with conventional commits, testing conventions, planning state reference, and design system reference.
 
@@ -80,7 +125,7 @@ Keep it under 40 lines. Commit: `docs: initialize CLAUDE.md with project convent
 
 ---
 
-## Step 5: Domain Research (optional)
+## Step 6: Domain Research (optional)
 
 Check whether the tech stack was **fully specified** in Step 2 (user explicitly chose all stack components) or left partially open (accepted defaults without discussion, said "figure it out", etc.). Track this as `stack_decided`.
 
@@ -91,7 +136,7 @@ Ask the user:
 > 1. Research first (Recommended)
 > 2. Skip research
 
-If the user chooses **Skip research** → jump to Step 6.
+If the user chooses **Skip research** → jump to Step 7.
 
 If the user chooses **Research first:**
 
@@ -152,13 +197,13 @@ Write to: .planning/research/SUMMARY.md",
 subagent_type="gsd-research-synthesizer", description="Synthesize research")
 ```
 
-Research complete. Proceed to Step 6.
+Research complete. Proceed to Step 7.
 
 ---
 
-## Step 6: Requirements + Roadmap
+## Step 7: Requirements + Roadmap
 
-**If `.planning/research/SUMMARY.md` exists** (created in Step 5), read it first. Use the research findings to inform requirements — incorporate discovered table-stakes features, avoid identified pitfalls, and align the roadmap phases with architecture guidance.
+**If `.planning/research/SUMMARY.md` exists** (created in Step 6), read it first. Use the research findings to inform requirements — incorporate discovered table-stakes features, avoid identified pitfalls, and align the roadmap phases with architecture guidance.
 
 Derive requirements from the vision in Step 1. Create:
 
@@ -168,7 +213,7 @@ Derive requirements from the vision in Step 1. Create:
 - `.planning/STATE.md` — Current position (phase 1, plan 0)
 - `.planning/config.json` — GSD workflow settings
 
-**If `uses_default_stack` is true:** Phase 1 should be **"Core app setup"** — the starter template already provides scaffolding (Next.js, Tailwind, Shadcn/ui, project structure), so Phase 1 focuses on app-specific configuration: routes, layouts, data models, and integrating the chosen design direction.
+**If `uses_default_stack` is true:** Phase 1 should be **"Core app setup"** — the starter template files were pulled into the repo in Step 3 (Next.js, Tailwind, Shadcn/ui, project structure), so Phase 1 focuses on app-specific configuration: routes, layouts, data models, and integrating the chosen design direction.
 
 **If `uses_default_stack` is false:** Phase 1 must be **"Project scaffolding and core setup"** — this is where the actual project gets created, dependencies installed, and base configuration applied.
 
@@ -211,59 +256,11 @@ Commit: `docs: initialize project planning with GSD structure`
 
 ---
 
-## Step 7: Infrastructure Setup
+## Step 8: Infrastructure Setup
 
 Set up GitHub and Vercel so the project is ready for deployment from day one.
 
-### 7a: Create repo from starter template OR initialize git
-
-Check `gh` availability first (needed for both paths):
-
-```bash
-command -v gh >/dev/null 2>&1 && echo "OK" || echo "MISSING"
-```
-
-If `gh` is MISSING: show a warning and fall through to the manual git init path. The user can run `brew install gh && gh auth login` to enable this later.
-
-**If `uses_default_stack` is true AND `gh` is available:**
-
-Use the starter template repo. This creates a GitHub repo from the template, clones it, and gives you a fully scaffolded Next.js + Tailwind + Shadcn/ui project:
-
-```bash
-REPO_NAME="$(basename "$(pwd)")"
-# Create from template — this makes a new repo with the template's files (not a fork)
-gh repo create "$REPO_NAME" --template cinjoff/fh-starter-project --private --clone
-```
-
-If the current directory is empty, clone into it directly:
-
-```bash
-# Move cloned contents into current directory if needed
-if [ -d "$REPO_NAME" ] && [ "$REPO_NAME" != "$(basename "$(pwd)")" ]; then
-  mv "$REPO_NAME"/{.,}* . 2>/dev/null
-  rmdir "$REPO_NAME"
-fi
-```
-
-Report the repo URL. Then install dependencies:
-
-```bash
-npm install
-```
-
-Commit the planning files created in earlier steps on top of the template:
-
-```bash
-git add -A
-git commit -m "docs: initialize project planning with GSD structure"
-git push
-```
-
-Skip to **Step 7c** (Vercel linking).
-
-**If `uses_default_stack` is false OR `gh` is unavailable:**
-
-Fall back to manual initialization:
+### 8a: Initialize git (if needed)
 
 ```bash
 git rev-parse --is-inside-work-tree 2>/dev/null && echo "GIT_OK" || echo "GIT_MISSING"
@@ -275,18 +272,16 @@ If not a git repo, initialize it:
 git init
 ```
 
-Stage and commit all planning files created so far:
+Stage and commit all files created so far (template scaffolding, planning files, CLAUDE.md):
 
 ```bash
 git add -A
-git commit -m "chore: initialize project with planning structure"
+git commit -m "chore: initialize project"
 ```
 
 If files are already committed (git was pre-existing), skip the commit.
 
-### 7b: Create GitHub repository (non-template path only)
-
-**Skip this step if the repo was already created from the starter template in 7a.**
+### 8b: Create GitHub repository
 
 Check if a remote already exists:
 
@@ -305,7 +300,7 @@ This creates a private repo, sets `origin`, and pushes the initial commit. Repor
 
 If a remote already exists, skip creation but show the existing remote URL.
 
-### 7c: Create and link Vercel project
+### 8c: Create and link Vercel project
 
 Check `vercel` availability:
 
@@ -313,17 +308,31 @@ Check `vercel` availability:
 command -v vercel >/dev/null 2>&1 && echo "OK" || echo "MISSING"
 ```
 
-If `vercel` is MISSING: show a warning and skip to Step 8. The user can run `npm install -g vercel && vercel login` to enable this later.
+If `vercel` is MISSING: show a warning and skip to Step 9. The user can run `npm install -g vercel && vercel login` to enable this later.
 
-Link the project to Vercel (creates a new project if one doesn't exist):
+**Worktree compatibility:** The Vercel CLI requires `.git` to be a directory, but git worktrees (used by Conductor and other tools) use a `.git` file pointing to the main repo. Work around this before linking:
 
 ```bash
+if [ -f .git ]; then
+  # Worktree: temporarily swap .git file for a symlink to the real git dir
+  GIT_COMMON_DIR=$(git rev-parse --git-common-dir)
+  mv .git .git.worktree.bak
+  ln -s "$GIT_COMMON_DIR" .git
+  WORKTREE_FIX=true
+fi
+
 vercel link --yes --project "$(basename "$(pwd)")"
+
+if [ "$WORKTREE_FIX" = true ]; then
+  # Restore the worktree .git file
+  rm .git
+  mv .git.worktree.bak .git
+fi
 ```
 
 This writes `.vercel/project.json` with the project and org IDs.
 
-### 7d: Connect GitHub to Vercel for auto-deployments
+### 8d: Connect GitHub to Vercel for auto-deployments
 
 Connect the GitHub repo to the Vercel project:
 
@@ -333,7 +342,7 @@ vercel git connect
 
 If this succeeds, every push to `main` will trigger a Vercel deployment automatically.
 
-If `vercel git connect` fails or is unavailable, tell the user:
+If `vercel git connect` fails or is unavailable (common in worktree environments), tell the user:
 
 ```
 ╔══════════════════════════════════════════════════════════════╗
@@ -349,9 +358,9 @@ To enable automatic GitHub → Vercel deployments:
 This only needs to be done once.
 ```
 
-### 7e: Set up Supabase (conditional)
+### 8e: Set up Supabase (conditional)
 
-**Only run this step if the user chose Supabase in Step 2.** If not, skip to Step 8.
+**Only run this step if the user chose Supabase in Step 2.** If not, skip to Step 9.
 
 Check `supabase` CLI availability:
 
@@ -465,12 +474,12 @@ This creates the `supabase/` directory with `config.toml` and links it to the cl
 Push the Supabase env vars to Vercel so deployments work out of the box:
 
 ```bash
-echo "$SUPABASE_URL" | vercel env add NEXT_PUBLIC_SUPABASE_URL production --yes
-echo "$ANON_KEY" | vercel env add NEXT_PUBLIC_SUPABASE_ANON_KEY production --yes
-echo "$SERVICE_ROLE_KEY" | vercel env add SUPABASE_SERVICE_ROLE_KEY production --yes
+echo "$SUPABASE_URL" | vercel env add NEXT_PUBLIC_SUPABASE_URL production
+echo "$ANON_KEY" | vercel env add NEXT_PUBLIC_SUPABASE_ANON_KEY production
+echo "$SERVICE_ROLE_KEY" | vercel env add SUPABASE_SERVICE_ROLE_KEY production
 ```
 
-If the `vercel` CLI is unavailable (Step 6c was skipped), show a checkpoint:
+If the `vercel` CLI is unavailable (Step 8c was skipped), show a checkpoint:
 
 ```
 ╔══════════════════════════════════════════════════════════════╗
@@ -486,9 +495,25 @@ Add these environment variables in Vercel Dashboard → Settings → Environment
 Mark SUPABASE_SERVICE_ROLE_KEY as "Sensitive" in Vercel.
 ```
 
+### 8f: Copy gitignored files to main repo (worktree only)
+
+**Only run this step if the project is in a git worktree** (`.git` is a file, not a directory). Gitignored files like `.env.local` and `.vercel/` are not shared across worktrees, so copy them to the main repo so future worktrees can access them.
+
+```bash
+if [ -f .git ]; then
+  MAIN_REPO=$(git rev-parse --git-common-dir | sed 's|/\.git.*|/|')
+
+  # Copy .env.local
+  [ -f .env.local ] && cp .env.local "$MAIN_REPO/.env.local"
+
+  # Copy .vercel project config
+  [ -d .vercel ] && cp -r .vercel "$MAIN_REPO/.vercel"
+fi
+```
+
 ---
 
-## Step 8: Handoff
+## Step 9: Handoff
 
 Report to the user:
 
