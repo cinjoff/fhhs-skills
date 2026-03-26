@@ -91,6 +91,10 @@ WAVE_START_SHA=$(git rev-parse HEAD)
 AUTO_MODE=$(node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs config-get workflow.auto_advance 2>/dev/null || echo "false")
 ```
 
+If `AUTO_MODE` is `"true"` AND `.planning/DECISIONS.md` exists, read it and filter entries where the Phase field matches the current phase directory name (e.g., `07-auto-mode` from `.planning/phases/07-auto-mode/`), or Phase is `"project"` for cross-phase decisions. Include at most the 20 most recent ACTIVE decisions for the current phase — if more exist, prepend a summary: `"{N} additional decisions omitted — see .planning/DECISIONS.md for full history."` Format the filtered decisions as a compact context block and store as `{DECISIONS_CONTEXT}` for subagent injection. If `DECISIONS.md` doesn't exist or has no entries for this phase, `{DECISIONS_CONTEXT}` is empty string.
+
+Additionally, scan ALL decisions in DECISIONS.md (regardless of Phase) where the Affects field references any file in the current plan's `files_modified` list. Include these as a separate 'Cross-phase decisions' block in `{DECISIONS_CONTEXT}`. The combined total (phase-filtered + cross-phase) is capped at 20 entries — phase-specific decisions take priority, cross-phase fills remaining slots. This ensures decisions from earlier phases that constrain shared files are visible to downstream subagents.
+
 ---
 
 ## Step 3: Execute Waves
@@ -108,6 +112,7 @@ Use the structured template at `references/implementer-prompt.md`. Fill its plac
 - `{PHASE_DIR}` — Path to `.planning/phases/{phase}/` for deferred items logging.
 - `{TASK_NAME}` — Task identifier for deferred items format.
 - `{TASK_ID}` — The native task ID for this task (from Step 1b). Subagents can use this ID for sub-task tracking via TaskCreate/TaskUpdate. Pass empty string if `TASKS_AVAILABLE=false`.
+- `{DECISIONS_CONTEXT}` — If prepared in Step 2 (AUTO_MODE=true with matching decisions), inject here. Otherwise empty string.
 
 The template includes all behavioral directives (TDD, frontend, commits, YAGNI), deviation rules 1-4, guardrails (analysis paralysis, scope boundary, deferred items), self-review checklist, and structured report format.
 
@@ -138,6 +143,11 @@ This replaces per-subagent skill directory scanning. Each subagent sees the full
 ### Checkpoint protocol
 
 If a task has `type="checkpoint:*"`, read `references/checkpoint-protocol.md` (co-located with this skill) for the full protocol. It covers checkpoint types (human-verify, decision, human-action), return format, auto-mode behavior, standard mode continuation, and authentication gate handling.
+
+When auto-approving checkpoints in auto mode, log each auto-approval as a decision in `.planning/DECISIONS.md`:
+- For `checkpoint:human-verify` auto-approvals: `confidence=MEDIUM`
+- For `checkpoint:decision` auto-selections: `confidence=MEDIUM`
+Use `step='build checkpoint'` in the decision entry. Follow the decision entry format from `references/decisions-template.md` (co-located in this skill's references directory).
 
 ### Task status updates (if TASKS_AVAILABLE)
 

@@ -5,6 +5,23 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.28.0] - 2026-03-26
+
+### Added
+- **`/fh:auto` — autonomous multi-phase execution** — plans, reviews, builds, and reviews each phase without human intervention using `claude -p` for process-isolated sessions
+- **`/fh:new-project --auto`** — derives vision, tech stack, and roadmap from a project description, then hands off to `/fh:auto` to build every phase
+- **DECISIONS.md audit trail** — every autonomous decision is logged with confidence levels, affected artifacts, and correction format. LOW confidence decisions flagged with `NEEDS REVIEW`
+- **Crash recovery** — orchestrator saves state to `.auto-state.json` between steps; `--resume` picks up where a crashed run left off
+- **Stuck detection** — soft timeout at 10min (warning), hard timeout at 45min (kill + logged decision), max 2 retries per step
+- **Cost tracking** — estimates token usage per session, enforces `--budget` ceiling with graceful stop
+- **Decision correction cascade** — `--check-corrections` reads CORRECTED decisions, identifies downstream artifacts, auto-fixes mechanical changes and produces correction plans for architectural ones
+- **DECISIONS.md awareness across pipeline** — plan-review cross-checks decisions, spec gate verifies Affects fields, build filters decisions by phase for subagent injection, plan-work dedup guard prevents re-deciding
+
+### Fixed
+- **Phase completion gating** — phases only marked complete when critical steps (plan-work, plan-review, build) all succeed
+- **Orchestrator crash recovery** — missing artifact verification treated as step failure with decision logging instead of fatal exit
+- **CLI argument validation** — guards against missing values for `--project-dir`, `--start-phase`, `--end-phase`, `--budget`
+
 ## [1.27.1] - 2026-03-26
 
 ### Fixed

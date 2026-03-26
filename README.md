@@ -42,6 +42,31 @@ When you come back to an existing project:
 /fh:progress    restore context, check cross-session memory, and route to next action
 ```
 
+## Autonomous Execution
+
+Hand off an entire project and walk away. `/fh:auto` runs plan-work, plan-review, build, and review for every phase — no human intervention required.
+
+```
+/fh:auto                         run all incomplete phases
+/fh:auto --phase 3               run only phase 3
+/fh:auto --budget 10             stop if estimated cost exceeds $10
+/fh:auto --resume                pick up where a crashed run left off
+/fh:auto --dry-run               preview what would execute
+/fh:auto --check-corrections     propagate corrected decisions to affected files
+```
+
+Or start from scratch:
+
+```
+/fh:new-project --auto "A SaaS platform for pet grooming appointments"
+```
+
+This derives vision, tech stack, and requirements from the description, creates a scope-expansion roadmap, then hands off to `/fh:auto` to build every phase.
+
+**How it works:** Each step (plan-work, plan-review, build, review) runs as a separate `claude -p` session with fresh context. State is persisted to `.planning/.auto-state.json` between steps so crashes can resume. Every autonomous decision is logged to `.planning/DECISIONS.md` with confidence levels — LOW confidence decisions are flagged with `NEEDS REVIEW` for human audit.
+
+**Supervision:** Sessions that run longer than 10 minutes get a warning; at 45 minutes they're killed with a logged decision. Failed steps retry once, then skip with an audit trail. The `--budget` flag sets a cost ceiling based on estimated token usage.
+
 ## Native Task Tracking
 
 `/fh:plan-work` and `/fh:build` integrate with Claude Code's native task list for live progress visibility:
@@ -78,6 +103,11 @@ Subagents create their own sub-tasks for granular progress. If task tools are un
 /fh:refactor  ->  /fh:simplify
 ```
 
+**Autonomous (hands-off):**
+```
+/fh:new-project --auto "description"   or   /fh:auto
+```
+
 **Starting a new session:**
 ```
 /fh:progress
@@ -96,6 +126,7 @@ Subagents create their own sub-tasks for granular progress. If task tools are un
 | `/fh:build` | Execute a plan with parallel subagents, TDD, design gates, and verification |
 | `/fh:ui-test` | Visual verification and QA testing with agent-browser backend |
 | `/fh:review` | Code quality, security scan, runtime error check, and branch promotion |
+| `/fh:auto` | Autonomous multi-phase execution — plans, reviews, builds, and reviews each phase without human intervention |
 
 </details>
 
@@ -164,6 +195,8 @@ Phase management, milestone lifecycle, and test generation are handled automatic
 ## `/new-project` — What Gets Set Up
 
 The default stack is **Next.js + TypeScript + Tailwind + shadcn/ui + Supabase + Better Auth + Vercel**.
+
+With `--auto`, the entire setup is hands-off: vision, stack, and roadmap are derived from a project description, then `/fh:auto` takes over to build every phase.
 
 During setup, `/fh:new-project` handles:
 

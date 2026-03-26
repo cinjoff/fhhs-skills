@@ -31,6 +31,9 @@ Discretion areas define bounds within which you may decide.
 
 {DESIGN_DECISIONS}
 
+{DECISIONS_CONTEXT}
+<!-- DECISIONS_CONTEXT is supplementary to DESIGN_DECISIONS. If they conflict, DESIGN_DECISIONS (from CONTEXT.md) takes precedence. -->
+
 ## Before You Begin
 
 You are running as a subagent — you cannot interactively ask questions. Make reasonable

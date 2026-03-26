@@ -6056,6 +6056,343 @@
           "type": "guard"
         }
       ]
+    },
+    {
+      "id": 214,
+      "command": "plan-work",
+      "prompt": "I have workflow.auto_advance=true set in my GSD config. I'm planning a new feature (user notifications) for phase 09. Run /fh:plan-work to plan this phase. There are gray areas around notification delivery timing and retry strategy.",
+      "expected_output": "Should auto-decide gray areas without interactive discussion since AUTO_MODE is true, log decisions to DECISIONS.md with rationale and confidence, create CONTEXT.md, and skip interactive gray-area discussion with the user.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Mentions logging decisions to DECISIONS.md",
+          "type": "output"
+        },
+        {
+          "text": "References auto-decide or auto mode behavior",
+          "type": "behavioral"
+        },
+        {
+          "text": "Creates CONTEXT.md as part of planning output",
+          "type": "output"
+        },
+        {
+          "text": "Skips interactive discussion of gray areas",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 215,
+      "command": "plan-work",
+      "prompt": "Plan phase 05 for my project (search feature). There are gray areas around fuzzy matching vs exact matching and result ranking. Use default config with no auto_advance setting.",
+      "expected_output": "Should present gray areas to the user interactively and ask for input on each decision. Should NOT mention auto-deciding or DECISIONS.md auto-logging since AUTO_MODE is not enabled.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Does NOT mention auto-decide or auto mode",
+          "type": "guard"
+        },
+        {
+          "text": "Asks user about gray areas or discusses them interactively",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 216,
+      "command": "build",
+      "prompt": "Run /fh:build for phase 07 with AUTO_MODE=true. There is a DECISIONS.md at .planning/DECISIONS.md with 3 decisions from planning (Phase: 07-auto-mode). Execute the plan.",
+      "expected_output": "Should read DECISIONS.md from .planning/DECISIONS.md, filter decisions relevant to the current phase, and inject them into the build context via DECISIONS_CONTEXT so subagents respect prior auto-decisions.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Reads DECISIONS.md for prior decisions",
+          "type": "behavioral"
+        },
+        {
+          "text": "References DECISIONS_CONTEXT or phase-filtered decision injection",
+          "type": "output"
+        }
+      ]
+    },
+    {
+      "id": 217,
+      "command": "build",
+      "prompt": "During /fh:build in auto mode, a checkpoint:human-verify gate is reached for a database migration task. AUTO_MODE is true. How should this checkpoint be handled?",
+      "expected_output": "Should auto-approve the checkpoint and log the auto-approval to DECISIONS.md with confidence HIGH, recording what was approved and why auto-approval was applied.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Logs auto-approval to DECISIONS.md",
+          "type": "behavioral"
+        },
+        {
+          "text": "Records confidence level for auto-approval",
+          "type": "output"
+        }
+      ]
+    },
+    {
+      "id": 218,
+      "command": "auto",
+      "prompt": "I want to run my project autonomously. The project has a .planning/ directory with ROADMAP.md showing 3 remaining phases and STATE.md indicating current position at phase 04. Run autonomously through all remaining phases.",
+      "expected_output": "Should trigger the auto skill, validate that .planning/ state is consistent (ROADMAP.md and STATE.md exist and agree), set AUTO_MODE=true, and orchestrate by shelling out to /fh:plan-work and /fh:build for each phase in sequence.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Validates .planning/ state before starting (checks ROADMAP.md and STATE.md)",
+          "type": "behavioral"
+        },
+        {
+          "text": "Sets AUTO_MODE or auto_advance to true",
+          "type": "behavioral"
+        },
+        {
+          "text": "Shells out to plan-work and build skills for orchestration",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 219,
+      "command": "auto",
+      "prompt": "I'd like to do a dry run of /fh:auto for my project. Show me what would happen without actually executing anything. The project has phases 05 through 08 remaining.",
+      "expected_output": "Should list each remaining phase with its planned steps (plan-work then build) without executing any of them. Should show the execution order and any dependencies between phases.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Lists phases and steps without executing them",
+          "type": "behavioral"
+        },
+        {
+          "text": "Shows execution plan or order for remaining phases",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT invoke plan-work or build during dry run",
+          "type": "guard"
+        }
+      ]
+    },
+    {
+      "id": 220,
+      "command": "auto",
+      "prompt": "My /fh:auto run crashed midway through phase 06. There's an .auto-state.json file recording that phases 04 and 05 completed successfully and phase 06 was in progress at the build step. Resume from where it left off.",
+      "expected_output": "Should read .auto-state.json, identify completed phases (04, 05), skip them, and resume phase 06 from the build step rather than re-running plan-work for that phase.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Reads .auto-state.json to determine progress",
+          "type": "behavioral"
+        },
+        {
+          "text": "Skips already-completed phases (04, 05)",
+          "type": "behavioral"
+        },
+        {
+          "text": "Resumes phase 06 from build step, not from the beginning",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 221,
+      "command": "auto",
+      "prompt": "The /fh:auto run has completed all remaining phases (05 through 08) successfully. What cleanup should happen after the auto run finishes?",
+      "expected_output": "Should reset workflow.auto_advance to false (or remove AUTO_MODE) so subsequent manual invocations of plan-work and build behave normally. Should update STATE.md to reflect completion.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Resets auto_advance or AUTO_MODE to false on completion",
+          "type": "behavioral"
+        },
+        {
+          "text": "Updates STATE.md to reflect completed position",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 222,
+      "command": "plan-review",
+      "prompt": "Run /fh:plan-review on phase 08 (payments feature). There is a .planning/DECISIONS.md with auto-decisions including D-005 which says 'Selected: a) Use Stripe SDK' with Phase: 08-payments. However, CONTEXT.md for this phase has a locked decision saying 'Use PayPal API for payments'. How should plan-review handle this inconsistency?",
+      "expected_output": "Should flag the inconsistency between DECISIONS.md (Stripe SDK) and CONTEXT.md (PayPal API) as BLOCKING in the PRE-REVIEW cross-check, since they contradict each other.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Flags inconsistency between DECISIONS.md and CONTEXT.md as BLOCKING",
+          "type": "behavioral"
+        },
+        {
+          "text": "Cross-references both files during PRE-REVIEW",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 223,
+      "command": "build",
+      "prompt": "During /fh:build spec gate for wave 2, the DECISIONS_CONTEXT includes a decision D-012 with 'Affects: src/lib/date-utils.ts' and 'Selected: a) Use date-fns library'. The wave 2 diff shows src/lib/date-utils.ts was modified but contains hand-rolled date parsing instead of date-fns. What should the spec gate report?",
+      "expected_output": "Should flag as WARNING that the implementation may not follow the auto-decision D-012 which selected date-fns, since structural check shows the Affects file was modified but the pattern may differ.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "References Decision Consistency Check or decision contradiction",
+          "type": "output"
+        },
+        {
+          "text": "Uses WARNING severity not BLOCKING for structural check",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 224,
+      "command": "fix",
+      "prompt": "A bug in the date formatting was caused by an auto-decided pattern (D-012: use date-fns for all date operations). The fix replaces date-fns usage with Intl.DateTimeFormat for locale-aware formatting. .planning/DECISIONS.md exists with D-012 active. What should /fh:fix Step 4 do regarding DECISIONS.md?",
+      "expected_output": "Should log a CORRECTED entry to DECISIONS.md referencing D-012 as the original, with step='fix Step 4', corrected_by='agent', explaining that date-fns caused the locale bug and Intl.DateTimeFormat is the correction.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Logs CORRECTED entry to DECISIONS.md",
+          "type": "behavioral"
+        },
+        {
+          "text": "References the original decision ID",
+          "type": "output"
+        }
+      ]
+    },
+    {
+      "id": 225,
+      "command": "build",
+      "prompt": "Running /fh:build for phase 05-dashboard with AUTO_MODE=true. Phase 02-auth has decision D-003 with 'Affects: src/middleware/auth.ts, src/lib/session.ts'. Phase 05's plan modifies src/middleware/auth.ts. How should build Step 2 handle this cross-phase decision?",
+      "expected_output": "Should discover D-003 from phase 02-auth via Affects field scanning since src/middleware/auth.ts is in the current plan's files_modified. Include it as a cross-phase decision in DECISIONS_CONTEXT so subagents see the auth constraint.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Discovers cross-phase decision via Affects field",
+          "type": "behavioral"
+        },
+        {
+          "text": "Includes cross-phase decision in DECISIONS_CONTEXT",
+          "type": "output"
+        }
+      ]
+    },
+    {
+      "id": 226,
+      "command": "auto",
+      "prompt": "A claude -p session dispatched by auto-orchestrator.cjs for phase 03 task 2 has been running for 18 minutes with no output. The soft timeout is 15 minutes and hard timeout is 20 minutes. How should the auto orchestrator handle this stuck session?",
+      "expected_output": "Should detect the stuck session via soft timeout at 15 minutes and emit a warning. If still unresponsive at 20 minutes hard timeout, send SIGTERM to the claude -p process. Log a decision to DECISIONS.md with confidence: LOW and flag: NEEDS REVIEW explaining the timeout and which task was interrupted.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects stuck session via soft timeout and emits warning",
+          "type": "behavioral"
+        },
+        {
+          "text": "Sends SIGTERM on hard timeout",
+          "type": "behavioral"
+        },
+        {
+          "text": "Logs decision with LOW confidence",
+          "type": "output"
+        },
+        {
+          "text": "Flags decision as NEEDS REVIEW",
+          "type": "output"
+        }
+      ]
+    },
+    {
+      "id": 227,
+      "command": "auto",
+      "prompt": "Running auto-orchestrator.cjs with --budget 5 (dollars). After completing phase 02 tasks 1-3, the cumulative cost estimate is $4.20. Phase 02 task 4 is estimated at $1.50. How should the auto orchestrator handle this budget situation?",
+      "expected_output": "Should track cost per session and cumulative total. When cumulative estimate ($4.20 + $1.50 = $5.70) exceeds the --budget 5 ceiling, gracefully stop before dispatching task 4. Log a decision explaining the budget ceiling was reached and remaining tasks were deferred.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Tracks cost per session and cumulative total",
+          "type": "behavioral"
+        },
+        {
+          "text": "Gracefully stops when cumulative estimate exceeds budget ceiling",
+          "type": "behavioral"
+        },
+        {
+          "text": "Logs decision about budget ceiling reached",
+          "type": "output"
+        }
+      ]
+    },
+    {
+      "id": 228,
+      "command": "build",
+      "prompt": "A decision D-015 was just CORRECTED from 'use Redux for state management' to 'use Zustand for state management'. The Affects field lists: src/store/index.ts, src/components/Dashboard.tsx, src/hooks/useAuth.ts. How should the decision correction cascade handle downstream impact?",
+      "expected_output": "Should perform cascade analysis on the listed Affects artifacts. Categorize each as mechanical (simple find-replace of imports/usage) or architectural (structural changes needed). Check that each artifact exists on disk. Log a cascade decision documenting the analysis and categorization of each affected file.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Categorizes downstream impact as mechanical or architectural",
+          "type": "behavioral"
+        },
+        {
+          "text": "Checks artifact existence on disk",
+          "type": "behavioral"
+        },
+        {
+          "text": "Logs cascade decision documenting affected files",
+          "type": "output"
+        }
+      ]
+    },
+    {
+      "id": 229,
+      "command": "new-project",
+      "prompt": "Run /fh:new-project --auto \"A marketplace for artisan crafts\" in an empty directory. How should new-project handle the --auto flag with the provided description?",
+      "expected_output": "Should detect AUTO_PROJECT mode from --auto flag. Derive answers to vision questions (target users, core value prop, key features) from the description 'A marketplace for artisan crafts' instead of asking the user interactively. Generate a scope expansion roadmap based on the derived vision. Should not prompt the user for any interactive input.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects AUTO_PROJECT mode from --auto flag",
+          "type": "behavioral"
+        },
+        {
+          "text": "Auto-answers vision questions derived from description",
+          "type": "behavioral"
+        },
+        {
+          "text": "Generates scope expansion roadmap",
+          "type": "output"
+        },
+        {
+          "text": "Does not prompt user for interactive input",
+          "type": "guard"
+        }
+      ]
+    },
+    {
+      "id": 230,
+      "command": "new-project",
+      "prompt": "After /fh:new-project --auto completes all setup steps (PROJECT.md, ROADMAP.md, STATE.md created), what should happen next to continue the auto workflow?",
+      "expected_output": "Should chain to auto-orchestrator.cjs after setup completes. Set workflow.auto_advance=true so the orchestrator knows to proceed without user confirmation. The transition should be seamless — new-project finishes setup then hands off to auto mode for plan-and-build execution.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Chains to auto-orchestrator.cjs after setup",
+          "type": "behavioral"
+        },
+        {
+          "text": "Sets workflow.auto_advance=true",
+          "type": "output"
+        },
+        {
+          "text": "Transitions seamlessly from setup to auto execution",
+          "type": "behavioral"
+        }
+      ]
     }
   ]
 }
