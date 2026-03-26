@@ -184,7 +184,7 @@ If `AUTO_MODE` is `"true"`, skip interactive gray area discussion. Instead:
 
 a) **Scout and identify** the same 3-4 gray areas by scanning the codebase (existing components, utilities, patterns, data flows) — same scouting as the normal path below.
 b) **Auto-decide** each gray area using best judgment, following the heuristics in `.claude/skills/build/references/decisions-template.md` (match existing patterns > reversible > simpler > well-documented libs > fewer deps > keep doors open).
-c) **Log each decision** to `.planning/DECISIONS.md` using the decision entry format from the template. Create the file first if it doesn't exist — see the template's "Subagent Instructions: Creating DECISIONS.md" section. Use `step='plan-work Step 3'` in each entry.
+c) **Log each decision** to `.planning/DECISIONS.md` using the decision entry format from the template. Create the file first if it doesn't exist, or recover if corrupt — see the template's "Subagent Instructions: Creating DECISIONS.md" section. Use `step='plan-work Step 3'` in each entry.
 d) **Still produce** the mandatory ASCII diagram and lightweight Error/Rescue Map for the gray areas (same tables as the normal path).
 e) **Write** the same locked/discretion/deferred categories to CONTEXT.md as the normal path (Step 3 item 6 below).
 

@@ -77,8 +77,9 @@ new entry — never edit or delete the original. The corrected entry uses:
 - **Status:** ACTIVE
 ```
 
-The original entry's Status field is updated to `CORRECTED → D-{new ID}` or
-`SUPERSEDED → D-{new ID}`. This is the **only** permitted edit to an existing entry.
+To identify corrected decisions, consumers scan for correction entries with
+`Original: D-{ID}` referencing the original. Do NOT edit the original entry —
+the append-only guarantee is absolute. The original remains as-is for audit trail.
 
 ---
 
