@@ -5,6 +5,11 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.29.1] - 2026-03-27
+
+### Fixed
+- **`better-sqlite3` setup in `/fh:new-project`** — adds `npx prebuild-install` step to download pre-compiled native bindings, fixing setup failures when the `.node` binary isn't compiled during install. Troubleshooting note added to `/fh:observability` as well.
+
 ## [1.29.0] - 2026-03-27
 
 ### Added
