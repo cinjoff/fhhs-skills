@@ -39,6 +39,25 @@ This step should consume <2% context. Don't deep-dive the errors yet — just su
 
 ---
 
+## Step 0½: Fallow Static Analysis (if available)
+
+Before triaging, gather deterministic findings from Fallow to augment investigation.
+
+```bash
+if command -v fallow &>/dev/null; then
+  FALLOW_CHECK=$(fallow check --format json --quiet 2>/dev/null) || FALLOW_CHECK=""
+  FALLOW_HEALTH=$(fallow health --format json --quiet 2>/dev/null) || FALLOW_HEALTH=""
+fi
+```
+
+If Fallow ran and produced output:
+- **`fallow check`** — unused exports, circular dependencies. If the bug involves an import or wiring issue, these findings are definitive ground truth.
+- **`fallow health`** — complexity metrics. High-complexity functions near the bug site are more likely to harbor subtle issues.
+
+**Cap:** Keep under 1% context. Filter to files mentioned in the bug report or error trace. Skip if Fallow is not installed — no mention in output.
+
+---
+
 ## Step 1: Triage
 
 Quickly assess bug depth before choosing strategy. Spend <5% context.

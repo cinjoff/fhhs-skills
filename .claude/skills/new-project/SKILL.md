@@ -694,6 +694,47 @@ supabase link --project-ref "$PROJECT_REF" --password "$DB_PASSWORD"
 
 This creates the `supabase/` directory with `config.toml` and links it to the cloud project.
 
+#### Reset database password and configure DATABASE_URL
+
+The initial password generated during project creation is ephemeral. Reset it to a known password and configure the pooler connection string for direct database access (used by ORMs like Prisma/Drizzle):
+
+```bash
+# Generate a new strong password
+NEW_DB_PASSWORD="$(openssl rand -base64 32 | tr -d '/+=' | head -c 32)"
+
+# Reset the database password
+supabase db reset-password --project-ref "$PROJECT_REF" --password "$NEW_DB_PASSWORD"
+```
+
+Determine the pooler host from the chosen region. Map the region to the Supabase pooler hostname:
+
+| Region | Pooler Host |
+|--------|-------------|
+| `us-east-1` | `aws-0-us-east-1.pooler.supabase.com` |
+| `us-west-1` | `aws-0-us-west-1.pooler.supabase.com` |
+| `eu-west-1` | `aws-0-eu-west-1.pooler.supabase.com` |
+| `eu-central-1` | `aws-0-eu-central-1.pooler.supabase.com` |
+| `ap-southeast-1` | `aws-0-ap-southeast-1.pooler.supabase.com` |
+| `ap-northeast-1` | `aws-0-ap-northeast-1.pooler.supabase.com` |
+
+Construct and append the pooler `DATABASE_URL` to `.env.local`:
+
+```bash
+POOLER_HOST="aws-0-${REGION}.pooler.supabase.com"
+DATABASE_URL="postgresql://postgres.${PROJECT_REF}:${NEW_DB_PASSWORD}@${POOLER_HOST}:6543/postgres"
+
+cat >> .env.local <<EOF
+
+# Supabase Database (pooler — use for ORMs like Prisma/Drizzle)
+DATABASE_URL=${DATABASE_URL}
+EOF
+```
+
+**Security rules:**
+- `DATABASE_URL` contains the database password — must NEVER be prefixed with `NEXT_PUBLIC_`
+- Never echo the `DATABASE_URL` value in user-facing output
+- The pooler connection (port 6543) uses transaction mode by default, which is compatible with serverless environments
+
 #### Sync environment variables to Vercel
 
 Push the Supabase env vars to Vercel so deployments work out of the box:
@@ -702,6 +743,7 @@ Push the Supabase env vars to Vercel so deployments work out of the box:
 echo "$SUPABASE_URL" | vercel env add NEXT_PUBLIC_SUPABASE_URL production
 echo "$ANON_KEY" | vercel env add NEXT_PUBLIC_SUPABASE_ANON_KEY production
 echo "$SERVICE_ROLE_KEY" | vercel env add SUPABASE_SERVICE_ROLE_KEY production
+echo "$DATABASE_URL" | vercel env add DATABASE_URL production
 ```
 
 If the `vercel` CLI is unavailable (Step 8c was skipped), show a checkpoint:
@@ -716,8 +758,9 @@ Add these environment variables in Vercel Dashboard → Settings → Environment
   NEXT_PUBLIC_SUPABASE_URL       = https://<ref>.supabase.co
   NEXT_PUBLIC_SUPABASE_ANON_KEY  = <your anon key>
   SUPABASE_SERVICE_ROLE_KEY      = <your service_role key>
+  DATABASE_URL                   = <your pooler connection string>
 
-Mark SUPABASE_SERVICE_ROLE_KEY as "Sensitive" in Vercel.
+Mark SUPABASE_SERVICE_ROLE_KEY and DATABASE_URL as "Sensitive" in Vercel.
 ```
 
 ### 8f: Observability Setup
@@ -789,7 +832,7 @@ If Conductor is detected, create `conductor.json` in the project root with scrip
 ```json
 {
   "scripts": {
-    "setup": "npm install && [ -f \"$CONDUCTOR_ROOT_PATH/.env.local\" ] && cp \"$CONDUCTOR_ROOT_PATH/.env.local\" .env.local || true; node -e \"var fs=require('fs'),f='.claude/settings.json',s={};try{s=JSON.parse(fs.readFileSync(f,'utf8'))}catch{}s.env=Object.assign(s.env||{},{CLAUDE_CODE_TASK_LIST_ID:process.env.CONDUCTOR_WORKSPACE_NAME||'default'});fs.writeFileSync(f,JSON.stringify(s,null,2)+'\\n')\"",
+    "setup": "npm install && [ -f \"$CONDUCTOR_ROOT_PATH/.env.local\" ] && ln -sf \"$CONDUCTOR_ROOT_PATH/.env.local\" .env.local || true; [ -d \"$CONDUCTOR_ROOT_PATH/.vercel\" ] && ln -sf \"$CONDUCTOR_ROOT_PATH/.vercel\" .vercel || true; node -e \"var fs=require('fs'),f='.claude/settings.json',s={};try{s=JSON.parse(fs.readFileSync(f,'utf8'))}catch{}s.env=Object.assign(s.env||{},{CLAUDE_CODE_TASK_LIST_ID:process.env.CONDUCTOR_WORKSPACE_NAME||'default'});fs.writeFileSync(f,JSON.stringify(s,null,2)+'\\n')\"",
     "run": "npm run dev -- --port $CONDUCTOR_PORT",
     "archive": "rm -rf \"$HOME/.claude/tasks/${CONDUCTOR_WORKSPACE_NAME}\" 2>/dev/null; true"
   },
@@ -807,17 +850,17 @@ If Conductor is detected, create `conductor.json` in the project root with scrip
 >
 > **Why `archive` cleans up?** Task lists persist at `~/.claude/tasks/{ID}/`. Without cleanup, old workspace task lists accumulate indefinitely. The archive script removes the directory when the workspace is torn down.
 
-> **Why `cp` instead of `ln -s`?** Conductor workspaces are git worktrees. Symlinks into `$CONDUCTOR_ROOT_PATH` can break when the root's working tree changes. Copying is safer — the setup script runs each time a workspace starts, so the copy stays fresh.
+> **Why `ln -sf` for `.env.local` and `.vercel/`?** These are gitignored files, so git operations never touch them — symlinks are safe and keep all worktrees in sync bidirectionally. When the user updates `.env.local` in any worktree, all others see the change immediately. This is different from git-tracked files, where symlinks into `$CONDUCTOR_ROOT_PATH` could break during checkout.
 
 **For other common stacks** — adapt the scripts:
 
 | Stack | Setup script | Run script |
 |-------|-------------|------------|
-| Next.js | `npm install && cp "$CONDUCTOR_ROOT_PATH/.env.local" .env.local 2>/dev/null; true` | `npm run dev -- --port $CONDUCTOR_PORT` |
-| Rails | `bundle install && cp "$CONDUCTOR_ROOT_PATH/.env" .env 2>/dev/null; true` | `bin/rails server -p $CONDUCTOR_PORT` |
-| Django | `pip install -r requirements.txt && cp "$CONDUCTOR_ROOT_PATH/.env" .env 2>/dev/null; true` | `python manage.py runserver $CONDUCTOR_PORT` |
-| Phoenix | `mix deps.get && cp "$CONDUCTOR_ROOT_PATH/.env" .env 2>/dev/null; true` | `mix phx.server` (uses `PORT=$CONDUCTOR_PORT`) |
-| Vite | `npm install && cp "$CONDUCTOR_ROOT_PATH/.env" .env 2>/dev/null; true` | `npm run dev -- --port $CONDUCTOR_PORT` |
+| Next.js | `npm install && ln -sf "$CONDUCTOR_ROOT_PATH/.env.local" .env.local 2>/dev/null; true` | `npm run dev -- --port $CONDUCTOR_PORT` |
+| Rails | `bundle install && ln -sf "$CONDUCTOR_ROOT_PATH/.env" .env 2>/dev/null; true` | `bin/rails server -p $CONDUCTOR_PORT` |
+| Django | `pip install -r requirements.txt && ln -sf "$CONDUCTOR_ROOT_PATH/.env" .env 2>/dev/null; true` | `python manage.py runserver $CONDUCTOR_PORT` |
+| Phoenix | `mix deps.get && ln -sf "$CONDUCTOR_ROOT_PATH/.env" .env 2>/dev/null; true` | `mix phx.server` (uses `PORT=$CONDUCTOR_PORT`) |
+| Vite | `npm install && ln -sf "$CONDUCTOR_ROOT_PATH/.env" .env 2>/dev/null; true` | `npm run dev -- --port $CONDUCTOR_PORT` |
 
 The setup script should:
 1. Install dependencies (`npm install` handles per-worktree `node_modules` correctly)
@@ -862,7 +905,7 @@ Project initialized:
 - Starter template          — cinjoff/fh-starter-project (if default stack)
 - Vercel project            — linked (auto-deploys on push to main)
 - Supabase project          — <project-url> (if set up)
-- .env.local                — API keys configured (if Supabase)
+- .env.local                — API keys + DATABASE_URL configured (if Supabase)
 - lib/sentry-local.ts       — local error tracking (Sentry SDK → SQLite)
 - lib/sentry-local-query.mjs — error query CLI for agents
 - .sentry-local/             — error store (gitignored, per-worktree)
