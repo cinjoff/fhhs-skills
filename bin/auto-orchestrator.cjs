@@ -172,21 +172,10 @@ function findLatestPlan(projectDir, phaseId) {
   return path.join(phaseDir, plans[plans.length - 1]);
 }
 
-function summaryExists(projectDir, phaseId, planPath) {
+function summaryExists(planPath) {
   if (!planPath) return false;
   const summaryPath = planPath.replace('-PLAN.md', '-SUMMARY.md').replace('PLAN.md', 'SUMMARY.md');
   return fs.existsSync(summaryPath);
-}
-
-function countPlansAndSummaries(projectDir, phaseId) {
-  const phaseDir = findPhaseDir(projectDir, phaseId);
-  if (!phaseDir) return { plans: 0, summaries: 0 };
-
-  const files = fs.readdirSync(phaseDir);
-  return {
-    plans: files.filter(f => f.endsWith('-PLAN.md') || f === 'PLAN.md').length,
-    summaries: files.filter(f => f.endsWith('-SUMMARY.md') || f === 'SUMMARY.md').length,
-  };
 }
 
 // ─── Auto-State (Crash Recovery) ──────────────────────────────────────────────
@@ -473,7 +462,7 @@ async function main() {
       }
 
       if (step === 'build') {
-        if (!summaryExists(projectDir, phase.id, currentPlanPath)) {
+        if (!summaryExists(currentPlanPath)) {
           fatal(`build did not produce SUMMARY.md for phase ${phase.id}`);
         }
         plansExecuted++;
