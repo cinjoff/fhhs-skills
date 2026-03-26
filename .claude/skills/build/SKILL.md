@@ -239,6 +239,60 @@ node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs verify phase-completeness "${
 
 **If ALL plans complete (phase done):**
 
+Before marking the phase done, run the following gates in order:
+
+### Gate 1: Goal Verification
+
+For each plan in the phase:
+- For each `must_haves.truth` across all phase plans: find evidence the truth holds (file exists, content matches, test passes).
+- Run `gsd-tools verify artifacts` and `gsd-tools verify key-links` for each plan.
+- Requirements coverage: every requirement ID from ROADMAP that appears in any plan's `requirements` field must appear in at least one SUMMARY.md for the phase.
+
+Report any failures. If failures exist, stop and report to user — do not proceed to Gate 2 or phase completion.
+
+### Gate 2: Design Quality Gates (visual work only)
+
+Read `.planning/DESIGN.MD` and `.planning/PROJECT.MD` for design context (skip silently if either doesn't exist).
+
+Calculate the visual file ratio across ALL plans in the phase: count files ending in `.tsx`, `.css`, `.html`, `.svg` in `files_modified` across all phase plans, divided by total files.
+
+If visual ratio > 30% OR the phase explicitly targets UI (phase name or ROADMAP goal references UI/design/frontend):
+
+- **Round 1 (parallel):** Dispatch `/fh:ui-critique` + `/fh:harden` simultaneously. Fix Critical and High issues. Commit with phase scope: `fix({phase}): ui-critique + harden pass`.
+- **Round 2 (parallel):** Dispatch `/fh:polish` + `/fh:adapt` simultaneously. Fix Critical and High issues. Commit: `fix({phase}): polish + adapt pass`.
+- **Round 3:** If a design system is defined (`.planning/DESIGN.MD` exists with a design system section), dispatch `/fh:normalize`. Fix Critical and High issues. Commit: `fix({phase}): normalize pass`.
+
+If visual ratio ≤ 30% and phase does not target UI, skip Gate 2.
+
+### Gate 3: Verification-Before-Completion
+
+Run fresh:
+1. Test suite: `npm test` (or project test command)
+2. Build: `npm run build` (if project has a build step)
+3. Lint: `npm run lint` (if project has a linter)
+
+Compare each exit code against must_haves truths for all phase plans. Write `VERIFICATION.md` in the phase directory:
+
+```markdown
+# Phase {PHASE_NUM} Verification
+
+## Test Suite
+[pass/fail + output summary]
+
+## Build
+[pass/fail + output summary]
+
+## Lint
+[pass/fail + output summary]
+
+## Must-Haves Coverage
+[list each truth with: verified / failed + evidence]
+```
+
+If any gate fails, stop and report to user before proceeding.
+
+**Only after all gates pass:**
+
 Run: `gsd-tools.cjs phase complete "${PHASE_NUM}"` — atomically updates STATE.md and ROADMAP.md. "Phase verified. Ready for next phase."
 
 If gaps remain, report them. Suggest `/fh:plan-work` for closure or `/fh:fix` for bugs.
@@ -264,7 +318,7 @@ After both complete, report what was built:
 - Tasks completed, commits made, key files created/modified
 - Review findings summary
 
-For deeper scrutiny, suggest `/fh:review` (adds gap analysis).
+For deeper scrutiny, suggest `/fh:review` (adds spec verification + gap analysis).
 
 **GSD completion (if GSD active):**
 
