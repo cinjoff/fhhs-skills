@@ -5,7 +5,7 @@
       "id": 1,
       "command": "build",
       "prompt": "ok i just finished planning phase 13 for my saas app. there's a PLAN.md at .planning/phases/13-auth/13-01-PLAN.md with 3 tasks \u2014 two backend (JWT auth + refresh tokens) and one frontend (login form). the backend tasks are independent but the frontend depends on both. execute it",
-      "expected_output": "Should detect GSD mode, find the plan, identify 2 waves (wave 1: 2 parallel backend tasks, wave 2: 1 frontend task), dispatch general-purpose subagents (not gsd-executor) with model: sonnet, include TDD directives (from internal skills/test-driven-development/PROMPT.md) for backend tasks and frontend-design directives (from internal skills/frontend-design/PROMPT.md) for the login form, generate SUMMARY.md, update GSD state, run phase completion gates (goal verification, design quality gates for frontend, verification-before-completion), and invoke /review --quick for post-build quality checks. Should run verification gate (tests, build check, lint) before writing SUMMARY.md.",
+      "expected_output": "Should detect GSD mode, find the plan, identify 2 waves (wave 1: 2 parallel backend tasks, wave 2: 1 frontend task), dispatch general-purpose subagents (not gsd-executor) with model: sonnet, include TDD directives (from internal skills/test-driven-development/PROMPT.md) for backend tasks and frontend-design directives (from internal skills/frontend-design/PROMPT.md) for the login form, generate SUMMARY.md, update GSD state, run phase completion gates (goal verification, design quality gates for frontend, verification-before-completion), and suggest /fh:review for post-build quality checks. Should run verification gate (tests, build check, lint) before writing SUMMARY.md.",
       "files": [],
       "assertions": [
         {
@@ -29,7 +29,7 @@
           "type": "output"
         },
         {
-          "text": "Invokes /review --quick for post-build quality checks (not requesting-code-review directly)",
+          "text": "Suggests /fh:review for post-build quality checks (not requesting-code-review directly)",
           "type": "behavioral"
         },
         {
@@ -277,7 +277,7 @@
       "id": 11,
       "command": "build",
       "prompt": "execute the plan at .planning/phases/05-onboarding/05-02-PLAN.md. the plan has a task with type checkpoint:human-verify for reviewing the welcome screen visually",
-      "expected_output": "Should find the plan, analyze waves, dispatch subagents for non-checkpoint tasks, and when reaching the checkpoint:human-verify task, the subagent should STOP and return structured state (what was built, verification steps, URLs/commands, expected behavior). Orchestrator should present this to user and WAIT before continuing. Should NOT auto-proceed past the checkpoint. After checkpoint passes, invokes /review --quick for post-build quality checks.",
+      "expected_output": "Should find the plan, analyze waves, dispatch subagents for non-checkpoint tasks, and when reaching the checkpoint:human-verify task, the subagent should STOP and return structured state (what was built, verification steps, URLs/commands, expected behavior). Orchestrator should present this to user and WAIT before continuing. Should NOT auto-proceed past the checkpoint. After checkpoint passes, suggests /fh:review for post-build quality checks.",
       "files": [],
       "assertions": [
         {
@@ -2431,7 +2431,7 @@
       "id": 81,
       "command": "review",
       "prompt": "review my changes \u2014 I only touched CSS files (globals.css and a few component styles)",
-      "expected_output": "Should run full review pipeline: quality review (code-reviewer), gap analysis, evidence verification (tests, build, lint). Spec verification (Step 1.8) skips silently since no PLAN.md in scope. Should detect frontend work and suggest /fh:verify-ui for visual verification. Should NOT include Next.js perf patterns for CSS-only changes unless components were touched. Security scan is not part of /review pipeline.",
+      "expected_output": "Should run full review pipeline: quality review (code-reviewer), gap analysis, evidence verification (tests, build, lint). Spec verification (Step 1.8) skips silently since no PLAN.md in scope. Should detect frontend work and suggest /fh:ui-test for visual verification. Should NOT include Next.js perf patterns for CSS-only changes unless components were touched. Security scan is not part of /review pipeline.",
       "files": [],
       "assertions": [
         {
@@ -2447,7 +2447,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Suggests /fh:verify-ui for visual verification (frontend work detected)",
+          "text": "Suggests /fh:ui-test for visual verification (frontend work detected)",
           "type": "output"
         },
         {
@@ -2904,11 +2904,11 @@
       "id": 97,
       "command": "build",
       "prompt": "build the plan \u2014 all waves completed, running /review now",
-      "expected_output": "Should complete all waves and invoke /review. When /review gate decision is BLOCK (e.g., security CRITICAL or test failures), should NOT mark the phase as complete in STATE.md. Should report the block reason clearly. Should offer a fix-and-retry path (fix the issues, then re-run /review). Should NOT update STATE.md to mark phase done while review is blocked. Should run verification gate (tests, build check, lint) before writing SUMMARY.md.",
+      "expected_output": "Should complete all waves and suggest /fh:review. When /review gate decision is BLOCK (e.g., test failures or spec verification failures), should NOT mark the phase as complete in STATE.md. Should report the block reason clearly. Should offer a fix-and-retry path (fix the issues, then re-run /review). Should NOT update STATE.md to mark phase done while review is blocked. Should run verification gate (tests, build check, lint) before writing SUMMARY.md.",
       "files": [],
       "assertions": [
         {
-          "text": "Invokes /review after all waves complete",
+          "text": "Suggests /fh:review after all waves complete",
           "type": "behavioral"
         },
         {
@@ -3070,7 +3070,7 @@
       "id": 102,
       "command": "review",
       "prompt": "review these frontend component changes \u2014 sidebar, metric card, and user form",
-      "expected_output": "Should run quality review and gap analysis. Quality review should catch design anti-patterns: sidebar uses hardcoded colors instead of CSS variables, user-form uses raw HTML inputs instead of shadcn components, metric-card may lack responsive handling. Should suggest /verify-ui for visual verification of component changes. Should reference DESIGN.md conventions. Does not run security scan (/fh:secure handles that).",
+      "expected_output": "Should run quality review and gap analysis. Quality review should catch design anti-patterns: sidebar uses hardcoded colors instead of CSS variables, user-form uses raw HTML inputs instead of shadcn components, metric-card may lack responsive handling. Should suggest /fh:ui-test for visual verification of component changes. Should reference DESIGN.md conventions. Does not run security scan (/fh:secure handles that).",
       "files": [
         "evals/fixtures/nextjs-app-deep/src/components/sidebar.tsx",
         "evals/fixtures/nextjs-app-deep/src/components/metric-card.tsx",
@@ -3092,7 +3092,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Suggests /verify-ui for visual verification",
+          "text": "Suggests /fh:ui-test for visual verification",
           "type": "output"
         },
         {
@@ -3219,7 +3219,7 @@
       "id": 106,
       "command": "build",
       "prompt": "I just finished planning phase 2, build it, then verify and tell me progress",
-      "expected_output": "Should execute a lifecycle chain: first invoke /build for 02-01-PLAN.md, then on completion invoke /verify for phase 2 deliverables, then invoke /progress showing updated state. Each step must complete before the next starts. /build should invoke /review --quick internally as post-build quality check. Final /progress output should show Phase 02 further along than before (plan executed, summary generated). Should run verification gate (tests, build check, lint) before writing SUMMARY.md.",
+      "expected_output": "Should execute a lifecycle chain: first invoke /build for 02-01-PLAN.md, then on completion invoke /verify for phase 2 deliverables, then invoke /progress showing updated state. Each step must complete before the next starts. /build should suggest /fh:review as post-build quality check. Final /progress output should show Phase 02 further along than before (plan executed, summary generated). Should run verification gate (tests, build check, lint) before writing SUMMARY.md.",
       "files": [
         "evals/fixtures/nextjs-app-deep/.planning/PROJECT.md",
         "evals/fixtures/nextjs-app-deep/.planning/STATE.md",
@@ -3245,7 +3245,7 @@
           "type": "ordering"
         },
         {
-          "text": "/build invokes /review --quick internally for post-build quality checks",
+          "text": "/build suggests /fh:review for post-build quality checks",
           "type": "behavioral"
         },
         {
@@ -5175,7 +5175,7 @@
       "id": 175,
       "command": "simplify",
       "prompt": "simplify my recent changes. fallow is installed on my machine",
-      "expected_output": "Should check fallow availability, run 3 fallow commands (check, dupes --mode semantic, health) with JSON format, post-filter dupes and health to diff-relevant files, cap at 200 lines, inject non-empty outputs into the 3 review agent prompts under \"Static Analysis Findings\" headers. Code reuse agent gets dupes + unused exports. Code quality agent gets health metrics + circular deps. Efficiency agent gets complexity hotspots.",
+      "expected_output": "Should check fallow availability, run 3 fallow commands (check, dupes --mode semantic, health) with JSON format, post-filter dupes and health to diff-relevant files, cap at 200 lines, inject non-empty outputs into the single review agent's prompt under a \"Static Analysis Findings\" header. Dupes + unused exports inform Lens 1 (Code Reuse). Health metrics + circular deps inform Lens 2 (Code Quality). Complexity hotspots inform Lens 3 (Efficiency).",
       "files": [],
       "assertions": [
         {
@@ -5199,7 +5199,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Injects Fallow findings into agent prompts as ground truth",
+          "text": "Injects Fallow findings into the review agent prompt as ground truth",
           "type": "behavioral"
         }
       ]
@@ -5233,7 +5233,7 @@
       "id": 177,
       "command": "review",
       "prompt": "review my changes before creating a PR. fallow is available on this machine",
-      "expected_output": "Should run Step 1.7 (static analysis) with fallow check --changed-since, dupes, and health. Should post-filter to diff files and cap at 200 lines. Should include fallow output in Agent 1 (code quality) and Agent 3 (gap analysis) prompts. Agent 1 receives all three outputs. Agent 3 receives FALLOW_CHECK for unwired code detection.",
+      "expected_output": "Should run Step 1.7 (static analysis) with fallow check --changed-since, dupes, and health. Should post-filter to diff files and cap at 200 lines. Should include fallow output in Agent 1 (code quality + architecture) and Agent 2 (gap analysis) prompts. Agent 1 receives all three outputs. Agent 2 receives FALLOW_CHECK for unwired code detection.",
       "files": [],
       "assertions": [
         {
@@ -5249,7 +5249,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Includes FALLOW_CHECK in Agent 3 prompt",
+          "text": "Includes FALLOW_CHECK in Agent 2 (gap analysis) prompt",
           "type": "behavioral"
         },
         {

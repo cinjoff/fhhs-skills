@@ -252,7 +252,27 @@ Codebase mapping available. Before grepping for architecture info, check:
 
 **3b. Index into FTS5 via ctx_index (if context-mode available):**
 
-Check if `ctx_index` MCP tool is available. If yes, read each `.planning/codebase/*.md` file and call `ctx_index` with `title=filename` and `content=file content` for each. If `ctx_index` is not available, skip silently — the `.claude/rules/` files provide fallback context.
+Check if `ctx_index` MCP tool is available. If not available, skip silently — the `.claude/rules/` files provide fallback context. If available, index two categories:
+
+**Codebase documents:** Read each `.planning/codebase/*.md` file and call `ctx_index` with `title="codebase:{filename}"` (e.g. `codebase:ARCHITECTURE.md`) and `content=file content`.
+
+**Planning documents:** Index the core `.planning/` files that skills read repeatedly:
+
+| File | Index title | Why |
+|------|-------------|-----|
+| `.planning/PROJECT.md` | `planning:PROJECT` | Vision, scope, success criteria — read by progress, plan-work, plan-review |
+| `.planning/ROADMAP.md` | `planning:ROADMAP` | Phase goals, ordering — read by progress, plan-work, build |
+| `.planning/STATE.md` | `planning:STATE` | Current position — read by almost every skill |
+| `.planning/DESIGN.md` | `planning:DESIGN` | Design language — read by build, fix, review |
+| `.planning/REQUIREMENTS.md` | `planning:REQUIREMENTS` | Work items — read by plan-work |
+| `.planning/DECISIONS.md` | `planning:DECISIONS` | Decision journal — read by build, plan-work, plan-review, fix |
+
+For each file: if it exists, read it and call `ctx_index` with the title and content. Skip missing files silently. After indexing, write a manifest for cache invalidation:
+
+```bash
+# Generate content hashes for indexed .planning/ files
+md5sum .planning/PROJECT.md .planning/ROADMAP.md .planning/STATE.md .planning/DESIGN.md .planning/REQUIREMENTS.md .planning/DECISIONS.md 2>/dev/null > .planning/codebase/.planning-index-manifest
+```
 
 **3c. Record git SHA for freshness:**
 
@@ -363,7 +383,8 @@ End workflow.
 - Read agent output files to collect confirmations
 - All 7 codebase documents exist
 - .claude/rules/gsd-planning.md and .claude/rules/codebase-context.md created with path-scoped frontmatter
-- ctx_index called for each codebase document when context-mode is available, skipped silently otherwise
+- ctx_index called for each codebase document AND each existing .planning/ file when context-mode is available, skipped silently otherwise
+- .planning/codebase/.planning-index-manifest written with content hashes for cache invalidation
 - .planning/codebase/.last-mapped written with current git SHA
 - Clear completion summary with line counts
 - User offered clear next steps in GSD style

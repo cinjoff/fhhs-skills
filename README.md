@@ -78,8 +78,8 @@ This derives vision, tech stack, and requirements from the description, creates 
   [ ] Brainstorm                        ├─ [ ] Implement handler
   [ ] Discuss implementation            ├─ [ ] Run verification
   [ ] Derive must_haves              [ ] Task 2: Write tests
-  [ ] Create plan                    [ ] Spec gate Wave 1
-  [ ] Plan-check                     [ ] Simplify + review
+  [ ] Create plan                    [ ] Commit + verify
+  [ ] Plan-check                     [ ] Phase completion check
 ```
 
 Subagents create their own sub-tasks for granular progress. If task tools are unavailable, workflows degrade gracefully to GSD-only tracking.
@@ -123,9 +123,9 @@ Subagents create their own sub-tasks for granular progress. If task tools are un
 | `/fh:new-project` | Set up a project with vision, tech stack, design language, domain research, and roadmap. Default stack uses the [fh-starter-project](https://github.com/cinjoff/fh-starter-project) template with Better Auth, Resend email, optional organizations, and shadcn/ui |
 | `/fh:plan-work` | Brainstorm, research, and produce an execution-ready plan |
 | `/fh:plan-review` | Stress-test a plan — business + engineering alignment, research verification, respect-but-flag for locked decisions |
-| `/fh:build` | Execute a plan with parallel subagents, TDD, design gates, and verification |
+| `/fh:build` | Execute a plan with parallel subagents, TDD, and verification |
 | `/fh:ui-test` | Visual verification and QA testing with agent-browser backend |
-| `/fh:review` | Code quality, security scan, runtime error check, and branch promotion |
+| `/fh:review` | Code quality, spec verification, goal verification, and branch promotion |
 | `/fh:auto` | Autonomous multi-phase execution — plans, reviews, builds, and reviews each phase without human intervention |
 
 </details>
@@ -170,7 +170,6 @@ Additional design skills (also auto-invoked by `/fh:build` and other pipelines):
 |---------|-------------|
 | `/fh:progress` | Restore context (git + claude-mem), check status, route to next action |
 | `/fh:tracker` | Launch the visual project dashboard (real-time web UI at localhost:3847) |
-| `/fh:quick` | Do a small task with tracking guarantees |
 | `/fh:todos` | Manage project todos — add new or review pending |
 
 Phase management, milestone lifecycle, and test generation are handled automatically by `/fh:plan-work`, `/fh:build`, and `/fh:review`.
@@ -249,7 +248,7 @@ All upstreams are forked and bundled. TypeScript Language Server provides code n
 
 ### Optional: Fallow Static Analysis
 
-If [Fallow](https://docs.fallow.tools/) is installed (`npm install -g fallow`), `/fh:simplify`, `/fh:review`, and `/fh:build` (spec gate) automatically use it for deterministic dead-code detection, circular dependency analysis, code duplication, and complexity metrics. Fallow findings are injected into agent prompts as ground truth alongside the diff.
+If [Fallow](https://docs.fallow.tools/) is installed (`npm install -g fallow`), `/fh:simplify` and `/fh:review` automatically use it for deterministic dead-code detection, circular dependency analysis, code duplication, and complexity metrics. Fallow findings are injected into agent prompts as ground truth alongside the diff.
 
 When Fallow is not installed, all skills behave identically to before — no errors, no degraded output.
 
@@ -263,7 +262,7 @@ Executes plans through waves of parallel subagents with quality gates between th
  PLAN.md (from /plan-work)
       |
       v
-+- PARSE + TASK INIT -------------------------------------------+
++- FIND + ANALYZE PLAN -----------------------------------------+
 |  Read plan frontmatter                                         |
 |  Extract waves, dependencies, must-haves                       |
 |  Create native tasks from plan (TaskCreate per task + deps)    |
@@ -288,60 +287,24 @@ Executes plans through waves of parallel subagents with quality gates between th
       |  |  Design quality       (if frontend code)    |
       |  +---------------------------------------------+
       |
-      v
-+- SPEC GATE ---------------------------------------------------+
-|  Code review: missing reqs, stubs, unwired code, TS strict    |
-|  + fallow check for definitive unwired-code detection          |
-|  TDD commit-order check: test commits before implementation   |
-|  Result: PASS → next wave  |  BLOCKING → fixes required       |
-+----------------------------+----------------------------------+
-                             |
-                             v  (repeat for each wave)
-                             |
-+- DESIGN GATES (if frontend) ---------------------------------+
-|                                                               |
-|  Sequential — each gate refines previous output:              |
-|                                                               |
-|  +-----------+   +-----------+   +------------+               |
-|  | Critique  |-->|  Polish   |-->| Normalize  |               |
-|  | UX quality|   | Visual    |   | Design     |               |
-|  | review    |   | refine    |   | system fit |               |
-|  +-----------+   +-----------+   +------------+               |
-|                                                               |
-|  Optional:                                                    |
-|  +-----------+   +-----------+   +-----------+                |
-|  |  Audit    |   |  Harden   |   |  Animate  |                |
-|  | a11y/perf |   | Edge cases|   |  Motion   |                |
-|  +-----------+   +-----------+   +-----------+                |
-+----------------------------+----------------------------------+
-                             |
-+- SIMPLIFY -----------------+----------------------------------+
-|                                                               |
-|  If fallow installed: run check + dupes + health               |
-|  Post-filter to diff files, inject as ground truth             |
-|                                                               |
-|  3 parallel agents review the diff (+ fallow data):           |
-|                                                               |
-|  +-------------+  +-------------+  +-------------+            |
-|  |    REUSE    |  |   QUALITY   |  | EFFICIENCY  |            |
-|  | Duplication |  | Naming, DRY |  | Performance |            |
-|  | +fallow     |  | +complexity |  | +hotspots   |            |
-|  |  dupes      |  |  metrics    |  |             |            |
-|  +-------------+  +-------------+  +-------------+            |
-+----------------------------+----------------------------------+
-                             |
-+- VERIFICATION GATE --------+----------------------------------+
+      v  (repeat for each wave)
+      |
++- COMMIT + VERIFY + SUMMARY -----------------------------------+
+|  Single commit for all waves                                   |
 |  Run test suite, build, lint — fresh evidence before claims    |
-|  No success claims without passing verification                |
+|  Generate SUMMARY.md                                           |
 +----------------------------+----------------------------------+
                              |
-+- PRODUCTION SAFETY --------+----------------------------------+
++- PHASE COMPLETION (if all plans done) ------------------------+
 |                                                               |
-|  Production safety checklist (gstack-derived):                |
-|  - Data migration risks                                       |
-|  - Breaking API changes                                       |
-|  - Feature flag coverage                                      |
-|  - Rollback plan                                              |
+|  Goal verification: must_haves truth table                    |
+|  Artifact + key-link verification                             |
+|                                                               |
+|  Design quality gates (if visual work > 30%):                 |
+|  Round 1: critique + harden → Round 2: polish + adapt         |
+|  Round 3: normalize (if design system defined)                |
+|                                                               |
+|  Final verification + VERIFICATION.md                          |
 |                                                               |
 +----------------------------+----------------------------------+
                              |
@@ -372,20 +335,27 @@ Shared terminal step for `/build`, `/fix`, and `/refactor`.
 |  |  Inject as ground truth into review agents          |       |
 |  +---------------------------------------------------+       |
 |                                                               |
-|  2. CODE QUALITY                                              |
+|  1.8 SPEC VERIFICATION (GSD projects only)                    |
 |  +---------------------------------------------------+       |
-|  |  Code review (+ Next.js perf criteria if relevant) |       |
+|  |  Missing requirements, stubs, unwired code         |       |
+|  |  TypeScript strictness (any, as casts, switches)   |       |
+|  |  Wrong behavior (logic errors, type mismatches)    |       |
+|  |  Result: BLOCKING / WARN / PASS                    |       |
+|  +---------------------------------------------------+       |
+|                                                               |
+|  2. CODE QUALITY + GAP ANALYSIS (2 parallel agents)           |
+|  +---------------------------------------------------+       |
+|  |  Agent 1: code review + architecture + production  |       |
+|  |           safety (+ Next.js perf if relevant)      |       |
+|  |  Agent 2: gap analysis — untested paths,           |       |
+|  |           unhandled errors, incomplete features     |       |
 |  |  Severity: Critical > Important > Minor > Nit      |       |
 |  +---------------------------------------------------+       |
 |                                                               |
-|  3. SECURITY SCAN                                             |
+|  3. GOAL VERIFICATION (GSD projects only)                     |
 |  +---------------------------------------------------+       |
-|  |  4 parallel agents — OWASP Top 10:                 |       |
-|  |  +----------+ +--------+ +------+ +--------+      |       |
-|  |  | Injection| | Auth + | | Data | | Access |      |       |
-|  |  | + XSS    | |Session | |Expose| | Ctrl   |      |       |
-|  |  +----------+ +--------+ +------+ +--------+      |       |
-|  |  Gate: BLOCK (critical) / WARN (high) / PASS      |       |
+|  |  must_haves truth table: PASS / FAIL / PARTIAL     |       |
+|  |  Artifact + key-link verification                  |       |
 |  +---------------------------------------------------+       |
 |                                                               |
 |  4. EVIDENCE                                                  |
@@ -393,18 +363,14 @@ Shared terminal step for `/build`, `/fix`, and `/refactor`.
 |  |  Run tests, build, lint — capture exit codes       |       |
 |  +---------------------------------------------------+       |
 |                                                               |
-|  5. TYPESCRIPT STRICTNESS                                     |
-|  +---------------------------------------------------+       |
-|  |  Grep diff for: `any`, `as` casts,                |       |
-|  |  non-exhaustive switches                           |       |
-|  +---------------------------------------------------+       |
-|                                                               |
-|  6. GATE DECISION                                             |
+|  5. GATE DECISION                                             |
 |  +---------------------------------------------------+       |
 |  |  BLOCK: critical issues or verification failures   |       |
 |  |  WARN:  runtime errors in changed files            |       |
 |  |  PASS:  otherwise → promote branch                 |       |
 |  +---------------------------------------------------+       |
+|                                                               |
+|  For security scanning, use /fh:secure (OWASP Top 10)         |
 +---------------------------------------------------------------+
 ```
 
@@ -558,29 +524,6 @@ Native task tracking shows progress through each step in real-time.
                              |
                              v
                      /plan-review (default) → /build
-```
-
-## `/quick` — Lightweight Task Runner
-
-```
- SMALL TASK (+ optional flags)
-      |
-      +-- --discuss : adds gray-area discussion step
-      +-- --full   : adds plan review + verification
-      |
-      v
-+- PLAN --------------------------------------------------------+
-|  Generate a plan for the task                                  |
-|  (if --full) review plan → max 2 revision loops                |
-+----------------------------+----------------------------------+
-                             |
-+- EXECUTE ------------------+----------------------------------+
-|  Execute plan in a fresh subagent                              |
-|  (if --full) verify results against plan                       |
-+----------------------------+----------------------------------+
-                             |
-                             v
-                     Update state + final commit
 ```
 
 ## Updating
