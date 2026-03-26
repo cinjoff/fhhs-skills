@@ -1,6 +1,6 @@
 ---
 name: fh:new-project
-description: Bootstrap a new tracked project with design framework, conventions, and GSD roadmap. Use when the user says 'new project', 'start a project', 'bootstrap', 'set up a new app', or 'initialize'. Creates .planning/ structure and CLAUDE.md.
+description: Bootstrap a new tracked project with design framework, conventions, and GSD roadmap. Use when the user says 'new project', 'start a project', 'bootstrap', 'set up a new app', or 'initialize'. Creates .planning/ structure and CLAUDE.md. Supports --auto flag for fully autonomous project creation.
 user-invocable: true
 ---
 
@@ -9,6 +9,14 @@ Bootstrap a new project with opinionated defaults, design framework, and full GS
 $ARGUMENTS
 
 You are a **lean orchestrator**. Guide the user through setup, delegate heavy work to framework skills.
+
+## Auto Mode Detection
+
+Parse `$ARGUMENTS` for `--auto` flag:
+- If present: set `AUTO_PROJECT = true`, extract the remaining text as the project description
+- If absent: proceed normally (no behavioral change)
+
+Example: `/fh:new-project --auto "A SaaS platform for managing pet grooming appointments"`
 
 > **Dependency check:** All tools are built into this plugin — engineering disciplines, design quality commands, GSD CLI (`gsd-tools.cjs`), and TypeScript LSP. GSD will be initialized per-project in Step 7.
 
@@ -26,6 +34,10 @@ Delegate to the GSD new-project questioning flow. Ask the user one question at a
 6. **Success criteria:** How do you know it worked?
 
 Save answers — they feed into PROJECT.md in Step 7.
+
+### Auto Mode
+
+If `AUTO_PROJECT` is true, derive all 6 answers from the project description. Do not ask questions interactively. Auto-answer using best judgment. Log each derived answer as a decision in `.planning/DECISIONS.md` (create if needed, following the format in `.claude/skills/build/references/decisions-template.md`).
 
 ---
 
@@ -51,6 +63,10 @@ Ask: **"Any changes to the default stack?"**
 
 Lock the final tech stack decisions. These go into PROJECT.md.
 
+### Auto Mode
+
+If `AUTO_PROJECT` is true, use default stack. Auto-decide auth/organizations based on whether the description implies user accounts, login, teams, etc. Log decisions to `.planning/DECISIONS.md`.
+
 ### 2b: shadcn/ui Preset — Brand-Aware Generation
 
 If the tech stack includes Shadcn/ui (the default), generate a custom design system preset from the user's brand identity.
@@ -73,6 +89,10 @@ The more context, the better the match. Or skip to use defaults.
 → Brand references (URLs, images, descriptions — or Enter to skip):
 ──────────────────────────────────────────────────────────────
 ```
+
+#### Auto Mode
+
+If `AUTO_PROJECT` is true, skip brand extraction. Use defaults (no preset customization). Proceed directly to the "user skips entirely" path below.
 
 **If the user provides references, run the Brand Extraction flow:**
 
@@ -331,6 +351,10 @@ Do NOT push yet — later steps (Supabase, planning files) will commit on top.
 
 ## Step 4: Design Framework (optional)
 
+### Auto Mode
+
+If `AUTO_PROJECT` is true, skip design framework setup entirely. Design setup deferred to first build phase.
+
 Invoke `/fh:ui-branding`.
 
 **If Step 2b gathered brand references:** Pass the extracted context (colors, fonts, style, and the shadcn preset parameters) to `/fh:ui-branding` as starting context. Tell it to skip the "Brand & Personality" and "Aesthetic Preferences" questions — those were already answered. The design framework should extend the preset choices with higher-level tokens, component patterns, and design principles, not re-ask about colors and fonts.
@@ -363,6 +387,10 @@ Keep it under 40 lines. Commit: `docs: initialize CLAUDE.md with project convent
 ---
 
 ## Step 6: Domain Research (optional)
+
+### Auto Mode
+
+If `AUTO_PROJECT` is true, always run research (option 1). Auto mode needs domain context for quality roadmap creation. Skip the user prompt and proceed directly to the research flow.
 
 Check whether the tech stack was **fully specified** in Step 2 (user explicitly chose all stack components) or left partially open (accepted defaults without discussion, said "figure it out", etc.). Track this as `stack_decided`.
 
@@ -439,6 +467,10 @@ Research complete. Proceed to Step 7.
 ---
 
 ## Step 7: Requirements + Roadmap
+
+### Auto Mode
+
+If `AUTO_PROJECT` is true, use **SCOPE EXPANSION** thinking to produce an ambitious multi-milestone roadmap. This is the ONE place where scope expansion applies — dream big, envision the platonic ideal. Subsequent `/fh:plan-review` calls will use HOLD SCOPE to keep execution disciplined.
 
 **If `.planning/research/SUMMARY.md` exists** (created in Step 6), read it first. Use the research findings to inform requirements — incorporate discovered table-stakes features, avoid identified pitfalls, and align the roadmap phases with architecture guidance.
 
@@ -1074,3 +1106,12 @@ Resend note:
   - Development emails work immediately with the API key
   - Without RESEND_API_KEY, emails are logged to console (safe for dev)
 ```
+
+### Auto Mode Continuation
+
+If `AUTO_PROJECT` is true, after handoff:
+1. Set `workflow.auto_advance = true` via gsd-tools
+2. Shell out to orchestrator: `node bin/auto-orchestrator.cjs --project-dir "$(pwd)"`
+3. The orchestrator takes over and executes all phases autonomously
+
+The user can walk away at this point — the system handles everything.
