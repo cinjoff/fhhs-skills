@@ -91,6 +91,8 @@ WAVE_START_SHA=$(git rev-parse HEAD)
 AUTO_MODE=$(node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs config-get workflow.auto_advance 2>/dev/null || echo "false")
 ```
 
+If `AUTO_MODE` is `"true"` AND `.planning/DECISIONS.md` exists, read it and filter entries where Phase matches the current phase identifier (or Phase is `"project"` for cross-phase decisions). Format the filtered decisions as a compact context block and store as `{DECISIONS_CONTEXT}` for subagent injection. If `DECISIONS.md` doesn't exist or has no entries for this phase, `{DECISIONS_CONTEXT}` is empty string.
+
 ---
 
 ## Step 3: Execute Waves
@@ -138,6 +140,11 @@ This replaces per-subagent skill directory scanning. Each subagent sees the full
 ### Checkpoint protocol
 
 If a task has `type="checkpoint:*"`, read `references/checkpoint-protocol.md` (co-located with this skill) for the full protocol. It covers checkpoint types (human-verify, decision, human-action), return format, auto-mode behavior, standard mode continuation, and authentication gate handling.
+
+When auto-approving checkpoints in auto mode, log each auto-approval as a decision in `.planning/DECISIONS.md`:
+- For `checkpoint:human-verify` auto-approvals: `confidence=HIGH`
+- For `checkpoint:decision` auto-selections: `confidence=MEDIUM`
+Use `step='build checkpoint'` in the decision entry. Follow the decision entry format from `references/decisions-template.md` (co-located in this skill's references directory).
 
 ### Task status updates (if TASKS_AVAILABLE)
 

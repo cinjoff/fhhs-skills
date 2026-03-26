@@ -20,6 +20,8 @@ SKILL.md index, follow rules relevant to your task.
 
 {CLAUDE_MD_SECTIONS}
 {DESIGN_DECISIONS}
+<!-- When AUTO_MODE is true, this contains filtered decisions from .planning/DECISIONS.md relevant to the current phase. When AUTO_MODE is false or no DECISIONS.md exists, this is empty string. -->
+{DECISIONS_CONTEXT}
 
 ## Before You Begin
 

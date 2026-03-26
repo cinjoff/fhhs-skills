@@ -31,6 +31,10 @@ Awaiting: [what user needs to do]
 - `checkpoint:decision` → Auto-select first option (planners front-load recommended). Log `Auto-selected: [option]`. Continue.
 - `checkpoint:human-action` → Stop normally. Auth gates cannot be automated.
 
+Log each auto-approval/auto-selection to `.planning/DECISIONS.md` using the decision entry format from `decisions-template.md` (co-located in this directory).
+- For `checkpoint:human-verify`: `confidence=HIGH`, `rationale='Auto-approved — visual verification passed by evaluator.'`
+- For `checkpoint:decision`: `confidence=MEDIUM`, `rationale='Auto-selected recommended option from planner.'`
+
 ## Standard mode
 
 Present checkpoint to user, wait for response, then dispatch a **new subagent** for the next task. The continuation prompt must include:
