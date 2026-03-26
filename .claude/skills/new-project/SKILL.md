@@ -1111,7 +1111,7 @@ Resend note:
 
 If `AUTO_PROJECT` is true, after handoff:
 1. Set `workflow.auto_advance = true` via gsd-tools
-2. Shell out to orchestrator: `node bin/auto-orchestrator.cjs --project-dir "$(pwd)"`
+2. Shell out to orchestrator: `node .claude/skills/auto/auto-orchestrator.cjs --project-dir "$(pwd)"`
 3. The orchestrator takes over and executes all phases autonomously
 
 The user can walk away at this point — the system handles everything.

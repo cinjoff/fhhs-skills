@@ -78,7 +78,7 @@ Confirm the config was set successfully before proceeding.
 Invoke the Node.js orchestrator for process-isolated phase execution:
 
 ```bash
-node bin/auto-orchestrator.cjs \
+node .claude/skills/auto/auto-orchestrator.cjs \
   --project-dir "$(pwd)" \
   --start-phase "${START_PHASE}" \
   --end-phase "${END_PHASE}" \
@@ -136,7 +136,7 @@ When invoked with `--check-corrections`, the orchestrator runs in a separate mod
 
 Invoke via:
 ```bash
-node bin/auto-orchestrator.cjs --project-dir "$(pwd)" --check-corrections
+node .claude/skills/auto/auto-orchestrator.cjs --project-dir "$(pwd)" --check-corrections
 ```
 
 This mode is useful after a human reviews DECISIONS.md and marks entries as CORRECTED — the cascade propagates those corrections to affected artifacts automatically where possible.

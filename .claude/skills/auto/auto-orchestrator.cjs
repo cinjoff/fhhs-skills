@@ -6,7 +6,7 @@
  * Orchestrates the plan-work → plan-review → build → review loop
  * for each phase, using process-isolated claude -p sessions.
  *
- * Usage: node bin/auto-orchestrator.cjs [options]
+ * Usage: node .claude/skills/auto/auto-orchestrator.cjs [options]
  *
  *   --project-dir <path>    Project root (default: cwd)
  *   --start-phase <N>       First phase to execute (default: current from STATE.md)
