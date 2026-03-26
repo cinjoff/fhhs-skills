@@ -173,6 +173,12 @@ Added to `package.json`:
 - `@sentry/browser` `@sentry/node` `@sentry/core` `better-sqlite3`
 - devDependency: `@types/better-sqlite3`
 
+**Native bindings:** `better-sqlite3` requires a platform-specific `.node` binary. If you get binding errors (e.g. after cloning, copying a workspace, or switching Node versions), run:
+```bash
+cd node_modules/better-sqlite3 && npx prebuild-install && cd ../..
+pnpm rebuild better-sqlite3   # or npm/yarn equivalent
+```
+
 ### Environment variables
 
 | Variable | Side | Purpose |
