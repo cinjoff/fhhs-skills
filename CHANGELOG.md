@@ -5,6 +5,14 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.27.0] - 2026-03-26
+
+### Added
+- **Better Auth env setup** — `/fh:new-project` generates `BETTER_AUTH_SECRET` and writes auth env vars to `.env.local` automatically
+- **Resend CLI integration** — guides user through Resend signup, authenticates CLI, and creates a project-scoped sending key for transactional email
+- **Organization opt-in** — asks if user wants multi-tenant support and sets `ENABLE_ORGANIZATIONS=true` in `.env.local`
+- **shadcn skills auto-install** — installs shadcn/ui agent skills globally (`~/.skills/shadcn`) when using the default stack
+
 ## [1.26.0] - 2026-03-26
 
 ### Added
