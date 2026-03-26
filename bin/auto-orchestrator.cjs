@@ -14,11 +14,27 @@
  *   --budget <dollars>      Cost ceiling in dollars (optional)
  *   --dry-run               Show plan without executing
  *   --resume                Resume from last crash point
+ *   --check-corrections     Run decision correction cascade instead of normal loop
  */
 
 const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
+
+// ─── Timeout & Retry Constants ───────────────────────────────────────────────
+
+const SOFT_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
+const HARD_TIMEOUT_MS = 45 * 60 * 1000; // 45 minutes
+const MAX_RETRIES = 2;
+
+// ─── Cost Estimation Constants ───────────────────────────────────────────────
+// Rough heuristic: ~4 chars per token. Pricing approximate (Opus-class model).
+// Input: ~$0.015/1K tokens. Output: ~$0.075/1K tokens.
+// These are estimates — actual costs depend on model and context size.
+
+const CHARS_PER_TOKEN = 4;
+const INPUT_COST_PER_1K = 0.015;
+const OUTPUT_COST_PER_1K = 0.075;
 
 // ─── Argument Parsing ─────────────────────────────────────────────────────────
 
@@ -31,6 +47,7 @@ function parseArgs(argv) {
     budget: null,
     dryRun: false,
     resume: false,
+    checkCorrections: false,
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -52,6 +69,9 @@ function parseArgs(argv) {
         break;
       case '--resume':
         opts.resume = true;
+        break;
+      case '--check-corrections':
+        opts.checkCorrections = true;
         break;
       default:
         fatal(`Unknown argument: ${args[i]}`);
@@ -204,7 +224,63 @@ function clearAutoState(projectDir) {
   if (fs.existsSync(p)) fs.unlinkSync(p);
 }
 
-// ─── Claude Session Runner ───────────────────────────────────────────────────
+// ─── Cost Estimation ─────────────────────────────────────────────────────────
+
+/**
+ * Estimate session cost from prompt and response text lengths.
+ * This is a rough heuristic — actual costs vary by model, context window usage,
+ * and pricing tier. Uses ~4 chars/token and approximate Opus-class rates.
+ */
+function estimateSessionCost(promptText, responseText) {
+  const inputTokens = Math.ceil(promptText.length / CHARS_PER_TOKEN);
+  const outputTokens = Math.ceil(responseText.length / CHARS_PER_TOKEN);
+  const inputCost = (inputTokens / 1000) * INPUT_COST_PER_1K;
+  const outputCost = (outputTokens / 1000) * OUTPUT_COST_PER_1K;
+  return inputCost + outputCost;
+}
+
+// ─── DECISIONS.md Helpers ────────────────────────────────────────────────────
+
+function decisionsPath(projectDir) {
+  return path.join(projectDir, '.planning', 'DECISIONS.md');
+}
+
+function countDecisions(projectDir) {
+  const dp = decisionsPath(projectDir);
+  if (!fs.existsSync(dp)) return 0;
+  const content = fs.readFileSync(dp, 'utf-8');
+  const matches = content.match(/^## DEC-/gm);
+  return matches ? matches.length : 0;
+}
+
+function nextDecisionId(projectDir) {
+  return `DEC-${String(countDecisions(projectDir) + 1).padStart(3, '0')}`;
+}
+
+function appendDecision(projectDir, { id, title, status, confidence, context, decision, affects }) {
+  const dp = decisionsPath(projectDir);
+  let content = '';
+  if (fs.existsSync(dp)) {
+    content = fs.readFileSync(dp, 'utf-8');
+  } else {
+    content = '# Decisions\n\nAuto-generated decision log.\n';
+  }
+
+  const entry = [
+    '',
+    `## ${id}: ${title}`,
+    `- **Status:** ${status}`,
+    `- **Confidence:** ${confidence}`,
+    `- **Context:** ${context}`,
+    `- **Decision:** ${decision}`,
+    `- **Affects:** ${affects}`,
+    '',
+  ].join('\n');
+
+  fs.writeFileSync(dp, content.trimEnd() + '\n' + entry, 'utf-8');
+}
+
+// ─── Claude Session Runner (with stuck detection) ────────────────────────────
 
 function runClaudeSession(prompt, opts) {
   return new Promise((resolve, reject) => {
@@ -218,20 +294,55 @@ function runClaudeSession(prompt, opts) {
 
     let stdout = '';
     let stderr = '';
+    let softFired = false;
+    const sessionStart = Date.now();
 
     child.stdout.on('data', (data) => { stdout += data.toString(); });
     child.stderr.on('data', (data) => { stderr += data.toString(); });
 
+    // Soft timeout: warn but continue
+    const softTimer = setTimeout(() => {
+      softFired = true;
+      const elapsedMin = Math.round((Date.now() - sessionStart) / 60000);
+      log(`  ⚠ SOFT TIMEOUT: session running for ${elapsedMin}min (threshold: ${SOFT_TIMEOUT_MS / 60000}min)`);
+    }, SOFT_TIMEOUT_MS);
+
+    // Hard timeout: kill process
+    const hardTimer = setTimeout(() => {
+      const elapsedMin = Math.round((Date.now() - sessionStart) / 60000);
+      log(`  ✗ HARD TIMEOUT: killing session after ${elapsedMin}min`);
+      child.kill('SIGTERM');
+      // Give SIGTERM 5s to take effect, then SIGKILL
+      setTimeout(() => {
+        try { child.kill('SIGKILL'); } catch { /* already dead */ }
+      }, 5000);
+    }, HARD_TIMEOUT_MS);
+
+    function cleanup() {
+      clearTimeout(softTimer);
+      clearTimeout(hardTimer);
+    }
+
     child.on('error', (err) => {
+      cleanup();
       reject(new Error(`Failed to spawn claude: ${err.message}`));
     });
 
-    child.on('close', (code) => {
-      if (code !== 0) {
+    child.on('close', (code, signal) => {
+      cleanup();
+      const elapsedMs = Date.now() - sessionStart;
+
+      if (signal === 'SIGTERM' || signal === 'SIGKILL') {
+        const err = new Error(`Session killed after hard timeout (${Math.round(elapsedMs / 60000)}min)`);
+        err.timeout = true;
+        err.elapsedMs = elapsedMs;
+        err.stdout = stdout;
+        reject(err);
+      } else if (code !== 0) {
         const errMsg = `claude -p exited with code ${code}\nstderr: ${stderr.slice(0, 500)}`;
         reject(new Error(errMsg));
       } else {
-        resolve({ stdout, stderr, exitCode: code });
+        resolve({ stdout, stderr, exitCode: code, elapsedMs, promptText: prompt });
       }
     });
   });
@@ -253,16 +364,6 @@ function updateStateViaGsd(projectDir, phaseId) {
   }
 }
 
-// ─── DECISIONS.md Counting ───────────────────────────────────────────────────
-
-function countDecisions(projectDir) {
-  const decisionsPath = path.join(projectDir, '.planning', 'DECISIONS.md');
-  if (!fs.existsSync(decisionsPath)) return 0;
-  const content = fs.readFileSync(decisionsPath, 'utf-8');
-  const matches = content.match(/^## DEC-/gm);
-  return matches ? matches.length : 0;
-}
-
 // ─── Phase Steps ──────────────────────────────────────────────────────────────
 
 const PHASE_STEPS = ['plan-work', 'plan-review', 'build', 'review'];
@@ -270,11 +371,10 @@ const PHASE_STEPS = ['plan-work', 'plan-review', 'build', 'review'];
 async function executeStep(projectDir, phaseId, step, planPath) {
   switch (step) {
     case 'plan-work':
-      await runClaudeSession(
+      return await runClaudeSession(
         `/fh:plan-work plan next for phase ${phaseId}`,
         { cwd: projectDir }
       );
-      break;
 
     case 'plan-review': {
       const latestPlan = planPath || findLatestPlan(projectDir, phaseId);
@@ -282,11 +382,10 @@ async function executeStep(projectDir, phaseId, step, planPath) {
         throw new Error(`plan-work did not produce a PLAN.md for phase ${phaseId}`);
       }
       const relPlan = path.relative(projectDir, latestPlan);
-      await runClaudeSession(
+      return await runClaudeSession(
         `/fh:plan-review ${relPlan} --mode hold`,
         { cwd: projectDir }
       );
-      break;
     }
 
     case 'build': {
@@ -295,23 +394,208 @@ async function executeStep(projectDir, phaseId, step, planPath) {
         throw new Error(`No PLAN.md found for phase ${phaseId}`);
       }
       const relPlan = path.relative(projectDir, latestPlan);
-      await runClaudeSession(
+      return await runClaudeSession(
         `/fh:build ${relPlan}`,
         { cwd: projectDir }
       );
-      break;
     }
 
     case 'review':
-      await runClaudeSession(
+      return await runClaudeSession(
         `/fh:review --quick`,
         { cwd: projectDir }
       );
-      break;
 
     default:
       throw new Error(`Unknown step: ${step}`);
   }
+}
+
+// ─── Decision Correction Cascade ─────────────────────────────────────────────
+
+/**
+ * Parse DECISIONS.md and return entries with Status=CORRECTED.
+ * Each entry includes id, title, affects, and the original decision text.
+ */
+function parseCorrectedDecisions(projectDir) {
+  const dp = decisionsPath(projectDir);
+  if (!fs.existsSync(dp)) return [];
+
+  const content = fs.readFileSync(dp, 'utf-8');
+  const entries = [];
+
+  // Split on ## DEC- boundaries
+  const sections = content.split(/(?=^## DEC-)/gm);
+  for (const section of sections) {
+    const headerMatch = section.match(/^## (DEC-\d+):\s*(.+)/m);
+    if (!headerMatch) continue;
+
+    const statusMatch = section.match(/\*\*Status:\*\*\s*(.+)/i);
+    if (!statusMatch) continue;
+    const status = statusMatch[1].trim();
+    if (!status.toUpperCase().includes('CORRECTED')) continue;
+
+    const affectsMatch = section.match(/\*\*Affects:\*\*\s*(.+)/i);
+    const decisionMatch = section.match(/\*\*Decision:\*\*\s*(.+)/i);
+
+    entries.push({
+      id: headerMatch[1],
+      title: headerMatch[2].trim(),
+      affects: affectsMatch ? affectsMatch[1].trim() : '',
+      decision: decisionMatch ? decisionMatch[1].trim() : '',
+      rawSection: section,
+    });
+  }
+
+  return entries;
+}
+
+/**
+ * Classify a correction as Mechanical or Architectural based on the
+ * nature of the affects field and decision content.
+ */
+function classifyCorrection(entry) {
+  const affects = entry.affects.toLowerCase();
+  const decision = entry.decision.toLowerCase();
+  const combined = affects + ' ' + decision;
+
+  // Architectural indicators
+  const architecturalPatterns = [
+    'architecture', 'redesign', 'refactor', 'restructure',
+    'new approach', 'fundamental', 'pattern change', 'migration',
+  ];
+
+  for (const pattern of architecturalPatterns) {
+    if (combined.includes(pattern)) return 'architectural';
+  }
+
+  // Default: mechanical (config, string, naming, path changes)
+  return 'mechanical';
+}
+
+/**
+ * Parse the Affects field into individual artifact paths/references.
+ */
+function parseAffectsField(affects) {
+  // Split on commas, semicolons, or "and"
+  return affects
+    .split(/[,;]|\band\b/i)
+    .map(s => s.trim().replace(/^`|`$/g, ''))
+    .filter(s => s.length > 0);
+}
+
+/**
+ * Check if an artifact file exists and might still contain effects
+ * of the original decision.
+ */
+function checkArtifact(projectDir, artifactRef) {
+  // Try as a direct path
+  const fullPath = path.resolve(projectDir, artifactRef);
+  if (fs.existsSync(fullPath) && fs.statSync(fullPath).isFile()) {
+    return { path: fullPath, exists: true };
+  }
+  return { path: fullPath, exists: false };
+}
+
+async function runCorrectionCascade(projectDir) {
+  log('Decision Correction Cascade');
+  log(`  Project: ${projectDir}`);
+  log('');
+
+  const corrected = parseCorrectedDecisions(projectDir);
+  if (corrected.length === 0) {
+    log('No CORRECTED decisions found in DECISIONS.md');
+    return;
+  }
+
+  log(`Found ${corrected.length} CORRECTED decision(s):`);
+  const mechanicalFixes = [];
+  const architecturalPlans = [];
+
+  for (const entry of corrected) {
+    log(`  ${entry.id}: ${entry.title}`);
+    const classification = classifyCorrection(entry);
+    const artifacts = parseAffectsField(entry.affects);
+    log(`    Classification: ${classification}`);
+    log(`    Artifacts: ${artifacts.join(', ') || '(none specified)'}`);
+
+    const existingArtifacts = [];
+    for (const ref of artifacts) {
+      const check = checkArtifact(projectDir, ref);
+      if (check.exists) {
+        existingArtifacts.push(check.path);
+        log(`      ✓ ${ref} — exists, may need update`);
+      } else {
+        log(`      – ${ref} — not found, skipping`);
+      }
+    }
+
+    if (classification === 'mechanical' && existingArtifacts.length > 0) {
+      mechanicalFixes.push({ entry, artifacts: existingArtifacts });
+    } else if (classification === 'architectural') {
+      architecturalPlans.push({ entry, artifacts: existingArtifacts });
+    }
+  }
+
+  log('');
+
+  // Handle mechanical fixes via claude -p
+  if (mechanicalFixes.length > 0) {
+    log(`Applying ${mechanicalFixes.length} mechanical correction(s) via claude -p...`);
+    for (const fix of mechanicalFixes) {
+      const artifactList = fix.artifacts.map(a => path.relative(projectDir, a)).join(', ');
+      const prompt = `Decision ${fix.entry.id} was CORRECTED. Original decision: "${fix.entry.decision}". ` +
+        `Update these files to reflect the correction: ${artifactList}. ` +
+        `Make minimal targeted changes only.`;
+      try {
+        await runClaudeSession(prompt, { cwd: projectDir });
+        log(`  ✓ ${fix.entry.id} — mechanical fix applied`);
+      } catch (err) {
+        log(`  ✗ ${fix.entry.id} — fix failed: ${err.message}`);
+      }
+    }
+  }
+
+  // Handle architectural changes by producing a correction plan
+  if (architecturalPlans.length > 0) {
+    log(`${architecturalPlans.length} architectural correction(s) need manual planning:`);
+    const planLines = ['# Correction Plan', '', `Generated: ${new Date().toISOString()}`, ''];
+    for (const plan of architecturalPlans) {
+      planLines.push(`## ${plan.entry.id}: ${plan.entry.title}`);
+      planLines.push(`- **Original decision:** ${plan.entry.decision}`);
+      planLines.push(`- **Affects:** ${plan.entry.affects}`);
+      planLines.push(`- **Classification:** Architectural — requires manual review`);
+      if (plan.artifacts.length > 0) {
+        planLines.push(`- **Existing artifacts to review:**`);
+        for (const a of plan.artifacts) {
+          planLines.push(`  - \`${path.relative(projectDir, a)}\``);
+        }
+      }
+      planLines.push('');
+    }
+    const correctionPlanPath = path.join(projectDir, '.planning', 'CORRECTION-PLAN.md');
+    fs.writeFileSync(correctionPlanPath, planLines.join('\n'), 'utf-8');
+    log(`  Written: ${path.relative(projectDir, correctionPlanPath)}`);
+  }
+
+  // Log cascade analysis as a new decision
+  const cascadeId = nextDecisionId(projectDir);
+  appendDecision(projectDir, {
+    id: cascadeId,
+    title: 'Correction cascade analysis',
+    status: 'ACTIVE',
+    confidence: 'HIGH',
+    context: `Ran --check-corrections on ${corrected.length} CORRECTED decision(s)`,
+    decision: `Mechanical: ${mechanicalFixes.length} auto-fixed. Architectural: ${architecturalPlans.length} need manual plan.`,
+    affects: corrected.map(e => e.id).join(', '),
+  });
+
+  log('');
+  log('Cascade complete:');
+  log(`  CORRECTED decisions processed: ${corrected.length}`);
+  log(`  Mechanical fixes applied: ${mechanicalFixes.length}`);
+  log(`  Architectural plans generated: ${architecturalPlans.length}`);
+  log(`  Cascade decision logged: ${cascadeId}`);
 }
 
 // ─── Main Orchestration Loop ──────────────────────────────────────────────────
@@ -324,6 +608,12 @@ async function main() {
   const planningDir = path.join(projectDir, '.planning');
   if (!fs.existsSync(planningDir)) {
     fatal('.planning/ directory not found. Is this a GSD project?');
+  }
+
+  // Handle --check-corrections mode (separate from normal loop)
+  if (opts.checkCorrections) {
+    await runCorrectionCascade(projectDir);
+    return;
   }
 
   // Parse phases from ROADMAP.md
@@ -380,6 +670,9 @@ async function main() {
   const decisionsAtStart = countDecisions(projectDir);
   let totalCostEstimate = resumeState ? (resumeState.total_cost_estimate || 0) : 0;
 
+  // Load retry state from auto-state if resuming
+  let retryCount = resumeState ? (resumeState.retry_count || {}) : {};
+
   log('Auto-execution starting');
   log(`  Project: ${projectDir}`);
   log(`  Phases: ${startPhase}–${endPhase} (${phasesToRun.length} phases)`);
@@ -407,9 +700,24 @@ async function main() {
     let currentPlanPath = null;
 
     for (const step of stepsToRun) {
-      // Budget check
+      const stepKey = `${phase.id}:${step}`;
+
+      // Budget check (with cost estimate)
       if (opts.budget && totalCostEstimate >= opts.budget) {
         log(`Budget ceiling reached ($${totalCostEstimate.toFixed(2)} >= $${opts.budget})`);
+
+        // Log budget decision
+        const budgetDecId = nextDecisionId(projectDir);
+        appendDecision(projectDir, {
+          id: budgetDecId,
+          title: 'Budget ceiling reached — stopping execution',
+          status: 'ACTIVE',
+          confidence: 'HIGH',
+          context: `Budget: $${opts.budget}, spent: $${totalCostEstimate.toFixed(2)}`,
+          decision: `Stopped at phase ${phase.id}, step ${step}. Remaining phases need manual execution or increased budget.`,
+          affects: phasesToRun.filter(p => comparePhaseNum(p.id, phase.id) >= 0).map(p => `Phase ${p.id}`).join(', '),
+        });
+
         saveAutoState(projectDir, {
           phase: phase.id,
           step,
@@ -417,6 +725,7 @@ async function main() {
           started_at: new Date().toISOString(),
           steps_completed: completedSteps,
           total_cost_estimate: totalCostEstimate,
+          retry_count: retryCount,
         });
         log('State saved for resume. Exiting.');
         process.exit(0);
@@ -430,30 +739,81 @@ async function main() {
         started_at: new Date().toISOString(),
         steps_completed: completedSteps,
         total_cost_estimate: totalCostEstimate,
+        retry_count: retryCount,
       });
 
       log(`  ▸ ${step}`);
 
-      try {
-        await executeStep(projectDir, phase.id, step, currentPlanPath);
-      } catch (err) {
-        log(`  ✗ ${step} failed: ${err.message}`);
-        saveAutoState(projectDir, {
-          phase: phase.id,
-          step,
-          plan: currentPlanPath ? path.relative(projectDir, currentPlanPath) : null,
-          started_at: new Date().toISOString(),
-          steps_completed: completedSteps,
-          total_cost_estimate: totalCostEstimate,
-          error: err.message,
-        });
-        fatal(`Step "${step}" failed in phase ${phase.id}. Use --resume to retry.`);
+      // Retry loop with stuck detection
+      const maxAttempts = MAX_RETRIES;
+      let attempts = retryCount[stepKey] || 0;
+      let stepResult = null;
+      let stepSucceeded = false;
+
+      while (attempts < maxAttempts && !stepSucceeded) {
+        if (attempts > 0) {
+          log(`  ↻ Retry ${attempts}/${maxAttempts - 1} for ${step}`);
+        }
+
+        try {
+          stepResult = await executeStep(projectDir, phase.id, step, currentPlanPath);
+          stepSucceeded = true;
+        } catch (err) {
+          attempts++;
+          retryCount[stepKey] = attempts;
+
+          // Save retry state
+          saveAutoState(projectDir, {
+            phase: phase.id,
+            step,
+            plan: currentPlanPath ? path.relative(projectDir, currentPlanPath) : null,
+            started_at: new Date().toISOString(),
+            steps_completed: completedSteps,
+            total_cost_estimate: totalCostEstimate,
+            retry_count: retryCount,
+          });
+
+          if (err.timeout) {
+            log(`  ✗ ${step} timed out (attempt ${attempts}/${maxAttempts})`);
+          } else {
+            log(`  ✗ ${step} failed (attempt ${attempts}/${maxAttempts}): ${err.message}`);
+          }
+
+          if (attempts >= maxAttempts) {
+            // Max retries exhausted — skip step with logged decision
+            const skipDecId = nextDecisionId(projectDir);
+            const reason = err.timeout ? 'hard timeout' : 'repeated failure';
+            appendDecision(projectDir, {
+              id: skipDecId,
+              title: `Skipped ${step} in phase ${phase.id} after ${reason}`,
+              status: 'ACTIVE ⚠ NEEDS REVIEW',
+              confidence: 'LOW',
+              context: `Step "${step}" failed ${attempts} time(s). Last error: ${err.message.slice(0, 200)}`,
+              decision: `Skipping step and continuing to next. Manual intervention required.`,
+              affects: `Phase ${phase.id}, step ${step}`,
+            });
+            log(`  ⚠ Skipping ${step} after ${attempts} attempts — decision logged as ${skipDecId}`);
+            break;
+          }
+        }
       }
 
-      completedSteps.push(step);
+      // Cost tracking: estimate cost from session I/O
+      if (stepResult) {
+        const sessionCost = estimateSessionCost(
+          stepResult.promptText || '',
+          stepResult.stdout || ''
+        );
+        totalCostEstimate += sessionCost;
+        log(`    Cost estimate: $${sessionCost.toFixed(4)} (running total: $${totalCostEstimate.toFixed(2)})`);
+      }
+
+      if (stepSucceeded) {
+        completedSteps.push(step);
+      }
 
       // Post-step verification
-      if (step === 'plan-work') {
+      if (step === 'plan-work' && stepSucceeded) {
         currentPlanPath = findLatestPlan(projectDir, phase.id);
         if (!currentPlanPath) {
           fatal(`plan-work did not produce a PLAN.md for phase ${phase.id}`);
@@ -461,7 +821,7 @@ async function main() {
         log(`    Plan created: ${path.relative(projectDir, currentPlanPath)}`);
       }
 
-      if (step === 'build') {
+      if (step === 'build' && stepSucceeded) {
         if (!summaryExists(currentPlanPath)) {
           fatal(`build did not produce SUMMARY.md for phase ${phase.id}`);
         }
@@ -469,7 +829,9 @@ async function main() {
         log('    SUMMARY.md verified');
       }
 
-      log(`  ✓ ${step} complete`);
+      if (stepSucceeded) {
+        log(`  ✓ ${step} complete`);
+      }
     }
 
     // Phase complete — update STATE.md
@@ -490,6 +852,7 @@ async function main() {
   log(`  Phases: ${startPhase}–${endPhase} (${phasesToRun.length} phases)`);
   log(`  Plans executed: ${plansExecuted}`);
   log(`  Decisions logged: ${decisionsLogged}`);
+  log(`  Cost estimate: $${totalCostEstimate.toFixed(2)}${opts.budget ? ` / $${opts.budget} budget` : ''}`);
   log(`  Duration: ${durationMin}m`);
 }
 

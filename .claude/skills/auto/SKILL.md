@@ -32,6 +32,7 @@ Parse `$ARGUMENTS` for flags:
 | `--phase N` | Run only phase N (skip all others). |
 | `--dry-run` | Show what would run without executing. See Step 3. |
 | `--budget N` | Set cost ceiling in dollars. Passed to the orchestrator as `--budget N`. |
+| `--check-corrections` | Run decision correction cascade instead of normal execution. See Step 7. |
 | *(no flags)* | Run all incomplete phases from current position in STATE.md. |
 
 Determine `START_PHASE` and `END_PHASE`:
@@ -119,3 +120,23 @@ Whether the orchestrator completes successfully or is interrupted, always:
    - If interrupted: the exact stop point so `--resume` can pick up
 
 3. **Read final STATE.md** and confirm it reflects the orchestrator's last successful step.
+
+---
+
+## Step 7: Decision Correction Cascade (`--check-corrections`)
+
+When invoked with `--check-corrections`, the orchestrator runs in a separate mode that does NOT execute the normal phase loop. Instead:
+
+1. Reads `.planning/DECISIONS.md` for entries with `Status: CORRECTED`
+2. For each CORRECTED entry, parses the `Affects` field to identify impacted artifacts
+3. Classifies each correction as **Mechanical** (string/config changes) or **Architectural** (design changes)
+4. Mechanical corrections are auto-fixed via `claude -p` sessions targeting the affected files
+5. Architectural corrections produce a `.planning/CORRECTION-PLAN.md` for manual review
+6. Logs a cascade analysis decision entry summarizing what was processed
+
+Invoke via:
+```bash
+node bin/auto-orchestrator.cjs --project-dir "$(pwd)" --check-corrections
+```
+
+This mode is useful after a human reviews DECISIONS.md and marks entries as CORRECTED — the cascade propagates those corrections to affected artifacts automatically where possible.
