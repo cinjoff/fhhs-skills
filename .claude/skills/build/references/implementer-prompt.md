@@ -31,6 +31,8 @@ Discretion areas define bounds within which you may decide.
 
 {DESIGN_DECISIONS}
 
+{DECISIONS_CONTEXT}
+
 ## Before You Begin
 
 You are running as a subagent — you cannot interactively ask questions. Make reasonable
