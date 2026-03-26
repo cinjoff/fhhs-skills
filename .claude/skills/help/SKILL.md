@@ -61,7 +61,6 @@ Output ONLY the reference content below. Do NOT add project-specific analysis, g
 
 | Command | What it does |
 |---------|-------------|
-| `/fh:quick` | Do a small task with tracking guarantees |
 | `/fh:todos` | Track things to do — add or review pending todos |
 
 Phase management, milestone lifecycle, and test generation are handled automatically by `/fh:plan`, `/fh:build`, and `/fh:verify`.

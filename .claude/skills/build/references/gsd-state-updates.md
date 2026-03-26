@@ -5,6 +5,18 @@ Run these after SUMMARY.md is committed. Skip entirely if not in GSD mode.
 ## Commands
 
 ```bash
+# Batch state update (single I/O cycle)
+node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs state finalize-plan \
+  --phase "${PHASE}" --plan "${PLAN}" \
+  --duration "${DURATION}" --tasks "${TASK_COUNT}" --files "${FILE_COUNT}" \
+  --decision "${DECISION_TEXT}"
+```
+
+## Manual Fallback
+
+Use these individual commands if the batch command is unavailable or you need granular control:
+
+```bash
 # Advance plan counter
 node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs state advance-plan
 

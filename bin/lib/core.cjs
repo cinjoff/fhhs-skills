@@ -80,6 +80,12 @@ function loadConfig(cwd) {
     nyquist_validation: true,
     parallelization: true,
     brave_search: false,
+    plan_limits: {
+      tasks_per_plan: [4, 6],
+      files_per_plan: [8, 15],
+      words_per_plan: 2500,
+      context_target: 60,
+    },
   };
 
   try {
@@ -123,6 +129,12 @@ function loadConfig(cwd) {
       parallelization,
       brave_search: get('brave_search') ?? defaults.brave_search,
       model_overrides: parsed.model_overrides || null,
+      plan_limits: {
+        tasks_per_plan: get('plan_limits')?.tasks_per_plan ?? defaults.plan_limits.tasks_per_plan,
+        files_per_plan: get('plan_limits')?.files_per_plan ?? defaults.plan_limits.files_per_plan,
+        words_per_plan: get('plan_limits')?.words_per_plan ?? defaults.plan_limits.words_per_plan,
+        context_target: get('plan_limits')?.context_target ?? defaults.plan_limits.context_target,
+      },
     };
   } catch {
     return defaults;

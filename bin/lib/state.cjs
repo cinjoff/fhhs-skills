@@ -681,6 +681,164 @@ function writeStateMd(statePath, content, cwd) {
   fs.writeFileSync(statePath, synced, 'utf-8');
 }
 
+function cmdStateFinalizePlan(cwd, options, raw) {
+  const statePath = path.join(cwd, '.planning', 'STATE.md');
+  if (!fs.existsSync(statePath)) { output({ error: 'STATE.md not found' }, raw); return; }
+
+  const { phase, plan, duration, tasks, files, decision } = options;
+
+  if (!phase || !plan || !duration) {
+    output({ error: 'phase, plan, and duration required' }, raw);
+    return;
+  }
+
+  // ── Read STATE.md once ────────────────────────────────────────────────────
+  let content = fs.readFileSync(statePath, 'utf-8');
+  const results = { phase, plan, operations: [] };
+
+  // 1. Advance plan counter
+  const currentPlan = parseInt(stateExtractField(content, 'Current Plan'), 10);
+  const totalPlans = parseInt(stateExtractField(content, 'Total Plans in Phase'), 10);
+  const today = new Date().toISOString().split('T')[0];
+
+  if (!isNaN(currentPlan) && !isNaN(totalPlans)) {
+    if (currentPlan >= totalPlans) {
+      content = stateReplaceField(content, 'Status', 'Phase complete — ready for verification') || content;
+      content = stateReplaceField(content, 'Last Activity', today) || content;
+      results.advanced = false;
+      results.plan_counter = { current: currentPlan, total: totalPlans, status: 'ready_for_verification' };
+    } else {
+      const newPlan = currentPlan + 1;
+      content = stateReplaceField(content, 'Current Plan', String(newPlan)) || content;
+      content = stateReplaceField(content, 'Status', 'Ready to execute') || content;
+      content = stateReplaceField(content, 'Last Activity', today) || content;
+      results.advanced = true;
+      results.plan_counter = { previous: currentPlan, current: newPlan, total: totalPlans };
+    }
+    results.operations.push('advance-plan');
+  }
+
+  // 2. Record metric
+  const metricsPattern = /(##\s*Performance Metrics[\s\S]*?\n\|[^\n]+\n\|[-|\s]+\n)([\s\S]*?)(?=\n##|\n$|$)/i;
+  const metricsMatch = content.match(metricsPattern);
+  if (metricsMatch) {
+    let tableBody = metricsMatch[2].trimEnd();
+    const newRow = `| Phase ${phase} P${plan} | ${duration} | ${tasks || '-'} tasks | ${files || '-'} files |`;
+    if (tableBody.trim() === '' || tableBody.includes('None yet')) {
+      tableBody = newRow;
+    } else {
+      tableBody = tableBody + '\n' + newRow;
+    }
+    content = content.replace(metricsPattern, (_match, header) => `${header}${tableBody}\n`);
+    results.operations.push('record-metric');
+  }
+
+  // 3. Add decision
+  if (decision) {
+    const entry = `- [Phase ${phase}]: ${decision}`;
+    const decisionPattern = /(###?\s*(?:Decisions|Decisions Made|Accumulated.*Decisions)\s*\n)([\s\S]*?)(?=\n###?|\n##[^#]|$)/i;
+    const decisionMatch = content.match(decisionPattern);
+    if (decisionMatch) {
+      let sectionBody = decisionMatch[2];
+      sectionBody = sectionBody.replace(/None yet\.?\s*\n?/gi, '').replace(/No decisions yet\.?\s*\n?/gi, '');
+      sectionBody = sectionBody.trimEnd() + '\n' + entry + '\n';
+      content = content.replace(decisionPattern, (_m, header) => `${header}${sectionBody}`);
+      results.operations.push('add-decision');
+    }
+  }
+
+  // 4. Update progress bar (recalculate from disk)
+  const phasesDir = path.join(cwd, '.planning', 'phases');
+  let totalPlanFiles = 0;
+  let totalSummaries = 0;
+  if (fs.existsSync(phasesDir)) {
+    const phaseDirs = fs.readdirSync(phasesDir, { withFileTypes: true })
+      .filter(e => e.isDirectory()).map(e => e.name);
+    for (const dir of phaseDirs) {
+      const phaseFiles = fs.readdirSync(path.join(phasesDir, dir));
+      totalPlanFiles += phaseFiles.filter(f => f.match(/-PLAN\.md$/i)).length;
+      totalSummaries += phaseFiles.filter(f => f.match(/-SUMMARY\.md$/i)).length;
+    }
+  }
+  const percent = totalPlanFiles > 0 ? Math.min(100, Math.round(totalSummaries / totalPlanFiles * 100)) : 0;
+  const barWidth = 10;
+  const filled = Math.round(percent / 100 * barWidth);
+  const bar = '\u2588'.repeat(filled) + '\u2591'.repeat(barWidth - filled);
+  const progressStr = `[${bar}] ${percent}%`;
+  const boldProgressPattern = /(\*\*Progress:\*\*\s*).*/i;
+  const plainProgressPattern = /^(Progress:\s*).*/im;
+  if (boldProgressPattern.test(content)) {
+    content = content.replace(boldProgressPattern, (_match, prefix) => `${prefix}${progressStr}`);
+    results.operations.push('update-progress');
+  } else if (plainProgressPattern.test(content)) {
+    content = content.replace(plainProgressPattern, (_match, prefix) => `${prefix}${progressStr}`);
+    results.operations.push('update-progress');
+  }
+  results.progress = { percent, completed: totalSummaries, total: totalPlanFiles, bar: progressStr };
+
+  // 5. Record session info
+  const now = new Date().toISOString();
+  let result = stateReplaceField(content, 'Last session', now);
+  if (result) { content = result; }
+  result = stateReplaceField(content, 'Last Date', now);
+  if (result) { content = result; }
+  const stoppedAtText = `Completed Phase ${phase}-${plan}-PLAN.md`;
+  result = stateReplaceField(content, 'Stopped At', stoppedAtText);
+  if (!result) result = stateReplaceField(content, 'Stopped at', stoppedAtText);
+  if (result) { content = result; }
+  results.operations.push('record-session');
+
+  // ── Write STATE.md once ───────────────────────────────────────────────────
+  writeStateMd(statePath, content, cwd);
+
+  // ── Read ROADMAP.md once, update plan progress, write once ───────────────
+  const roadmapPath = path.join(cwd, '.planning', 'ROADMAP.md');
+  if (fs.existsSync(roadmapPath)) {
+    const { findPhaseInternal, escapeRegex: esc } = require('./core.cjs');
+    const phaseInfo = findPhaseInternal(cwd, phase);
+    if (phaseInfo) {
+      const planCount = phaseInfo.plans.length;
+      const summaryCount = phaseInfo.summaries.length;
+      if (planCount > 0) {
+        const isComplete = summaryCount >= planCount;
+        const status = isComplete ? 'Complete' : summaryCount > 0 ? 'In Progress' : 'Planned';
+        const todayDate = new Date().toISOString().split('T')[0];
+        let roadmapContent = fs.readFileSync(roadmapPath, 'utf-8');
+        const phaseEscaped = esc(phase);
+        const tablePattern = new RegExp(
+          `(\\|\\s*${phaseEscaped}\\.?\\s[^|]*\\|)[^|]*(\\|)\\s*[^|]*(\\|)\\s*[^|]*(\\|)`,
+          'i'
+        );
+        const dateField = isComplete ? ` ${todayDate} ` : '  ';
+        roadmapContent = roadmapContent.replace(
+          tablePattern,
+          `$1 ${summaryCount}/${planCount} $2 ${status.padEnd(11)}$3${dateField}$4`
+        );
+        const planCountPattern = new RegExp(
+          `(#{2,4}\\s*Phase\\s+${phaseEscaped}[\\s\\S]*?\\*\\*Plans:\\*\\*\\s*)[^\\n]+`,
+          'i'
+        );
+        const planCountText = isComplete
+          ? `${summaryCount}/${planCount} plans complete`
+          : `${summaryCount}/${planCount} plans executed`;
+        roadmapContent = roadmapContent.replace(planCountPattern, `$1${planCountText}`);
+        if (isComplete) {
+          const checkboxPattern = new RegExp(
+            `(-\\s*\\[)[ ](\\]\\s*.*Phase\\s+${phaseEscaped}[:\\s][^\\n]*)`,
+            'i'
+          );
+          roadmapContent = roadmapContent.replace(checkboxPattern, `$1x$2 (completed ${todayDate})`);
+        }
+        fs.writeFileSync(roadmapPath, roadmapContent, 'utf-8');
+        results.operations.push('update-roadmap');
+        results.roadmap = { phase, plan_count: planCount, summary_count: summaryCount, status, complete: isComplete };
+      }
+    }
+  }
+
+  output(results, raw);
+}
+
 function cmdStateJson(cwd, raw) {
   const statePath = path.join(cwd, '.planning', 'STATE.md');
   if (!fs.existsSync(statePath)) {
@@ -716,6 +874,7 @@ module.exports = {
   cmdStateAddBlocker,
   cmdStateResolveBlocker,
   cmdStateRecordSession,
+  cmdStateFinalizePlan,
   cmdStateSnapshot,
   cmdStateJson,
 };
