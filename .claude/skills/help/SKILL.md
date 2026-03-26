@@ -2,6 +2,7 @@
 name: fh:help
 description: Display the fhhs-skills command reference and architecture guide. Use when the user says 'help', 'what commands', 'show commands', 'how do composites work', 'skills guide', or needs an overview of available commands and how they fit together.
 user-invocable: true
+disable-model-invocation: true
 ---
 
 Output ONLY the reference content below. Do NOT add project-specific analysis, git status, next-step suggestions, or any commentary.

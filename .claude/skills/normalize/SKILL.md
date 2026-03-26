@@ -2,6 +2,7 @@
 name: fh:normalize
 description: Normalize design to match your design system and ensure consistency
 user-invocable: false
+disable-model-invocation: true
 ---
 
 Analyze and redesign the feature to perfectly match our design system standards, aesthetics, and established patterns.

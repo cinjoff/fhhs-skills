@@ -2,6 +2,7 @@
 name: fh:settings
 description: Configure GSD workflow preferences including model profiles and agent settings. Use when the user says 'settings', 'configure', 'change profile', or wants to adjust workflow parameters.
 user-invocable: true
+disable-model-invocation: true
 ---
 
 <required_reading>

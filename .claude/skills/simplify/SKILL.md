@@ -2,6 +2,7 @@
 name: fh:simplify
 description: Review changed code for reuse, quality, and efficiency. Use when the user says 'simplify', 'clean up this code', 'check for duplication', 'optimize this', or after completing a build/refactor/fix. Runs automatically as part of /fh:build, /fh:refactor, and /fh:fix (MODERATE+) pipelines.
 user-invocable: false
+disable-model-invocation: true
 ---
 
 Review changed code for reuse, quality, and efficiency, then fix any issues found.

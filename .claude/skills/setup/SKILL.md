@@ -2,6 +2,7 @@
 name: fh:setup
 description: Welcome to fhhs-skills. Run once after installing this plugin for an overview. Use when the user says 'setup', 'get started', or 'what is this plugin'.
 user-invocable: true
+disable-model-invocation: true
 ---
 
 $ARGUMENTS

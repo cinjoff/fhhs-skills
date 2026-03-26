@@ -2,6 +2,7 @@
 name: fh:bolder
 description: Amplify safe or boring designs to make them more visually interesting and stimulating. Increases impact while maintaining usability.
 user-invocable: false
+disable-model-invocation: true
 ---
 
 Increase visual impact and personality in designs that are too safe, generic, or visually underwhelming, creating more engaging and memorable experiences.
