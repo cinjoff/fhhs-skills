@@ -226,16 +226,21 @@ If `NOT_INSTALLED`:
 claude plugin install typescript-lsp@claude-plugins-official
 ```
 
-If the `claude` CLI command is not available (running inside Claude Code rather than from terminal), tell the user:
+If `claude plugin install` fails or is not available (e.g. running inside Conductor or a non-interactive environment where `/plugin` slash commands don't work), tell the user:
 
 ```
 ╔══════════════════════════════════════════════════════════════╗
 ║  CHECKPOINT: Action Required                                 ║
 ╚══════════════════════════════════════════════════════════════╝
 
-The LSP plugin needs to be installed from the terminal:
+The LSP plugin needs to be installed from your terminal (not
+from inside Claude Code). Open a separate terminal and run:
 
   claude plugin install typescript-lsp@claude-plugins-official
+
+Note: If you're using Conductor, /plugin commands are not
+available — you must use the `claude plugin` CLI from a
+regular terminal instead.
 
 ──────────────────────────────────────────────────────────────
 → Run the command above in your terminal, then type "done"
@@ -253,18 +258,22 @@ If not present, use the **Edit tool** to merge into settings.json:
 ```json
 {
   "env": {
-    "CLAUDE_CODE_ENABLE_LSP": "1"
+    "CLAUDE_CODE_ENABLE_LSP": "1",
+    "CLAUDE_CODE_ENABLE_TASKS": "true"
   }
 }
 ```
 
 Merge carefully — do NOT overwrite other `env` keys that may already exist.
 
+> **Why `CLAUDE_CODE_ENABLE_TASKS`?** Enables native task tracking used by `/fh:plan-work` and `/fh:build` for live progress visibility. Task list IDs are configured per-workspace via Conductor's setup script (which writes `CLAUDE_CODE_TASK_LIST_ID` into `.claude/settings.json`), or via `CLAUDE_CODE_TASK_LIST_ID` env var for non-Conductor setups.
+
 After writing:
 
 ```
 ✓ CLAUDE_CODE_ENABLE_LSP=1 set in ~/.claude/settings.json
-  → Restart Claude Code for LSP to activate
+✓ CLAUDE_CODE_ENABLE_TASKS=true set in ~/.claude/settings.json
+  → Restart Claude Code for changes to activate
 ```
 
 If already present and set to `"1"`:
@@ -452,7 +461,252 @@ After writing settings.json:
 
 ---
 
-## Step 6: Summary
+## Step 6: claude-mem (Persistent Memory)
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ FHHS ► PERSISTENT MEMORY (claude-mem)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+[claude-mem](https://github.com/thedotmack/claude-mem) automatically captures session context (tool usage, decisions, file changes) and reinjects relevant history into future sessions. It complements the curated MEMORY.md with zero-effort session-to-session continuity.
+
+### 6a: Check if claude-mem is already installed
+
+```bash
+node -e "
+  var fs = require('fs'), path = require('path');
+  var p = path.join(require('os').homedir(), '.claude/plugins/installed_plugins.json');
+  try {
+    var data = JSON.parse(fs.readFileSync(p, 'utf8'));
+    var plugins = data.plugins || {};
+    console.log(plugins['claude-mem@thedotmack'] || plugins['claude-mem'] ? 'INSTALLED' : 'NOT_INSTALLED');
+  } catch(e) { console.log('NOT_INSTALLED'); }
+"
+```
+
+If `INSTALLED`:
+
+```
+✓ claude-mem already installed
+```
+
+Skip to Step 6c.
+
+### 6b: Install claude-mem
+
+```
+◆ Installing claude-mem plugin...
+```
+
+```bash
+claude plugin marketplace add thedotmack/claude-mem
+```
+
+```bash
+claude plugin install claude-mem
+```
+
+If `claude plugin` fails (e.g. running inside Conductor or a non-interactive environment), tell the user:
+
+```
+╔══════════════════════════════════════════════════════════════╗
+║  CHECKPOINT: Action Required                                 ║
+╚══════════════════════════════════════════════════════════════╝
+
+Plugin install commands are not available in this environment.
+Open a separate terminal and run:
+
+  claude plugin marketplace add thedotmack/claude-mem
+  claude plugin install claude-mem
+
+Then restart Claude Code for hooks to activate.
+
+──────────────────────────────────────────────────────────────
+→ Run the commands above in your terminal, then type "done"
+──────────────────────────────────────────────────────────────
+```
+
+On success:
+
+```
+✓ claude-mem installed
+  → Restart Claude Code for hooks to activate
+```
+
+### 6c: Recommend lean configuration
+
+claude-mem's defaults inject 50 observations from 10 sessions at startup. When running alongside fhhs-skills (which also consumes context for skills, hooks, and GSD state), these defaults can eat too much of the context window.
+
+Display the recommended settings:
+
+```
+◆ Recommended claude-mem settings for fhhs-skills users
+
+  Open the claude-mem dashboard at http://localhost:37777
+  and adjust these settings (or edit ~/.claude-mem/settings.json):
+
+  ┌─────────────────────────────────────┬─────────┬─────────────┐
+  │ Setting                             │ Default │ Recommended │
+  ├─────────────────────────────────────┼─────────┼─────────────┤
+  │ CONTEXT_OBSERVATIONS                │ 50      │ 25          │
+  │ CONTEXT_SESSION_COUNT               │ 10      │ 5           │
+  │ CONTEXT_FULL_COUNT                  │ 5       │ 2           │
+  │ CONTEXT_FULL_FIELD                  │ —       │ facts       │
+  │ FOLDER_CLAUDEMD_ENABLED             │ true    │ false       │
+  │ CONTEXT_SHOW_LAST_SUMMARY           │ true    │ false       │
+  │ CONTEXT_SHOW_LAST_MESSAGE           │ true    │ false       │
+  └─────────────────────────────────────┴─────────┴─────────────┘
+
+  Why: fhhs-skills already uses context for GSD state, skill
+  loading, and subagent prompts. Lower observation counts prevent
+  token competition. "facts" mode is more concise than "narrative".
+  Disable auto-CLAUDE.md generation — fhhs-skills manages its own.
+
+  These are suggestions — adjust based on your experience.
+  The dashboard at localhost:37777 shows token usage in real time.
+```
+
+After displaying:
+
+```
+✓ claude-mem configuration guidance provided
+```
+
+---
+
+## Step 7: shadcn Skills
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ FHHS ► SHADCN SKILLS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+[shadcn/skills](https://ui.shadcn.com/docs/skills) gives coding agents the context they need to work with shadcn/ui components, Radix and Base UI primitives, the shadcn CLI, and registry workflows. Agents make fewer mistakes and produce code that matches your design system.
+
+### 7a: Check if shadcn skills are already installed
+
+shadcn skills are installed **globally** (in `~/.skills/shadcn`) so they don't pollute individual project directories.
+
+```bash
+[ -d "$HOME/.skills/shadcn" ] && echo "INSTALLED" || echo "NOT_INSTALLED"
+```
+
+If `INSTALLED`:
+
+```
+✓ shadcn skills already installed (global: ~/.skills/shadcn)
+```
+
+Skip to Step 8.
+
+### 7b: Install shadcn skills globally
+
+```
+◆ Installing shadcn/ui skills globally (~/.skills/)...
+```
+
+```bash
+cd "$HOME" && npx skills add shadcn/ui
+```
+
+This creates `~/.skills/shadcn/` in the home directory, available to all projects without adding files to any project repo.
+
+On success:
+
+```
+✓ shadcn skills installed globally (~/.skills/shadcn)
+  → Agents now have context for shadcn/ui components, CLI, and registry
+  → Available to all projects — no per-project install needed
+```
+
+If the install fails (e.g. network issue, npx not available), show a warning but don't block setup:
+
+```
+⚠ Could not install shadcn skills automatically.
+  You can install them manually later:
+
+    cd ~ && npx skills add shadcn/ui
+```
+
+---
+
+## Step 8: Conductor Configuration
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ FHHS ► CONDUCTOR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+
+[Conductor](https://conductor.build) lets you run multiple Claude Code agents in parallel workspaces. Each workspace gets a copy of your git files plus isolated setup/run scripts. This step checks whether Conductor is installed and reminds the user to configure it per-project.
+
+### 8a: Detect Conductor
+
+```bash
+# Check if the Conductor app exists
+[ -d "/Applications/Conductor.app" ] && echo "INSTALLED" || echo "NOT_INSTALLED"
+```
+
+If `NOT_INSTALLED`:
+
+```
+○ Conductor not detected (optional)
+  Conductor runs parallel coding agents in isolated workspaces.
+  Download from https://conductor.build if interested.
+```
+
+Skip to Step 9.
+
+### 8b: Conductor awareness
+
+If installed, display:
+
+```
+✓ Conductor detected
+
+  Conductor uses conductor.json in your repo root to configure workspaces.
+  When you start a new project with /fh:new-project, a conductor.json
+  will be created automatically with setup + run scripts for your stack.
+
+  Key environment variables available in Conductor scripts:
+  ┌────────────────────────────┬──────────────────────────────────┐
+  │ $CONDUCTOR_ROOT_PATH       │ Repository root directory        │
+  │ $CONDUCTOR_WORKSPACE_PATH  │ Current workspace directory      │
+  │ $CONDUCTOR_PORT            │ Assigned port (range of 10)      │
+  │ $CONDUCTOR_WORKSPACE_NAME  │ Workspace name                   │
+  │ $CONDUCTOR_DEFAULT_BRANCH  │ Default branch (usually main)    │
+  └────────────────────────────┴──────────────────────────────────┘
+
+  Task tracking: Each workspace gets its own task list via the
+  setup script, which writes CLAUDE_CODE_TASK_LIST_ID into
+  .claude/settings.json using the workspace name.
+  /fh:new-project configures this automatically.
+
+  If you have an existing project, create conductor.json manually:
+
+    {
+      "scripts": {
+        "setup": "npm install && cp \"$CONDUCTOR_ROOT_PATH/.env.local\" .env.local 2>/dev/null; true; node -e \"var fs=require('fs'),f='.claude/settings.json',s={};try{s=JSON.parse(fs.readFileSync(f,'utf8'))}catch{}s.env=Object.assign(s.env||{},{CLAUDE_CODE_TASK_LIST_ID:process.env.CONDUCTOR_WORKSPACE_NAME||'default'});fs.writeFileSync(f,JSON.stringify(s,null,2)+'\\n')\"",
+        "run": "npm run dev -- --port $CONDUCTOR_PORT",
+        "archive": "rm -rf \"$HOME/.claude/tasks/${CONDUCTOR_WORKSPACE_NAME}\" 2>/dev/null; true"
+      },
+      "env": {
+        "CLAUDE_CODE_ENABLE_TASKS": "true"
+      }
+    }
+
+  Note: CLAUDE_CODE_TASK_LIST_ID must be set via the setup script
+  (not the env block) because Conductor does not interpolate shell
+  variables in env values. The setup script has access to
+  $CONDUCTOR_WORKSPACE_NAME and writes it to .claude/settings.json.
+```
+
+---
+
+## Step 9: Summary
 
 Display the summary banner as **direct text output** (not via Bash — Bash output gets collapsed by Claude Code and users won't see it). Output this exactly:
 
@@ -492,6 +746,9 @@ Then present the status table and next steps as regular markdown text:
 | LSP Enabled (env)          | ✓ CLAUDE_CODE_ENABLE_LSP=1 |
 | CLI Tools                  | ✓ linked                 |
 | Hooks                      | ✓ statusline + update check + context monitor |
+| claude-mem                 | ✓ installed / ○ skipped (optional)       |
+| shadcn skills              | ✓ installed / ⚠ manual install needed    |
+| Conductor                  | ✓ detected / ○ not installed (optional) |
 
 ───────────────────────────────────────────────────────────────
 
