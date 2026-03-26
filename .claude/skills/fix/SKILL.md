@@ -169,4 +169,8 @@ Commit: `docs({phase}): fix summary for {description}`
 Update STATE.md: note the fix, update position.
 If known issue in CONCERNS.md, note resolution with commit hash.
 
+### DECISIONS.md Correction (if applicable)
+
+If `.planning/DECISIONS.md` exists, scan active decisions for entries whose Affects field references any file modified by this fix. If the root cause of the bug relates to an active decision (the decision's Selected option caused or contributed to the bug), log a `[CORRECTED]` entry to DECISIONS.md using the correction format from `.claude/skills/build/references/decisions-template.md`. Use `step='fix Step 4'` and `corrected_by='agent'`. If no decisions relate to the fix, skip silently.
+
 Report: root cause, fix applied, test coverage added, related concerns.

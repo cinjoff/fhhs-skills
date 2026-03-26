@@ -93,6 +93,8 @@ AUTO_MODE=$(node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs config-get workfl
 
 If `AUTO_MODE` is `"true"` AND `.planning/DECISIONS.md` exists, read it and filter entries where the Phase field matches the current phase directory name (e.g., `07-auto-mode` from `.planning/phases/07-auto-mode/`), or Phase is `"project"` for cross-phase decisions. Include at most the 20 most recent ACTIVE decisions for the current phase — if more exist, prepend a summary: `"{N} additional decisions omitted — see .planning/DECISIONS.md for full history."` Format the filtered decisions as a compact context block and store as `{DECISIONS_CONTEXT}` for subagent injection. If `DECISIONS.md` doesn't exist or has no entries for this phase, `{DECISIONS_CONTEXT}` is empty string.
 
+Additionally, scan ALL decisions in DECISIONS.md (regardless of Phase) where the Affects field references any file in the current plan's `files_modified` list. Include these as a separate 'Cross-phase decisions' block in `{DECISIONS_CONTEXT}`. The combined total (phase-filtered + cross-phase) is capped at 20 entries — phase-specific decisions take priority, cross-phase fills remaining slots. This ensures decisions from earlier phases that constrain shared files are visible to downstream subagents.
+
 ---
 
 ## Step 3: Execute Waves

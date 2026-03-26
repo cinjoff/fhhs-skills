@@ -150,6 +150,14 @@ Warnings:
 
 Warnings appear after the PASS or BLOCKING verdict. They do not change the verdict.
 
+## Decision Consistency Check
+
+If `{DECISIONS_CONTEXT}` is non-empty (auto-mode with phase decisions), verify structurally:
+- For each decision whose Affects field references files modified in this wave, check that the affected files exist and were modified in this wave's commits.
+- Flag as WARNING (not BLOCKING) if files listed in a decision's Affects were not touched by this wave — the decision may be stale or the work may be in a later wave.
+- Do NOT attempt to semantically judge whether code 'follows the spirit' of a decision — structural checks only (file existence, import presence, pattern grep).
+- Skip this check if `{DECISIONS_CONTEXT}` is empty (non-auto-mode).
+
 ## Scope Rules
 
 **IN SCOPE (check these):**
