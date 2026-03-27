@@ -776,13 +776,26 @@ function serveState(res, requestedProjectId) {
 // ---------------------------------------------------------------------------
 function serveRegister(req, res) {
   let body = '';
-  req.on('data', chunk => { body += chunk; });
+  let tooLarge = false;
+  req.on('data', chunk => { body += chunk; if (body.length > 4096) tooLarge = true; });
   req.on('end', () => {
+    if (tooLarge) {
+      res.writeHead(413, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'request body too large' }));
+      return;
+    }
     try {
       const { path: projectPath, name } = JSON.parse(body);
-      if (!projectPath) {
+      if (!projectPath || typeof projectPath !== 'string' || !path.isAbsolute(projectPath)) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'path is required' }));
+        res.end(JSON.stringify({ error: 'path must be an absolute path' }));
+        return;
+      }
+      // Validate: path must contain .planning/ to be a tracked project
+      const planningCheck = path.join(projectPath, '.planning');
+      if (!fs.existsSync(planningCheck)) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'path does not contain .planning/' }));
         return;
       }
       registerProject(projectPath, name);
