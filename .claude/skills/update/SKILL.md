@@ -185,6 +185,9 @@ print(entry[0].get('version', 'unknown') if entry else 'unknown')
 ```
 
 ```bash
+# Refresh marketplace right before update — Step 2 refresh may be stale by now
+claude plugin marketplace update fhhs-skills 2>/dev/null
+
 claude plugin update fh@fhhs-skills 2>&1 && echo "UPDATE_OK" || echo "UPDATE_FAILED"
 ```
 
