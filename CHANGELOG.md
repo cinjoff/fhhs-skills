@@ -8,6 +8,20 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.32.0] - 2026-03-27
+
+### Added
+- **Continuous improvement loop** — SessionStart hook (`fhhs-learnings.js`) reads a learnings digest and surfaces top improvement items automatically at session start; say `improve N` to address items via background agents with scope-appropriate process (direct fix / plan+build / plan+review+build)
+- **Learnings digest generation** — `/fh:build` generates a learnings digest from claude-mem observations after every successful build; context monitor triggers digest write at WARNING threshold
+- **Past learnings in `/fh:plan-work`** — research step queries claude-mem for past mistakes and pitfalls relevant to the current task before designing
+
+### Changed
+- **claude-mem auto-CLAUDE.md recommended** — `/fh:setup` now recommends keeping `FOLDER_CLAUDEMD_ENABLED=true` since claude-mem's observations complement fhhs-skills' CLAUDE.md content
+- **Context monitor digest timing** — digest generation instruction moved from CRITICAL to WARNING threshold for better context budget
+
+### Fixed
+- **Learnings hook robustness** — guards against null/undefined items, missing summaries, `generated` vs `generated_at` field name mismatch, and misleading "addressed recently" stat (now uses `stats.addressed_since_last`)
+
 ## [1.31.0] - 2026-03-27
 
 ### Added

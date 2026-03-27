@@ -370,12 +370,13 @@ Could not find fhhs-skills plugin root. Is fhhs-skills installed?
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-fhhs-skills includes three hooks:
+fhhs-skills includes four hooks:
 
 | Hook | Event | What it does |
 |------|-------|-------------|
 | `fhhs-statusline.js` | Statusline | Shows model, current task, context usage, update indicator |
 | `fhhs-check-update.js` | SessionStart | Checks GitHub for new fhhs-skills versions (background, throttled to 6h) |
+| `fhhs-learnings.js` | SessionStart | Surfaces improvement areas from past sessions (reads cached digest) |
 | `fhhs-context-monitor.js` | PostToolUse | Warns the agent when context window is running low |
 
 ### 5a: Read current settings
@@ -406,9 +407,9 @@ Use AskUserQuestion:
   - "Replace" — Use fhhs-skills statusline (shows model, task, context, updates)
   - "Keep existing" — Don't change your statusline
 
-**SessionStart hook** — add update checker (only if not already present):
+**SessionStart hook** — add update checker and learnings hook (only if not already present):
 
-Check if `settings.hooks.SessionStart` already contains a hook with command including `fhhs-check-update`. If not, add:
+Check if `settings.hooks.SessionStart` already contains hooks with commands including `fhhs-check-update` and `fhhs-learnings`. Add any that are missing:
 
 ```json
 {
@@ -419,6 +420,10 @@ Check if `settings.hooks.SessionStart` already contains a hook with command incl
           {
             "type": "command",
             "command": "node \"$HOME/.claude/get-shit-done/hooks/fhhs-check-update.js\""
+          },
+          {
+            "type": "command",
+            "command": "node \"$HOME/.claude/get-shit-done/hooks/fhhs-learnings.js\""
           }
         ]
       }
@@ -457,6 +462,7 @@ After writing settings.json:
 ```
 ✓ Statusline configured
 ✓ Update check hook configured (SessionStart)
+✓ Learnings hook configured (SessionStart)
 ✓ Context monitor hook configured (PostToolUse)
 ```
 
@@ -576,7 +582,7 @@ Display the recommended settings:
   │ CONTEXT_SESSION_COUNT               │ 10      │ 5           │
   │ CONTEXT_FULL_COUNT                  │ 5       │ 2           │
   │ CONTEXT_FULL_FIELD                  │ —       │ facts       │
-  │ FOLDER_CLAUDEMD_ENABLED             │ true    │ false       │
+  │ FOLDER_CLAUDEMD_ENABLED             │ true    │ true        │
   │ CONTEXT_SHOW_LAST_SUMMARY           │ true    │ false       │
   │ CONTEXT_SHOW_LAST_MESSAGE           │ true    │ false       │
   └─────────────────────────────────────┴─────────┴─────────────┘
@@ -584,7 +590,8 @@ Display the recommended settings:
   Why: fhhs-skills already uses context for GSD state, skill
   loading, and subagent prompts. Lower observation counts prevent
   token competition. "facts" mode is more concise than "narrative".
-  Disable auto-CLAUDE.md generation — fhhs-skills manages its own.
+  Keep auto-CLAUDE.md enabled — claude-mem adds useful project
+  observations that complement fhhs-skills' own CLAUDE.md content.
 
   These are suggestions — adjust based on your experience.
   The dashboard at localhost:37777 shows token usage in real time.
