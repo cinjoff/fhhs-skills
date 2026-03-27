@@ -75,10 +75,20 @@ Confirm the config was set successfully before proceeding.
 
 ## Step 5: Shell Out to Orchestrator
 
-Invoke the Node.js orchestrator for process-isolated phase execution:
+**Find the orchestrator path first** — it lives in the plugin cache, not in the project:
 
 ```bash
-node .claude/skills/auto/auto-orchestrator.cjs \
+ORCHESTRATOR=$(find "$HOME/.claude/plugins/cache/fhhs-skills" -name "auto-orchestrator.cjs" 2>/dev/null | sort -V | tail -1)
+if [ -z "$ORCHESTRATOR" ]; then
+  echo "ERROR: auto-orchestrator.cjs not found in plugin cache"
+  exit 1
+fi
+```
+
+Then invoke it:
+
+```bash
+node "$ORCHESTRATOR" \
   --project-dir "$(pwd)" \
   --start-phase "${START_PHASE}" \
   --end-phase "${END_PHASE}" \
@@ -87,18 +97,29 @@ node .claude/skills/auto/auto-orchestrator.cjs \
   ${RESUME:+--resume}
 ```
 
-The orchestrator runs each phase through a sequential loop using `claude -p` for fresh-context sessions:
+The orchestrator runs each phase through a sequential loop using `claude -p` for fresh-context sessions. Each session receives:
+- `--plugin-dir` pointing to the fh plugin root (so `/fh:` skills are available)
+- `--permission-mode bypassPermissions` (non-interactive, no prompts)
+- `--append-system-prompt` with CLAUDE.md content (project context)
+- A rich prompt with the phase goal and explicit autonomous instructions
 
 ```
 Per-phase loop:
-1. claude -p "/fh:plan-work plan N for phase X"     → produces PLAN.md
-2. claude -p "/fh:plan-review .planning/phases/..."  → HOLD SCOPE review
-3. claude -p "/fh:build .planning/phases/..."        → executes plan
-4. claude -p "/fh:review --quick"                    → final code review
-5. Update STATE.md via gsd-tools
+1. claude -p [rich prompt] --plugin-dir [...] --permission-mode bypassPermissions  → PLAN.md
+2. claude -p [rich prompt] --plugin-dir [...] --permission-mode bypassPermissions  → HOLD review
+3. claude -p [rich prompt] --plugin-dir [...] --permission-mode bypassPermissions  → build
+4. claude -p [rich prompt] --plugin-dir [...] --permission-mode bypassPermissions  → quick review
+5. Update STATE.md via gsd-tools (from projectDir/.claude/get-shit-done/bin/)
 ```
 
 Each step is a separate `claude -p` session with fresh context. The orchestrator handles crash recovery, state persistence to `.planning/`, and budget tracking.
+
+**Known pitfalls:**
+- `claude -p` does NOT support `--cwd` — use spawn `cwd` option only
+- `gsd-tools.cjs` must resolve from `projectDir/.claude/get-shit-done/bin/`, not `__dirname`
+- Without `--plugin-dir`, `/fh:` skill commands are unavailable in `-p` sessions
+- Without `--permission-mode bypassPermissions`, interactive prompts hang the process
+- Bare skill invocations (e.g. `/fh:plan-work`) alone are insufficient — include phase goal and autonomy instructions
 
 Monitor the orchestrator's stdout for progress updates. If the orchestrator exits with a non-zero code, read its error output and report the failure point.
 
