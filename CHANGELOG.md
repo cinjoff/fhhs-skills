@@ -8,6 +8,16 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [Unreleased]
+
+### Added
+- **Cross-session memory lifecycle** — 8 skills (fix, review, plan-review, refactor, audit, optimize, secure, research) now read past learnings at session start and persist key findings at session end via structured semantic markers that claude-mem auto-captures [setup:plugin:claude-mem@thedotmack] [setup:plugin:context-mode@context-mode]
+- **Context-mode acceleration** — refactor, audit, optimize, secure, and research skills use `ctx_batch_execute` to index large analysis output and `ctx_search` to distill findings without flooding the context window
+- **context-mode in setup summary** — `/fh:setup` Step 10 status table now shows context-mode installation status
+
+### Changed
+- **README rewrite** — new "Why" section with value propositions, memory lifecycle diagram, plugin integration map; pipeline diagrams collapsed; 557 → 304 lines
+
 ## [1.32.2] - 2026-03-27
 
 ### Fixed
