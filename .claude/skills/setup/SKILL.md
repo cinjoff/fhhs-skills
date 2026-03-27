@@ -582,7 +582,7 @@ Display the recommended settings:
   │ CONTEXT_SESSION_COUNT               │ 10      │ 5           │
   │ CONTEXT_FULL_COUNT                  │ 5       │ 2           │
   │ CONTEXT_FULL_FIELD                  │ —       │ facts       │
-  │ FOLDER_CLAUDEMD_ENABLED             │ true    │ false       │
+  │ FOLDER_CLAUDEMD_ENABLED             │ true    │ true        │
   │ CONTEXT_SHOW_LAST_SUMMARY           │ true    │ false       │
   │ CONTEXT_SHOW_LAST_MESSAGE           │ true    │ false       │
   └─────────────────────────────────────┴─────────┴─────────────┘
@@ -590,7 +590,8 @@ Display the recommended settings:
   Why: fhhs-skills already uses context for GSD state, skill
   loading, and subagent prompts. Lower observation counts prevent
   token competition. "facts" mode is more concise than "narrative".
-  Disable auto-CLAUDE.md generation — fhhs-skills manages its own.
+  Keep auto-CLAUDE.md enabled — claude-mem adds useful project
+  observations that complement fhhs-skills' own CLAUDE.md content.
 
   These are suggestions — adjust based on your experience.
   The dashboard at localhost:37777 shows token usage in real time.
