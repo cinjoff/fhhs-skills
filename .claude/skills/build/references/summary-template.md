@@ -42,6 +42,14 @@ key-files:
 key-decisions:
   - "decision and why"
 requirements-completed: [copy requirements array from PLAN.md verbatim]
+test_metrics:
+  tests_passed: 0
+  tests_failed: 0
+  tests_total: 0
+  coverage_line: null
+  coverage_branch: null
+  test_files_created: []
+  spec_tests_generated: false
 duration: {elapsed}
 completed: {ISO timestamp}
 ---
@@ -58,7 +66,19 @@ completed: {ISO timestamp}
 | Deviations from Plan | All deviation entries with rule number, description, fix, commit |
 | Issues Encountered | Problems hit and how resolved (or "None") |
 | Next Phase Readiness | What downstream plans can now proceed |
+| Test Results | Tests passed/total, coverage %, test files created, spec-generated tests |
 
 If design gates ran (frontend): also capture critique fixes, polish commit, normalize commit in Task Commits table and design deviations in Deviations section.
+
+### Test Results section template
+
+```markdown
+## Test Results
+
+- **Tests:** {passed}/{total} passing
+- **Coverage:** {line}% line, {branch}% branch (or "not configured")
+- **Test files created:** {list or "none"}
+- **Spec-generated tests:** {yes/no} — {count} test skeletons from plan spec
+```
 
 One-liner must be substantive: "JWT auth with refresh rotation using jose library" not "Authentication implemented"

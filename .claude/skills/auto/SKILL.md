@@ -266,6 +266,7 @@ The orchestrator runs phases using `claude -p` for fresh-context sessions. Each 
 - `--plugin-dir` pointing to the fh plugin root (so `/fh:` skills are available)
 - `--permission-mode bypassPermissions` (non-interactive, no prompts)
 - `--append-system-prompt` with CLAUDE.md content (project context)
+- Testing enforcement: "Every phase build must include tests for business logic. Build Step 2.5 auto-generates test specs from plan must_haves. plan-work rejects plans without test coverage for business logic (check 7). UI phases should include E2E tests using Playwright. Coverage metrics are tracked in SUMMARY.md test_metrics field."
 - A rich prompt with the phase goal and explicit autonomous instructions
 
 ```
@@ -278,6 +279,7 @@ Pipeline execution (default):
 4. Build wave: phases built in dependency order (sequential in v1)
    - Each build preceded by speculative plan validation (file overlap check)
    - Quick reviews batched every 3 phases
+     Test metrics:   coverage tracked per phase in SUMMARY.md test_metrics
 5. Final review + state update
 
 Sequential fallback (--no-speculative):

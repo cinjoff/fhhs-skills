@@ -59,18 +59,39 @@ Skip TaskUpdate calls if {TASK_ID} is empty.
 
 ## Implementation Rules
 
-**TDD** (if `tdd="true"`): RED-GREEN-REFACTOR per `skills/test-driven-development/PROMPT.md`.
+**TDD** (if `tdd="true"`): RED-GREEN-REFACTOR per `skills/test-driven-development/PROMPT.md`. For all other tasks: follow `.claude/skills/build/references/testing-manifesto.md`.
 
 **Tests — non-watch mode only** (watch mode hangs subagents): Vitest: `pnpm test --run`. Jest: `CI=true pnpm test`. When in doubt: prefix `CI=true`.
 
 **Context-aware skills** — read these if relevant to your task:
-- Playwright tests (`*.spec.*`, `*.test.*`, `e2e/`): read `.claude/skills/playwright-testing/PROMPT.md`
+- Playwright tests (`*.spec.*`, `*.test.*`, `e2e/`): resolve from `$HOME/.claude/plugins/cache/fhhs-skills/*/playwright-testing/PROMPT.md` (fall back to `.claude/skills/playwright-testing/PROMPT.md`)
 - Frontend work (`.tsx`, `.css`): read `.planning/DESIGN.md` and `skills/frontend-design/PROMPT.md`
 - Next.js project (`next.config.*`): read `.claude/skills/nextjs-perf/PROMPT.md`
 
 **YAGNI:**
 Do not add features, abstractions, or error handling beyond what the task specifies.
 If in doubt, leave it out.
+
+## Testing Requirements
+
+Read `.claude/skills/build/references/testing-manifesto.md` for testing rules and stack defaults.
+
+**For every task that creates/modifies business logic, state, or data transformation:**
+- Write unit or integration tests alongside implementation — testing is part of the task, not a separate step
+- Detect the project's test runner from package.json scripts or config files. Default: Vitest with `pnpm test --run {test-file}`
+- React components: use `@testing-library/react` with semantic queries (`getByRole` > `getByLabel` > `getByTestId`)
+- If pre-generated test skeletons exist in `__tests__/` or `e2e/`, write implementation to make them pass
+
+**For UI tasks with interactive features (forms, auth flows, navigation):**
+- Resolve the Playwright testing skill: check `$HOME/.claude/plugins/cache/fhhs-skills/*/playwright-testing/PROMPT.md` first, fall back to `.claude/skills/playwright-testing/PROMPT.md`
+- Use Page Object Model pattern, role-based selectors, web-first assertions
+- No `waitForTimeout()` — Playwright auto-waits
+
+**Report format — add to your report:**
+```
+**Tests:** {pass_count}/{total_count} passing | New test files: {list}
+```
+If you skip tests for modified business logic, report `UNTESTED: {file} — {reason}`.
 
 ## Deviation Rules
 
@@ -100,7 +121,7 @@ Edit/Write/Bash action, STOP. Write code or report "blocked".
 
 ## Before Reporting: Self-Review
 
-Before reporting: verify completeness (all task requirements met), quality (clear names, clean code, follows patterns), discipline (no overbuilding), testing (behavior-based, TDD if required). Fix any issues found.
+Before reporting: verify completeness (all task requirements met), quality (clear names, clean code, follows patterns), discipline (no overbuilding), testing (tests exist for new business logic, behavior-based assertions, TDD if required). Fix any issues found.
 
 ## Report Format
 
