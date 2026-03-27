@@ -8,6 +8,18 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.35.0] - 2026-03-27
+
+### Added
+- **Strategic workshop in `/fh:auto`** — autonomous execution now includes a strategic planning workshop that aligns vision, constraints, and phased execution before building
+- **Firecrawl + MCP context7 in researchers** — project and phase researcher agents use Firecrawl for web research and context7 for library documentation, producing higher-quality research outputs
+- **Self-healing `/fh:update`** — post-update reconciliation auto-installs missing tools, plugins, env vars, hooks, and config instead of telling users to re-run `/fh:setup` or `/fh:new-project`
+- **Release reconciliation tag audit** — release process verifies changelog entries carry setup/project tags so `/fh:update` can always close gaps for new requirements
+- **Release README update step** — release process checks whether new skills, integrations, or behavior changes need README updates
+
+### Fixed
+- **Research pipeline** — fixes to researcher agent dispatch and output collection in the autonomous pipeline
+
 ## [1.34.1] - 2026-03-27
 
 ### Fixed

@@ -11,6 +11,10 @@
 - [Hybrid orchestrator architecture]: `/fh:auto` is a Claude Code skill that validates inputs and configuration, then shells out to a Node.js orchestrator script (`bin/auto-orchestrator.cjs`) that uses `claude -p` for process-isolated agent sessions. Each phase step (plan-work, plan-review, build, review) is a separate `claude -p` session with fresh context.
 - [Decision correction cascade]: When a user marks a decision as CORRECTED in DECISIONS.md, the system reads the `Affects` field to identify impacted artifacts and creates a correction plan. Mechanical changes auto-apply; architectural changes produce a new plan for the affected phase.
 - [claude -p is safe]: `claude -p` is an officially supported Claude Code feature for headless/programmatic use. No TOS risk running on own machine with own subscription.
+- [Auto requirements workshop]: `/fh:auto` begins with a research-driven strategic workshop BEFORE autonomous execution. First does domain research (competitor analysis, community pain points, landscape, user sentiment via firecrawl). Then reads existing PROJECT.md, REQUIREMENTS.md, ROADMAP.md and only probes gaps. Uses research findings to drive informed conversations — concrete competitor references and market gaps rather than abstract open questions. Operates at VC/strategic level — pushes for ambitious scope, USPs, differentiation, north star clarity. Offers concrete directions and suggestions based on research findings. Updates planning artifacts with refined vision, then hands off to the autonomous loop.
+- [Research files consumed downstream]: `.planning/research/*.md` (project-level research from new-project) must be indexed in context-mode bootstrap alongside phase-level and milestone-level research, so plan-work, plan-review, and build sessions can search them.
+- [Firecrawl preferred for researchers]: Researcher agents use firecrawl as primary web tool with WebSearch/WebFetch as fallback. Firecrawl provides higher quality, LLM-optimized results.
+- [Researcher MCP integration]: Both gsd-phase-researcher and gsd-project-researcher agents get context-mode and claude-mem in their tools list and usage instructions in their prompts, so they can search indexed project docs and recall cross-session history.
 
 ## Discretion Areas
 
@@ -18,6 +22,7 @@
 - [Stuck detection thresholds]: Agent decides specific timeout values and retry counts, within bounds: soft timeout 5-15min, hard timeout 30-60min, max retries 1-3.
 - [Cost tracking granularity]: Agent decides how to track costs (per-session, per-phase, or per-step) as long as total cost is visible and budget ceiling is configurable.
 - [Orchestrator script structure]: Agent decides internal structure of `bin/auto-orchestrator.cjs` as long as it uses `claude -p`, handles crashes gracefully, and persists state to `.planning/`.
+- [Workshop question depth]: Agent decides specific questions to ask during the strategic workshop, as long as it covers: vision/north star, success criteria, differentiation/USPs, scope ambition, and doesn't re-ask what's already in planning artifacts.
 
 ## Deferred Ideas
 

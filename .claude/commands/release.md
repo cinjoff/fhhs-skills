@@ -161,6 +161,38 @@ AskUserQuestion:
 
 ---
 
+## Step 3b: Reconciliation Tag Audit
+
+**Before proceeding**, verify that any changelog entry affecting what `/fh:setup` or `/fh:new-project` would install has the correct reconciliation tag. This is what makes `/fh:update` self-healing — without tags, new requirements silently slip through.
+
+Scan the changelog entry you just wrote. For each bullet, check:
+
+- Does it add a **new CLI tool** dependency? → needs `[setup:tool:NAME]`
+- Does it add a **new env var** to `~/.claude/settings.json`? → needs `[setup:env:KEY]`
+- Does it add a **new hook**? → needs `[setup:hook:SUBSTRING]`
+- Does it add a **new plugin** dependency? → needs `[setup:plugin:KEY]`
+- Does it add a **new directory** requirement? → needs `[setup:dir:PATH]`
+- Does it add a **new project file** requirement? → needs `[project:file:PATH]` or `[project:dir:PATH]`
+
+**Also check:** does the corresponding remediation exist in `.claude/skills/update/SKILL.md` Step 5b's remediation map? If the tag introduces a new tool/plugin/dir that isn't in the map yet, **add it to that file now** so `/fh:update` knows how to auto-install it.
+
+If any tags are missing, add them to the changelog entry before proceeding.
+
+---
+
+## Step 3c: Update README
+
+Check whether the release includes changes that affect the README:
+
+1. **New user-facing skills** — add to the appropriate Commands table
+2. **New optional integrations** — add to the Optional Integrations table
+3. **Changed behavior of existing skills** — update descriptions
+4. **New setup requirements** — update the Install section if needed
+
+Read `README.md`, compare against the changelog entry, and update any sections that are now stale. Skip if the changelog only has bug fixes or internal changes.
+
+---
+
 ## Step 4: Apply All Version Bumps
 
 Update ALL version sources. There are exactly three files that must agree:
