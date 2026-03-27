@@ -257,6 +257,22 @@ else
 fi
 ```
 
+### 5a½: Re-apply claude-mem worktree patch
+
+claude-mem stores observations under the worktree directory basename instead of the parent repo name. This patch makes it worktree-aware. It must be re-applied after every claude-mem update since the update overwrites the patched files.
+
+```bash
+# Find the patch script shipped with fhhs-skills
+PATCH=$(find "$HOME/.claude/plugins/cache/fhhs-skills" -name patch-claude-mem-worktree.cjs -print -quit 2>/dev/null)
+if [ -n "$PATCH" ]; then
+  node "$PATCH" 2>&1
+else
+  echo "⚠ Worktree patch not found (expected in fhhs-skills plugin cache)"
+fi
+```
+
+If the patch outputs "WARNING: gp() signature changed", claude-mem changed its internals and the patch needs updating — note this in the reconciliation table but don't fail the update.
+
 ### 5b: Changelog-driven reconciliation — auto-fix gaps
 
 Save the changelog (already fetched in Step 2) to a temp file and run the reconciliation check:
