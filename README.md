@@ -301,6 +301,8 @@ Everything is optional — skip what you don't need.
 /fh:update
 ```
 
+Updates the plugin and automatically closes any setup gaps introduced since your last version — new tools, plugins, env vars, hooks, and config are all installed inline. No need to re-run `/fh:setup` or `/fh:new-project` after updating.
+
 ## License
 
 MIT

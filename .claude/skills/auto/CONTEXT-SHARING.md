@@ -41,6 +41,7 @@ How context-mode and claude-mem are wired across the plan-work → plan-review �
  │    STACK.md ───────┘    │  4 steps via shared      │                   │
  │                         │  CLAUDE_SESSION_ID       │                   │
  │  + phase RESEARCH.md    └──────────────────────────┘                   │
+ │  + .planning/research/*.md (project research)                          │
  │  + milestone research/v2/*.md                                           │
  └─────────────────────────────────────────────────────────────────────────┘
 
@@ -192,6 +193,9 @@ BEFORE (per build agent):                AFTER (per build agent):
                                          50% prompt size reduction
                                          Context fetched on-demand
                                          from shared FTS5 index
+                                         Researcher agents now use
+                                         ctx_search + smart_search
+                                         for pre-existing context
 ```
 
 ## Plugin Data Flow
@@ -255,3 +259,8 @@ BEFORE (per build agent):                AFTER (per build agent):
 
 5. **Why post-wave re-index?** Agents in Wave 1 modify files that Wave 2 agents may
    need. Re-indexing between waves ensures ctx_search returns fresh content.
+
+6. **Why index project-level research?** Project research from /fh:new-project
+   (FEATURES.md, PITFALLS.md, STACK.md, ARCHITECTURE.md, SUMMARY.md) is valuable
+   context for all phase planning — not just the roadmap creation that originally
+   consumed it. Indexing it once makes it searchable across all pipeline steps.

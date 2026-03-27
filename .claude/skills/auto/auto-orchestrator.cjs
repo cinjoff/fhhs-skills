@@ -432,14 +432,37 @@ async function executeStep(projectDir, phaseId, step, planPath) {
   const sessionId = `phase-${phaseId}-auto`;
 
   switch (step) {
-    case 'plan-work':
+    case 'plan-work': {
+      // Check for existing research
+      let researchHint = '';
+      const researchDir = path.join(projectDir, '.planning', 'research');
+      if (fs.existsSync(researchDir)) {
+        try {
+          const researchFiles = fs.readdirSync(researchDir).filter(f => f.endsWith('.md'));
+          if (researchFiles.length > 0) {
+            researchHint = ` Project research exists in .planning/research/ (${researchFiles.join(', ')}) — index and use these findings.`;
+          }
+        } catch { /* ignore */ }
+      }
+      // Also check phase-level research
+      const phDir = findPhaseDir(projectDir, phaseId);
+      if (phDir) {
+        try {
+          const phaseResearch = fs.readdirSync(phDir).filter(f => f.includes('RESEARCH.md'));
+          if (phaseResearch.length > 0) {
+            researchHint += ` Phase research exists: ${phaseResearch.join(', ')}.`;
+          }
+        } catch { /* ignore */ }
+      }
       return await runClaudeSession(
         `You are in auto mode (workflow.auto_advance=true). Read .planning/STATE.md and .planning/ROADMAP.md for context. ` +
         `Plan phase ${phaseId}. Phase goal: "${phaseGoal}". ` +
         `Use /fh:plan-work to create the plan. Auto-decide all gray areas using best judgment. ` +
-        `Write the plan to .planning/phases/ directory. Do not ask questions — make decisions autonomously.`,
+        `Write the plan to .planning/phases/ directory. Do not ask questions — make decisions autonomously.` +
+        researchHint,
         { cwd: projectDir, sessionId }
       );
+    }
 
     case 'plan-review': {
       const latestPlan = planPath || findLatestPlan(projectDir, phaseId);
@@ -449,7 +472,8 @@ async function executeStep(projectDir, phaseId, step, planPath) {
       const relPlan = path.relative(projectDir, latestPlan);
       return await runClaudeSession(
         `You are in auto mode. Review the plan at ${relPlan} using /fh:plan-review with --mode hold. ` +
-        `Phase goal: "${phaseGoal}". Apply feedback directly to the plan. Do not ask questions.`,
+        `Phase goal: "${phaseGoal}". Apply feedback directly to the plan. Do not ask questions.` +
+        ` Check plan alignment with research findings if .planning/research/ or phase RESEARCH.md exists.`,
         { cwd: projectDir, sessionId }
       );
     }
