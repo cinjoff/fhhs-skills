@@ -8,6 +8,17 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.34.0] - 2026-03-27
+
+### Added
+- **Pipeline quality gates** — `/fh:build` now runs Gate 0 (fallow blast-radius integration check), Gate 1.5 (OWASP security review at phase completion), and Gate 3 architecture artifact refresh (FLOWS.md + ERD.md regeneration) [setup:tool:fallow]
+- **Impact Radius Analysis** — `/fh:plan-review` Section 4 runs batch fallow analysis on `files_modified`, classifies blast radius (CRITICAL/HIGH/MEDIUM/LOW by fan-in), cross-references FLOWS.md user journeys, and flags untested downstream consumers
+- **PROJECT_CONSTRAINTS injection** — `/fh:build` extracts project gotchas from CLAUDE.md and injects them as imperative constraints into implementer subagent prompts (max 15 lines)
+- **Architecture Artifacts Check** — `/fh:plan-review` pre-review audit warns when FLOWS.md/ERD.md are missing and suggests `/fh:map-codebase`
+
+### Changed
+- **`/fh:map-codebase`** — now generates FLOWS.md (user journey diagrams with dynamic guard discovery) and ERD.md (entity-relationship diagrams from Supabase migrations) with empty-project graceful handling
+
 ## [1.33.0] - 2026-03-27
 
 ### Added
