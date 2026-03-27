@@ -1163,7 +1163,7 @@ If Conductor is detected, create `conductor.json` in the project root with scrip
 ```json
 {
   "scripts": {
-    "setup": "$PM install && [ -f \"$CONDUCTOR_ROOT_PATH/.env.local\" ] && ln -sf \"$CONDUCTOR_ROOT_PATH/.env.local\" .env.local || true; [ -d \"$CONDUCTOR_ROOT_PATH/.vercel\" ] && ln -sf \"$CONDUCTOR_ROOT_PATH/.vercel\" .vercel || true; node -e \"var fs=require('fs'),f='.claude/settings.json',s={};try{s=JSON.parse(fs.readFileSync(f,'utf8'))}catch{}s.env=Object.assign(s.env||{},{CLAUDE_CODE_TASK_LIST_ID:process.env.CONDUCTOR_WORKSPACE_NAME||'default'});fs.writeFileSync(f,JSON.stringify(s,null,2)+'\\n')\"",
+    "setup": "$PM install && [ -f \"$CONDUCTOR_ROOT_PATH/.env.local\" ] && ln -sf \"$CONDUCTOR_ROOT_PATH/.env.local\" .env.local || true; [ -d \"$CONDUCTOR_ROOT_PATH/.vercel\" ] && ln -sf \"$CONDUCTOR_ROOT_PATH/.vercel\" .vercel || true; node -e \"var fs=require('fs'),f='.claude/settings.json',s={};try{s=JSON.parse(fs.readFileSync(f,'utf8'))}catch{}s.env=Object.assign(s.env||{},{CLAUDE_CODE_TASK_LIST_ID:process.env.CONDUCTOR_WORKSPACE_NAME||'default',CLAUDE_CWD:process.env.CONDUCTOR_ROOT_PATH||process.cwd()});fs.writeFileSync(f,JSON.stringify(s,null,2)+'\\n')\"",
     "run": "$PM run dev -- --port $CONDUCTOR_PORT",
     "archive": "rm -rf \"$HOME/.claude/tasks/${CONDUCTOR_WORKSPACE_NAME}\" 2>/dev/null; true"
   },
@@ -1175,7 +1175,7 @@ If Conductor is detected, create `conductor.json` in the project root with scrip
 }
 ```
 
-> **Why `CLAUDE_CODE_TASK_LIST_ID` in the setup script?** Conductor's `env` block does not interpolate shell variables like `${CONDUCTOR_WORKSPACE_NAME}` — it passes them as literal strings. The setup script runs in a shell where `$CONDUCTOR_WORKSPACE_NAME` resolves correctly, and writes the value into `.claude/settings.json` so Claude Code picks it up. Each workspace gets its own task list so parallel workspaces don't pollute each other's tracking.
+> **Why `CLAUDE_CODE_TASK_LIST_ID` and `CLAUDE_CWD` in the setup script?** Conductor's `env` block does not interpolate shell variables like `${CONDUCTOR_WORKSPACE_NAME}` — it passes them as literal strings. The setup script runs in a shell where these variables resolve correctly, and writes the values into `.claude/settings.json` so Claude Code picks them up. Each workspace gets its own task list so parallel workspaces don't pollute each other's tracking. `CLAUDE_CWD` tells plugins like claude-mem the real project root, so they identify the project by repo name rather than the workspace directory name.
 >
 > **Why `CLAUDE_CODE_ENABLE_TASKS` in env?** This is a static value (no interpolation needed), so the `env` block works fine. It enables native task tracking used by `/fh:plan-work` and `/fh:build`.
 >
