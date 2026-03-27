@@ -8,6 +8,11 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.38.0] - 2026-03-27
+
+### Added
+- **`.planning/` health check in `/fh:update`** — after post-update reconciliation, suggests running `/fh:health --repair` if the project has an existing `.planning/` directory that may have structural issues from older plugin versions or plain GSD
+
 ## [1.37.1] - 2026-03-27
 
 ### Fixed
