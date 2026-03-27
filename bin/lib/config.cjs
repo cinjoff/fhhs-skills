@@ -10,6 +10,15 @@ function cmdConfigEnsureSection(cwd, raw) {
   const configPath = path.join(cwd, '.planning', 'config.json');
   const planningDir = path.join(cwd, '.planning');
 
+  // If config already exists, leave it alone — loadConfig() provides defaults
+  // for any missing keys at runtime, so a minimal config (e.g. just plan_limits)
+  // works fine without being bloated with all defaults.
+  if (fs.existsSync(configPath)) {
+    const result = { created: false, reason: 'already_exists' };
+    output(result, raw, 'exists');
+    return;
+  }
+
   // Ensure .planning directory exists
   try {
     if (!fs.existsSync(planningDir)) {
@@ -17,13 +26,6 @@ function cmdConfigEnsureSection(cwd, raw) {
     }
   } catch (err) {
     error('Failed to create .planning directory: ' + err.message);
-  }
-
-  // Check if config already exists
-  if (fs.existsSync(configPath)) {
-    const result = { created: false, reason: 'already_exists' };
-    output(result, raw, 'exists');
-    return;
   }
 
   // Detect Brave Search API key availability
@@ -49,7 +51,7 @@ function cmdConfigEnsureSection(cwd, raw) {
     // Ignore malformed global defaults, fall back to hardcoded
   }
 
-  // Create default config (user-level defaults override hardcoded defaults)
+  // Hardcoded defaults — canonical schema for config.json
   const hardcoded = {
     model_profile: 'balanced',
     commit_docs: true,
@@ -65,11 +67,18 @@ function cmdConfigEnsureSection(cwd, raw) {
     },
     parallelization: true,
     brave_search: hasBraveSearch,
+    plan_limits: {
+      tasks_per_plan: [4, 6],
+      files_per_plan: [8, 15],
+      words_per_plan: 2500,
+      context_target: 60,
+    },
   };
   const defaults = {
     ...hardcoded,
     ...userDefaults,
     workflow: { ...hardcoded.workflow, ...(userDefaults.workflow || {}) },
+    plan_limits: { ...hardcoded.plan_limits, ...(userDefaults.plan_limits || {}) },
   };
 
   try {

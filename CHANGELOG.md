@@ -5,6 +5,17 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.30.0] - 2026-03-27
+
+### Added
+- **Brownfield sync mode for `/fh:new-project`** — detects existing `.planning/` and fills gaps instead of refusing to run, covering planning files, GSD tooling, codebase mapping, observability, and infrastructure status
+
+### Fixed
+- **`shadcn init` hangs in automated flows** — adds `--yes` flag to all `npx shadcn@latest init` commands in `/fh:new-project`
+- **`config.json` not created during project init** — greenfield Step 7 now calls `config-ensure-section` to write the file (previously only printed context to stdout)
+- **Missing `plan_limits` in config defaults** — `config-ensure-section` now includes `plan_limits` matching the runtime defaults, so the property is persisted when creating new projects
+- **Dead computation in `config-ensure-section`** — early-exit guard for existing configs moved before Brave key detection and defaults loading
+
 ## [1.29.1] - 2026-03-27
 
 ### Fixed

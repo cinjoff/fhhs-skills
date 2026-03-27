@@ -22,6 +22,141 @@ Example: `/fh:new-project --auto "A SaaS platform for managing pet grooming appo
 
 ---
 
+## Step 0: Brownfield Detection
+
+Before starting, check if this is an existing project:
+
+```bash
+[ -d ".planning" ] && echo "EXISTING_PROJECT" || echo "NEW_PROJECT"
+```
+
+### If `EXISTING_PROJECT`: run Sync Mode
+
+This project already has `.planning/` state — likely from a previous `/fh:new-project` run. Instead of refusing, audit what exists and fill gaps. This is the expected path after `/fh:update` brings new plugin capabilities.
+
+**Audit checklist — check each item and only act on what's missing or outdated:**
+
+#### Planning files
+
+| Check | How | If missing |
+|-------|-----|------------|
+| `.planning/PROJECT.md` | `[ -f .planning/PROJECT.md ]` | Create from existing codebase context (read CLAUDE.md, package.json, etc.) |
+| `.planning/REQUIREMENTS.md` | `[ -f .planning/REQUIREMENTS.md ]` | Create from ROADMAP.md phases if available |
+| `.planning/ROADMAP.md` | `[ -f .planning/ROADMAP.md ]` | Create from existing phases in `.planning/` |
+| `.planning/STATE.md` | `[ -f .planning/STATE.md ]` | Create with current phase position |
+| `.planning/config.json` | `[ -f .planning/config.json ]` | Run `node ./.claude/get-shit-done/bin/gsd-tools.cjs config-ensure-section` |
+| `.planning/DECISIONS.md` | `[ -f .planning/DECISIONS.md ]` | Create empty with header — decisions accumulate over time |
+| `.planning/DESIGN.md` | `[ -f .planning/DESIGN.md ]` | Note as optional — user can run `/fh:ui-branding` when ready |
+
+#### GSD tooling
+
+| Check | How | If missing |
+|-------|-----|------------|
+| GSD global symlink | `[ -f "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" ]` | Create symlink (same as Step 7) |
+| GSD project symlink | `[ -d .claude/get-shit-done/bin ]` | `mkdir -p .claude/get-shit-done && ln -sfn "$HOME/.claude/get-shit-done/bin" .claude/get-shit-done/bin` |
+| `config.json` freshness | Always run | `node ./.claude/get-shit-done/bin/gsd-tools.cjs config-ensure-section` — creates config with defaults if missing; skips if already present (runtime defaults cover missing keys) |
+
+#### Project config
+
+| Check | How | If missing |
+|-------|-----|------------|
+| `CLAUDE.md` | `[ -f CLAUDE.md ]` | Run `/fh:revise-claude-md init` |
+| `.claude/rules/` | `[ -d .claude/rules ]` | Will be created by `/fh:map-codebase` below |
+
+#### Codebase mapping (context-mode)
+
+| Check | How | If missing |
+|-------|-----|------------|
+| `.planning/codebase/` | `[ -d .planning/codebase ]` | Run `/fh:map-codebase` — spawns 4 mapper agents, writes codebase docs, creates `.claude/rules/`, indexes into FTS5 |
+| Mapping freshness | Check if `.planning/codebase/` exists but is stale (significant commits since last map) | Re-run `/fh:map-codebase` to refresh |
+
+#### Agent skills (global)
+
+| Check | How | If missing |
+|-------|-----|------------|
+| shadcn skills | `[ -d "$HOME/.skills/shadcn" ]` | `cd "$HOME" && npx skills add shadcn/ui` |
+
+#### Observability
+
+| Check | How | If missing |
+|-------|-----|------------|
+| `lib/sentry-local.ts` | `[ -f lib/sentry-local.ts ]` | Scaffold from `/fh:observability` skill templates (Section 2) |
+| `lib/sentry-local-query.mjs` | `[ -f lib/sentry-local-query.mjs ]` | Scaffold alongside sentry-local.ts |
+| `.sentry-local/.gitignore` | `[ -d .sentry-local ]` | `mkdir -p .sentry-local && echo '*' > .sentry-local/.gitignore` |
+| `instrumentation.ts` | `[ -f instrumentation.ts ]` | Scaffold from `/fh:observability` skill templates |
+| Sentry env vars in `.env.local` | `grep -q SENTRY_LOCAL .env.local 2>/dev/null` | Append `SENTRY_LOCAL=true` and `NEXT_PUBLIC_SENTRY_LOCAL=true` |
+
+#### Infrastructure (check only — do NOT re-create)
+
+These are one-time external integrations. Sync mode only checks and reports status, it does not re-run setup.
+
+| Check | How | Report |
+|-------|-----|--------|
+| Git repo | `git rev-parse --is-inside-work-tree 2>/dev/null` | `✓ git` or `⚠ not a git repo` |
+| GitHub remote | `git remote get-url origin 2>/dev/null` | `✓ origin: <url>` or `⊘ no remote` |
+| Vercel project | `[ -d .vercel ]` | `✓ vercel linked` or `⊘ not linked (run vercel link)` |
+| Supabase | `[ -d supabase ]` or `grep -q SUPABASE .env.local 2>/dev/null` | `✓ supabase configured` or `⊘ no supabase` |
+| `components.json` | `[ -f components.json ]` | `✓ shadcn/ui configured` or `⊘ no shadcn/ui init` |
+
+#### Conductor (conditional)
+
+| Check | How | If missing |
+|-------|-----|------------|
+| `conductor.json` | `[ -f conductor.json ]` and `[ -n "$CONDUCTOR_WORKSPACE_NAME" ]` | Create from Step 8½ logic |
+
+**Sync mode behavior:**
+1. Run the audit silently — do NOT ask the user about project vision, tech stack, or brand. Those decisions are already made.
+2. For each missing item, create it by inferring from existing project context (read `CLAUDE.md`, `package.json`, `.planning/` files, and the codebase).
+3. For `config.json`: run `gsd-tools config-ensure-section` — creates with defaults if missing, skips if already present. Users can keep a minimal config (e.g. just `plan_limits`) since `loadConfig()` provides runtime defaults for anything omitted.
+4. For codebase mapping: if `.planning/codebase/` is missing, run `/fh:map-codebase`. This is important for context-mode to work well.
+5. For observability: if any sentry-local files are missing, scaffold the full set from `/fh:observability` templates. Partial scaffolding causes runtime errors.
+6. Report what was added/updated and what was already present.
+
+**Sync mode output:**
+
+```
+Project sync complete:
+
+  Planning:
+  ✓ .planning/PROJECT.md       — already present
+  ✓ .planning/REQUIREMENTS.md  — already present
+  ✓ .planning/ROADMAP.md       — already present
+  ✓ .planning/STATE.md         — already present
+  ✓ .planning/config.json      — updated (new fields merged)
+  ✓ .planning/DECISIONS.md     — already present
+
+  Tooling:
+  + GSD project symlink         — created
+  ✓ CLAUDE.md                  — already present
+  + .planning/codebase/         — mapped (4 agents, indexed)
+  + .claude/rules/              — created from codebase map
+
+  Skills:
+  ✓ shadcn skills              — already installed
+
+  Observability:
+  ✓ lib/sentry-local.ts        — already present
+  ✓ lib/sentry-local-query.mjs — already present
+  ✓ .sentry-local/             — already present
+
+  Infrastructure:
+  ✓ git                        — origin: git@github.com:user/repo.git
+  ✓ vercel                     — linked
+  ⊘ supabase                   — not configured
+  ⊘ .planning/DESIGN.md        — not set up (run /fh:ui-branding when ready)
+  ⊘ conductor.json             — skipped (not in Conductor)
+
+  Legend: ✓ = present  + = created/fixed  ⊘ = optional, skipped
+```
+
+After reporting, stop. Do NOT continue to Step 1 or any subsequent steps.
+
+### If `NEW_PROJECT`: continue to Step 1
+
+Proceed with the full greenfield flow below.
+
+---
+
 ## Step 1: Project Vision
 
 Delegate to the GSD new-project questioning flow. Ask the user one question at a time:
@@ -259,20 +394,20 @@ Based on your brand references, here's your design system:
 
 **If user chooses 1 (approve):** Pass the generated URL directly as the `--preset` flag value. The shadcn CLI accepts full URLs as presets:
 ```bash
-npx shadcn@latest init --preset "{generated URL}"
+npx shadcn@latest init --yes --preset "{generated URL}"
 ```
 For example:
 ```bash
-npx shadcn@latest init --preset "https://ui.shadcn.com/create?style=nova&baseColor=neutral&theme=blue&font=inter&iconLibrary=phosphor"
+npx shadcn@latest init --yes --preset "https://ui.shadcn.com/create?style=nova&baseColor=neutral&theme=blue&font=inter&iconLibrary=phosphor"
 ```
 Store the full URL and parameter set in `.planning/PROJECT.md` for reproducibility. Note: the CLI does NOT have individual flags like `--style` or `--font` — all design parameters must go through `--preset`.
 
-**If user chooses 2 (tweaked):** They paste back a preset code from the customizer. Use that code for `npx shadcn@latest init --preset <CODE>`.
+**If user chooses 2 (tweaked):** They paste back a preset code from the customizer. Use that code for `npx shadcn@latest init --yes --preset <CODE>`.
 
 **If user chooses 3 (start over):** Re-run the Brand Extraction flow with new references.
 
 **If the user skips entirely (no references, presses Enter):**
-- Phase 1 will run `npx shadcn@latest init` with default settings
+- Phase 1 will run `npx shadcn@latest init --yes` with default settings
 - Phosphor Icons will still be configured as the icon library
 
 **Store the preset decision** in `.planning/PROJECT.md` under the tech stack section, e.g.:
@@ -533,8 +668,11 @@ Then create the project-local symlink and initialize:
 mkdir -p .claude/get-shit-done
 ln -sfn "$HOME/.claude/get-shit-done/bin" .claude/get-shit-done/bin
 
-# Initialize project
+# Gather project context (outputs JSON to stdout — does NOT write files)
 node ./.claude/get-shit-done/bin/gsd-tools.cjs init new-project
+
+# Create config.json with defaults (or merge new keys if it already exists)
+node ./.claude/get-shit-done/bin/gsd-tools.cjs config-ensure-section
 ```
 
 Commit: `docs: initialize project planning with GSD structure`
