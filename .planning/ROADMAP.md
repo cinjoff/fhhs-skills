@@ -3,7 +3,7 @@ type: roadmap
 project: fhhs-skills
 version: v1
 created: "2026-03-25"
-phases: 7
+phases: 8
 ---
 
 # Roadmap
@@ -86,3 +86,13 @@ phases: 7
 - Headless orchestrator using `claude -p` for process-isolated agent sessions with crash recovery
 - Stuck detection, timeout supervision, and cost tracking
 - Decision correction cascade: human corrects a decision, system identifies downstream impact
+
+## Phase 9: Learning Persistence & Feedback Loop
+**Goal:** Workflow issues and skill improvement opportunities are automatically extracted from claude-mem observations and filed as GitHub issues.
+
+- `/fh:learnings` analyzes cross-project observations from claude-mem
+- Surfaces positive insights and productive patterns alongside problems
+- Clusters similar issues and deduplicates against existing GitHub issues
+- Auto-files structured issues with problem/evidence/suggestion format
+- Supports --dry-run and configurable time windows
+- Suggests claude-mem dashboard for deeper exploration

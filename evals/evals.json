@@ -6234,6 +6234,103 @@
           "type": "guard"
         }
       ]
+    },
+    {
+      "id": 236,
+      "command": "learnings",
+      "prompt": "check my recent sessions for any skill issues or improvement ideas",
+      "expected_output": "Should check claude-mem prerequisites, query observations cross-project for last 14 days, present insights dashboard (positive patterns first, then usage stats, then issues), cluster similar problems, search existing GitHub issues for duplicates, auto-file new issues on cinjoff/fhhs-skills, suggest claude-mem dashboard for deeper exploration",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Checks claude-mem availability as prerequisite",
+          "type": "behavioral"
+        },
+        {
+          "text": "Queries observations cross-project, not filtered to current project",
+          "type": "behavioral"
+        },
+        {
+          "text": "Presents positive insights before problems",
+          "type": "ordering"
+        },
+        {
+          "text": "Clusters similar observations into single root-cause issues",
+          "type": "behavioral"
+        },
+        {
+          "text": "Checks existing GitHub issues before filing duplicates",
+          "type": "behavioral"
+        },
+        {
+          "text": "Creates GitHub issues on cinjoff/fhhs-skills",
+          "type": "output"
+        },
+        {
+          "text": "Suggests claude-mem dashboard for deeper exploration",
+          "type": "output"
+        }
+      ]
+    },
+    {
+      "id": 237,
+      "command": "learnings",
+      "prompt": "run learnings analysis",
+      "expected_output": "Should detect claude-mem is not available, tell the user to install it from the Claude Code marketplace, and NOT proceed with analysis",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects missing claude-mem",
+          "type": "behavioral"
+        },
+        {
+          "text": "Suggests installing from Claude Code marketplace",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT proceed with observation analysis",
+          "type": "guard"
+        }
+      ],
+      "scenario_requires": ["no_claude_mem"]
+    },
+    {
+      "id": 238,
+      "command": "learnings",
+      "prompt": "/fh:learnings --dry-run",
+      "expected_output": "Should analyze observations and present findings but NOT create any GitHub issues. Should show what would be filed.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Respects --dry-run flag",
+          "type": "behavioral"
+        },
+        {
+          "text": "Shows what issues would be filed",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT create GitHub issues in dry-run mode",
+          "type": "guard"
+        }
+      ]
+    },
+    {
+      "id": 239,
+      "command": "learnings",
+      "prompt": "analyze learnings from the last 30 days",
+      "expected_output": "Should use 30-day window instead of default 14 days",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Uses custom time window (30 days)",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT use default 14-day window",
+          "type": "guard"
+        }
+      ]
     }
   ]
 }
