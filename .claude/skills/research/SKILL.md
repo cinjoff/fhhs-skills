@@ -26,6 +26,15 @@ Based on the topic, identify:
 - **Research mode**: Ecosystem ("what exists?"), Feasibility ("can we do this?"), or Comparison ("X vs Y")
 - **Output location**: `.planning/phases/XX-name/XX-RESEARCH.md` (phase detected from STATE.md current position)
 
+### 1b. Past Learnings Check
+
+If claude-mem is available, check for prior research on the same or related topics:
+1. Call `mcp__plugin_claude-mem_mcp-search__smart_search` with 2-3 keywords from the research topic, limit=5
+2. Filter for: research, investigated, evaluated, compared, "decided on", recommendation, pitfall
+3. If relevant: "**Prior research on this topic:** - {summary}" — max 3 items
+4. If prior research covers the exact topic, present it and ask: "Prior research exists — want to build on it or start fresh?"
+5. Skip silently if unavailable
+
 ### 2. Dispatch Research Subagent
 
 Spawn a Task agent with:
@@ -34,6 +43,15 @@ Spawn a Task agent with:
 - Instruction to be prescriptive ("Use X because Y"), not exploratory ("Consider X or Y")
 - Instruction to tag each finding with confidence and source: HIGH [Context7/official docs], MEDIUM [web sources], LOW [inference — needs validation]
 - Instruction to say "Couldn't find X" rather than guessing — negative results are valuable
+
+### Context-Mode Acceleration
+
+If ctx_batch_execute is available, index research sources for efficient synthesis:
+- After fetching web pages or library docs, index them via ctx_batch_execute with descriptive labels
+- Use ctx_search to extract relevant sections across all indexed sources at once
+- Particularly useful when comparing multiple libraries, approaches, or documentation pages
+- If unavailable, process sources inline as fetched
+
 - Instruction to write output with GSD-compatible YAML frontmatter:
   ```yaml
   ---

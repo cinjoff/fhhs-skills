@@ -13,6 +13,16 @@ You are a **lean orchestrator**. Stay under 10% context usage. Delegate all scan
 
 ---
 
+### Past Learnings Check
+
+If claude-mem is available, recall known security patterns:
+1. Call `mcp__plugin_claude-mem_mcp-search__smart_search` with "security" + framework/stack name, limit=5
+2. Filter for: vulnerability, injection, XSS, auth bypass, exposure, CVE, security fix
+3. If relevant: "**Known security context:** - {summary}" — max 3 items. Feed into agent scan prompts.
+4. Skip silently if unavailable
+
+---
+
 ## Step 1: Scope
 
 Determine scan target:
@@ -55,6 +65,14 @@ Categories: hardcoded secrets/API keys/tokens in source, PII in logs, sensitive 
 Categories: IDOR (insecure direct object references), permissive CORS, missing security headers (CSP, HSTS, X-Frame-Options), debug endpoints in production, misconfigured permissions, directory traversal, open redirects, insecure defaults.
 
 **Context budget:** Each scanner gets only the file contents + checklist. No plan files, no GSD state.
+
+### Context-Mode Acceleration
+
+If ctx_batch_execute is available, index the combined output from all 4 security scan agents:
+- Index each agent's findings with labeled sections (injection, auth, data-exposure, access-control)
+- Use ctx_search to filter by severity (critical/high/medium), threat category, or remediation effort
+- Enables efficient cross-referencing without holding all 4 reports in context
+- If unavailable, process agent reports sequentially
 
 ---
 

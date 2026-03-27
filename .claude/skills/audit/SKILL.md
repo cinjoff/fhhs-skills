@@ -45,6 +45,22 @@ Run comprehensive checks across multiple dimensions:
 
 **CRITICAL**: This is an audit, not a fix. Document issues thoroughly with clear explanations of impact. Use other commands (normalize, optimize, harden, etc.) to fix issues after audit.
 
+### Context-Mode Acceleration
+
+If ctx_batch_execute is available, index diagnostic scan output for efficient querying:
+- Run scan commands via ctx_batch_execute (linting, type checks, complexity metrics, dependency analysis)
+- Use ctx_search to filter findings by severity, category, or file path
+- This prevents large scan output from flooding the context window
+- If unavailable, run scans via Bash and process output directly
+
+### Past Learnings Check
+
+If claude-mem is available, check for prior audit findings and trends:
+1. Call `mcp__plugin_claude-mem_mcp-search__smart_search` with "audit" + project/module name, limit=5
+2. Filter for: audit, anti-pattern, complexity, coverage, trend, recurring
+3. If relevant: "**Prior audit context:** - {summary}" — max 3 items. Note improvements or persistent issues.
+4. Skip silently if unavailable
+
 ## Generate Comprehensive Report
 
 Create a detailed audit report with the following structure:

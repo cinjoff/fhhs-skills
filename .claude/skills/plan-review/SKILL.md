@@ -165,6 +165,15 @@ If the Phase Context Bootstrap ran (either in this session or a prior plan-work 
 
 ctx_search is especially valuable for plan-review since it reads more .planning/ state than any other skill.
 
+### Past Learnings Check
+
+If claude-mem is available, check for prior architectural decisions and review outcomes:
+1. Call `mcp__plugin_claude-mem_mcp-search__smart_search` with the phase name + "architecture" or "decision", limit=5
+2. Filter for: decision, architecture, pitfall, "should have", trade-off, regression
+3. If relevant: "**Prior decisions relevant to this review:** - {summary}" — max 3 items
+4. Cross-reference with locked decisions in CONTEXT.md — flag contradictions
+5. Skip silently if unavailable
+
 ### Taste Calibration (EXPANSION mode only)
 Read `.planning/DESIGN.md` for the project's design context and taste references. Use it to calibrate your recommendations — align with established design language and patterns rather than discovering them from scratch.
 
