@@ -352,12 +352,12 @@ function countDecisions(projectDir) {
   const dp = decisionsPath(projectDir);
   if (!fs.existsSync(dp)) return 0;
   const content = fs.readFileSync(dp, 'utf-8');
-  const matches = content.match(/^## DEC-/gm);
+  const matches = content.match(/^### D-/gm);
   return matches ? matches.length : 0;
 }
 
 function nextDecisionId(projectDir) {
-  return `DEC-${String(countDecisions(projectDir) + 1).padStart(3, '0')}`;
+  return `D-${String(countDecisions(projectDir) + 1).padStart(3, '0')}`;
 }
 
 function appendDecision(projectDir, { id, title, status, confidence, context, decision, affects, category, alternatives }) {
@@ -371,7 +371,7 @@ function appendDecision(projectDir, { id, title, status, confidence, context, de
 
   const lines = [
     '',
-    `## ${id}: ${title}`,
+    `### ${id}: ${title}`,
     `- **Category:** ${category || 'implementation'}`,
     `- **Status:** ${status}`,
     `- **Confidence:** ${confidence}`,
@@ -723,10 +723,10 @@ function parseCorrectedDecisions(projectDir) {
   const content = fs.readFileSync(dp, 'utf-8');
   const entries = [];
 
-  // Split on ## DEC- boundaries
-  const sections = content.split(/(?=^## DEC-)/gm);
+  // Split on ### D- boundaries
+  const sections = content.split(/(?=^### D-)/gm);
   for (const section of sections) {
-    const headerMatch = section.match(/^## (DEC-\d+):\s*(.+)/m);
+    const headerMatch = section.match(/^### (D-\d+):\s*(.+)/m);
     if (!headerMatch) continue;
 
     const statusMatch = section.match(/\*\*Status:\*\*\s*(.+)/i);
@@ -972,20 +972,6 @@ class ConcurrencyPool {
       for (const resolve of this._drainResolvers) resolve();
       this._drainResolvers = [];
     }
-  }
-
-  waitForSlot() {
-    if (this.active < this.maxConcurrency) return Promise.resolve();
-    return new Promise((resolve) => {
-      const check = () => {
-        if (this.active < this.maxConcurrency) {
-          resolve();
-        } else {
-          this._drainResolvers.push(check);
-        }
-      };
-      this._drainResolvers.push(check);
-    });
   }
 
   drain() {
@@ -1315,7 +1301,7 @@ async function preIndexSharedDocs(projectDir) {
 
   if (sharedDocPaths.length === 0) {
     log('  No shared docs found — skipping pre-index');
-    return;
+    return false;
   }
 
   const prompt =
@@ -1326,8 +1312,10 @@ async function preIndexSharedDocs(projectDir) {
   try {
     await runClaudeSession(prompt, { cwd: projectDir, sessionId: 'pre-index-shared-docs' });
     log(`  Pre-indexed ${sharedDocPaths.length} shared doc(s)`);
+    return true;
   } catch (err) {
     log(`  Warning: pre-index failed (non-fatal): ${err.message.slice(0, 120)}`);
+    return false;
   }
 }
 
@@ -1572,8 +1560,6 @@ async function main() {
     let currentPlanPath = null;
 
     for (const step of stepsToRun) {
-      const stepKey = `${phase.id}:${step}`;
-
       // Budget check (with cost estimate)
       if (opts.budget && totalCostEstimate >= opts.budget) {
         log(`Budget ceiling reached ($${totalCostEstimate.toFixed(2)} >= $${opts.budget})`);
@@ -1622,130 +1608,39 @@ async function main() {
 
       log(`  ▸ ${step}`);
 
-      // Retry loop with stuck detection + API health awareness
-      const maxAttempts = MAX_RETRIES;
-      let attempts = retryCount[stepKey] || 0;
-      let stepResult = null;
-      let stepSucceeded = false;
+      const outcome = await runStepWithRetry(phase, step, currentPlanPath);
 
-      while (attempts < maxAttempts && !stepSucceeded) {
-        if (attempts > 0) {
-          log(`  ↻ Retry ${attempts}/${maxAttempts - 1} for ${step}`);
-        }
-
-        // Pre-spawn API health check: avoid wasting sessions during outages
-        try {
-          await waitForHealthyApi();
-        } catch (healthErr) {
-          // API is down after all retries — save state and abort
-          log(`  ✗ API unreachable — saving state for --resume`);
-          const apiDecId = nextDecisionId(projectDir);
-          appendDecision(projectDir, {
-            id: apiDecId,
-            title: `API outage halted phase ${phase.id} at ${step}`,
-            status: 'ACTIVE ⚠ NEEDS REVIEW',
-            confidence: 'HIGH',
-            context: healthErr.message,
-            decision: `Saved state for --resume. Re-run after API recovery.`,
-            affects: `Phase ${phase.id}, step ${step}`,
-          });
-          _autoStatus.errors.push({
-            phase: phase.id,
-            step,
-            attempt: attempts + 1,
-            error_type: 'api',
-            message: healthErr.message.slice(0, 300),
-            timestamp: new Date().toISOString(),
-          });
-          writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
-            active: false,
-            phase: phase.id,
-            phase_name: phase.name,
-            step,
-            step_index: PHASE_STEPS.indexOf(step),
-            steps_completed: completedSteps,
-            current_plan_path: currentPlanPath ? path.relative(projectDir, currentPlanPath) : null,
-            total_cost_estimate: totalCostEstimate,
-            budget: opts.budget || null,
-            last_log_line: `API unreachable — saving state for --resume`,
-          }));
-          log(`  State saved for resume (decision ${apiDecId}). Exiting.`);
-          process.exit(1);
-        }
-
-        try {
-          stepResult = await executeStep(projectDir, phase.id, step, currentPlanPath);
-          stepSucceeded = true;
-        } catch (err) {
-          attempts++;
-          retryCount[stepKey] = attempts;
-
-          const errType = err.stuck ? 'stuck (no output)' : err.timeout ? 'timeout' : 'failure';
-          const stepElapsedMs = _autoStatus.stepStartedAt ? Date.now() - new Date(_autoStatus.stepStartedAt).getTime() : 0;
-
-          // Track error in enriched status
-          _autoStatus.errors.push({
-            phase: phase.id,
-            step,
-            attempt: attempts,
-            error_type: err.stuck ? 'stuck' : err.timeout ? 'timeout' : isApiError(err) ? 'api' : 'logic',
-            message: err.message.slice(0, 300),
-            timestamp: new Date().toISOString(),
-          });
-
-          // Write enriched status on step failure
-          writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
-            phase: phase.id,
-            phase_name: phase.name,
-            step,
-            step_index: PHASE_STEPS.indexOf(step),
-            steps_completed: completedSteps,
-            current_plan_path: currentPlanPath ? path.relative(projectDir, currentPlanPath) : null,
-            total_cost_estimate: totalCostEstimate,
-            budget: opts.budget || null,
-            last_log_line: `${step} ${errType} (attempt ${attempts}/${maxAttempts})`,
-          }));
-          log(`  ✗ ${step} ${errType} (attempt ${attempts}/${maxAttempts}): ${err.message.slice(0, 200)}`);
-
-          // On API errors, wait for recovery before retrying
-          if (isApiError(err) && attempts < maxAttempts) {
-            log(`  ⚠ Looks like an API/infra error — checking health before retry...`);
-            try {
-              await waitForHealthyApi();
-            } catch {
-              log(`  ✗ API did not recover — saving state`);
-            }
-          }
-
-          if (attempts >= maxAttempts) {
-            // Max retries exhausted — skip step with logged decision
-            const skipDecId = nextDecisionId(projectDir);
-            const reason = err.stuck ? 'stuck session' : err.timeout ? 'hard timeout' : 'repeated failure';
-            appendDecision(projectDir, {
-              id: skipDecId,
-              title: `Skipped ${step} in phase ${phase.id} after ${reason}`,
-              status: 'ACTIVE ⚠ NEEDS REVIEW',
-              confidence: 'LOW',
-              context: `Step "${step}" failed ${attempts} time(s). Last error: ${err.message.slice(0, 200)}`,
-              decision: `Skipping step and continuing to next. Manual intervention required.`,
-              affects: `Phase ${phase.id}, step ${step}`,
-            });
-            log(`  ⚠ Skipping ${step} after ${attempts} attempts — decision logged as ${skipDecId}`);
-            break;
-          }
-        }
+      // If API is down, save state and abort (preserve old behaviour)
+      if (outcome.skipped && outcome.reason === 'api-down') {
+        log(`  ✗ API unreachable — saving state for --resume`);
+        const apiDecId = nextDecisionId(projectDir);
+        appendDecision(projectDir, {
+          id: apiDecId,
+          title: `API outage halted phase ${phase.id} at ${step}`,
+          status: 'ACTIVE ⚠ NEEDS REVIEW',
+          confidence: 'HIGH',
+          context: outcome.error ? outcome.error.message : 'API health check failed',
+          decision: `Saved state for --resume. Re-run after API recovery.`,
+          affects: `Phase ${phase.id}, step ${step}`,
+        });
+        writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
+          active: false,
+          phase: phase.id,
+          phase_name: phase.name,
+          step,
+          step_index: PHASE_STEPS.indexOf(step),
+          steps_completed: completedSteps,
+          current_plan_path: currentPlanPath ? path.relative(projectDir, currentPlanPath) : null,
+          total_cost_estimate: totalCostEstimate,
+          budget: opts.budget || null,
+          last_log_line: `API unreachable — saving state for --resume`,
+        }));
+        log(`  State saved for resume (decision ${apiDecId}). Exiting.`);
+        process.exit(1);
       }
 
-      // Cost tracking: estimate cost from session I/O
-      let sessionCost = 0;
-      if (stepResult) {
-        sessionCost = estimateSessionCost(
-          stepResult.promptText || '',
-          stepResult.stdout || ''
-        );
-        totalCostEstimate += sessionCost;
-        log(`    Cost estimate: ~$${sessionCost.toFixed(4)} (running total: ~$${totalCostEstimate.toFixed(2)} — minimum estimate, actual cost higher)`);
-      }
+      let stepSucceeded = !outcome.skipped;
+      const sessionCost = outcome.cost || 0;
 
       if (stepSucceeded) {
         completedSteps.push(step);
@@ -1870,7 +1765,7 @@ async function main() {
     let stableRun = true;
 
     // ── Step 1: Pre-index shared docs ──────────────────────────────────────────
-    await preIndexSharedDocs(projectDir);
+    const preIndexSucceeded = await preIndexSharedDocs(projectDir);
 
     // ── Phase states map ───────────────────────────────────────────────────────
     // Possible values: 'pending' | 'planned' | 'plan-failed' | 'reviewed' |
@@ -1893,6 +1788,18 @@ async function main() {
 
     // Plan paths per phase
     const phasePlanPaths = {};
+
+    // ── Resume: restore phasePlanPaths from auto-state ────────────────────────
+    if (opts.resume && resumeState && resumeState.phase_plan_paths) {
+      log('  Restoring phasePlanPaths from saved auto-state...');
+      for (const [pid, relPath] of Object.entries(resumeState.phase_plan_paths)) {
+        const absPath = path.resolve(projectDir, relPath);
+        if (fs.existsSync(absPath)) {
+          phasePlanPaths[pid] = absPath;
+          log(`    Phase ${pid}: plan path restored`);
+        }
+      }
+    }
 
     // Phases that need sequential fallback after pipeline
     const rescheduledPhases = [];
@@ -1925,7 +1832,9 @@ async function main() {
       log(`  ▸ Planning phase ${phase.id}: ${phase.name}`);
 
       // Build planning prompt additions
-      const skipBootstrap = 'SKIP Phase Context Bootstrap (Step -0.5) — shared context already indexed. Use ctx_search for shared docs.';
+      const skipBootstrap = preIndexSucceeded
+        ? 'SKIP Phase Context Bootstrap (Step -0.5) — shared context already indexed. Use ctx_search for shared docs.'
+        : '';
       const assumeEarlier = phaseIdx > 0
         ? ' Assume earlier phases complete successfully and produce their expected artifacts.'
         : '';
@@ -1964,8 +1873,9 @@ async function main() {
       let stepResult;
       try {
         stepResult = await runClaudeSession(
-          `You are in auto mode (workflow.auto_advance=true). ${skipBootstrap} ` +
-          `Read .planning/STATE.md and .planning/ROADMAP.md for context. ` +
+          `You are in auto mode (workflow.auto_advance=true).` +
+          (skipBootstrap ? ` ${skipBootstrap}` : '') +
+          ` Read .planning/STATE.md and .planning/ROADMAP.md for context. ` +
           `Plan phase ${phase.id}. Phase goal: "${phaseGoal}". ` +
           `Use /fh:plan-work to create the plan. Auto-decide all gray areas using best judgment. ` +
           `Write the plan to .planning/phases/ directory. Do not ask questions — make decisions autonomously.` +
@@ -2136,8 +2046,8 @@ async function main() {
 
       const phaseIds = batchPhases.map(p => p.id).join(', ');
 
-      if (batchFiles.length > 20) {
-        // Split into two halves
+      if (batchFiles.length > 20 && batchPhases.length > 1) {
+        // Split into two halves — only recurse if there is more than one phase to split
         const half = Math.ceil(batchPhases.length / 2);
         const firstHalf = batchPhases.slice(0, half);
         const secondHalf = batchPhases.slice(half);
@@ -2146,6 +2056,7 @@ async function main() {
         await batchReview(secondHalf);
         return;
       }
+      // Base case: single phase with >20 files — review as-is (cannot split further)
 
       log(`  [review-batch] Running batched review for phases: ${phaseIds}`);
       const reviewPrompt =
@@ -2175,11 +2086,11 @@ async function main() {
     const sortedWaveNums = Object.keys(waveGroups).map(Number).sort((a, b) => a - b);
 
     for (const waveNum of sortedWaveNums) {
-      const wavePhasess = waveGroups[waveNum];
-      log(`  Build wave ${waveNum}: ${wavePhasess.map(p => p.id).join(', ')}`);
+      const wavePhases = waveGroups[waveNum];
+      log(`  Build wave ${waveNum}: ${wavePhases.map(p => p.id).join(', ')}`);
 
       // Within each wave, build sequentially (v1)
-      for (const phase of wavePhasess) {
+      for (const phase of wavePhases) {
         // Skip phases already built on resume
         if (phase_states[phase.id] === 'built') {
           log(`  ↷ Skipping build for phase ${phase.id} (already 'built')`);
@@ -2202,6 +2113,21 @@ async function main() {
         log(`  ▸ Building phase ${phase.id}`);
 
         // State write reduction: in stable run, only write at phase-start
+        // Build plan path with fallback
+        if (!phasePlanPaths[phase.id]) {
+          const fallback = findLatestPlan(projectDir, phase.id);
+          if (fallback) {
+            log(`  [build] Phase ${phase.id}: plan path missing from map — falling back to ${path.relative(projectDir, fallback)}`);
+            phasePlanPaths[phase.id] = fallback;
+          }
+        }
+
+        // Serialize phasePlanPaths as relative paths for state persistence
+        const relPhasePlanPaths = {};
+        for (const [pid, pp] of Object.entries(phasePlanPaths)) {
+          relPhasePlanPaths[pid] = path.relative(projectDir, pp);
+        }
+
         if (stableRun) {
           _optimizations.state_writes_saved++;
           saveAutoState(projectDir, {
@@ -2209,6 +2135,7 @@ async function main() {
             phase_states: Object.assign({}, phase_states),
             total_cost_estimate: totalCostEstimate,
             retry_count: retryCount,
+            phase_plan_paths: relPhasePlanPaths,
           });
         } else {
           writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
@@ -2261,11 +2188,16 @@ async function main() {
         // State write reduction: in stable run, only write at phase-end
         if (stableRun) {
           _optimizations.state_writes_saved++;
+          const relPhasePlanPathsEnd = {};
+          for (const [pid, pp] of Object.entries(phasePlanPaths)) {
+            relPhasePlanPathsEnd[pid] = path.relative(projectDir, pp);
+          }
           saveAutoState(projectDir, {
             phase: phase.id,
             phase_states: Object.assign({}, phase_states),
             total_cost_estimate: totalCostEstimate,
             retry_count: retryCount,
+            phase_plan_paths: relPhasePlanPathsEnd,
           });
         } else {
           writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
