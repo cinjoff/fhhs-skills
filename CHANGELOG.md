@@ -8,6 +8,11 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.32.1] - 2026-03-27
+
+### Fixed
+- **Conductor workspace project identity** — adds `CLAUDE_CWD` to conductor.json setup script so plugins like claude-mem identify projects by repo name instead of workspace directory name [setup:env:CLAUDE_CWD]
+
 ## [1.32.0] - 2026-03-27
 
 ### Added
