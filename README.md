@@ -64,9 +64,11 @@ Or start from scratch:
 
 This derives vision, tech stack, and requirements from the description, creates a scope-expansion roadmap, then hands off to `/fh:auto` to build every phase.
 
-**How it works:** Each step (plan-work, plan-review, build, review) runs as a separate `claude -p` session with fresh context. State is persisted to `.planning/.auto-state.json` between steps so crashes can resume. Every autonomous decision is logged to `.planning/DECISIONS.md` with confidence levels — LOW confidence decisions are flagged with `NEEDS REVIEW` for human audit.
+**How it works:** Each step (plan-work, plan-review, build, review) runs as a separate `claude -p` session with fresh context. The orchestrator loads [context-mode](https://github.com/mksglu/context-mode) and [claude-mem](https://github.com/thedotmack/claude-mem) MCP plugins into each session and shares a context-mode FTS5 database across all 4 steps via a deterministic `CLAUDE_SESSION_ID`. This means plan-work indexes your project docs once, and plan-review, build, and review all reuse that index — no redundant file reads. State is persisted to `.planning/.auto-state.json` between steps so crashes can resume. Every autonomous decision is logged to `.planning/DECISIONS.md` with confidence levels — LOW confidence decisions are flagged with `NEEDS REVIEW` for human audit.
 
 **Supervision:** Sessions that run longer than 10 minutes get a warning; at 45 minutes they're killed with a logged decision. Failed steps retry once, then skip with an audit trail. The `--budget` flag sets a cost ceiling based on estimated token usage.
+
+**MCP plugins are optional.** If context-mode or claude-mem aren't installed, the orchestrator skips their `--plugin-dir` flags and all skills fall back to direct file reads. The pipeline works identically — just without the indexing optimization.
 
 ## Native Task Tracking
 
@@ -249,19 +251,87 @@ All upstreams are forked and bundled. TypeScript Language Server provides code n
 
 ### Continuous Improvement
 
-Every `/fh:build` captures observations from [claude-mem](https://github.com/thedotmack/claude-mem) and distills them into a learnings digest (`~/.claude/cache/learnings-digest.json`). On your next session, the digest is surfaced automatically — no skill invocation needed:
+If [claude-mem](https://github.com/thedotmack/claude-mem) is installed, every session start queries it for recent learnings, mistakes, and improvement opportunities. Actionable items are surfaced as brief notes — no manual invocation needed.
+
+During `/fh:plan-work`, past learnings relevant to your current task are queried from claude-mem and injected into the research context, so past mistakes inform future designs. During `/fh:build`, claude-mem observations from plan-work and plan-review are available to build agents, providing cross-step context without re-reading files.
+
+Without claude-mem, the improvement loop is skipped silently and all skills work normally.
+
+### Context Sharing in Auto Mode
+
+When `/fh:auto` runs, the orchestrator loads two MCP plugins into every `claude -p` session and shares a context-mode database across all steps in a phase:
 
 ```
-★ [high] Tests for $& patterns in str.replace
-● [med]  Plan-work skips research on medium tasks
-○ [low]  Context usage spikes during build phases
-3 pending improvements (1 addressed recently)
-Say "improve <number>" to address any item, or continue with your task.
+AUTO-ORCHESTRATOR
+│
+│  Spawns 4 sequential claude -p sessions per phase:
+│    --plugin-dir <context-mode>     FTS5 full-text search index
+│    --plugin-dir <claude-mem>       Persistent cross-session observations
+│    env CLAUDE_SESSION_ID=phase-{N}-auto
+│
+├─────────────────────────────────────────────────────────────────────┐
+│                                                                     │
+│  STEP 1: plan-work                                                  │
+│  ┌──────────────────────────────────────────────────────────────┐   │
+│  │ Phase Context Bootstrap: indexes 9 stable .planning/ docs   │   │
+│  │ (PROJECT, ROADMAP, DESIGN, ARCHITECTURE, STRUCTURE,         │   │
+│  │  CONVENTIONS, TESTING, STACK, REQUIREMENTS)                 │   │
+│  │ + phase RESEARCH.md + milestone research                    │   │
+│  │                                                             │   │
+│  │ All subsequent steps find these already indexed.            │   │
+│  └──────────────────────────────────────────────────────────────┘   │
+│  Produces: PLAN.md, CONTEXT.md, DECISIONS.md                        │
+│                                                                     │
+│  STEP 2: plan-review                                                │
+│  ┌──────────────────────────────────────────────────────────────┐   │
+│  │ Phase Context Check: verifies index from plan-work exists.  │   │
+│  │ If fresh session, bootstraps its own.                       │   │
+│  │                                                             │   │
+│  │ Uses ctx_search for decisions, research, design context     │   │
+│  │ instead of reading full files.                              │   │
+│  └──────────────────────────────────────────────────────────────┘   │
+│  Updates: PLAN.md, CONTEXT.md, DECISIONS.md                         │
+│                                                                     │
+│  STEP 3: build                                                      │
+│  ┌──────────────────────────────────────────────────────────────┐   │
+│  │ Pre-Index: source files from plan's files_modified list     │   │
+│  │                                                             │   │
+│  │ Wave 1: parallel agents (shared session DB)                 │   │
+│  │   Agent A: ctx_search("decisions for auth") → from index   │   │
+│  │   Agent B: ctx_search("conventions for tsx") → from index  │   │
+│  │   Agent C: ctx_search("existing sidebar")   → from index   │   │
+│  │   Agents Read only files they Edit.                        │   │
+│  │                                                             │   │
+│  │ Post-Wave Re-Index: modified files refreshed in index       │   │
+│  │                                                             │   │
+│  │ Wave 2: sees Wave 1's output via ctx_search                │   │
+│  └──────────────────────────────────────────────────────────────┘   │
+│                                                                     │
+│  STEP 4: review                                                     │
+│  ┌──────────────────────────────────────────────────────────────┐   │
+│  │ Full phase context available via index: SUMMARY, PLAN,      │   │
+│  │ CONVENTIONS, all source files.                              │   │
+│  └──────────────────────────────────────────────────────────────┘   │
+│                                                                     │
+├─────────────────────────────────────────────────────────────────────┘
+│
+│  Two data stores, two scopes:
+│
+│  context-mode (ephemeral)          claude-mem (persistent)
+│  ─────────────────────────         ──────────────────────────
+│  Per-phase FTS5 SQLite DB          Global SQLite observation store
+│  Shared across 4 steps             Shared across ALL sessions
+│  Indexes: .planning/ docs,         Indexes: every file read/write,
+│    source files, plan artifacts      decision, code change
+│  Queried: ctx_search               Queried: smart_search, timeline
+│  Discarded after phase             Never invalidated (append-only)
 ```
 
-Say `improve 1` and a background agent addresses it — light items get a direct fix, medium items go through plan→build, heavy items get plan→review→build. The digest tracks what's been addressed and escalates recurring issues.
+**Without plugins:** All skills include fallbacks — `ctx_search` instructions are always paired with "if unavailable, read the file directly." Agent prompts always include `{DESIGN_DECISIONS}` and `{CLAUDE_MD_SECTIONS}` content injected by the build orchestrator. The pipeline works identically without MCP plugins, just without the indexing optimization.
 
-During `/fh:plan-work`, past learnings relevant to your current task are queried from claude-mem and injected into the research context, so past mistakes inform future designs.
+**Interactive mode:** The same bootstrap and ctx_search patterns work in interactive sessions. The only difference is no shared `CLAUDE_SESSION_ID` across separate sessions — each skill bootstraps its own index if needed.
+
+For the full architecture diagram, see [`.claude/skills/auto/CONTEXT-SHARING.md`](.claude/skills/auto/CONTEXT-SHARING.md).
 
 ### Optional: Fallow Static Analysis
 
