@@ -141,9 +141,9 @@ Extract changelog entries between the installed and latest versions from the CHA
   The handoff step recommends plan challenge for non-trivial
   plans. You can still go straight to /fh:build.
 
-  /fh:setup now installs claude-mem automatically
+  claude-mem now auto-installed during updates
   Persistent session memory across conversations.
-  If you haven't run /fh:setup recently, do so to get it.
+  Post-update reconciliation handles this automatically.
 ```
 
 **Formatting rules:**
@@ -254,7 +254,7 @@ else
 fi
 ```
 
-### 5b: Changelog-driven reconciliation
+### 5b: Changelog-driven reconciliation — auto-fix gaps
 
 Save the changelog (already fetched in Step 2) to a temp file and run the reconciliation check:
 
@@ -272,26 +272,163 @@ The command outputs JSON with `missing` and `ok` arrays. Each item has `type`, `
 **If `missing` is empty:**
 
 ```
-✓ Your environment is up to date with all setup changes.
+✓ Your environment is up to date — no gaps to close.
 ```
 
-**If `missing` has items**, display them grouped by type:
+Skip to the final message.
+
+**If `missing` has items — auto-remediate each one.** Do NOT tell the user to run `/fh:setup` or `/fh:new-project`. Instead, fix every gap inline using the remediation map below. Work through each missing item sequentially.
+
+#### Remediation map
+
+For each missing item, match on `check` type and apply the fix:
+
+**`setup:tool:*`** — Install the CLI tool:
+
+| ID | Install command |
+|----|----------------|
+| `fallow` | `pnpm install -g fallow` |
+| `typescript-language-server` | `npm install -g typescript-language-server typescript` |
+| Any other tool | `pnpm install -g $ID` (best-effort) |
+
+```bash
+pnpm install -g fallow 2>&1 && echo "✓ fallow installed" || echo "⚠ fallow install failed"
+```
+
+Verify after install: `command -v $ID >/dev/null 2>&1`
+
+**`setup:dir:*`** — Install the directory/tool that creates it:
+
+| ID | Install command |
+|----|----------------|
+| `~/.skills/shadcn` | `cd "$HOME" && npx skills add shadcn/ui` |
+| Any other dir | `mkdir -p "$EXPANDED_PATH"` |
+
+```bash
+# For shadcn skills
+cd "$HOME" && npx skills add shadcn/ui 2>&1 && echo "✓ shadcn skills installed" || echo "⚠ shadcn skills install failed"
+```
+
+**`setup:env:*`** — Add the env var to `~/.claude/settings.json`:
+
+Use the **Read tool** to load `~/.claude/settings.json`, then use the **Edit tool** to merge the missing key into the `env` object. Known values:
+
+| ID | Value |
+|----|-------|
+| `CLAUDE_CODE_ENABLE_LSP` | `"1"` |
+| `CLAUDE_CODE_ENABLE_TASKS` | `"true"` |
+| `CLAUDE_CWD` | `"true"` |
+| Any other env | `"true"` (safe default) |
+
+Do NOT overwrite existing keys. Merge carefully.
+
+**`setup:hook:*`** — Add the hook to `~/.claude/settings.json`:
+
+Use the **Read tool** to load `~/.claude/settings.json`. Determine the correct event type and command for the hook ID, then use the **Edit tool** to append it to the appropriate hooks array. Known hooks:
+
+| ID substring | Event | Command |
+|---|---|---|
+| `fhhs-statusline` | `statusLine` (top-level, not in hooks array) | `node "$HOME/.claude/get-shit-done/hooks/fhhs-statusline.js"` |
+| `fhhs-check-update` | `SessionStart` | `node "$HOME/.claude/get-shit-done/hooks/fhhs-check-update.js"` |
+| `fhhs-learnings` | `SessionStart` | `node "$HOME/.claude/get-shit-done/hooks/fhhs-learnings.js"` |
+| `fhhs-context-monitor` | `PostToolUse` | `node "$HOME/.claude/get-shit-done/hooks/fhhs-context-monitor.js"` |
+
+For `fhhs-statusline`: set the top-level `statusLine` field in settings.json (NOT inside the hooks array):
+```json
+{ "statusLine": { "command": "node \"$HOME/.claude/get-shit-done/hooks/fhhs-statusline.js\"" } }
+```
+
+For all others: append to the existing hooks arrays — do NOT replace them. Skip if already present.
+
+**`setup:plugin:*`** — Install the plugin:
+
+| ID | Install commands |
+|----|-----------------|
+| `claude-mem@thedotmack` | `claude plugin marketplace add thedotmack/claude-mem && claude plugin install claude-mem` |
+| `context-mode@context-mode` | `claude plugin marketplace add mksglu/context-mode && claude plugin install context-mode@context-mode` |
+| Any other | `claude plugin install $ID` |
+
+```bash
+claude plugin marketplace add thedotmack/claude-mem 2>/dev/null
+claude plugin install claude-mem 2>&1 && echo "✓ claude-mem installed" || echo "PLUGIN_INSTALL_FAILED"
+```
+
+This works in all environments including Conductor. If it fails, collect the failed plugin installs and show ONE consolidated manual-install block at the end — not per-item.
+
+After installing `claude-mem@thedotmack` successfully, also apply fhhs-skills configuration to `~/.claude-mem/settings.json` — Read the file (create if missing), then Edit/Write to merge these keys without overwriting others:
+
+```json
+{
+  "CLAUDE_MEM_CONTEXT_OBSERVATIONS": "500",
+  "CLAUDE_MEM_CONTEXT_SESSION_COUNT": "50",
+  "CLAUDE_MEM_CONTEXT_FULL_COUNT": "15",
+  "CLAUDE_MEM_CONTEXT_FULL_FIELD": "narrative",
+  "CLAUDE_MEM_FOLDER_CLAUDEMD_ENABLED": "true",
+  "CLAUDE_MEM_CONTEXT_SHOW_LAST_SUMMARY": "true",
+  "CLAUDE_MEM_CONTEXT_SHOW_LAST_MESSAGE": "false",
+  "CLAUDE_MEM_CONTEXT_SHOW_READ_TOKENS": "true",
+  "CLAUDE_MEM_CONTEXT_SHOW_WORK_TOKENS": "true",
+  "CLAUDE_MEM_CONTEXT_SHOW_SAVINGS_AMOUNT": "true",
+  "CLAUDE_MEM_CONTEXT_SHOW_SAVINGS_PERCENT": "true",
+  "CLAUDE_MEM_CONTEXT_SHOW_TERMINAL_OUTPUT": "true",
+  "CLAUDE_MEM_MAX_CONCURRENT_AGENTS": "8"
+}
+```
+
+**`project:file:*`** / **`project:dir:*`** — Create the missing project path:
+
+For directories: `mkdir -p "$PROJECT_ROOT/$ID"`
+For files: note these for the user — file content can't be inferred from the tag alone. Collect and show at the end.
+
+#### Execution flow
+
+1. Work through each missing item, applying the remediation
+2. After all remediations, re-run the reconciliation check to verify:
+
+```bash
+node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" changelog reconcile \
+  --from "$PREV_VERSION" --to "$LATEST_VERSION" \
+  --changelog-file /tmp/fhhs-changelog.md \
+  --project-root "$PWD"
+```
+
+3. Display the final status table showing what was fixed and what still needs attention:
 
 ```
-## Setup items to reconcile
+## Post-update reconciliation
 
-These setup changes were introduced between your old and new version:
-
-| Status | What | Added in | Description |
-|--------|------|----------|-------------|
-| ✗ | fallow (CLI tool) | v1.26.0 | Fallow static analysis in setup |
-| ✗ | ~/.skills/shadcn (directory) | v1.19.0 | shadcn/ui skills in /fh:setup |
-| ✓ | CLAUDE_CODE_ENABLE_TASKS (env) | v1.25.0 | Task tracking in setup |
-
-Run `/fh:setup` to install missing items, or install them manually.
+| Status | What | Action taken |
+|--------|------|-------------|
+| ✓ | fallow | Installed via pnpm |
+| ✓ | shadcn skills | Installed globally |
+| ✓ | CLAUDE_CODE_ENABLE_TASKS | Added to settings.json |
+| ⚠ | claude-mem | Requires manual install (see below) |
 ```
 
-Do NOT read setup.md or new-project.md. Do NOT auto-install anything. Just report what's missing and point to `/fh:setup`.
+4. **Only if there are items that couldn't be auto-fixed**, show ONE consolidated block:
+
+```
+╔══════════════════════════════════════════════════════════════╗
+║  Manual steps needed                                         ║
+╚══════════════════════════════════════════════════════════════╝
+
+These items could not be installed automatically. Run in a
+terminal:
+
+  claude plugin marketplace add thedotmack/claude-mem
+  claude plugin install claude-mem
+
+  claude plugin marketplace add mksglu/context-mode
+  claude plugin install context-mode@context-mode
+
+──────────────────────────────────────────────────────────────
+```
+
+5. If everything was fixed automatically:
+
+```
+✓ All gaps closed — your environment is fully up to date.
+```
 
 **After reconciliation is complete:**
 
