@@ -185,16 +185,37 @@ print(entry[0].get('version', 'unknown') if entry else 'unknown')
 ```
 
 ```bash
-claude plugin update fh@fhhs-skills
+claude plugin update fh@fhhs-skills 2>&1 && echo "UPDATE_OK" || echo "UPDATE_FAILED"
 ```
+
+**If UPDATE_FAILED** (e.g. running inside Conductor or a non-interactive environment):
+
+```
+╔══════════════════════════════════════════════════════════════╗
+║  CHECKPOINT: Action Required                                 ║
+╚══════════════════════════════════════════════════════════════╝
+
+Plugin update failed — this can happen inside Conductor or
+non-interactive environments. Open a separate terminal and run:
+
+  claude plugin update fh@fhhs-skills
+
+Then come back and run /fh:update again to complete reconciliation.
+
+──────────────────────────────────────────────────────────────
+→ Run the command above in your terminal, then type "done"
+──────────────────────────────────────────────────────────────
+```
+
+Stop here and wait. Do NOT proceed to Step 5 until the update succeeds.
+
+**If UPDATE_OK:**
 
 Clear the update indicator from the statusline:
 
 ```bash
 rm -f "$HOME/.claude/cache/fhhs-update-check.json"
 ```
-
-**After update:**
 
 ```
 ## Updated
