@@ -563,44 +563,60 @@ On success:
   → Restart Claude Code for hooks to activate
 ```
 
-### 6c: Recommend lean configuration
+### 6c: Apply fhhs-skills configuration
 
-claude-mem's defaults inject 50 observations from 10 sessions at startup. When running alongside fhhs-skills (which also consumes context for skills, hooks, and GSD state), these defaults can eat too much of the context window.
+claude-mem is central to fhhs-skills — it provides cross-session memory for all skills and captures learnings from parallel agents in `/fh:auto` mode. The defaults are too conservative for this workload.
 
-Display the recommended settings:
+Read `~/.claude-mem/settings.json` using the **Read tool**. If it doesn't exist, create it. Then use the **Edit tool** to merge the following values (do NOT overwrite other existing settings — only update these keys):
+
+```json
+{
+  "CLAUDE_MEM_CONTEXT_OBSERVATIONS": "500",
+  "CLAUDE_MEM_CONTEXT_SESSION_COUNT": "50",
+  "CLAUDE_MEM_CONTEXT_FULL_COUNT": "15",
+  "CLAUDE_MEM_CONTEXT_FULL_FIELD": "narrative",
+  "CLAUDE_MEM_FOLDER_CLAUDEMD_ENABLED": "true",
+  "CLAUDE_MEM_CONTEXT_SHOW_LAST_SUMMARY": "true",
+  "CLAUDE_MEM_CONTEXT_SHOW_LAST_MESSAGE": "false",
+  "CLAUDE_MEM_CONTEXT_SHOW_READ_TOKENS": "true",
+  "CLAUDE_MEM_CONTEXT_SHOW_WORK_TOKENS": "true",
+  "CLAUDE_MEM_CONTEXT_SHOW_SAVINGS_AMOUNT": "true",
+  "CLAUDE_MEM_CONTEXT_SHOW_SAVINGS_PERCENT": "true",
+  "CLAUDE_MEM_CONTEXT_SHOW_TERMINAL_OUTPUT": "true",
+  "CLAUDE_MEM_MAX_CONCURRENT_AGENTS": "8"
+}
+```
+
+After applying, display:
 
 ```
-◆ Recommended claude-mem settings for fhhs-skills users
+✓ claude-mem configured for fhhs-skills
 
-  Open the claude-mem dashboard at http://localhost:37777
-  and adjust these settings (or edit ~/.claude-mem/settings.json):
-
+  Applied settings:
   ┌─────────────────────────────────────┬─────────┬─────────────┐
-  │ Setting                             │ Default │ Recommended │
+  │ Setting                             │ Default │ Applied     │
   ├─────────────────────────────────────┼─────────┼─────────────┤
-  │ CONTEXT_OBSERVATIONS                │ 50      │ 25          │
-  │ CONTEXT_SESSION_COUNT               │ 10      │ 5           │
-  │ CONTEXT_FULL_COUNT                  │ 5       │ 2           │
-  │ CONTEXT_FULL_FIELD                  │ —       │ facts       │
-  │ FOLDER_CLAUDEMD_ENABLED             │ true    │ true        │
-  │ CONTEXT_SHOW_LAST_SUMMARY           │ true    │ false       │
+  │ CONTEXT_OBSERVATIONS                │ 50      │ 500         │
+  │ CONTEXT_SESSION_COUNT               │ 10      │ 50          │
+  │ CONTEXT_FULL_COUNT                  │ 5       │ 15          │
+  │ CONTEXT_FULL_FIELD                  │ —       │ narrative   │
+  │ FOLDER_CLAUDEMD_ENABLED             │ false   │ true        │
+  │ CONTEXT_SHOW_LAST_SUMMARY           │ true    │ true        │
   │ CONTEXT_SHOW_LAST_MESSAGE           │ true    │ false       │
+  │ CONTEXT_SHOW_READ/WORK/SAVINGS      │ —       │ true        │
+  │ CONTEXT_SHOW_TERMINAL_OUTPUT        │ —       │ true        │
+  │ MAX_CONCURRENT_AGENTS               │ 4       │ 8           │
   └─────────────────────────────────────┴─────────┴─────────────┘
 
-  Why: fhhs-skills already uses context for GSD state, skill
-  loading, and subagent prompts. Lower observation counts prevent
-  token competition. "facts" mode is more concise than "narrative".
-  Keep auto-CLAUDE.md enabled — claude-mem adds useful project
-  observations that complement fhhs-skills' own CLAUDE.md content.
+  Why: fhhs-skills relies heavily on claude-mem for cross-session
+  continuity. /fh:auto runs many parallel agents that all generate
+  observations — high limits ensure nothing is lost. "narrative"
+  mode gives richer context than "facts" for complex multi-phase
+  work. Auto-CLAUDE.md enabled for project-level context files.
+  Token stats visible so users can monitor context budget.
 
-  These are suggestions — adjust based on your experience.
-  The dashboard at localhost:37777 shows token usage in real time.
-```
-
-After displaying:
-
-```
-✓ claude-mem configuration guidance provided
+  Adjust further via dashboard at localhost:37777 or
+  edit ~/.claude-mem/settings.json directly.
 ```
 
 ---
@@ -876,6 +892,7 @@ Then present the status table and next steps as regular markdown text:
 | CLI Tools                  | ✓ linked                 |
 | Hooks                      | ✓ statusline + update check + context monitor |
 | claude-mem                 | ✓ installed / ○ skipped (optional)       |
+| context-mode               | ✓ installed / ○ skipped (optional)       |
 | Fallow                     | ✓ installed / ⚠ manual install needed    |
 | shadcn skills              | ✓ installed / ⚠ manual install needed    |
 | Conductor                  | ✓ detected / ○ not installed (optional) |
