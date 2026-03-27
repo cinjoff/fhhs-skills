@@ -98,7 +98,13 @@ If ctx_batch_execute is not available, skip silently.
 
 ## Step 2.5: Test-Spec Generation
 
-If the plan has `must_haves.truths` and at least one task modifies business logic files (`.ts`, `.tsx`, `.js`, `.jsx` excluding config/types-only):
+Resolve the execution model (needed for both this step and Step 3):
+
+```bash
+EXEC_MODEL=$(node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs resolve-model gsd-executor --raw)
+```
+
+If the plan has `must_haves.truths` and at least one task modifies `.ts`, `.tsx`, `.js`, `.jsx` files (excluding config-only, types-only, or constants-only files):
 
 Dispatch a **test-spec subagent** (`general-purpose`, model `$EXEC_MODEL`) in parallel with Wave 1. This agent writes test skeletons from the plan specification — it has NOT seen the implementation code.
 
@@ -134,10 +140,10 @@ Skip if: no `must_haves.truths`, all tasks are config/docs only, or plan has few
 
 ## Step 3: Execute Waves
 
-Resolve the execution model once before dispatching waves:
+Use `$EXEC_MODEL` resolved in Step 2.5 (or resolve here if Step 2.5 was skipped):
 
 ```bash
-EXEC_MODEL=$(node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs resolve-model gsd-executor --raw)
+[ -z "$EXEC_MODEL" ] && EXEC_MODEL=$(node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs resolve-model gsd-executor --raw)
 ```
 
 For each wave, dispatch **one subagent per task** using the Agent tool with **`subagent_type: "general-purpose"`** and **`model: "$EXEC_MODEL"`** (use the resolved value, e.g. `"sonnet"` or `"opus"`).

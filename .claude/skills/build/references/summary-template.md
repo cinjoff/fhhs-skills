@@ -49,7 +49,7 @@ test_metrics:
   coverage_line: null
   coverage_branch: null
   test_files_created: []
-  spec_tests_generated: false
+  spec_tests_count: 0
 duration: {elapsed}
 completed: {ISO timestamp}
 ---
