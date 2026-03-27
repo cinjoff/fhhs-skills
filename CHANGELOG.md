@@ -8,6 +8,11 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.36.0] - 2026-03-27
+
+### Added
+- **`/fh:learnings` skill** — analyzes cross-project claude-mem observations to surface workflow insights (wins and productive patterns first), then auto-files GitHub issues on the fhhs-skills repo for skill bugs, workflow gaps, feature ideas, and common mistakes. Supports `--dry-run` and `--days N` flags. Suggests claude-mem dashboard for deeper exploration [setup:plugin:claude-mem@thedotmack]
+
 ## [1.35.0] - 2026-03-27
 
 ### Added
