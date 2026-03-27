@@ -1,4 +1,5 @@
 import { useState } from 'preact/hooks';
+import { memo } from 'preact/compat';
 
 const CONFIDENCE_STYLES = {
   HIGH: { label: 'HIGH', color: '#00ff41', bg: 'rgba(0,255,65,0.1)' },
@@ -6,7 +7,7 @@ const CONFIDENCE_STYLES = {
   LOW: { label: 'LOW', color: '#ff2d00', bg: 'rgba(255,45,0,0.1)' },
 };
 
-function DecisionCard({ decision }) {
+const DecisionCard = memo(function DecisionCard({ decision }) {
   const [expanded, setExpanded] = useState(false);
   const conf = CONFIDENCE_STYLES[decision.confidence] || CONFIDENCE_STYLES.MEDIUM;
   const needsReview = decision.status === 'NEEDS_REVIEW' || decision.needs_review;
@@ -95,7 +96,7 @@ function DecisionCard({ decision }) {
       )}
     </div>
   );
-}
+});
 
 export function DecisionFeed({ decisions }) {
   if (!decisions || decisions.length === 0) {

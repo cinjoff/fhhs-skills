@@ -6666,6 +6666,57 @@
           "type": "behavioral"
         }
       ]
+    },
+    {
+      "id": 257,
+      "command": "tracker",
+      "prompt": "User has .planning/.auto-state.json with active=true and a running pipeline. They run /fh:tracker.",
+      "expected_output": "Dashboard launches showing auto pipeline progress panels with current step highlighted.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "mentions 'auto' or 'pipeline' or 'progress'",
+          "type": "behavioral"
+        },
+        {
+          "text": "mentions 'dashboard'",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 258,
+      "command": "tracker",
+      "prompt": "User has no .auto-state.json in their .planning/ directory. They run /fh:tracker.",
+      "expected_output": "Dashboard shows normal project view without auto pipeline panels.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "mentions 'tracker' or 'dashboard'",
+          "type": "behavioral"
+        },
+        {
+          "text": "does not mention 'auto pipeline'",
+          "type": "negative"
+        }
+      ]
+    },
+    {
+      "id": 259,
+      "command": "auto",
+      "prompt": "Auto-orchestrator completes the plan-work step for phase 1. User checks .planning/.auto-state.json.",
+      "expected_output": ".auto-state.json contains a step_history entry for plan-work with timing and cost data.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "mentions 'step_history'",
+          "type": "behavioral"
+        },
+        {
+          "text": "mentions 'cost_estimate' or 'elapsed_ms'",
+          "type": "behavioral"
+        }
+      ]
     }
   ]
 }
