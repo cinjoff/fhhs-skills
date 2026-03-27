@@ -20,7 +20,7 @@ Determine scan target:
 **Default (changed files):**
 ```bash
 MERGE_BASE=$(git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null || echo "HEAD~1")
-git diff --name-only $MERGE_BASE..HEAD -- ':!.planning/' ':!*.lock' ':!.next/' ':!*.map'
+git diff --name-only "$MERGE_BASE..HEAD" -- ':!.planning/' ':!*.lock' ':!.next/' ':!*.map'
 git diff --name-only --staged -- ':!.planning/' ':!*.lock' ':!.next/' ':!*.map'
 git diff --name-only -- ':!.planning/' ':!*.lock' ':!.next/' ':!*.map'
 ```
