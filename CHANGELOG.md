@@ -8,6 +8,11 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.32.2] - 2026-03-27
+
+### Fixed
+- **`/fh:auto` headless sessions** — corrects `claude -p` invocation: removes unsupported `--cwd` flag, adds `--plugin-dir` for skill access, enables `bypassPermissions` mode to prevent interactive hangs, fixes `gsd-tools.cjs` path resolution, and enriches step prompts with phase goal and system context
+
 ## [1.32.1] - 2026-03-27
 
 ### Fixed
