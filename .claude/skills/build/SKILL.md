@@ -114,6 +114,15 @@ Use the structured template at `references/implementer-prompt.md`. Fill its plac
 - `{FILE_TYPES}` — Comma-separated file type descriptions for convention queries (e.g. "tsx components", "test files").
 - `{TASK_NAME}` — Task identifier for deferred items format.
 - `{TASK_ID}` — Native task ID if tracking is active. Empty string otherwise.
+- `{PROJECT_CONSTRAINTS}` — See population rule below.
+
+**{PROJECT_CONSTRAINTS} population:**
+Read the `## Gotchas` section from `./CLAUDE.md`. Extract each gotcha as an imperative constraint:
+- Convert "X renamed Y to Z" → "Use Z, not Y"
+- Convert "X are async" → "Always await X"
+- Convert "X uses TEXT IDs" → "All FKs to X tables must be TEXT, never UUID"
+Inject as `{PROJECT_CONSTRAINTS}`. Max 15 lines.
+If no Gotchas section exists, leave {PROJECT_CONSTRAINTS} empty (do not error).
 
 ### Context-Mode Acceleration
 
@@ -245,6 +254,21 @@ node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs verify phase-completeness "${
 
 **If ALL plans complete (phase done):** Run completion gates.
 
+### Gate 0: Integration Check (runs before goal verification)
+
+Run fallow-based impact analysis on all files modified across the phase:
+
+1. Collect all files from `files_modified` across all phase plans
+2. Run `timeout 30 fallow dead-code --format json --quiet` and `timeout 30 fallow health --file-scores --format json --quiet`
+3. For each CRITICAL/HIGH blast-radius file (fan_in >= 5):
+   - Extract all downstream files from fallow's referenced_by
+   - Check: are downstream files tested? (grep for test files importing them)
+   - If `.planning/codebase/FLOWS.md` exists, grep for affected flows
+4. If any CRITICAL file has untested downstream consumers, WARN (do not block)
+
+If fallow is not installed or times out (30s), skip Gate 0 with warning: "fallow unavailable, skipping integration check".
+If fallow JSON is malformed, skip with warning: "fallow output unparseable, skipping integration check".
+
 ### Gate 1 + Gate 2 (parallel)
 
 Dispatch in parallel:
@@ -253,6 +277,17 @@ Dispatch in parallel:
 - For each `must_haves.truth` across all phase plans: find evidence (file exists, content matches, test passes)
 - Run `gsd-tools verify artifacts` and `gsd-tools verify key-links` for each plan
 - Requirements coverage: every requirement ID from ROADMAP in any plan's `requirements` must appear in at least one SUMMARY
+
+**Gate 1.5: Security Review (phase completion only)**
+
+Dispatch a `code-reviewer` agent with:
+- The production-safety-checklist from `skills/review/references/production-safety-checklist.md`
+- The full phase diff: `git diff {phase_first_commit}..HEAD`
+- Focus: OWASP top 10, input validation, auth bypass, XSS, SQL injection, secrets exposure
+- Severity: CRITICAL findings block. HIGH findings warn. MEDIUM/LOW pass with notes.
+
+This gate runs ONLY at phase completion (when all plans in the phase are done), not per-plan.
+If production-safety-checklist is not found, skip with warning.
 
 **Gate 2: Design Quality Gates (visual work only)**
 - Read `.planning/DESIGN.MD` and `.planning/PROJECT.MD` for design context (skip if missing)
@@ -266,6 +301,21 @@ Dispatch in parallel:
 ### Gate 3: Final Verification
 
 Uses Step 4's verification results if from the same session. Only re-runs if Gate 2 made changes (design fixes could break tests).
+
+**Architecture artifact refresh:**
+If `.planning/codebase/FLOWS.md` exists:
+- Collect all `files:` entries from flow-meta YAML comments
+- Intersect with files modified in this phase (from all plan files_modified)
+- If intersection is non-empty: re-run the FLOWS.md 6-step generation algorithm for ONLY the affected flow sections. Preserve unaffected sections.
+- Validate all flow-meta file references still exist via `stat`
+- If a referenced file was deleted, remove it from the flow and flag in report
+- If flow-meta YAML is unparseable, regenerate that section from scratch with warning
+
+If any plan in the phase included migration files (supabase/migrations/ or discovered migration path):
+- Regenerate `.planning/codebase/ERD.md` from current migration SQL
+
+If fallow is not available, skip artifact refresh with warning.
+Timeout: 30s per fallow operation.
 
 Write `VERIFICATION.md` in the phase directory with test/build/lint results and must-haves coverage.
 
