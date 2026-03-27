@@ -107,8 +107,8 @@ For each wave, dispatch **one subagent per task** using the Agent tool with **`s
 Use the structured template at `references/implementer-prompt.md`. Fill its placeholders:
 
 - `{TASK_TEXT}` — Full task content (files, action, verify, done). Copy the text, don't reference the plan file.
-- `{CLAUDE_MD_SECTIONS}` — Relevant sections from CLAUDE.md for this task type (UI work → CONVENTIONS.md + DESIGN.md; new files → STRUCTURE.md; API work → ARCHITECTURE.md; tests → TESTING.md).
-- `{DESIGN_DECISIONS}` — **Optional (ctx_search preferred).** If `.planning/phases/{phase}/{phase}-CONTEXT.md` exists and ctx_search is unavailable, include the "Decisions", "Discretion Areas", and "Deferred Ideas" sections. If empty, agents use ctx_search instead.
+- `{CLAUDE_MD_SECTIONS}` — Relevant sections from CLAUDE.md for this task type (UI work → CONVENTIONS.md + DESIGN.md; new files → STRUCTURE.md; API work → ARCHITECTURE.md; tests → TESTING.md). **Always populate** — agents with ctx_search may skip it, agents without rely on it.
+- `{DESIGN_DECISIONS}` — If `.planning/phases/{phase}/{phase}-CONTEXT.md` exists, include the "Decisions", "Discretion Areas", and "Deferred Ideas" sections. **Always populate** — agents with ctx_search may prefer the index, but agents without plugins need this content injected.
 - `{PHASE_DIR}` — Path to `.planning/phases/{phase}/` for deferred items logging.
 - `{PHASE_NAME}` — Phase directory name for ctx_search queries (e.g. "13-pending-payments-invoicing").
 - `{FILE_TYPES}` — Comma-separated file type descriptions for convention queries (e.g. "tsx components", "test files").

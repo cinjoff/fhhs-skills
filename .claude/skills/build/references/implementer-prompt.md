@@ -16,36 +16,22 @@ You are implementing a task from a plan.
 
 If `./CLAUDE.md` exists, read it for project conventions.
 
-Architecture, conventions, structure, and testing patterns are indexed in context-mode.
-Query as needed:
+{CLAUDE_MD_SECTIONS}
 
-```
-ctx_search(queries: ["conventions for {FILE_TYPES}", "structure for new files"])
-```
-
-If ctx_search is unavailable, read the relevant docs from `.planning/codebase/` directly:
-- UI work: CONVENTIONS.md + DESIGN.md
-- New files: STRUCTURE.md
-- API work: ARCHITECTURE.md
-- Tests: TESTING.md
+If the above section is empty, query context-mode or read docs directly:
+- If ctx_search is available: `ctx_search(queries: ["conventions for {FILE_TYPES}", "structure for new files"])`
+- Otherwise read from `.planning/codebase/`: UI work → CONVENTIONS.md + DESIGN.md; new files → STRUCTURE.md; API work → ARCHITECTURE.md; tests → TESTING.md
 
 ### Decisions & Scope Boundary
 
-Locked decisions, discretion areas, and deferred ideas are indexed in context-mode.
-Query them before starting implementation:
+{DESIGN_DECISIONS}
 
-```
-ctx_search(queries: [
-  "locked decisions for {PHASE_NAME}",
-  "discretion areas for {PHASE_NAME}",
-  "deferred ideas scope boundary"
-])
-```
+If the above section is empty, query context-mode or read CONTEXT.md directly:
+- If ctx_search is available: `ctx_search(queries: ["locked decisions for {PHASE_NAME}", "discretion areas for {PHASE_NAME}", "deferred ideas scope boundary"])`
+- Otherwise read `.planning/phases/{PHASE_DIR}/CONTEXT.md`
 
 Do not contradict locked decisions. Stay within discretion bounds.
 Do not implement deferred ideas.
-
-If ctx_search is unavailable, read `.planning/phases/{PHASE_DIR}/CONTEXT.md` directly.
 
 ## Before You Begin
 
