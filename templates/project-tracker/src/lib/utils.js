@@ -85,3 +85,39 @@ export function formatProgress(completed, total) {
   if (!total || total <= 0) return '';
   return `Phase ${completed}/${total}`;
 }
+
+/**
+ * Groups projects into a tree structure for the ProjectTree sidebar.
+ * Returns an array of repo groups, each with a list of worktrees.
+ * Non-conductor projects (no conductorWorkspace) are placed under repo=null.
+ *
+ * @param {Array} projects
+ * @returns {Array<{ repo: string|null, repoLabel: string|null, worktrees: Array }>}
+ */
+export function groupProjectsAsTree(projects) {
+  if (!Array.isArray(projects)) return [];
+
+  const groups = [];
+  const map = {};
+
+  for (const p of projects) {
+    const ws = p.conductorWorkspace || null;
+    const mapKey = ws || '__ungrouped__';
+    const repoLabel = ws ? ws.split('/').pop() : null;
+
+    if (!map[mapKey]) {
+      map[mapKey] = { repo: repoLabel, repoPath: ws, worktrees: [] };
+      groups.push(map[mapKey]);
+    }
+    map[mapKey].worktrees.push(p);
+  }
+
+  // Sort: conductor groups first (repo != null), then ungrouped
+  groups.sort((a, b) => {
+    if (a.repo === null && b.repo !== null) return 1;
+    if (a.repo !== null && b.repo === null) return -1;
+    return (a.repo || '').localeCompare(b.repo || '');
+  });
+
+  return groups;
+}

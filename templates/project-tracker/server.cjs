@@ -72,6 +72,16 @@ function loadRegistry() {
 }
 
 /**
+ * Atomic write helper: write content to filePath.tmp, then rename to filePath.
+ * Throws on error — callers should handle.
+ */
+function atomicWriteFile(filePath, content) {
+  const tmpPath = filePath + '.tmp';
+  fs.writeFileSync(tmpPath, content, 'utf8');
+  fs.renameSync(tmpPath, filePath);
+}
+
+/**
  * Atomic write: write to .tmp, rename to final path.
  */
 function saveRegistry(projects) {
@@ -80,9 +90,7 @@ function saveRegistry(projects) {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
-    const tmpPath = REGISTRY_PATH + '.tmp';
-    fs.writeFileSync(tmpPath, JSON.stringify(projects, null, 2), 'utf8');
-    fs.renameSync(tmpPath, REGISTRY_PATH);
+    atomicWriteFile(REGISTRY_PATH, JSON.stringify(projects, null, 2));
   } catch (err) {
     console.error('  Warning: Could not save registry:', err.message);
   }
@@ -587,10 +595,13 @@ function buildProjectSummary(entry, ps) {
   const nextItem = nextStage ? nextStage.goal || nextStage.name || null : null;
   const lastActivity = state ? (state.lastActivity || entry.lastSeen) : entry.lastSeen;
 
+  // Use folder name (last path segment) as display name
+  const folderName = path.basename(entry.path);
+
   return {
     id: entry.path,
     path: entry.path,
-    name: state ? (state.project?.name || entry.name) : entry.name,
+    name: folderName,
     lastSeen: entry.lastSeen,
     lastActivity: typeof lastActivity === 'object' ? lastActivity.date : lastActivity,
     conductorWorkspace: entry.conductorWorkspace || null,
@@ -758,7 +769,27 @@ function serveState(res, requestedProjectId) {
       }
     }
 
-    const json = JSON.stringify({ projects: summaries, active: activeState });
+    // Count unique conductorWorkspace values (exclude null/undefined)
+    const repoCount = new Set(
+      projects.map(e => e.conductorWorkspace).filter(w => w != null)
+    ).size;
+
+    // Collect all projects with active auto-mode
+    const autoJobs = projects
+      .map(entry => {
+        const ps = projectStates.get(entry.path);
+        const autoState = ps && ps.lastState ? ps.lastState.autoState : null;
+        return { entry, autoState };
+      })
+      .filter(({ autoState }) => autoState && autoState.active === true)
+      .map(({ entry, autoState }) => ({
+        projectPath: entry.path,
+        projectName: path.basename(entry.path),
+        repoName: entry.conductorWorkspace || null,
+        autoState,
+      }));
+
+    const json = JSON.stringify({ projects: summaries, active: activeState, repoCount, autoJobs });
     res.writeHead(200, {
       'Content-Type': 'application/json',
       'Cache-Control': 'no-cache',
@@ -819,6 +850,159 @@ function serveRegister(req, res) {
 }
 
 // ---------------------------------------------------------------------------
+// API: /api/decision
+// ---------------------------------------------------------------------------
+function serveDecision(req, res) {
+  let body = '';
+  let tooLarge = false;
+  req.on('data', chunk => { body += chunk; if (body.length > 4096) tooLarge = true; });
+  req.on('end', () => {
+    if (tooLarge) {
+      res.writeHead(413, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'request body too large' }));
+      return;
+    }
+    try {
+      const { projectPath, decisionId, action, rationale } = JSON.parse(body);
+
+      // Validate inputs
+      if (!projectPath || typeof projectPath !== 'string') {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'projectPath is required' }));
+        return;
+      }
+      if (!decisionId || typeof decisionId !== 'string') {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'decisionId is required' }));
+        return;
+      }
+      if (action !== 'accept' && action !== 'dispute') {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'action must be "accept" or "dispute"' }));
+        return;
+      }
+
+      // SECURITY: Validate projectPath against registry before any fs access
+      const registry = loadRegistry();
+      const registryEntry = registry.find(e => e.path === projectPath);
+      if (!registryEntry) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'projectPath not found in registry' }));
+        return;
+      }
+
+      // Read DECISIONS.md
+      const decisionsPath = path.join(projectPath, '.planning', 'DECISIONS.md');
+      if (!fs.existsSync(decisionsPath)) {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'DECISIONS.md not found' }));
+        return;
+      }
+
+      const content = fs.readFileSync(decisionsPath, 'utf8');
+
+      // Split by --- separator lines (lines that are exactly ---)
+      const blocks = content.split(/\n---\n/);
+
+      // Find the block containing ## decisionId:
+      const headerPattern = new RegExp('^##\\s+' + decisionId.replace(/[-]/g, '\\$&') + ':', 'm');
+      const blockIndex = blocks.findIndex(block => headerPattern.test(block));
+
+      if (blockIndex === -1) {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: `Decision ${decisionId} not found` }));
+        return;
+      }
+
+      let block = blocks[blockIndex];
+
+      if (action === 'accept') {
+        block = block.replace(/\*\*Status:\*\*[^\n]*/m, () => '**Status:** ACCEPTED');
+      } else {
+        // dispute: update status and insert rationale line after it
+        const rationaleText = rationale || '';
+        block = block.replace(/(\*\*Status:\*\*[^\n]*)/m, () => {
+          return `**Status:** DISPUTED\n**Dispute Rationale:** '${rationaleText}'`;
+        });
+      }
+
+      blocks[blockIndex] = block;
+      const updatedContent = blocks.join('\n---\n');
+
+      // Atomic write
+      atomicWriteFile(decisionsPath, updatedContent);
+
+      // Trigger re-parse for this project if cached
+      const ps = projectStates.get(projectPath);
+      if (ps) {
+        try { buildState(ps, new Set(['DECISIONS.md'])); } catch { /* ignore */ }
+      }
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, decisionId, action }));
+    } catch (err) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+  });
+}
+
+// ---------------------------------------------------------------------------
+// API: /api/claude-mem proxy
+// ---------------------------------------------------------------------------
+function proxyClaudeMem(targetPath, res) {
+  const options = {
+    hostname: '127.0.0.1',
+    port: 37777,
+    path: targetPath,
+    method: 'GET',
+  };
+
+  let finished = false;
+
+  const proxyReq = http.request(options, (proxyRes) => {
+    if (finished) return;
+    finished = true;
+    let data = '';
+    proxyRes.on('data', chunk => { data += chunk; });
+    proxyRes.on('end', () => {
+      try {
+        const parsed = JSON.parse(data);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(parsed));
+      } catch {
+        res.writeHead(502, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'invalid response from claude-mem' }));
+      }
+    });
+  });
+
+  proxyReq.on('error', (err) => {
+    if (finished) return;
+    finished = true;
+    if (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ available: false }));
+    } else {
+      res.writeHead(502, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ available: false, error: err.message }));
+    }
+  });
+
+  // 2s timeout
+  const timer = setTimeout(() => {
+    if (finished) return;
+    finished = true;
+    proxyReq.destroy();
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ available: false }));
+  }, 2000);
+
+  proxyReq.on('close', () => clearTimeout(timer));
+  proxyReq.end();
+}
+
+// ---------------------------------------------------------------------------
 // API: /api/metrics  (delegates to metrics.cjs)
 // ---------------------------------------------------------------------------
 function serveMetrics(res) {
@@ -863,6 +1047,23 @@ const server = http.createServer((req, res) => {
 
   if (req.method === 'POST' && pathname === '/api/register') {
     return serveRegister(req, res);
+  }
+
+  if (req.method === 'POST' && pathname === '/api/decision') {
+    return serveDecision(req, res);
+  }
+
+  if (req.method === 'GET' && pathname === '/api/claude-mem/observations') {
+    const project = url.searchParams.get('project');
+    const limit = url.searchParams.get('limit') || '10';
+    const upstream = project
+      ? `/api/observations?project=${encodeURIComponent(project)}&limit=${encodeURIComponent(limit)}`
+      : `/api/observations?limit=${encodeURIComponent(limit)}`;
+    return proxyClaudeMem(upstream, res);
+  }
+
+  if (req.method === 'GET' && pathname === '/api/claude-mem/stats') {
+    return proxyClaudeMem('/api/stats', res);
   }
 
   if (req.method === 'GET' && pathname === '/api/metrics') {

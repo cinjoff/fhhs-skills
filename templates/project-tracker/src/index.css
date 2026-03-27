@@ -21,6 +21,12 @@
 }
 
 /* Base */
+html, body, #app {
+  height: 100vh;
+  margin: 0;
+  overflow: hidden;
+}
+
 html {
   font-size: 15px;
   scrollbar-color: var(--color-dim) transparent;
@@ -30,9 +36,13 @@ body {
   font-family: var(--font-family-mono);
   background: var(--color-bg);
   color: var(--color-text);
-  min-height: 100vh;
   line-height: 1.6;
 }
+
+/* Contrast hierarchy */
+.text-active { color: #e0e0e0; }
+.text-complete { color: #888888; }
+.text-inactive { color: #555555; }
 
 /* Details marker reset */
 details summary::-webkit-details-marker {
@@ -84,6 +94,16 @@ details[open] .arrow {
 
 .blink {
   animation: bl 1s step-end infinite;
+}
+
+/* Pulse green for auto-mode indicators */
+@keyframes pulse-green {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.pulse-green {
+  animation: pulse-green 2s ease-in-out infinite;
 }
 
 /* Reduced motion */
