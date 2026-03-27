@@ -86,6 +86,28 @@ Advisory only — never block.
 
 Before doing anything else, run a system audit. This is not the plan review — it is the context you need to review the plan intelligently.
 
+### Phase Context Check
+
+If ctx_search is available, verify the phase context index exists by running:
+`ctx_search(queries: ["project vision", "architecture patterns"])`
+
+If results are returned, the bootstrap from plan-work is still active — use ctx_search throughout this review instead of reading .planning/ files directly.
+
+If no results (fresh session without shared context-mode DB), run the bootstrap:
+```
+ctx_batch_execute([
+  { label: "PROJECT", cmd: "cat .planning/PROJECT.md" },
+  { label: "ROADMAP", cmd: "cat .planning/ROADMAP.md" },
+  { label: "DESIGN", cmd: "cat .planning/DESIGN.md" },
+  { label: "ARCHITECTURE", cmd: "cat .planning/codebase/ARCHITECTURE.md" },
+  { label: "STRUCTURE", cmd: "cat .planning/codebase/STRUCTURE.md" },
+  { label: "CONVENTIONS", cmd: "cat .planning/codebase/CONVENTIONS.md" },
+  { label: "TESTING", cmd: "cat .planning/codebase/TESTING.md" },
+], queries: ["architecture", "conventions", "design context"])
+```
+
+If ctx_search is not available, skip silently and use direct file reads as today.
+
 Run the following commands:
 ```bash
 git log --oneline -30                          # Recent history
@@ -138,6 +160,8 @@ If misalignment is found, surface it as an issue during Architecture Review (Sec
 Before reading CONTEXT.md, DECISIONS.md, and RESEARCH.md files directly, check if ctx_search is available:
 - If available: use `ctx_search` with targeted queries like "locked decisions for phase {phase}", "research pitfalls for {topic}", and "design context for {project}". This retrieves relevant entries in a compact, relevance-ranked format.
 - If not available: fall back to reading the files directly.
+
+If the Phase Context Bootstrap ran (either in this session or a prior plan-work step sharing the same session ID), CONTEXT.md, DECISIONS.md, and RESEARCH.md are already indexed. Prefer ctx_search over direct Read for these files.
 
 ctx_search is especially valuable for plan-review since it reads more .planning/ state than any other skill.
 

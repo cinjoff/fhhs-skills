@@ -39,6 +39,40 @@ Set up sequential dependencies: each task `addBlockedBy` the previous task's ID 
 
 ---
 
+## Step -0.5: Phase Context Bootstrap
+
+If `ctx_batch_execute` is available (test by checking tool list), index stable planning docs that don't change during a phase. These persist in the shared context-mode DB across plan-work → plan-review → build → review steps.
+
+```
+ctx_batch_execute([
+  { label: "PROJECT", cmd: "cat .planning/PROJECT.md" },
+  { label: "ROADMAP", cmd: "cat .planning/ROADMAP.md" },
+  { label: "REQUIREMENTS", cmd: "cat .planning/REQUIREMENTS.md" },
+  { label: "DESIGN", cmd: "cat .planning/DESIGN.md" },
+  { label: "ARCHITECTURE", cmd: "cat .planning/codebase/ARCHITECTURE.md" },
+  { label: "STRUCTURE", cmd: "cat .planning/codebase/STRUCTURE.md" },
+  { label: "CONVENTIONS", cmd: "cat .planning/codebase/CONVENTIONS.md" },
+  { label: "TESTING", cmd: "cat .planning/codebase/TESTING.md" },
+  { label: "STACK", cmd: "cat .planning/codebase/STACK.md" },
+], queries: [
+  "project vision and scope",
+  "architecture patterns and boundaries",
+  "code conventions and style",
+  "test patterns and setup",
+  "file structure conventions"
+])
+```
+
+Also index phase-specific research if it exists:
+- `.planning/phases/{phase}/{phase}-RESEARCH.md`
+- `.planning/research/v2/*.md` (milestone-level research)
+
+If `ctx_batch_execute` is not available, skip silently. The rest of plan-work reads these files directly as fallback.
+
+This is a one-time cost (~2 seconds) that saves repeated reads across all 4 phase steps.
+
+---
+
 ## Step 0: Phase Matching
 
 > **Task tracking:** `TaskUpdate(phaseMatchingId, status="in_progress")` — skip if TASKS_AVAILABLE=false.
@@ -169,6 +203,8 @@ Spawn a Task agent with:
 
 ### Context-Mode Acceleration
 
+If the Phase Context Bootstrap ran in Step -0.5, these docs are already indexed — use ctx_search instead of Read for broad queries.
+
 When scouting the codebase for reusable assets, existing patterns, or prior decisions:
 - If ctx_search is available: search the indexed codebase mapping for architecture patterns, conventions, and existing abstractions before grepping the actual codebase. Also search for prior decisions related to the current gray areas.
 - If not available: use the existing Grep/Glob/Read pattern.
@@ -239,6 +275,8 @@ Then continue to Step 4.
 Resolve implementation gray areas before planning:
 
 ### Context-Mode Acceleration
+
+If the Phase Context Bootstrap ran in Step -0.5, these docs are already indexed — use ctx_search instead of Read for broad queries.
 
 When scouting the codebase for reusable assets, existing patterns, or prior decisions:
 - If ctx_search is available: search the indexed codebase mapping for architecture patterns, conventions, and existing abstractions before grepping the actual codebase. Also search for prior decisions related to the current gray areas.

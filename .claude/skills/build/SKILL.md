@@ -72,6 +72,28 @@ AUTO_MODE=$(node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs config-get workfl
 
 If `AUTO_MODE` is `"true"` AND `.planning/DECISIONS.md` exists, include the last 10 entries for this phase as `{DECISIONS_CONTEXT}`. Otherwise empty string.
 
+### Pre-Index Source Files
+
+If ctx_batch_execute is available, index all source files listed in the plan's `files_modified` frontmatter field. These are the files agents will need to read for context.
+
+```
+ctx_batch_execute([
+  // For each file in files_modified:
+  { label: "{filename}", cmd: "cat {filepath}" },
+  // Also index the PLAN.md itself and CONTEXT.md
+  { label: "PLAN", cmd: "cat {planPath}" },
+  { label: "CONTEXT", cmd: "cat .planning/phases/{phase}/{phase}-CONTEXT.md" },
+], queries: [
+  "existing patterns in modified files",
+  "locked decisions for this phase",
+  "plan tasks and requirements"
+])
+```
+
+If the Phase Context Bootstrap ran in a prior step (plan-work or plan-review), the stable docs (ARCHITECTURE, CONVENTIONS, etc.) are already in the index. Only source files and mutable planning docs need fresh indexing.
+
+If ctx_batch_execute is not available, skip silently.
+
 ---
 
 ## Step 3: Execute Waves
@@ -86,11 +108,12 @@ Use the structured template at `references/implementer-prompt.md`. Fill its plac
 
 - `{TASK_TEXT}` — Full task content (files, action, verify, done). Copy the text, don't reference the plan file.
 - `{CLAUDE_MD_SECTIONS}` — Relevant sections from CLAUDE.md for this task type (UI work → CONVENTIONS.md + DESIGN.md; new files → STRUCTURE.md; API work → ARCHITECTURE.md; tests → TESTING.md).
-- `{DESIGN_DECISIONS}` — If `.planning/phases/{phase}/{phase}-CONTEXT.md` exists, include the "Decisions", "Discretion Areas", and "Deferred Ideas" sections.
+- `{DESIGN_DECISIONS}` — **Optional (ctx_search preferred).** If `.planning/phases/{phase}/{phase}-CONTEXT.md` exists and ctx_search is unavailable, include the "Decisions", "Discretion Areas", and "Deferred Ideas" sections. If empty, agents use ctx_search instead.
 - `{PHASE_DIR}` — Path to `.planning/phases/{phase}/` for deferred items logging.
+- `{PHASE_NAME}` — Phase directory name for ctx_search queries (e.g. "13-pending-payments-invoicing").
+- `{FILE_TYPES}` — Comma-separated file type descriptions for convention queries (e.g. "tsx components", "test files").
 - `{TASK_NAME}` — Task identifier for deferred items format.
 - `{TASK_ID}` — Native task ID if tracking is active. Empty string otherwise.
-- `{DECISIONS_CONTEXT}` — From Step 2 if prepared. Otherwise empty string.
 
 ### Context-Mode Acceleration
 
@@ -113,6 +136,19 @@ If a task has `type="checkpoint:*"`, handle inline:
 When auto-approving checkpoints, log as a decision in `.planning/DECISIONS.md` with `confidence=MEDIUM`, `step='build checkpoint'`. Follow format from `references/decisions-template.md`.
 
 ### After each wave completes
+
+### Post-Wave Re-Index
+
+If ctx_batch_execute is available, re-index files that were modified by agents in the completed wave. Parse each agent's report for "Files Changed" and re-index:
+
+```
+ctx_batch_execute([
+  // For each file in agent reports' "Files Changed":
+  { label: "{filename}-v{wave}", cmd: "cat {filepath}" },
+], queries: ["updated implementation"])
+```
+
+This ensures the next wave sees fresh content when using ctx_search. Skip silently if ctx_batch_execute is not available.
 
 Triage subagent outcomes:
 
