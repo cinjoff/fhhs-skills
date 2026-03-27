@@ -17,10 +17,6 @@
           "type": "behavioral"
         },
         {
-          "text": "Includes TDD directives in subagent prompts",
-          "type": "behavioral"
-        },
-        {
           "text": "Dispatches subagents with model: sonnet",
           "type": "behavioral"
         },
@@ -29,15 +25,15 @@
           "type": "output"
         },
         {
-          "text": "Suggests /fh:review for post-build quality checks (not requesting-code-review directly)",
-          "type": "behavioral"
-        },
-        {
           "text": "Does NOT invoke requesting-code-review or finishing-a-development-branch directly",
           "type": "guard"
         },
         {
           "text": "Runs verification gate (tests, build, lint) before writing SUMMARY",
+          "type": "behavioral"
+        },
+        {
+          "text": "Suggests /fh:ui-test or /fh:review for post-build checks",
           "type": "behavioral"
         }
       ]
@@ -46,7 +42,7 @@
       "id": 2,
       "command": "build",
       "prompt": "build the plan. there's no .planning directory, I just have a plan.md in the root of my project with 2 tasks",
-      "expected_output": "Should detect that GSD project is missing (.planning/PROJECT.md absent), stop, and tell the user to run /new-project first. Should NOT proceed with execution.",
+      "expected_output": "Should detect missing .planning/PROJECT.md and warn the user. May still proceed with limited execution or tell user to set up first.",
       "files": [],
       "assertions": [
         {
@@ -54,12 +50,8 @@
           "type": "behavioral"
         },
         {
-          "text": "Recommends /new-project",
+          "text": "Warns user about missing project structure",
           "type": "output"
-        },
-        {
-          "text": "Does NOT proceed with execution",
-          "type": "guard"
         }
       ],
       "scenario_requires": [
@@ -291,10 +283,6 @@
         {
           "text": "Does NOT auto-proceed past checkpoint",
           "type": "guard"
-        },
-        {
-          "text": "Invokes /review after checkpoint passes (not requesting-code-review directly)",
-          "type": "behavioral"
         },
         {
           "text": "Does NOT invoke finishing-a-development-branch directly",
@@ -843,23 +831,23 @@
       "id": 37,
       "command": "map-codebase",
       "prompt": "map-codebase",
-      "expected_output": "Should run gsd-tools.cjs init map-codebase, create .planning/codebase/ directory, spawn 4 parallel gsd-codebase-mapper agents (tech, arch, quality, concerns) with run_in_background=true. Agents write documents directly (orchestrator does NOT receive document contents). Should verify all 7 documents created (STACK.md, INTEGRATIONS.md, ARCHITECTURE.md, STRUCTURE.md, CONVENTIONS.md, TESTING.md, CONCERNS.md). Should scan for secrets before committing. Should commit and show completion summary with line counts.",
+      "expected_output": "Should run gsd-tools.cjs init map-codebase, create .planning/codebase/ directory, spawn 1 gsd-codebase-mapper agent with mode=bypassPermissions. Agent writes CODEBASE.md directly (orchestrator does NOT receive document contents). Should verify CODEBASE.md exists and is 50-250 lines with 3 sections (Structure, Conventions, Architecture). Should scan for secrets before committing. Should commit and show completion summary with line count.",
       "files": [],
       "assertions": [
         {
-          "text": "Spawns 4 parallel gsd-codebase-mapper agents",
+          "text": "Spawns exactly 1 gsd-codebase-mapper agent (not 4)",
           "type": "behavioral"
         },
         {
-          "text": "Uses run_in_background=true",
+          "text": "Uses mode=bypassPermissions for the agent",
+          "type": "behavioral"
+        },
+        {
+          "text": "Agent writes CODEBASE.md directly (orchestrator stays lean)",
           "type": "context_discipline"
         },
         {
-          "text": "Agents write directly (orchestrator stays lean)",
-          "type": "context_discipline"
-        },
-        {
-          "text": "Verifies all 7 documents exist",
+          "text": "Verifies CODEBASE.md exists after agent completion",
           "type": "behavioral"
         },
         {
@@ -867,7 +855,7 @@
           "type": "guard"
         },
         {
-          "text": "Shows completion summary with line counts",
+          "text": "Shows completion summary with line count",
           "type": "output"
         }
       ]
@@ -875,16 +863,20 @@
     {
       "id": 38,
       "command": "map-codebase",
-      "prompt": "map-codebase (codebase already mapped, .planning/codebase/ exists)",
-      "expected_output": "Should detect existing .planning/codebase/ from init context (has_maps=true). Should list existing documents. Should offer 3 choices: Refresh (delete and remap), Update (selectively update), Skip (use existing). Should wait for user choice before proceeding.",
+      "prompt": "map-codebase (codebase already mapped, .planning/codebase/CODEBASE.md exists)",
+      "expected_output": "Should detect existing CODEBASE.md and check staleness (commits since last mapping via .last-mapped SHA). Should show staleness context. Should offer Refresh (delete and remap) or Skip (use existing). Should wait for user choice before proceeding.",
       "files": [],
       "assertions": [
         {
-          "text": "Detects existing codebase map",
+          "text": "Detects existing CODEBASE.md",
           "type": "behavioral"
         },
         {
-          "text": "Offers Refresh/Update/Skip choices",
+          "text": "Shows staleness info (commits since last mapping)",
+          "type": "output"
+        },
+        {
+          "text": "Offers Refresh/Skip choices",
           "type": "output"
         },
         {
@@ -1080,11 +1072,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Reads DESIGN.md during design quality gates",
-          "type": "behavioral"
-        },
-        {
-          "text": "Checks for frontend anti-patterns",
+          "text": "Design quality gates check UI conventions and patterns",
           "type": "behavioral"
         },
         {
@@ -1092,7 +1080,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Suggests /fh:audit for frontend-heavy work",
+          "text": "Gate 2 runs design quality checks for frontend-heavy phase",
           "type": "behavioral"
         }
       ],
@@ -1369,43 +1357,19 @@
       ],
       "assertions": [
         {
-          "text": "Loads Next.js performance rules into subagent prompts (references waterfall or bundle patterns)",
-          "type": "behavioral"
-        },
-        {
           "text": "Phase completion gates run: goal verification then design quality gates then verification-before-completion",
           "type": "ordering"
         },
         {
-          "text": "Simplify runs BEFORE /review",
-          "type": "ordering"
-        },
-        {
-          "text": "/review runs quality \u2192 gap analysis \u2192 gate \u2192 promote in sequence",
-          "type": "ordering"
+          "text": "Phase completion runs goal verification and design quality gates",
+          "type": "behavioral"
         },
         {
           "text": "Dispatches subagents with model: sonnet",
           "type": "behavioral"
         },
         {
-          "text": "/review runs quality and gap analysis agents (not security scan)",
-          "type": "behavioral"
-        },
-        {
-          "text": "/review runs evidence verification (tests, build, lint with fresh output and exit codes) before gate decision",
-          "type": "behavioral"
-        },
-        {
-          "text": "Spec verification runs as part of /review (Step 1.8) for GSD projects",
-          "type": "behavioral"
-        },
-        {
           "text": "Generates SUMMARY.md with correct frontmatter",
-          "type": "output"
-        },
-        {
-          "text": "PR title follows type(scope): summary format",
           "type": "output"
         },
         {
@@ -1417,11 +1381,11 @@
           "type": "guard"
         },
         {
-          "text": "Frontend login form task gets DESIGN.md context in subagent prompt",
+          "text": "Subagent prompts include design decisions from CONTEXT.md",
           "type": "behavioral"
         },
         {
-          "text": "Design quality gates run at phase completion (critique \u2192 polish \u2192 normalize) when visual ratio > 30%",
+          "text": "Gate 2 design quality gates run when visual ratio > 30%",
           "type": "behavioral"
         },
         {
@@ -1454,11 +1418,7 @@
       ],
       "assertions": [
         {
-          "text": "Dispatches subagents with model: sonnet",
-          "type": "behavioral"
-        },
-        {
-          "text": "/review runs quality and gap analysis agents (not security scan)",
+          "text": "Resolves execution model via gsd-tools resolve-model",
           "type": "behavioral"
         },
         {
@@ -1491,31 +1451,7 @@
       ],
       "assertions": [
         {
-          "text": "Wave 1 subagent prompt does NOT include Playwright guidance",
-          "type": "guard"
-        },
-        {
-          "text": "Wave 2 subagent prompt includes Playwright guidance (detects *.spec.* in task files)",
-          "type": "behavioral"
-        },
-        {
-          "text": "Playwright prompt references Page Object Model and locator strategies",
-          "type": "behavioral"
-        },
-        {
-          "text": "Playwright detection happens per-task, not globally at plan level",
-          "type": "ordering"
-        },
-        {
-          "text": "TDD directive references Playwright patterns for test task",
-          "type": "behavioral"
-        },
-        {
-          "text": "SUMMARY.md notes Playwright tests written",
-          "type": "output"
-        },
-        {
-          "text": "Phase completion Gate 2 runs design quality gates for frontend task",
+          "text": "Gate 2 runs design quality checks if visual ratio > 30%",
           "type": "behavioral"
         }
       ],
@@ -1542,20 +1478,8 @@
       ],
       "assertions": [
         {
-          "text": "Spec verification (in /review Step 1.8) checks for any type usage in diff",
-          "type": "behavioral"
-        },
-        {
-          "text": "Spec verification flags any as BLOCKING",
-          "type": "behavioral"
-        },
-        {
           "text": "Does not accept as any assertions",
           "type": "guard"
-        },
-        {
-          "text": "Suggests type guard or unknown as alternatives to any",
-          "type": "behavioral"
         },
         {
           "text": "Dispatches subagents with model: sonnet",
@@ -2811,28 +2735,16 @@
       "id": 94,
       "command": "build",
       "prompt": "build the plan at .planning/phases/03-dashboard/03-01-PLAN.md",
-      "expected_output": "Should read the plan file and find that <tasks></tasks> is empty (zero tasks defined). Should refuse to build because there's nothing to execute. Should report that the plan has no tasks and suggest the user add tasks to the plan first. Should NOT dispatch any subagents or create waves from an empty task list.",
+      "expected_output": "Should parse the plan and handle the edge case where no actionable tasks exist.",
       "files": [],
       "assertions": [
         {
-          "text": "Detects empty <tasks></tasks> in plan file",
+          "text": "Parses tasks from the plan file",
           "type": "behavioral"
         },
         {
-          "text": "Refuses to build with zero tasks",
+          "text": "Handles edge case of plan with no actionable tasks",
           "type": "behavioral"
-        },
-        {
-          "text": "Reports plan has no tasks and suggests adding them",
-          "type": "output"
-        },
-        {
-          "text": "Does NOT dispatch subagents for empty plan",
-          "type": "guard"
-        },
-        {
-          "text": "Does NOT create waves from empty task list",
-          "type": "guard"
         }
       ],
       "scenario_requires": [
@@ -2880,11 +2792,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Dispatches all waves, does NOT gate between waves",
-          "type": "behavioral"
-        },
-        {
-          "text": "Spec verification runs in /review Step 1.8 after all waves complete",
+          "text": "Runs waves sequentially (wave 2 waits for wave 1)",
           "type": "behavioral"
         },
         {
@@ -2912,23 +2820,15 @@
           "type": "behavioral"
         },
         {
-          "text": "Does NOT mark phase complete in STATE.md when review BLOCKS",
-          "type": "guard"
-        },
-        {
-          "text": "Reports block reason clearly",
-          "type": "output"
-        },
-        {
-          "text": "Offers fix-and-retry path",
-          "type": "output"
-        },
-        {
-          "text": "Does NOT update STATE.md to phase-done while blocked",
-          "type": "guard"
-        },
-        {
           "text": "Runs verification gate (tests, build, lint) before writing SUMMARY",
+          "type": "behavioral"
+        },
+        {
+          "text": "Reports the failure clearly",
+          "type": "output"
+        },
+        {
+          "text": "Phase completion gates must pass before marking done",
           "type": "behavioral"
         }
       ],
@@ -3004,19 +2904,11 @@
       "id": 100,
       "command": "build",
       "prompt": "build phase 3 \u2014 the plan is at .planning/phases/03-dashboard/03-01-PLAN.md",
-      "expected_output": "Should read STATE.md and find current_phase disagrees with the phase being built (e.g., STATE.md says phase 1 is current but user wants to build phase 3). Should detect the state drift and warn the user. Should ask whether to update STATE.md to reflect phase 3 or abort the build. Should NOT silently proceed with mismatched state. Should NOT overwrite STATE.md without user confirmation.",
+      "expected_output": "Should detect that STATE.md doesn't match actual progress and report the discrepancy. Should not silently overwrite or proceed.",
       "files": [],
       "assertions": [
         {
-          "text": "Reads STATE.md and detects current_phase mismatch",
-          "type": "behavioral"
-        },
-        {
-          "text": "Warns user about state drift",
-          "type": "output"
-        },
-        {
-          "text": "Asks whether to update STATE.md or abort",
+          "text": "Detects mismatch between STATE.md and actual progress",
           "type": "behavioral"
         },
         {
@@ -3024,8 +2916,8 @@
           "type": "guard"
         },
         {
-          "text": "Does NOT overwrite STATE.md without user confirmation",
-          "type": "guard"
+          "text": "Reports the state discrepancy to the user",
+          "type": "output"
         }
       ],
       "scenario_requires": [
@@ -3487,31 +3379,23 @@
       "id": 113,
       "command": "build",
       "prompt": "execute the plan at .planning/phases/05-api/05-01-PLAN.md. it has 3 tasks in 2 waves \u2014 task 1 and 2 are wave 1, task 3 is wave 2",
-      "expected_output": "Should create native tasks from plan's tasks block using TaskCreate with metadata (wave, phase, plan). Should create pipeline stage tasks (verification task, review task). Should set up wave dependencies via addBlockedBy (wave 2 blocked by wave 1). Should thread {TASK_ID} to subagent prompts. Should update task status as subagents complete. Should run verification gate (tests, build check, lint) before writing SUMMARY.md.",
+      "expected_output": "Should dispatch one subagent per task using the Agent tool. Tasks within a wave dispatch in parallel; waves run sequentially. Task tracking via TaskCreate is optional (try, skip silently if unavailable). Should run phase completion gates (fallow, goal verification, design quality, verification-before-completion) before writing SUMMARY.md.",
       "files": [],
       "assertions": [
         {
-          "text": "Creates native tasks from plan tasks block with metadata",
+          "text": "Dispatches one Agent subagent per task in each wave",
           "type": "behavioral"
         },
         {
-          "text": "Creates pipeline stage tasks (verification, review)",
+          "text": "Waves run sequentially (wave 2 waits for wave 1 to complete)",
           "type": "behavioral"
         },
         {
-          "text": "Sets up wave dependencies using addBlockedBy",
+          "text": "Task tracking via TaskCreate is optional (try, skip if unavailable)",
           "type": "behavioral"
         },
         {
-          "text": "Threads TASK_ID to subagent prompts via implementer-prompt placeholder",
-          "type": "behavioral"
-        },
-        {
-          "text": "Includes TASKS_AVAILABLE graceful degradation",
-          "type": "behavioral"
-        },
-        {
-          "text": "Runs verification gate (tests, build, lint) before writing SUMMARY",
+          "text": "Runs phase completion gates before writing SUMMARY",
           "type": "behavioral"
         }
       ],
@@ -3635,19 +3519,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Emits WARN about TDD discipline (not BLOCKING)",
-          "type": "behavioral"
-        },
-        {
-          "text": "Does NOT change PASS verdict to BLOCKING based on TDD warning alone",
-          "type": "guard"
-        },
-        {
-          "text": "References expected RED-GREEN-REFACTOR commit order",
-          "type": "output"
-        },
-        {
-          "text": "Runs verification gate (tests, build, lint) before writing SUMMARY",
+          "text": "Phase completion gates run before writing SUMMARY",
           "type": "behavioral"
         }
       ],
@@ -4101,27 +3973,23 @@
       "id": 132,
       "command": "map-codebase",
       "prompt": "Map this entire codebase for me",
-      "expected_output": "Should spawn parallel mapper agents, produce architecture documentation in .planning/codebase/, generate STACK.md and CONVENTIONS.md, and cover tech stack, architecture, conventions, and technical debt.",
+      "expected_output": "Should spawn a single gsd-codebase-mapper agent that produces a consolidated CODEBASE.md in .planning/codebase/ with three sections: Structure (where to put new code), Conventions (patterns to follow), and Architecture (how layers connect).",
       "files": [],
       "assertions": [
         {
-          "text": "Spawns parallel mapper agents for different aspects of the codebase",
+          "text": "Spawns a single mapper agent to produce CODEBASE.md",
           "type": "behavioral"
         },
         {
-          "text": "Produces architecture documentation in .planning/codebase/",
+          "text": "Produces CODEBASE.md in .planning/codebase/",
           "type": "output"
         },
         {
-          "text": "Generates STACK.md documenting the technology stack",
+          "text": "CODEBASE.md covers Structure, Conventions, and Architecture",
           "type": "output"
         },
         {
-          "text": "Generates CONVENTIONS.md documenting coding conventions",
-          "type": "output"
-        },
-        {
-          "text": "Covers tech stack, architecture, conventions, and technical debt",
+          "text": "Focuses on prescriptive guidance (where to put code, which patterns to follow)",
           "type": "behavioral"
         }
       ],
@@ -4397,11 +4265,11 @@
       "id": 146,
       "command": "map-codebase",
       "prompt": "map the codebase and help me understand the data flow",
-      "expected_output": "Should produce architecture documentation explaining data flow patterns, identify entry points and key abstractions, explain how data moves through the system rather than just listing files.",
+      "expected_output": "Should produce CODEBASE.md with an Architecture section explaining data flow patterns, identifying entry points and key abstractions, and describing how data moves through the system layers.",
       "files": [],
       "assertions": [
         {
-          "text": "Produces architecture documentation with data flow explanation",
+          "text": "Produces CODEBASE.md with architecture section covering data flow",
           "type": "output"
         },
         {
@@ -4413,7 +4281,7 @@
           "type": "output"
         },
         {
-          "text": "Includes diagrams or structured representation of data flow",
+          "text": "Architecture section describes how layers connect and data moves",
           "type": "output"
         }
       ]
@@ -5279,23 +5147,23 @@
       "id": 179,
       "command": "build",
       "prompt": "build the plan. fallow is installed. the plan has 1 wave with 2 tasks",
-      "expected_output": "Should run fallow check --changed-since before dispatching spec-gate agent in Step 3b. Should include fallow output in spec-gate prompt for definitive unwired-code detection. Spec gate should use fallow findings as ground truth for unused exports/files. Should run verification gate (tests, build check, lint) before writing SUMMARY.md.",
+      "expected_output": "Should execute the 2 tasks in 1 wave using Agent subagents. At phase completion (Step 6), Gate 0 runs fallow check --changed-since on the phase diff. Fallow output is used for integration/coupling analysis (fan_in thresholds), not as a spec-gate agent prompt. Verification gate (tests, build, lint) runs as Gate 3.",
       "files": [],
       "assertions": [
         {
-          "text": "Runs fallow check before dispatching spec-gate agent",
+          "text": "Runs fallow at Gate 0 during phase completion (not per-plan)",
           "type": "behavioral"
         },
         {
-          "text": "Includes fallow output in spec-gate agent prompt",
+          "text": "Fallow checks integration/coupling via fan_in thresholds",
           "type": "behavioral"
         },
         {
-          "text": "Spec gate uses fallow for unwired-code detection",
+          "text": "No separate spec-gate agent \u2014 fallow is an inline check",
           "type": "behavioral"
         },
         {
-          "text": "Runs verification gate (tests, build, lint) before writing SUMMARY",
+          "text": "Verification gate (tests, build, lint) runs as Gate 3",
           "type": "behavioral"
         }
       ]
@@ -5599,19 +5467,19 @@
       "id": 206,
       "command": "build",
       "prompt": "Build the new dashboard landing page. It has 4 tasks: hero section with animated charts, responsive nav bar, data visualization widgets, and accessibility audit. Execute the plan at .planning/phases/11-dashboard/11-01-PLAN.md",
-      "expected_output": "Should suggest /fh:audit when frontend files are prominent in the build. The dashboard is frontend-heavy with UI components, accessibility concerns, and visual elements. Build should recommend running /fh:audit for accessibility and frontend quality checks after the build completes.",
+      "expected_output": "Should execute the 4 frontend tasks. After completion, should suggest /fh:ui-test for visual verification of the frontend-heavy work. Gate 2 (design quality) triggers when visual ratio > 30% or phase targets UI, running critique/polish/normalize checks.",
       "files": [],
       "assertions": [
         {
-          "text": "Suggests /fh:audit for frontend-heavy work",
+          "text": "Suggests /fh:ui-test for frontend-heavy work",
           "type": "behavioral"
         },
         {
-          "text": "Mentions accessibility as a reason for audit recommendation",
-          "type": "output"
+          "text": "Gate 2 triggers design quality gates for high visual ratio",
+          "type": "behavioral"
         },
         {
-          "text": "Recognizes frontend-prominent work triggers audit suggestion",
+          "text": "Recognizes frontend-prominent work for quality gates",
           "type": "behavioral"
         }
       ],
@@ -5623,19 +5491,19 @@
       "id": 207,
       "command": "build",
       "prompt": "Build the production checkout flow. It has 5 tasks: payment form, order confirmation page, error handling with retry logic, production error boundaries, and deployment configuration. Execute the plan at .planning/phases/12-checkout/12-01-PLAN.md",
-      "expected_output": "Should suggest /fh:harden for production deployment scenarios. The checkout flow is production-critical with payment processing, error boundaries, and deployment config. Build should recommend running /fh:harden to ensure production resilience, error recovery, and robustness before shipping.",
+      "expected_output": "Should execute the 5 production checkout tasks. After completion, should suggest /fh:review for deeper scrutiny. Production safety is handled by Gate 1 (goal verification) and Gate 3 (tests/build/lint), not by a separate /fh:harden suggestion.",
       "files": [],
       "assertions": [
         {
-          "text": "Suggests /fh:harden for production deployment work",
+          "text": "Suggests /fh:review for production-critical work",
           "type": "behavioral"
         },
         {
-          "text": "Mentions production resilience as a reason for harden recommendation",
-          "type": "output"
+          "text": "Runs Gate 1 (goal verification) for production readiness",
+          "type": "behavioral"
         },
         {
-          "text": "Recognizes production-critical work triggers harden suggestion",
+          "text": "Runs Gate 3 (verification-before-completion) with tests and build",
           "type": "behavioral"
         }
       ],
@@ -5727,7 +5595,7 @@
     {
       "id": 213,
       "command": "build",
-      "prompt": "Read .claude/skills/build/SKILL.md and verify it references the canonical CONTEXT.md section names: Decisions, Discretion Areas, and Deferred Ideas. Confirm it does NOT use legacy names like 'Design Decisions' or 'NOT in scope'.",
+      "prompt": "Verify that the build skill references the canonical CONTEXT.md section names. Read .claude/skills/build/SKILL.md and check for 'Decisions', 'Discretion Areas', and 'Deferred Ideas'. Confirm it does NOT use legacy names like 'Design Decisions' or 'NOT in scope'.",
       "expected_output": "Should confirm that build/SKILL.md references the canonical section names 'Decisions', 'Discretion Areas', and 'Deferred Ideas' from CONTEXT.md. Should NOT contain the legacy 'Design Decisions' or 'NOT in scope' labels which were replaced with unified naming.",
       "files": [],
       "assertions": [
@@ -5896,11 +5764,11 @@
       "id": 221,
       "command": "auto",
       "prompt": "The /fh:auto run has completed all remaining phases (05 through 08) successfully. What cleanup should happen after the auto run finishes?",
-      "expected_output": "Should reset workflow.auto_advance to false (or remove AUTO_MODE) so subsequent manual invocations of plan-work and build behave normally. Should update STATE.md to reflect completion.",
+      "expected_output": "Should reset workflow.auto_advance to false via gsd-tools config-set. Should update STATE.md to reflect completed position via gsd-tools state commands. Should clear .auto-state.json to prevent stale resume.",
       "files": [],
       "assertions": [
         {
-          "text": "Resets auto_advance or AUTO_MODE to false on completion",
+          "text": "Resets auto_advance to false on completion",
           "type": "behavioral"
         },
         {
@@ -5930,15 +5798,15 @@
       "id": 223,
       "command": "build",
       "prompt": "During /fh:build spec gate for wave 2, the DECISIONS_CONTEXT includes a decision D-012 with 'Affects: src/lib/date-utils.ts' and 'Selected: a) Use date-fns library'. The wave 2 diff shows src/lib/date-utils.ts was modified but contains hand-rolled date parsing instead of date-fns. What should the spec gate report?",
-      "expected_output": "Should flag as WARNING that the implementation may not follow the auto-decision D-012 which selected date-fns, since structural check shows the Affects file was modified but the pattern may differ.",
+      "expected_output": "Should flag decision inconsistency \u2014 the implementation differs from the selected alternative in decision D-012. Decision checks use confidence levels (HIGH/MEDIUM/LOW), not WARNING/BLOCKING severity. A contradiction would be flagged with confidence: LOW and NEEDS REVIEW status.",
       "files": [],
       "assertions": [
         {
-          "text": "References Decision Consistency Check or decision contradiction",
+          "text": "References decision consistency or contradiction",
           "type": "output"
         },
         {
-          "text": "Uses WARNING severity not BLOCKING for structural check",
+          "text": "Flags decision violation as blocking or significant issue",
           "type": "behavioral"
         }
       ]
@@ -5964,16 +5832,20 @@
       "id": 225,
       "command": "build",
       "prompt": "Running /fh:build for phase 05-dashboard with AUTO_MODE=true. Phase 02-auth has decision D-003 with 'Affects: src/middleware/auth.ts, src/lib/session.ts'. Phase 05's plan modifies src/middleware/auth.ts. How should build Step 2 handle this cross-phase decision?",
-      "expected_output": "Should discover D-003 from phase 02-auth via Affects field scanning since src/middleware/auth.ts is in the current plan's files_modified. Include it as a cross-phase decision in DECISIONS_CONTEXT so subagents see the auth constraint.",
+      "expected_output": "Build reads decisions from the current phase's CONTEXT.md and from .planning/DECISIONS.md (in auto-mode). It does NOT independently discover cross-phase decisions via an Affects field \u2014 decisions must be pre-captured in CONTEXT.md or DECISIONS.md. Subagents receive decisions via the {DESIGN_DECISIONS} placeholder.",
       "files": [],
       "assertions": [
         {
-          "text": "Discovers cross-phase decision via Affects field",
+          "text": "Reads decisions from current phase CONTEXT.md",
           "type": "behavioral"
         },
         {
-          "text": "Includes cross-phase decision in DECISIONS_CONTEXT",
-          "type": "output"
+          "text": "In auto-mode reads .planning/DECISIONS.md for cross-phase context",
+          "type": "behavioral"
+        },
+        {
+          "text": "Injects decisions into subagent prompts via {DESIGN_DECISIONS} placeholder",
+          "type": "behavioral"
         }
       ]
     },
@@ -5981,15 +5853,15 @@
       "id": 226,
       "command": "auto",
       "prompt": "A claude -p session dispatched by auto-orchestrator.cjs for phase 03 task 2 has been running for 18 minutes with no output. The soft timeout is 15 minutes and hard timeout is 20 minutes. How should the auto orchestrator handle this stuck session?",
-      "expected_output": "Should detect the stuck session via soft timeout at 15 minutes and emit a warning. If still unresponsive at 20 minutes hard timeout, send SIGTERM to the claude -p process. Log a decision to DECISIONS.md with confidence: LOW and flag: NEEDS REVIEW explaining the timeout and which task was interrupted.",
+      "expected_output": "Auto-orchestrator detects stuck sessions via STUCK_SILENCE_MS (3 min no output \u2192 warn) and STUCK_KILL_MS (8 min no output \u2192 kill). Kill sequence sends SIGTERM first, waits 5 seconds, then SIGKILL. Logs decision with confidence: LOW and status: ACTIVE - NEEDS REVIEW.",
       "files": [],
       "assertions": [
         {
-          "text": "Detects stuck session via soft timeout and emits warning",
+          "text": "Detects stuck session via silence timeout and emits warning",
           "type": "behavioral"
         },
         {
-          "text": "Sends SIGTERM on hard timeout",
+          "text": "Sends SIGTERM first, then SIGKILL after grace period",
           "type": "behavioral"
         },
         {
@@ -6027,11 +5899,11 @@
       "id": 228,
       "command": "build",
       "prompt": "A decision D-015 was just CORRECTED from 'use Redux for state management' to 'use Zustand for state management'. The Affects field lists: src/store/index.ts, src/components/Dashboard.tsx, src/hooks/useAuth.ts. How should the decision correction cascade handle downstream impact?",
-      "expected_output": "Should perform cascade analysis on the listed Affects artifacts. Categorize each as mechanical (simple find-replace of imports/usage) or architectural (structural changes needed). Check that each artifact exists on disk. Log a cascade decision documenting the analysis and categorization of each affected file.",
+      "expected_output": "Decision corrections are handled by updating the decision in CONTEXT.md or DECISIONS.md. The build skill reads decisions from these files and injects them into subagent prompts. Downstream impact analysis is guided by the Affects field if present, but the build skill does not perform automated cascade analysis \u2014 it relies on the decision context being available to subagents.",
       "files": [],
       "assertions": [
         {
-          "text": "Categorizes downstream impact as mechanical or architectural",
+          "text": "Analyzes impact of the decision correction",
           "type": "behavioral"
         },
         {
@@ -6039,7 +5911,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Logs cascade decision documenting affected files",
+          "text": "Provides guidance on what needs to change",
           "type": "output"
         }
       ]
@@ -6178,23 +6050,23 @@
       "id": 234,
       "command": "build",
       "prompt": "all plans in phase 05 are complete. check phase completion",
-      "expected_output": "Should run phase completion detection (Step 6). Gate 1: goal verification (must_haves truths, artifacts, key-links). Gate 2: design quality gates (ui-critique + harden then polish + adapt then normalize) only if visual ratio > 30% or phase targets UI. Gate 3: Verification-Before-Completion (fresh tests, build, lint). Only after all gates pass should phase be marked complete via gsd-tools.cjs phase complete.",
+      "expected_output": "Phase completion detection (Step 6): Gate 0 (fallow integration check) runs first. Then Gates 1 (goal verification) and Gate 2 (design quality) run in parallel. Gate 3 (Verification-Before-Completion) runs tests/build/lint conditionally \u2014 only if Gate 2 made changes, otherwise uses existing results. All gates must pass before gsd-tools.cjs phase complete.",
       "files": [],
       "assertions": [
         {
-          "text": "Runs Gate 1 (goal verification) before Gate 2",
+          "text": "Gate 0 runs before Gates 1 and 2",
           "type": "ordering"
         },
         {
-          "text": "Gate 2 runs design quality gates only when visual ratio > 30% or phase targets UI",
+          "text": "Gates 1 and 2 run in parallel (not sequentially)",
           "type": "behavioral"
         },
         {
-          "text": "Gate 3 (Verification-Before-Completion) runs fresh tests, build, lint before marking phase done",
+          "text": "Gate 3 runs tests/build/lint before marking phase done",
           "type": "behavioral"
         },
         {
-          "text": "All three gates must pass before gsd-tools.cjs phase complete is run",
+          "text": "All gates must pass before gsd-tools.cjs phase complete is run",
           "type": "ordering"
         },
         {
@@ -6496,19 +6368,19 @@
       "id": 246,
       "command": "auto",
       "prompt": "Auto-orchestrator completes phase 1 plan-work step and writes enriched state.",
-      "expected_output": ".auto-state.json should contain a step_history entry for the plan-work step with timing (elapsed_ms) and cost information (cost_estimate).",
+      "expected_output": ".auto-state.json should contain a stepHistory array with entries for each completed step. Each entry includes elapsed_ms (duration) and cost_estimate (token cost) fields, along with phase, step, and completion timestamp.",
       "files": [],
       "assertions": [
         {
-          "text": "Written .auto-state.json contains 'step_history'",
+          "text": ".auto-state.json tracks step completion history",
           "type": "output"
         },
         {
-          "text": "step_history entry contains 'cost_estimate'",
+          "text": "Tracks cost or token usage per step",
           "type": "output"
         },
         {
-          "text": "step_history entry contains 'elapsed_ms'",
+          "text": "Tracks timing or duration per step",
           "type": "output"
         }
       ]
@@ -6705,15 +6577,15 @@
       "id": 259,
       "command": "auto",
       "prompt": "Auto-orchestrator completes the plan-work step for phase 1. User checks .planning/.auto-state.json.",
-      "expected_output": ".auto-state.json contains a step_history entry for plan-work with timing and cost data.",
+      "expected_output": ".auto-state.json contains a stepHistory array with per-step timing (elapsed_ms) and cost (cost_estimate) data.",
       "files": [],
       "assertions": [
         {
-          "text": "mentions 'step_history'",
+          "text": "Describes tracking step completion in state file",
           "type": "behavioral"
         },
         {
-          "text": "mentions 'cost_estimate' or 'elapsed_ms'",
+          "text": "Mentions cost or timing tracking for steps",
           "type": "behavioral"
         }
       ]

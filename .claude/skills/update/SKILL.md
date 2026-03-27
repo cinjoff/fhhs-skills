@@ -304,12 +304,12 @@ Verify after install: `command -v $ID >/dev/null 2>&1`
 
 | ID | Install command |
 |----|----------------|
-| `~/.skills/shadcn` | `cd "$HOME" && npx skills add shadcn/ui` |
+| `~/.agents/skills/shadcn` or `~/.skills/shadcn` | `cd "$HOME" && npx -y skills add -g -y --all shadcn/ui` |
 | Any other dir | `mkdir -p "$EXPANDED_PATH"` |
 
 ```bash
 # For shadcn skills
-cd "$HOME" && npx skills add shadcn/ui 2>&1 && echo "✓ shadcn skills installed" || echo "⚠ shadcn skills install failed"
+cd "$HOME" && npx -y skills add -g -y --all shadcn/ui 2>&1 && echo "✓ shadcn skills installed" || echo "⚠ shadcn skills install failed"
 ```
 
 **`setup:env:*`** — Add the env var to `~/.claude/settings.json`:

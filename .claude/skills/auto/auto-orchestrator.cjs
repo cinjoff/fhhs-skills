@@ -2356,10 +2356,13 @@ async function main() {
   log(`  Decisions logged: ${decisionsLogged}`);
   log(`  Cost estimate: $${totalCostEstimate.toFixed(2)}${opts.budget ? ` / $${opts.budget} budget` : ''}`);
   log(`  Duration: ${durationMin}m`);
+
+  // Clean up auto-state so --resume doesn't find stale completed state
+  clearAutoState(projectDir);
 }
 
 main().catch((err) => {
-  writeAutoStatus(process.cwd(), {
+  writeAutoStatus(_autoStatus.projectDir || process.cwd(), {
     active: false,
     last_log_line: `Fatal error: ${err.message.slice(0, 200)}`,
     errors: [{ phase: null, step: null, attempt: 1, error_type: 'fatal', message: err.message.slice(0, 300), timestamp: new Date().toISOString() }],

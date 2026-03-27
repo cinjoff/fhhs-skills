@@ -239,7 +239,7 @@ BEFORE (per build agent):                AFTER (per build agent):
 └──────────────────────────────────────────────────────────────────────────┘
 ```
 
-## Key Design Decisions
+## Key Technical Decisions
 
 1. **Why shared CLAUDE_SESSION_ID?** context-mode creates one SQLite DB per session ID.
    By forcing `phase-{N}-auto` across all 4 steps, the index built in plan-work persists

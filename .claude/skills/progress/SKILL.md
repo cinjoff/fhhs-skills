@@ -86,7 +86,7 @@ If multiple items selected ("improve 1, 3"), spawn separate background agents fo
 
 Check if `ctx_index` MCP tool is available AND `.planning/codebase/.planning-index-manifest` exists. If either is missing, skip silently.
 
-Resolve the lightweight model: `node ./.claude/get-shit-done/bin/gsd-tools.cjs resolve-model gsd-codebase-mapper --raw` (defaults to `haiku` in balanced/budget profiles).
+Resolve the lightweight model: `node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs resolve-model gsd-codebase-mapper --raw` (defaults to `haiku` if resolution fails or in balanced/budget profiles).
 
 If both exist, spawn a background subagent with the resolved model and `run_in_background: true`:
 

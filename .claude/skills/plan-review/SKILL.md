@@ -104,7 +104,7 @@ ctx_batch_execute([
   { label: "PROJECT", cmd: "cat .planning/PROJECT.md" },
   { label: "ROADMAP", cmd: "cat .planning/ROADMAP.md" },
   { label: "DESIGN", cmd: "cat .planning/DESIGN.md" },
-  { label: "CODEBASE", cmd: "cat .planning/codebase/CODEBASE.md" },
+  { label: "CODEBASE", cmd: "cat .planning/codebase/CODEBASE.md 2>/dev/null || cat .planning/codebase/ARCHITECTURE.md .planning/codebase/STRUCTURE.md .planning/codebase/CONVENTIONS.md .planning/codebase/TESTING.md .planning/codebase/STACK.md 2>/dev/null" },
   { label: "PROJECT_RESEARCH", cmd: "cat .planning/research/*.md 2>/dev/null || echo ''" },
 ], queries: ["architecture", "conventions", "design context"])
 ```

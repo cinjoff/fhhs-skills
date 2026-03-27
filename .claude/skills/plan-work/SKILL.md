@@ -49,7 +49,7 @@ ctx_batch_execute([
   { label: "ROADMAP", cmd: "cat .planning/ROADMAP.md" },
   { label: "REQUIREMENTS", cmd: "cat .planning/REQUIREMENTS.md" },
   { label: "DESIGN", cmd: "cat .planning/DESIGN.md" },
-  { label: "CODEBASE", cmd: "cat .planning/codebase/CODEBASE.md" },
+  { label: "CODEBASE", cmd: "cat .planning/codebase/CODEBASE.md 2>/dev/null || cat .planning/codebase/ARCHITECTURE.md .planning/codebase/STRUCTURE.md .planning/codebase/CONVENTIONS.md .planning/codebase/TESTING.md .planning/codebase/STACK.md 2>/dev/null" },
 ], queries: [
   "project vision and scope",
   "architecture patterns and boundaries",

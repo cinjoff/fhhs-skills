@@ -37,6 +37,7 @@ LLM_GRADER_MODEL = "haiku"
 COMMAND_MAP = {
     "adapt": ".claude/skills/adapt/SKILL.md",
     "audit": ".claude/skills/audit/SKILL.md",
+    "auto": ".claude/skills/auto/SKILL.md",
     "bolder": ".claude/skills/bolder/SKILL.md",
     "build": ".claude/skills/build/SKILL.md",
     "clarify": ".claude/skills/clarify/SKILL.md",
@@ -47,6 +48,7 @@ COMMAND_MAP = {
     "fix": ".claude/skills/fix/SKILL.md",
     "harden": ".claude/skills/harden/SKILL.md",
     "health": ".claude/skills/health/SKILL.md",
+    "learnings": ".claude/skills/learnings/SKILL.md",
     "help": ".claude/skills/help/SKILL.md",
     "map-codebase": ".claude/skills/map-codebase/SKILL.md",
     "new-project": ".claude/skills/new-project/SKILL.md",
