@@ -25,12 +25,25 @@ export function useSSE(onData) {
   const onDataRef = useRef(onData);
   onDataRef.current = onData;
 
-  const fetchState = useCallback(() => {
-    fetch('/api/state')
+  const fetchState = useCallback((projectId) => {
+    const url = projectId ? `/api/state?projectId=${encodeURIComponent(projectId)}` : '/api/state';
+    fetch(url)
       .then(r => r.json())
       .then(d => {
         if (unmountedRef.current) return;
-        onDataRef.current(d);
+        if (projectId && d && !d.projects) {
+          // Partial update: server returned single-project data; merge into existing state
+          onDataRef.current((prev) => {
+            if (!prev || !prev.projects) return d;
+            const projects = prev.projects.map(p => p.name === projectId || p.path === projectId ? { ...p, ...d } : p);
+            const active = prev.active && (prev.active.project && (prev.active.project.name === projectId || prev.active.project.path === projectId))
+              ? d
+              : prev.active;
+            return { ...prev, projects, active };
+          });
+        } else {
+          onDataRef.current(d);
+        }
       })
       .catch(() => {});
   }, []);
@@ -45,7 +58,11 @@ export function useSSE(onData) {
       setConnected(true);
       if (rtRef.current) { clearTimeout(rtRef.current); rtRef.current = null; }
     };
-    es.addEventListener('refresh', fetchState);
+    es.addEventListener('refresh', (e) => {
+      let projectId = null;
+      try { projectId = e.data ? JSON.parse(e.data).projectId || null : null; } catch (_) {}
+      fetchState(projectId);
+    });
     es.onerror = () => {
       setConnected(false);
       es.close();

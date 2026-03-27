@@ -3,11 +3,13 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 
 // Import parse functions from parser.
 // Individual exports are added by the parser-v2 enhancement (parallel task).
 // Fall back to parsePlanning-based wrappers if individual exports aren't available yet.
 const parser = require('./parser.cjs');
+const { handleMetrics } = require('./metrics.cjs');
 
 const parseProject = parser.parseProject || ((dir) => parser.parsePlanning(dir).project);
 const parseRoadmap = parser.parseRoadmap || ((dir) => {
@@ -47,32 +49,187 @@ const BASE_PORT = 3847;
 const MAX_PORT_ATTEMPTS = 3;
 const DEBOUNCE_MS = 300;
 const CACHE_VERSION = 1;
-
-// Resolve .planning/ relative to CWD (user's project root)
-const planningDir = path.resolve(process.cwd(), '.planning');
-const cacheDir = path.resolve(process.cwd(), '.project-tracker');
-const cachePath = path.join(cacheDir, 'cache.json');
+const INACTIVE_THRESHOLD_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 // ---------------------------------------------------------------------------
-// Startup validation
+// Registry
 // ---------------------------------------------------------------------------
-if (!fs.existsSync(planningDir)) {
-  console.error(
-    '\n  Error: No .planning/ directory found in the current directory.\n\n' +
-    '  The project tracker needs a .planning/ directory to read project data.\n' +
-    '  Make sure you run this server from your project root.\n\n' +
-    '  Expected: ' + planningDir + '\n'
-  );
-  process.exit(1);
+const REGISTRY_PATH = path.join(os.homedir(), '.claude', 'tracker', 'projects.json');
+const REGISTRY_LOCK_PATH = REGISTRY_PATH + '.lock';
+
+/**
+ * Load registry from disk, filter to entries whose paths exist, return array.
+ */
+function loadRegistry() {
+  try {
+    const raw = fs.readFileSync(REGISTRY_PATH, 'utf8');
+    const data = JSON.parse(raw);
+    if (!Array.isArray(data)) return [];
+    return data.filter(entry => entry && entry.path && fs.existsSync(entry.path));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Atomic write: write to .tmp, rename to final path.
+ */
+function saveRegistry(projects) {
+  try {
+    const dir = path.dirname(REGISTRY_PATH);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    const tmpPath = REGISTRY_PATH + '.tmp';
+    fs.writeFileSync(tmpPath, JSON.stringify(projects, null, 2), 'utf8');
+    fs.renameSync(tmpPath, REGISTRY_PATH);
+  } catch (err) {
+    console.error('  Warning: Could not save registry:', err.message);
+  }
+}
+
+/**
+ * Save registry with simple .lock file pattern — retry once after 500ms if locked,
+ * proceed without lock on second failure (graceful degradation).
+ */
+function saveRegistryWithLock(projects) {
+  function tryWrite() {
+    try {
+      // Try to create lock (exclusive)
+      fs.writeFileSync(REGISTRY_LOCK_PATH, String(process.pid), { flag: 'wx' });
+    } catch {
+      // Lock exists — return false to signal we should retry
+      return false;
+    }
+    try {
+      saveRegistry(projects);
+    } finally {
+      try { fs.unlinkSync(REGISTRY_LOCK_PATH); } catch { /* ignore */ }
+    }
+    return true;
+  }
+
+  if (!tryWrite()) {
+    // Retry once after 500ms
+    setTimeout(() => {
+      if (!tryWrite()) {
+        // Graceful degradation: proceed without lock
+        saveRegistry(projects);
+      }
+    }, 500);
+  }
+}
+
+/**
+ * Register a project. Add if not present; update lastSeen if present.
+ * Returns updated registry array.
+ */
+function registerProject(projectPath, name, extra) {
+  const projects = loadRegistry();
+  const now = new Date().toISOString();
+  const existing = projects.find(p => p.path === projectPath);
+  if (existing) {
+    existing.lastSeen = now;
+    if (name) existing.name = name;
+    if (extra) Object.assign(existing, extra);
+  } else {
+    const entry = { path: projectPath, name: name || path.basename(projectPath), lastSeen: now };
+    if (extra) Object.assign(entry, extra);
+    projects.push(entry);
+  }
+  saveRegistryWithLock(projects);
+  return projects;
 }
 
 // ---------------------------------------------------------------------------
-// Cache Management
+// Conductor Auto-Discovery
 // ---------------------------------------------------------------------------
 
 /**
- * Create an empty cache structure.
+ * Discover projects under ~/conductor/workspaces/{repo}/{worktree}/.planning/
+ * Auto-register each with conductorWorkspace: repoName.
  */
+function discoverConductorProjects() {
+  const conductorBase = path.join(os.homedir(), 'conductor', 'workspaces');
+  if (!fs.existsSync(conductorBase)) return;
+
+  let repos;
+  try {
+    repos = fs.readdirSync(conductorBase, { withFileTypes: true });
+  } catch {
+    return;
+  }
+
+  for (const repoEntry of repos) {
+    if (!repoEntry.isDirectory()) continue;
+    const repoName = repoEntry.name;
+    const repoDir = path.join(conductorBase, repoName);
+
+    let worktrees;
+    try {
+      worktrees = fs.readdirSync(repoDir, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+
+    for (const worktreeEntry of worktrees) {
+      if (!worktreeEntry.isDirectory()) continue;
+      const worktreeName = worktreeEntry.name;
+      const projectPath = path.join(repoDir, worktreeName);
+      const planningPath = path.join(projectPath, '.planning');
+
+      if (fs.existsSync(planningPath)) {
+        const name = `${repoName}/${worktreeName}`;
+        registerProject(projectPath, name, { conductorWorkspace: repoName });
+      }
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Per-project state
+// ---------------------------------------------------------------------------
+
+/**
+ * Create per-project state container.
+ */
+function createProjectState(projectPath) {
+  const planningDir = path.join(projectPath, '.planning');
+  const cacheDir = path.join(projectPath, '.project-tracker');
+  const cachePath = path.join(cacheDir, 'cache.json');
+
+  return {
+    projectPath,
+    planningDir,
+    cacheDir,
+    cachePath,
+    cache: null,       // loaded lazily
+    lastState: null,
+    lastCompletionEvents: [],
+    lastRetros: [],
+    debounceTimer: null,
+  };
+}
+
+// Map of projectPath → projectState
+const projectStates = new Map();
+// Map of projectPath → fs.FSWatcher
+const watchers = new Map();
+
+/**
+ * Get or create project state for a path.
+ */
+function getProjectState(projectPath) {
+  if (!projectStates.has(projectPath)) {
+    projectStates.set(projectPath, createProjectState(projectPath));
+  }
+  return projectStates.get(projectPath);
+}
+
+// ---------------------------------------------------------------------------
+// Cache Management (per-project)
+// ---------------------------------------------------------------------------
+
 function emptyCache() {
   return {
     version: CACHE_VERSION,
@@ -85,12 +242,9 @@ function emptyCache() {
   };
 }
 
-/**
- * Load cache from disk, returning empty cache if missing or invalid.
- */
-function loadCache() {
+function loadCache(ps) {
   try {
-    const raw = fs.readFileSync(cachePath, 'utf8');
+    const raw = fs.readFileSync(ps.cachePath, 'utf8');
     const data = JSON.parse(raw);
     if (data && data.version === CACHE_VERSION) {
       return data;
@@ -101,17 +255,20 @@ function loadCache() {
   return emptyCache();
 }
 
-/**
- * Save cache to disk.
- */
-function saveCache(cache) {
+function saveCache(ps) {
   try {
-    if (!fs.existsSync(cacheDir)) {
-      fs.mkdirSync(cacheDir, { recursive: true });
+    if (!fs.existsSync(ps.cacheDir)) {
+      fs.mkdirSync(ps.cacheDir, { recursive: true });
     }
-    fs.writeFileSync(cachePath, JSON.stringify(cache, null, 2), 'utf8');
+    fs.writeFileSync(ps.cachePath, JSON.stringify(ps.cache, null, 2), 'utf8');
   } catch (err) {
     console.error('  Warning: Could not save cache:', err.message);
+  }
+}
+
+function ensureCache(ps) {
+  if (!ps.cache) {
+    ps.cache = loadCache(ps);
   }
 }
 
@@ -119,9 +276,6 @@ function saveCache(cache) {
 // Mtime Scanning
 // ---------------------------------------------------------------------------
 
-/**
- * Walk a directory recursively, returning a map of relative paths → mtimeMs.
- */
 function scanMtimes(dir, baseDir) {
   if (!baseDir) baseDir = dir;
   const result = {};
@@ -152,21 +306,15 @@ function scanMtimes(dir, baseDir) {
   return result;
 }
 
-/**
- * Compare old and new mtime maps.
- * Returns a Set of relative paths that are new, changed, or deleted.
- */
 function getChangedFiles(oldMtimes, newMtimes) {
   const changed = new Set();
 
-  // Check new/changed files
   for (const [filePath, mtime] of Object.entries(newMtimes)) {
     if (!oldMtimes[filePath] || oldMtimes[filePath] !== mtime) {
       changed.add(filePath);
     }
   }
 
-  // Check deleted files
   for (const filePath of Object.keys(oldMtimes)) {
     if (!(filePath in newMtimes)) {
       changed.add(filePath);
@@ -180,9 +328,6 @@ function getChangedFiles(oldMtimes, newMtimes) {
 // Tiered State Builder
 // ---------------------------------------------------------------------------
 
-/**
- * Determine which data categories need re-parsing based on changed files.
- */
 function categorizeChanges(changedFiles) {
   const needs = {
     state: false,
@@ -195,7 +340,7 @@ function categorizeChanges(changedFiles) {
     codebaseFreshness: false,
     autoState: false,
     decisions: false,
-    changedPhaseDirs: new Set(), // Set of phase dir names that need re-parse
+    changedPhaseDirs: new Set(),
   };
 
   for (const filePath of changedFiles) {
@@ -225,7 +370,6 @@ function categorizeChanges(changedFiles) {
     } else if (parts[0] === 'phases' && parts.length >= 2) {
       needs.changedPhaseDirs.add(parts[1]);
     } else if (parts[0] === 'milestones' && parts.length >= 3) {
-      // milestones/{milestone-name}/{phase-dir}/... → treat as phase change
       needs.changedPhaseDirs.add(parts[2]);
     }
   }
@@ -233,26 +377,16 @@ function categorizeChanges(changedFiles) {
   return needs;
 }
 
-// In-memory state cache (latest computed result)
-let cache = loadCache();
-let lastState = null;
-let lastCompletionEvents = []; // Stored separately to avoid heuristic reconstruction
-let lastRetros = [];
-
 /**
- * Build the full state, using tiered re-parsing based on changed files.
- * On first call (no previous state), parses everything.
- * On subsequent calls, only re-parses what changed.
- *
- * @param {Set|null} changedFiles - Set of changed file paths, or null for full parse
- * @returns {object} The full state object
+ * Build the full state for a project, using tiered re-parsing based on changed files.
  */
-function buildState(changedFiles) {
-  const isFullParse = !lastState || !changedFiles;
+function buildState(ps, changedFiles) {
+  ensureCache(ps);
+  const { planningDir } = ps;
+  const isFullParse = !ps.lastState || !changedFiles;
 
   let needs;
   if (isFullParse) {
-    // Parse everything on first call
     needs = {
       state: true,
       project: true,
@@ -270,50 +404,46 @@ function buildState(changedFiles) {
 
   let cacheChanged = false;
 
-  // --- STATE.md, pending todos, retros: re-parse only when changed ---
   const state = (needs.state || isFullParse)
     ? parseState(planningDir)
-    : (lastState ? { currentPhase: lastState.stages?.find(s => s.status === 'active')?.number, lastActivity: lastState.lastActivity } : parseState(planningDir));
+    : (ps.lastState ? { currentPhase: ps.lastState.stages?.find(s => s.status === 'active')?.number, lastActivity: ps.lastState.lastActivity } : parseState(planningDir));
 
   const todos = (needs.todos || isFullParse)
     ? parseTodos(planningDir)
-    : (lastState ? lastState.todos : parseTodos(planningDir));
+    : (ps.lastState ? ps.lastState.todos : parseTodos(planningDir));
 
   let retros;
   if (needs.retros || isFullParse) {
     retros = parseRetros(planningDir);
-    lastRetros = retros;
+    ps.lastRetros = retros;
   } else {
-    retros = lastRetros;
+    retros = ps.lastRetros;
   }
 
-  // --- Re-parse if mtime changed: PROJECT.md ---
   let project;
   if (needs.project || isFullParse) {
     project = parseProject(planningDir);
-    cache.project = project;
+    ps.cache.project = project;
     cacheChanged = true;
     console.log('  [cache] Re-parsed PROJECT.md');
   } else {
-    project = cache.project && Object.keys(cache.project).length > 0
-      ? cache.project
+    project = ps.cache.project && Object.keys(ps.cache.project).length > 0
+      ? ps.cache.project
       : parseProject(planningDir);
   }
 
-  // --- Re-parse if mtime changed: ROADMAP.md ---
   let roadmapData;
   if (needs.roadmap || isFullParse) {
     roadmapData = parseRoadmap(planningDir);
-    cache.roadmap = roadmapData;
+    ps.cache.roadmap = roadmapData;
     cacheChanged = true;
     console.log('  [cache] Re-parsed ROADMAP.md');
   } else {
-    roadmapData = cache.roadmap && cache.roadmap.phases
-      ? cache.roadmap
+    roadmapData = ps.cache.roadmap && ps.cache.roadmap.phases
+      ? ps.cache.roadmap
       : parseRoadmap(planningDir);
   }
 
-  // --- Re-parse if mtime changed: codebase/CONCERNS.md ---
   let concerns;
   if (needs.concerns || isFullParse) {
     try {
@@ -321,16 +451,15 @@ function buildState(changedFiles) {
     } catch {
       concerns = { categories: [], totalCount: 0 };
     }
-    cache.concerns = concerns;
+    ps.cache.concerns = concerns;
     cacheChanged = true;
     console.log('  [cache] Re-parsed CONCERNS.md');
   } else {
-    concerns = cache.concerns && Object.keys(cache.concerns).length > 0
-      ? cache.concerns
+    concerns = ps.cache.concerns && Object.keys(ps.cache.concerns).length > 0
+      ? ps.cache.concerns
       : { categories: [], totalCount: 0 };
   }
 
-  // --- Re-parse if mtime changed: codebase freshness ---
   let codebaseFreshness;
   if (needs.codebaseFreshness || isFullParse) {
     try {
@@ -338,50 +467,42 @@ function buildState(changedFiles) {
     } catch {
       codebaseFreshness = { lastUpdated: null, isStale: false };
     }
-    cache.codebaseFreshness = codebaseFreshness;
+    ps.cache.codebaseFreshness = codebaseFreshness;
     cacheChanged = true;
     console.log('  [cache] Re-parsed codebase freshness');
   } else {
-    codebaseFreshness = cache.codebaseFreshness && Object.keys(cache.codebaseFreshness).length > 0
-      ? cache.codebaseFreshness
+    codebaseFreshness = ps.cache.codebaseFreshness && Object.keys(ps.cache.codebaseFreshness).length > 0
+      ? ps.cache.codebaseFreshness
       : { lastUpdated: null, isStale: false };
   }
 
-  // --- Phases: cache completed, re-parse only changed ---
-  const phaseResult = buildPhases(
-    planningDir, roadmapData, state, needs, isFullParse
-  );
+  const phaseResult = buildPhases(ps, planningDir, roadmapData, state, needs, isFullParse);
   const stages = phaseResult.phases;
   const completionEvents = phaseResult.completionEvents;
-  lastCompletionEvents = completionEvents;
+  ps.lastCompletionEvents = completionEvents;
 
-  // Auto state: always freshly read (changes constantly during auto runs)
   const autoState = parseAutoState(planningDir);
 
-  // Decisions: re-parse when DECISIONS.md mtime changes
   let decisions;
   if (needs.decisions || isFullParse) {
     decisions = parseDecisions(planningDir);
     console.log('  [cache] Re-parsed DECISIONS.md');
   } else {
-    decisions = lastState ? lastState.decisions : parseDecisions(planningDir);
+    decisions = ps.lastState ? ps.lastState.decisions : parseDecisions(planningDir);
   }
 
-  // Quick tasks
   let quickTasks;
   if (needs.quickTasks || isFullParse) {
     quickTasks = parseQuickTasks(planningDir);
     console.log('  [cache] Re-parsed quick tasks');
   } else {
-    quickTasks = lastState ? lastState.quickTasks : parseQuickTasks(planningDir);
+    quickTasks = ps.lastState ? ps.lastState.quickTasks : parseQuickTasks(planningDir);
   }
 
-  // Recent activity: retros + completion events
   const recentActivity = retros.concat(completionEvents);
   recentActivity.sort((a, b) => (b.time || '').localeCompare(a.time || ''));
   recentActivity.splice(10);
 
-  // Assemble final state
   const result = {
     project,
     milestone: roadmapData.milestone,
@@ -396,35 +517,24 @@ function buildState(changedFiles) {
     lastActivity: state.lastActivity || null,
   };
 
-  // Update caches
-  lastState = result;
+  ps.lastState = result;
 
   if (cacheChanged) {
-    saveCache(cache);
+    saveCache(ps);
   }
 
   return result;
 }
 
-/**
- * Build phases with caching for completed phases.
- * Only re-parses phases whose directories have changed files.
- */
-function buildPhases(planningDir, roadmapData, state, needs, isFullParse) {
+function buildPhases(ps, planningDir, roadmapData, state, needs, isFullParse) {
   const allPhaseDirsChanged = needs.changedPhaseDirs.has('__ALL__');
 
-  // Get the full phases result from parsePhases
-  // But we can optimize: if no phase dirs changed and we have cached completed phases,
-  // we can potentially skip re-parsing completed phases.
-
   if (isFullParse || allPhaseDirsChanged || needs.roadmap) {
-    // Full parse of all phases
     const result = parsePhases(planningDir, roadmapData.phases, state);
 
-    // Cache completed phases
     for (const phase of result.phases) {
       if (phase.status === 'complete' && phase.tasks) {
-        cache.completedPhases[phase.number] = {
+        ps.cache.completedPhases[phase.number] = {
           tasks: phase.tasks,
           goal: phase.goal,
           name: phase.name,
@@ -437,21 +547,16 @@ function buildPhases(planningDir, roadmapData, state, needs, isFullParse) {
     return result;
   }
 
-  // No phase files changed — reuse last state's phases
-  if (needs.changedPhaseDirs.size === 0 && lastState) {
+  if (needs.changedPhaseDirs.size === 0 && ps.lastState) {
     console.log('  [cache] Phases unchanged, using cached data');
-    return { phases: lastState.stages || [], completionEvents: lastCompletionEvents };
+    return { phases: ps.lastState.stages || [], completionEvents: ps.lastCompletionEvents };
   }
 
-  // Some phases changed — do a full re-parse but cache the results
-  // (A partial re-parse would require splitting parsePhases, which adds complexity
-  //  for marginal benefit since phase parsing is already fast)
   const result = parsePhases(planningDir, roadmapData.phases, state);
 
-  // Update completed phases cache
   for (const phase of result.phases) {
     if (phase.status === 'complete' && phase.tasks) {
-      cache.completedPhases[phase.number] = {
+      ps.cache.completedPhases[phase.number] = {
         tasks: phase.tasks,
         goal: phase.goal,
         name: phase.name,
@@ -464,6 +569,134 @@ function buildPhases(planningDir, roadmapData, state, needs, isFullParse) {
   console.log(`  [cache] Re-parsed phases (changed: ${changedList})`);
 
   return result;
+}
+
+// ---------------------------------------------------------------------------
+// Project summary (for /api/state projects array)
+// ---------------------------------------------------------------------------
+
+function buildProjectSummary(entry, ps) {
+  const state = ps.lastState;
+  return {
+    id: entry.path,
+    path: entry.path,
+    name: entry.name,
+    lastSeen: entry.lastSeen,
+    conductorWorkspace: entry.conductorWorkspace || null,
+    currentPhase: state ? (state.stages || []).find(s => s.status === 'active')?.number || null : null,
+    projectName: state ? state.project?.name || null : null,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Watcher setup
+// ---------------------------------------------------------------------------
+
+/**
+ * Check if a project has had recent git activity (uses .planning/STATE.md mtime as proxy).
+ */
+function hasRecentActivity(projectPath) {
+  const statePath = path.join(projectPath, '.planning', 'STATE.md');
+  try {
+    const stat = fs.statSync(statePath);
+    return (Date.now() - stat.mtimeMs) < INACTIVE_THRESHOLD_MS;
+  } catch {
+    // If STATE.md doesn't exist, treat as active (new project)
+    return true;
+  }
+}
+
+/**
+ * Set up a per-project watcher on its .planning/ directory.
+ */
+function setupWatcher(entry) {
+  const { path: projectPath } = entry;
+  if (watchers.has(projectPath)) return; // already watching
+
+  const planDir = path.join(projectPath, '.planning');
+  if (!fs.existsSync(planDir)) return;
+
+  const ps = getProjectState(projectPath);
+
+  let debounceTimer = null;
+  let watcher;
+  try {
+    watcher = fs.watch(planDir, { recursive: true }, () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        try {
+          ensureCache(ps);
+          const newMtimes = scanMtimes(planDir);
+          const changedFiles = getChangedFiles(ps.cache.mtimes, newMtimes);
+
+          if (changedFiles.size === 0) return;
+
+          ps.cache.mtimes = newMtimes;
+          console.log(`  [sse] ${entry.name}: ${changedFiles.size} file(s) changed`);
+
+          buildState(ps, changedFiles);
+
+          // Broadcast to all SSE clients
+          broadcastRefresh(projectPath);
+        } catch {
+          // Ignore watcher errors
+        }
+      }, DEBOUNCE_MS);
+    });
+  } catch (err) {
+    console.error(`  Warning: Could not watch ${planDir}:`, err.message);
+    return;
+  }
+
+  watchers.set(projectPath, { watcher, debounceTimer: null });
+  console.log(`  [watch] Watching ${entry.name}`);
+}
+
+/**
+ * Initialize watchers for all registered projects.
+ * Skips projects with no git activity in 7 days (lazy optimization).
+ */
+function initializeWatchers() {
+  const projects = loadRegistry();
+  for (const entry of projects) {
+    if (!fs.existsSync(entry.path)) continue;
+    if (!hasRecentActivity(entry.path)) {
+      console.log(`  [watch] Skipping inactive project: ${entry.name}`);
+      continue;
+    }
+    setupWatcher(entry);
+  }
+}
+
+/**
+ * Initialize per-project state (cache + initial parse) for active watchers.
+ */
+function initializeProjectStates() {
+  const projects = loadRegistry();
+  for (const entry of projects) {
+    if (!watchers.has(entry.path)) continue;
+    const ps = getProjectState(entry.path);
+    ensureCache(ps);
+    ps.cache.mtimes = scanMtimes(ps.planningDir);
+    try {
+      buildState(ps, null);
+      console.log(`  [cache] Initial state built for: ${entry.name}`);
+    } catch (err) {
+      console.error(`  Warning: Could not build initial state for ${entry.name}:`, err.message);
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// SSE clients
+// ---------------------------------------------------------------------------
+const sseClients = new Set();
+
+function broadcastRefresh(projectId) {
+  const payload = `event: refresh\ndata: ${JSON.stringify({ projectId })}\n\n`;
+  for (const res of sseClients) {
+    try { res.write(payload); } catch { /* client disconnected */ }
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -484,24 +717,39 @@ function serveIndex(res) {
 }
 
 // ---------------------------------------------------------------------------
-// API: /api/state
+// API: /api/state  (dual-shape)
 // ---------------------------------------------------------------------------
 function serveState(res) {
   try {
-    const newMtimes = scanMtimes(planningDir);
-    const changedFiles = getChangedFiles(cache.mtimes, newMtimes);
-    cache.mtimes = newMtimes;
+    const projects = loadRegistry();
 
-    let data;
-    if (changedFiles.size > 0 || !lastState) {
-      // Files changed or no previous state — rebuild
-      data = buildState(changedFiles.size > 0 ? changedFiles : null);
-    } else {
-      // No changes — serve cached state
-      data = lastState;
+    // Build summaries for all registered projects
+    const summaries = projects.map(entry => {
+      const ps = projectStates.get(entry.path);
+      return buildProjectSummary(entry, ps || { lastState: null });
+    });
+
+    // Active project: first registered project with a watcher (or first in registry)
+    let activeState = null;
+    for (const entry of projects) {
+      const ps = projectStates.get(entry.path);
+      if (ps && ps.lastState) {
+        // Refresh active project state if files changed
+        ensureCache(ps);
+        const newMtimes = scanMtimes(ps.planningDir);
+        const changedFiles = getChangedFiles(ps.cache.mtimes, newMtimes);
+        ps.cache.mtimes = newMtimes;
+
+        if (changedFiles.size > 0 || !ps.lastState) {
+          activeState = buildState(ps, changedFiles.size > 0 ? changedFiles : null);
+        } else {
+          activeState = ps.lastState;
+        }
+        break;
+      }
     }
 
-    const json = JSON.stringify(data);
+    const json = JSON.stringify({ projects: summaries, active: activeState });
     res.writeHead(200, {
       'Content-Type': 'application/json',
       'Cache-Control': 'no-cache',
@@ -512,6 +760,48 @@ function serveState(res) {
     res.writeHead(500, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: err.message }));
   }
+}
+
+// ---------------------------------------------------------------------------
+// API: /api/register
+// ---------------------------------------------------------------------------
+function serveRegister(req, res) {
+  let body = '';
+  req.on('data', chunk => { body += chunk; });
+  req.on('end', () => {
+    try {
+      const { path: projectPath, name } = JSON.parse(body);
+      if (!projectPath) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'path is required' }));
+        return;
+      }
+      registerProject(projectPath, name);
+      // Set up watcher for the new project if path exists
+      const projects = loadRegistry();
+      const entry = projects.find(p => p.path === projectPath);
+      if (entry && fs.existsSync(projectPath)) {
+        setupWatcher(entry);
+        const ps = getProjectState(projectPath);
+        ensureCache(ps);
+        ps.cache.mtimes = scanMtimes(ps.planningDir);
+        try { buildState(ps, null); } catch { /* ignore parse errors for new project */ }
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true }));
+    } catch (err) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+  });
+}
+
+// ---------------------------------------------------------------------------
+// API: /api/metrics  (delegates to metrics.cjs)
+// ---------------------------------------------------------------------------
+function serveMetrics(res) {
+  const projects = loadRegistry();
+  handleMetrics(projects, res);
 }
 
 // ---------------------------------------------------------------------------
@@ -527,41 +817,10 @@ function serveEvents(req, res) {
   // Send initial comment to establish connection
   res.write(':connected\n\n');
 
-  let debounceTimer = null;
+  sseClients.add(res);
 
-  // NOTE: { recursive: true } only works on macOS and Windows.
-  // On Linux, only top-level .planning/ changes will trigger updates.
-  const watcher = fs.watch(planningDir, { recursive: true }, () => {
-    // Debounce rapid file changes
-    if (debounceTimer) clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => {
-      try {
-        // Scan for changes and selectively rebuild
-        const newMtimes = scanMtimes(planningDir);
-        const changedFiles = getChangedFiles(cache.mtimes, newMtimes);
-
-        if (changedFiles.size === 0) {
-          return; // No actual file content changes
-        }
-
-        cache.mtimes = newMtimes;
-        console.log(`  [sse] ${changedFiles.size} file(s) changed: ${Array.from(changedFiles).slice(0, 5).join(', ')}`);
-
-        // Rebuild state selectively
-        buildState(changedFiles);
-
-        // Push refresh event to client
-        res.write('event: refresh\ndata: {}\n\n');
-      } catch {
-        // Connection may have closed
-      }
-    }, DEBOUNCE_MS);
-  });
-
-  // Clean up on connection close
   req.on('close', () => {
-    if (debounceTimer) clearTimeout(debounceTimer);
-    watcher.close();
+    sseClients.delete(res);
   });
 }
 
@@ -580,6 +839,14 @@ const server = http.createServer((req, res) => {
     return serveState(res);
   }
 
+  if (req.method === 'POST' && pathname === '/api/register') {
+    return serveRegister(req, res);
+  }
+
+  if (req.method === 'GET' && pathname === '/api/metrics') {
+    return serveMetrics(res);
+  }
+
   if (req.method === 'GET' && pathname === '/api/events') {
     return serveEvents(req, res);
   }
@@ -590,7 +857,7 @@ const server = http.createServer((req, res) => {
 });
 
 // ---------------------------------------------------------------------------
-// Start with port fallback
+// Start with port fallback + EADDRINUSE graceful handling
 // ---------------------------------------------------------------------------
 function tryListen(port, attempt) {
   if (attempt > MAX_PORT_ATTEMPTS) {
@@ -604,25 +871,45 @@ function tryListen(port, attempt) {
   server.removeAllListeners('error');
   server.on('error', (err) => {
     if (err.code === 'EADDRINUSE') {
-      console.log(`  Port ${port} is busy, trying ${port + 1}...`);
-      tryListen(port + 1, attempt + 1);
+      // Check if an existing tracker server is already running on this port
+      const existingUrl = `http://127.0.0.1:${port}/api/state`;
+      http.get(existingUrl, (probeRes) => {
+        if (probeRes.statusCode === 200) {
+          console.log(`\n  Project Tracker is already running at http://127.0.0.1:${port}\n`);
+          process.exit(0);
+        } else {
+          console.log(`  Port ${port} is busy, trying ${port + 1}...`);
+          tryListen(port + 1, attempt + 1);
+        }
+        probeRes.resume(); // drain response
+      }).on('error', () => {
+        // Port is busy but not our server — try next port
+        console.log(`  Port ${port} is busy, trying ${port + 1}...`);
+        tryListen(port + 1, attempt + 1);
+      });
     } else {
       throw err;
     }
   });
 
   server.listen(port, '127.0.0.1', () => {
-    // Do initial mtime scan and state build on startup
-    console.log('  [cache] Initial state build...');
-    cache.mtimes = scanMtimes(planningDir);
-    buildState(null); // Full parse on startup
+    console.log('  [startup] Discovering Conductor worktrees...');
+    discoverConductorProjects();
+
+    const projects = loadRegistry();
+    console.log(`  [startup] Registry: ${projects.length} project(s) registered`);
+
+    console.log('  [startup] Initializing watchers...');
+    initializeWatchers();
+
+    console.log('  [startup] Building initial project states...');
+    initializeProjectStates();
 
     console.log(
       '\n  Project Tracker is running!\n\n' +
       `  Dashboard:  http://127.0.0.1:${port}\n` +
       `  API:        http://127.0.0.1:${port}/api/state\n` +
-      `  Watching:   ${planningDir}\n` +
-      `  Cache:      ${cachePath}\n\n` +
+      `  Registry:   ${REGISTRY_PATH}\n\n` +
       '  Press Ctrl+C to stop.\n'
     );
   });

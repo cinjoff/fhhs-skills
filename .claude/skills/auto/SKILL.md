@@ -22,6 +22,66 @@ Read STATE.md and ROADMAP.md to determine current position, total phases, and wh
 
 ---
 
+## Step 1.5: Tracker Registration
+
+Register the current project with the live dashboard and surface the URL if it's running.
+
+```bash
+# Ensure tracker directory exists
+mkdir -p "$HOME/.claude/tracker"
+
+# Register project in global registry
+node -e "
+const fs = require('fs');
+const path = require('path');
+const registryPath = path.join(process.env.HOME, '.claude', 'tracker', 'projects.json');
+let registry = {};
+try { registry = JSON.parse(fs.readFileSync(registryPath, 'utf8')); } catch {}
+const projectDir = process.cwd();
+registry[projectDir] = { name: path.basename(projectDir), path: projectDir, lastSeen: new Date().toISOString() };
+fs.writeFileSync(registryPath, JSON.stringify(registry, null, 2));
+"
+```
+
+Then check if the live dashboard is running:
+
+```bash
+# Attempt HTTP GET to tracker API with 2s timeout
+node -e "
+const http = require('http');
+const projectDir = process.cwd();
+const projectName = require('path').basename(projectDir);
+const req = http.get('http://localhost:3847/api/state', { timeout: 2000 }, (res) => {
+  if (res.statusCode === 200) {
+    // Dashboard is running — register this project
+    const postData = JSON.stringify({ path: projectDir, name: projectName });
+    const postReq = http.request({
+      hostname: 'localhost',
+      port: 3847,
+      path: '/api/register',
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(postData) }
+    }, () => {});
+    postReq.on('error', () => {});
+    postReq.write(postData);
+    postReq.end();
+    console.log('TRACKER_RUNNING');
+  } else {
+    console.log('TRACKER_NOT_RUNNING');
+  }
+});
+req.on('error', () => console.log('TRACKER_NOT_RUNNING'));
+req.on('timeout', () => { req.destroy(); console.log('TRACKER_NOT_RUNNING'); });
+" 2>/dev/null
+```
+
+- If output is `TRACKER_RUNNING`: print `Live dashboard running at http://localhost:3847 — open it to watch progress`
+- If output is `TRACKER_NOT_RUNNING`: print `Tip: Run \`/fh:tracker\` in another terminal to watch progress live`
+
+This step always succeeds — tracker errors are non-fatal.
+
+---
+
 ## Step 2: Strategic Requirements Workshop
 
 Before autonomous execution, engage the user as a strategic advisor to shape and validate the project vision. This step ensures the autonomous pipeline builds the RIGHT thing, not just builds things.

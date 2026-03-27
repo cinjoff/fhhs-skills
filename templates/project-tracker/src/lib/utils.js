@@ -63,3 +63,25 @@ export function copyToClipboard(text, showToast) {
     showToast('Copy failed');
   });
 }
+
+export function groupByConductor(projects) {
+  if (!Array.isArray(projects)) return [];
+  const groups = [];
+  const map = {};
+  for (const p of projects) {
+    const key = p.conductorWorkspace || null;
+    const label = key ? key.split('/').pop() : null;
+    const mapKey = key || '__ungrouped__';
+    if (!map[mapKey]) {
+      map[mapKey] = { conductorWorkspace: key, label, projects: [] };
+      groups.push(map[mapKey]);
+    }
+    map[mapKey].projects.push(p);
+  }
+  return groups;
+}
+
+export function formatProgress(completed, total) {
+  if (!total || total <= 0) return '';
+  return `Phase ${completed}/${total}`;
+}

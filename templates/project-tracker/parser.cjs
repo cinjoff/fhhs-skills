@@ -842,6 +842,109 @@ function parseDecisions(planningDir) {
 }
 
 /**
+ * Derive the nextItem string from STATE.md status field or first incomplete phase goal.
+ * Returns a short string describing what comes next.
+ */
+function deriveNextItem(state, phases) {
+  // Try to use STATE.md status narrative — look for incomplete phase
+  const activePhase = phases.find(p => p.status === 'active');
+  if (activePhase) {
+    return activePhase.goal || activePhase.name || `Phase ${activePhase.number}`;
+  }
+  const nextPhase = phases.find(p => p.status === 'up next');
+  if (nextPhase) {
+    return nextPhase.goal || nextPhase.name || `Phase ${nextPhase.number}`;
+  }
+  return '';
+}
+
+/**
+ * Parse a single project at projectPath and return a compact summary.
+ * projectPath: root of the project (parent of .planning/)
+ * Returns: { name, path, currentPhase, totalPhases, completedPhases, progressPct, nextItem, lastActivity, status, conductorWorkspace? }
+ */
+function parseProjectSummary(projectPath) {
+  const planningDir = path.join(projectPath, '.planning');
+
+  // Graceful fallback for missing .planning/
+  const fallback = {
+    name: path.basename(projectPath),
+    path: projectPath,
+    currentPhase: '',
+    totalPhases: 0,
+    completedPhases: 0,
+    progressPct: 0,
+    nextItem: '',
+    lastActivity: null,
+    status: 'unknown',
+  };
+
+  if (!fs.existsSync(planningDir)) {
+    return fallback;
+  }
+
+  try {
+    const project = parseProject(planningDir);
+    const { phases: roadmapPhases } = parseRoadmap(planningDir);
+    const state = parseState(planningDir);
+    const { phases } = parsePhases(planningDir, roadmapPhases, state);
+
+    const totalPhases = phases.length;
+    const completedPhases = phases.filter(p => p.status === 'complete').length;
+    const progressPct = totalPhases > 0 ? Math.round((completedPhases / totalPhases) * 100) : 0;
+    const nextItem = deriveNextItem(state, phases);
+
+    // Read conductorWorkspace from STATE.md frontmatter if present
+    const stateContent = safeRead(path.join(planningDir, 'STATE.md'));
+    const stateFm = parseFrontmatter(stateContent);
+    const conductorWorkspace = stateFm.conductor_workspace || stateFm.conductorWorkspace || undefined;
+
+    const summary = {
+      name: project.name,
+      path: projectPath,
+      currentPhase: state.currentPhase || '',
+      totalPhases,
+      completedPhases,
+      progressPct,
+      nextItem,
+      lastActivity: state.lastActivity,
+      status: state.status || 'active',
+    };
+
+    if (conductorWorkspace) {
+      summary.conductorWorkspace = conductorWorkspace;
+    }
+
+    return summary;
+  } catch {
+    return { ...fallback, name: path.basename(projectPath) };
+  }
+}
+
+/**
+ * Aggregate summaries for multiple projects.
+ * projectPaths: array of project root paths
+ * Returns: { projects: [...summaries], conductorGroups: { [repoName]: [...summaries] } }
+ * conductorGroups: projects with the same conductorWorkspace value are grouped together.
+ */
+function aggregateProjects(projectPaths) {
+  const projects = projectPaths.map(p => parseProjectSummary(p));
+
+  const conductorGroups = {};
+  for (const summary of projects) {
+    if (summary.conductorWorkspace) {
+      const key = summary.conductorWorkspace;
+      if (!conductorGroups[key]) {
+        conductorGroups[key] = [];
+      }
+      conductorGroups[key].push(summary);
+    }
+  }
+
+  return { projects, conductorGroups };
+}
+
+/**
  * Main entry point: parse .planning/ directory into structured data.
  */
 function parsePlanning(planningDir) {
@@ -893,4 +996,6 @@ module.exports = {
   extractObjective,
   extractBody,
   stripXml,
+  parseProjectSummary,
+  aggregateProjects,
 };
