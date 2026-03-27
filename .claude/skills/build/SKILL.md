@@ -163,6 +163,28 @@ If any fail: flag in SUMMARY under "Issues Encountered". Do NOT claim success if
 
 Read `references/summary-template.md` for the template. Write SUMMARY.md. Commit: `docs({phase}-{plan}): complete {description}`
 
+### Learnings Digest (after SUMMARY.md)
+
+If claude-mem is available, generate a learnings digest:
+1. Call `mcp__plugin_claude-mem_mcp-search__timeline` with window=7d, limit=20
+2. Call `mcp__plugin_claude-mem_mcp-search__smart_search` with current phase name, limit=10
+3. Read existing `~/.claude/cache/learnings-digest.json` if present
+4. Merge observations into digest using this deterministic algorithm:
+   a. Load existing digest items (empty array if no file or corrupt)
+   b. For each new observation, check if it matches improvement themes (keywords: mistake, pitfall, learning, retro, regression, "should have", "next time", bug, broke, failed):
+      - If no theme match → skip
+      - If an existing item's summary shares 2+ significant words (excluding stopwords) → bump that item's times_seen
+      - Else → create new item with id="imp-{timestamp}", times_seen=1, priority="low", first_seen=today
+   c. Priority escalation: times_seen >= 3 → "medium", times_seen >= 5 → "high" (never downgrade)
+   d. Items addressed by this build session (if the build's work matches an item's suggested_action) → mark addressed=true, addressed_at=ISO timestamp
+   e. Compute stats: scanned = total observations checked, pending = items where addressed is falsy, addressed_since_last = items addressed in this merge
+5. Write updated digest to `~/.claude/cache/learnings-digest.json`
+6. Skip silently if claude-mem not installed or any MCP call fails
+
+Digest schema: `{ generated: ISO string, generated_by: "build"|"context-critical", project: cwd path, phase: current phase name, items: [{ id: string, priority: "low"|"medium"|"high", category: "retro"|"pattern"|"theme", summary: string, detail: string, suggested_action: string, times_seen: number, first_seen: ISO string, addressed: boolean, addressed_at?: ISO string }], stats: { scanned: number, pending: number, addressed_since_last: number } }`
+
+Budget: <2% context for this substep.
+
 ---
 
 ## Step 5: GSD State Updates

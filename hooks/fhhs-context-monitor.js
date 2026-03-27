@@ -90,10 +90,12 @@ process.stdin.on('end', () => {
         ? `CONTEXT CRITICAL: Usage at ${usedPct}%. Remaining: ${remaining}%. ` +
           'Context is nearly exhausted. Do NOT start new complex work or write handoff files \u2014 ' +
           'Project state is already tracked in STATE.md. Inform the user so they can run ' +
-          '/fh:pause-work at the next natural stopping point.'
+          '/fh:pause-work at the next natural stopping point. ' +
+          'Also: if claude-mem is available, write a learnings digest to ~/.claude/cache/learnings-digest.json by querying timeline (7d) and smart_search (current phase). Merge into existing digest if present. This preserves improvement tracking across sessions.'
         : `CONTEXT CRITICAL: Usage at ${usedPct}%. Remaining: ${remaining}%. ` +
           'Context is nearly exhausted. Inform the user that context is low and ask how they ' +
-          'want to proceed. Do NOT autonomously save state or write handoff files unless the user asks.';
+          'want to proceed. Do NOT autonomously save state or write handoff files unless the user asks. ' +
+          'Also: if claude-mem is available, write a learnings digest to ~/.claude/cache/learnings-digest.json by querying timeline (7d) and smart_search (current phase). Merge into existing digest if present. This preserves improvement tracking across sessions.';
     } else {
       message = isGsdActive
         ? `CONTEXT WARNING: Usage at ${usedPct}%. Remaining: ${remaining}%. ` +

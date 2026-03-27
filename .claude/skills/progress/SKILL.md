@@ -60,6 +60,27 @@ If a current phase name is known (from `.planning/STATE.md` or later from GSD in
 Budget: less than 3% context for this entire substep.
 </step>
 
+## Improvement Actions
+
+The SessionStart learnings hook (`fhhs-learnings.js`) shows improvement items and includes
+a full agent directive for handling "improve N" responses. This section documents the flow
+for reference and handles the case where the user invokes `/fh:progress` and then asks
+to improve an item.
+
+When the user says "improve N" (where N is an item number from the learnings display):
+
+1. Read `~/.claude/cache/learnings-digest.json`
+2. Find the Nth pending item (1-indexed, sorted by priority high→med→low)
+3. Assess scope from the item's `suggested_action`:
+   - **Light** (config change, lint rule, single file fix): Spawn background Agent to directly implement the fix
+   - **Medium** (3-6 files, clear approach): Spawn background Agent to run `/fh:plan-work` then `/fh:build`
+   - **Heavy** (7+ files, architectural): Spawn background Agent to run `/fh:plan-work` then `/fh:plan-review` then `/fh:build`
+4. Tell the user: "Addressing improvement #{N}: {summary} — running {light/medium/heavy} process in background."
+5. **Critical:** The background agent's prompt MUST include: "After completing the improvement, read `~/.claude/cache/learnings-digest.json`, set `addressed: true` and `addressed_at: {ISO timestamp}` on the item with id `{item.id}`, and write the file back."
+6. Continue with whatever the user was doing — don't block
+
+If multiple items selected ("improve 1, 3"), spawn separate background agents for each.
+
 <step name="reindex_planning">
 **Re-index stale .planning/ files in the background (fire-and-forget):**
 
@@ -248,6 +269,7 @@ Run /fh:new-project to start a new project.
 
 | Condition | Recommendation |
 |-----------|---------------|
+| User says "improve N" or "improve N, M" | Handle as improvement action (see **Improvement Actions** section above) |
 | Uncommitted changes (uncommitted_count > 0) | "Uncommitted work in {N} files. Review before continuing?" |
 | State corruption detected | "STATE.md is out of sync with actual files. Run `/fh:health --repair` to fix." |
 | No `.planning/PROJECT.md` (gsd_available = false) | "No project found. Run `/fh:new-project` to set up tracking." |

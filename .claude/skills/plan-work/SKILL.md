@@ -108,6 +108,20 @@ Advisory only — never block.
 
 Check whether the user's request involves unfamiliar APIs, external services, library selection, or technical feasibility questions. If so, research before designing — it prevents brainstorming in a vacuum.
 
+### Past Learnings Check
+
+Before researching, check claude-mem for relevant past learnings:
+1. If claude-mem is available, call `mcp__plugin_claude-mem_mcp-search__smart_search` with 2-3 keywords from the user's task description, limit=5
+2. Filter results for observations containing: mistake, pitfall, learning, retro, "should have", "next time", warning, regression
+3. If relevant results found, present as:
+
+   **Past learnings relevant to this work:**
+   - {observation summary} (from {date})
+
+   Max 3 items, <2% context budget.
+4. Feed these into the brainstorm/design context so past mistakes inform decisions
+5. Skip silently if claude-mem not installed or no relevant results
+
 The complexity assessment from Step 0.5 determines the research path:
 
 ### Deep research path (complex tasks)
