@@ -37,6 +37,8 @@ const parseQuickTasks = parser.parseQuickTasks || ((dir) => {
 });
 const parseConcerns = parser.parseConcerns || (() => ({ categories: [], totalCount: 0 }));
 const parseCodebaseFreshness = parser.parseCodebaseFreshness || (() => ({ lastUpdated: null, isStale: false }));
+const parseAutoState = parser.parseAutoState || (() => null);
+const parseDecisions = parser.parseDecisions || (() => []);
 
 // ---------------------------------------------------------------------------
 // Configuration
@@ -191,13 +193,19 @@ function categorizeChanges(changedFiles) {
     quickTasks: false,
     concerns: false,
     codebaseFreshness: false,
+    autoState: false,
+    decisions: false,
     changedPhaseDirs: new Set(), // Set of phase dir names that need re-parse
   };
 
   for (const filePath of changedFiles) {
     const parts = filePath.split(path.sep);
 
-    if (parts[0] === 'STATE.md') {
+    if (parts[0] === '.auto-state.json') {
+      needs.autoState = true;
+    } else if (parts[0] === 'DECISIONS.md') {
+      needs.decisions = true;
+    } else if (parts[0] === 'STATE.md') {
       needs.state = true;
     } else if (parts[0] === 'PROJECT.md') {
       needs.project = true;
@@ -347,6 +355,18 @@ function buildState(changedFiles) {
   const completionEvents = phaseResult.completionEvents;
   lastCompletionEvents = completionEvents;
 
+  // Auto state: always freshly read (changes constantly during auto runs)
+  const autoState = parseAutoState(planningDir);
+
+  // Decisions: re-parse when DECISIONS.md mtime changes
+  let decisions;
+  if (needs.decisions || isFullParse) {
+    decisions = parseDecisions(planningDir);
+    console.log('  [cache] Re-parsed DECISIONS.md');
+  } else {
+    decisions = lastState ? lastState.decisions : parseDecisions(planningDir);
+  }
+
   // Quick tasks
   let quickTasks;
   if (needs.quickTasks || isFullParse) {
@@ -371,6 +391,8 @@ function buildState(changedFiles) {
     quickTasks,
     concerns,
     codebaseFreshness,
+    autoState,
+    decisions,
     lastActivity: state.lastActivity || null,
   };
 

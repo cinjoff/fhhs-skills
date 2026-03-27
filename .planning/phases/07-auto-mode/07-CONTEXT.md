@@ -15,6 +15,11 @@
 - [Research files consumed downstream]: `.planning/research/*.md` (project-level research from new-project) must be indexed in context-mode bootstrap alongside phase-level and milestone-level research, so plan-work, plan-review, and build sessions can search them.
 - [Firecrawl preferred for researchers]: Researcher agents use firecrawl as primary web tool with WebSearch/WebFetch as fallback. Firecrawl provides higher quality, LLM-optimized results.
 - [Researcher MCP integration]: Both gsd-phase-researcher and gsd-project-researcher agents get context-mode and claude-mem in their tools list and usage instructions in their prompts, so they can search indexed project docs and recall cross-session history.
+- [Unified dashboard]: The existing `/fh:tracker` dashboard is extended with auto-mode monitoring panels rather than creating a separate dashboard. Auto-mode panels show/hide based on `.auto-state.json` presence.
+- [Preact + compat for shadcn-style]: Dashboard uses Preact with `@preact/compat` shim so Recharts (React library) works. React aliased via npm `"react": "npm:@preact/compat"` and esbuild `alias` config. No switch to full React.
+- [Recharts for charts]: Recharts chosen for time-series cost charts and step timeline. Works via preact-compat. Adds ~150KB to bundle but provides full-featured animated charts matching shadcn's chart component.
+- [Enriched auto-state JSON]: Orchestrator writes enriched `.auto-state.json` with `step_history` array (timing + cost per step), `errors` array, and `last_log_line`. This is the single data source for all dashboard auto-mode panels.
+- [Auto-open browser]: Orchestrator opens `http://127.0.0.1:3847` via macOS `open` command at startup. Non-blocking, no error if tracker isn't running.
 
 ## Discretion Areas
 
@@ -27,6 +32,6 @@
 ## Deferred Ideas
 
 - [Slack/Discord integration for remote questions]: GSD-2 routes questions to Slack/Discord. Interesting but out of scope for v1 of auto mode.
-- [Web dashboard for auto mode monitoring]: Real-time progress UI. Out of scope — use `/fh:tracker` and terminal output for now.
+- [Web dashboard for auto mode monitoring]: ~~Out of scope~~ → Now in scope as Plan 07-05. Consolidated into `/fh:tracker`.
 - [Multi-worker coordination]: Parallel `claude -p` sessions working on different phases simultaneously. Complex IPC needed. Defer to v2.
 - [Conductor API integration]: When Conductor exposes a programmatic API for tab/workspace creation, integrate. Not available today.

@@ -778,6 +778,70 @@ function parseCodebaseFreshness(planningDir) {
 }
 
 /**
+ * Parse .planning/.auto-state.json.
+ * Returns parsed object with all fields, or null if file doesn't exist or is invalid JSON.
+ */
+function parseAutoState(planningDir) {
+  const filePath = path.join(planningDir, '.auto-state.json');
+  try {
+    const raw = fs.readFileSync(filePath, 'utf8');
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Parse .planning/DECISIONS.md.
+ * Each ## DEC-NNN: Title section is parsed into:
+ *   { id, title, status, confidence, context, decision, affects, phase, step }
+ * Returns array sorted by ID descending (newest first).
+ * Returns empty array if file doesn't exist.
+ */
+function parseDecisions(planningDir) {
+  const content = safeRead(path.join(planningDir, 'DECISIONS.md'));
+  if (!content) return [];
+
+  const decisions = [];
+  // Split on ## DEC-NNN: headings
+  const sections = content.split(/(?=^## DEC-\d+:)/m);
+
+  for (const section of sections) {
+    const headingMatch = section.match(/^## (DEC-(\d+)):\s*(.+)$/m);
+    if (!headingMatch) continue;
+
+    const id = headingMatch[1];
+    const num = parseInt(headingMatch[2], 10);
+    const title = headingMatch[3].trim();
+
+    const getField = (label) => {
+      const re = new RegExp(`^-\\s+\\*\\*${label}:\\*\\*\\s*(.+)$`, 'm');
+      const m = section.match(re);
+      return m ? m[1].trim() : '';
+    };
+
+    decisions.push({
+      id,
+      num,
+      title,
+      status: getField('Status'),
+      confidence: getField('Confidence'),
+      context: getField('Context'),
+      decision: getField('Decision'),
+      affects: getField('Affects'),
+      phase: getField('Phase'),
+      step: getField('Step'),
+    });
+  }
+
+  // Sort by ID descending (newest first)
+  decisions.sort((a, b) => b.num - a.num);
+
+  // Remove the internal num field
+  return decisions.map(({ num: _num, ...rest }) => rest);
+}
+
+/**
  * Main entry point: parse .planning/ directory into structured data.
  */
 function parsePlanning(planningDir) {
@@ -820,6 +884,8 @@ module.exports = {
   parseQuickTasks,
   parseConcerns,
   parseCodebaseFreshness,
+  parseAutoState,
+  parseDecisions,
   parsePlanFile,
   parseSummaryFile,
   parseFrontmatter,

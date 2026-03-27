@@ -6331,6 +6331,185 @@
           "type": "guard"
         }
       ]
+    },
+    {
+      "id": 240,
+      "command": "map-codebase",
+      "prompt": "map this codebase",
+      "expected_output": "Should spawn 1 gsd-codebase-mapper agent with mode=bypassPermissions. Should create .planning/codebase/ directory first, wait for agent completion notification (no polling), verify CODEBASE.md exists with 3 sections (Structure, Conventions, Architecture), create .claude/rules/ files, and present summary.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Creates .planning/codebase/ directory before spawning agent",
+          "type": "behavioral"
+        },
+        {
+          "text": "Spawns exactly 1 gsd-codebase-mapper agent (not 4)",
+          "type": "behavioral"
+        },
+        {
+          "text": "Agent spawn includes mode=bypassPermissions",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT use sleep loops or polling to check agent completion",
+          "type": "guard"
+        },
+        {
+          "text": "Verifies CODEBASE.md exists after agent completion",
+          "type": "behavioral"
+        },
+        {
+          "text": "Creates .claude/rules/codebase-context.md pointing to CODEBASE.md",
+          "type": "output"
+        },
+        {
+          "text": "Presents completion summary with line count",
+          "type": "output"
+        }
+      ]
+    },
+    {
+      "id": 241,
+      "command": "map-codebase",
+      "prompt": "map this codebase. .planning/codebase/CODEBASE.md already exists from a previous run",
+      "expected_output": "Should detect existing codebase map, show staleness (commits since last map), present refresh/skip options, and default to skip if recent. Should NOT overwrite without asking.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects existing .planning/codebase/ directory",
+          "type": "behavioral"
+        },
+        {
+          "text": "Shows commits since last mapping for staleness context",
+          "type": "behavioral"
+        },
+        {
+          "text": "Presents refresh/skip options",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT immediately overwrite existing CODEBASE.md",
+          "type": "guard"
+        }
+      ]
+    },
+    {
+      "id": 242,
+      "command": "map-codebase",
+      "prompt": "map this codebase",
+      "expected_output": "The gsd-codebase-mapper agent should discover source directories first using find with exclusions, exclude .planning/, .claude/, node_modules/, agents/, hooks/, bin/ from all searches, and produce a single CODEBASE.md with 3 sections: Structure, Conventions, Architecture. Target ~150-200 lines with actual file paths.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Agent discovers source directories before hardcoding src/",
+          "type": "behavioral"
+        },
+        {
+          "text": "Agent excludes .planning/ from exploration",
+          "type": "guard"
+        },
+        {
+          "text": "Agent excludes plugin internals (agents/, hooks/, bin/) from exploration",
+          "type": "guard"
+        },
+        {
+          "text": "CODEBASE.md contains Structure section with placement rules",
+          "type": "output"
+        },
+        {
+          "text": "CODEBASE.md contains Conventions section with naming patterns",
+          "type": "output"
+        },
+        {
+          "text": "CODEBASE.md contains Architecture section with layer dependencies",
+          "type": "output"
+        },
+        {
+          "text": "Output document contains actual file paths in backticks",
+          "type": "output"
+        },
+        {
+          "text": "CODEBASE.md is under 250 lines (not bloated)",
+          "type": "output"
+        }
+      ]
+    },
+    {
+      "id": 243,
+      "command": "map-codebase",
+      "prompt": "map this codebase",
+      "expected_output": "When the agent fails silently (no output file), the orchestrator should re-spawn once. If the retry also fails, the orchestrator should have the agent return content in its response and write CODEBASE.md itself.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "On agent failure, re-spawns once (not immediately giving up)",
+          "type": "behavioral"
+        },
+        {
+          "text": "On second failure, falls back to writing CODEBASE.md from agent response",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 244,
+      "command": "tracker",
+      "prompt": "User has .planning/.auto-state.json with active=true and a running auto-orchestrator. They run /fh:tracker.",
+      "expected_output": "Dashboard launches showing auto pipeline progress panels with the current step, phase, and pipeline status visible. The auto mode monitoring section should display progress information.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Response contains 'auto' (auto-mode awareness)",
+          "type": "output"
+        },
+        {
+          "text": "Response contains 'pipeline' or 'progress' (pipeline status)",
+          "type": "output"
+        },
+        {
+          "text": "Response contains 'dashboard' (dashboard launched)",
+          "type": "output"
+        }
+      ]
+    },
+    {
+      "id": 245,
+      "command": "tracker",
+      "prompt": "User has no .auto-state.json in their .planning/ directory. They run /fh:tracker.",
+      "expected_output": "Dashboard shows normal project view (phases, roadmap, concerns) without any auto pipeline panels. The tracker works as a standard project dashboard.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Response contains 'tracker' (tracker launched)",
+          "type": "output"
+        },
+        {
+          "text": "Response does not contain 'auto pipeline' (no auto panels shown)",
+          "type": "guard"
+        }
+      ]
+    },
+    {
+      "id": 246,
+      "command": "auto",
+      "prompt": "Auto-orchestrator completes phase 1 plan-work step and writes enriched state.",
+      "expected_output": ".auto-state.json should contain a step_history entry for the plan-work step with timing (elapsed_ms) and cost information (cost_estimate).",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Written .auto-state.json contains 'step_history'",
+          "type": "output"
+        },
+        {
+          "text": "step_history entry contains 'cost_estimate'",
+          "type": "output"
+        },
+        {
+          "text": "step_history entry contains 'elapsed_ms'",
+          "type": "output"
+        }
+      ]
     }
   ]
 }

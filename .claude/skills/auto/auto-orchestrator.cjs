@@ -21,11 +21,71 @@ const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
 
+// ─── Enriched Auto-Status ─────────────────────────────────────────────────────
+
+// Runtime state for enriched status tracking
+const _autoStatus = {
+  projectDir: null,
+  startedAt: null,
+  phaseStartedAt: null,
+  stepStartedAt: null,
+  stepHistory: [],
+  errors: [],
+  phasesCompleted: 0,
+  phasesFailed: 0,
+  phasesSkipped: 0,
+  phasesTotal: 0,
+  stepsTotal: 0,
+  lastLogLine: '',
+  lastLogWriteMs: 0,
+};
+
+function writeAutoStatus(projectDir, status) {
+  try {
+    const p = path.join(projectDir, '.planning', '.auto-state.json');
+    fs.writeFileSync(p, JSON.stringify(status, null, 2), 'utf-8');
+  } catch {
+    // Non-fatal — dashboard reads are best-effort
+  }
+}
+
+function buildAutoStatus(projectDir, overrides) {
+  const now = Date.now();
+  return Object.assign({
+    active: true,
+    phase: null,
+    phase_name: null,
+    step: null,
+    step_index: 0,
+    steps_total: _autoStatus.stepsTotal,
+    steps_completed: [],
+    started_at: _autoStatus.startedAt,
+    phase_started_at: _autoStatus.phaseStartedAt,
+    elapsed_ms: _autoStatus.startedAt ? now - new Date(_autoStatus.startedAt).getTime() : 0,
+    total_cost_estimate: 0,
+    budget: null,
+    phases_total: _autoStatus.phasesTotal,
+    phases_completed: _autoStatus.phasesCompleted,
+    phases_failed: _autoStatus.phasesFailed,
+    phases_skipped: _autoStatus.phasesSkipped,
+    current_plan_path: null,
+    step_history: _autoStatus.stepHistory,
+    errors: _autoStatus.errors,
+    last_log_line: _autoStatus.lastLogLine,
+  }, overrides);
+}
+
 // ─── Timeout & Retry Constants ───────────────────────────────────────────────
 
 const SOFT_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
 const HARD_TIMEOUT_MS = 45 * 60 * 1000; // 45 minutes
+const STUCK_SILENCE_MS = 3 * 60 * 1000; // 3 min no output → warn
+const STUCK_KILL_MS = 8 * 60 * 1000;    // 8 min no output → kill (stuck session)
 const MAX_RETRIES = 2;
+const API_HEALTH_TIMEOUT_MS = 15000;     // 15s for health check
+const API_BACKOFF_BASE_MS = 10000;       // 10s initial backoff on API failure
+const API_BACKOFF_MAX_MS = 120000;       // 2 min max backoff
+const API_MAX_HEALTH_RETRIES = 5;        // max consecutive health check failures before aborting
 
 // ─── Cost Estimation Constants ───────────────────────────────────────────────
 // Rough heuristic: ~4 chars per token. Pricing approximate (Opus-class model).
@@ -97,6 +157,22 @@ function timestamp() {
 
 function log(msg) {
   process.stdout.write(`[${timestamp()}] ${msg}\n`);
+  _autoStatus.lastLogLine = msg;
+  // Debounced last_log_line update: max once per 2 seconds
+  const now = Date.now();
+  if (_autoStatus.projectDir && (now - _autoStatus.lastLogWriteMs) >= 2000) {
+    _autoStatus.lastLogWriteMs = now;
+    try {
+      const p = path.join(_autoStatus.projectDir, '.planning', '.auto-state.json');
+      if (fs.existsSync(p)) {
+        const existing = JSON.parse(fs.readFileSync(p, 'utf-8'));
+        existing.last_log_line = msg;
+        fs.writeFileSync(p, JSON.stringify(existing, null, 2), 'utf-8');
+      }
+    } catch {
+      // Non-fatal
+    }
+  }
 }
 
 function fatal(msg) {
@@ -288,7 +364,62 @@ function appendDecision(projectDir, { id, title, status, confidence, context, de
   fs.writeFileSync(dp, content.trimEnd() + '\n' + entry, 'utf-8');
 }
 
-// ─── Claude Session Runner (with stuck detection) ────────────────────────────
+// ─── API Health Check ─────────────────────────────────────────────────────────
+
+/**
+ * Verify the Claude CLI is responsive before spawning a session.
+ * Returns true if healthy, false if unreachable.
+ */
+function checkApiHealth() {
+  const { execSync } = require('child_process');
+  try {
+    execSync('claude --version', { stdio: 'pipe', timeout: API_HEALTH_TIMEOUT_MS });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Wait for API to become healthy with exponential backoff.
+ * Throws if max retries exceeded.
+ */
+async function waitForHealthyApi() {
+  let attempts = 0;
+  let backoffMs = API_BACKOFF_BASE_MS;
+
+  while (attempts < API_MAX_HEALTH_RETRIES) {
+    if (checkApiHealth()) {
+      if (attempts > 0) {
+        log(`  ✓ API recovered after ${attempts} health check(s)`);
+      }
+      return;
+    }
+
+    attempts++;
+    log(`  ⚠ API health check failed (attempt ${attempts}/${API_MAX_HEALTH_RETRIES}), waiting ${Math.round(backoffMs / 1000)}s...`);
+    await new Promise(r => setTimeout(r, backoffMs));
+    backoffMs = Math.min(backoffMs * 2, API_BACKOFF_MAX_MS);
+  }
+
+  throw new Error(`API unreachable after ${attempts} health checks (${Math.round((API_BACKOFF_BASE_MS * (Math.pow(2, attempts) - 1)) / 1000)}s total). Check network/API status.`);
+}
+
+/**
+ * Classify an error as likely API/infrastructure vs logic/content.
+ * API errors benefit from backoff+retry; logic errors do not.
+ */
+function isApiError(err) {
+  const msg = (err.message || '').toLowerCase();
+  const apiPatterns = [
+    'econnrefused', 'econnreset', 'etimedout', 'enotfound',
+    'socket hang up', 'network', 'api error', '502', '503', '529',
+    'overloaded', 'rate limit', 'spawn', 'killed',
+  ];
+  return apiPatterns.some(p => msg.includes(p)) || err.timeout;
+}
+
+// ─── Claude Session Runner (with stuck detection + activity monitoring) ───────
 
 function runClaudeSession(prompt, opts) {
   return new Promise((resolve, reject) => {
@@ -334,7 +465,7 @@ function runClaudeSession(prompt, opts) {
       const claudeMd = fs.readFileSync(claudeMdPath, 'utf-8').slice(0, 4000);
       args.push('--append-system-prompt', `Project conventions:\n${claudeMd}`);
     }
-    log(`  Running: claude -p "${prompt}" (plugin-dir=${pluginDir})`);
+    log(`  Running: claude -p "${prompt.slice(0, 80)}..." (plugin-dir=${pluginDir})`);
 
     const child = spawn('claude', args, {
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -348,9 +479,35 @@ function runClaudeSession(prompt, opts) {
     let stdout = '';
     let stderr = '';
     const sessionStart = Date.now();
+    let lastActivityAt = Date.now();
+    let stuckWarned = false;
 
-    child.stdout.on('data', (data) => { stdout += data.toString(); });
-    child.stderr.on('data', (data) => { stderr += data.toString(); });
+    child.stdout.on('data', (data) => {
+      stdout += data.toString();
+      lastActivityAt = Date.now();
+      stuckWarned = false; // reset warning on new output
+    });
+    child.stderr.on('data', (data) => {
+      stderr += data.toString();
+      lastActivityAt = Date.now();
+    });
+
+    // Activity monitor: detect sessions that go silent (API stall, infinite loop)
+    const activityCheck = setInterval(() => {
+      const silenceMs = Date.now() - lastActivityAt;
+      const elapsedMin = Math.round((Date.now() - sessionStart) / 60000);
+
+      if (silenceMs >= STUCK_KILL_MS) {
+        log(`  ✗ STUCK: no output for ${Math.round(silenceMs / 60000)}min — killing session (elapsed: ${elapsedMin}min)`);
+        child.kill('SIGTERM');
+        setTimeout(() => {
+          try { child.kill('SIGKILL'); } catch { /* already dead */ }
+        }, 5000);
+      } else if (silenceMs >= STUCK_SILENCE_MS && !stuckWarned) {
+        stuckWarned = true;
+        log(`  ⚠ SILENT: no output for ${Math.round(silenceMs / 60000)}min (will kill at ${STUCK_KILL_MS / 60000}min silence)`);
+      }
+    }, 30000); // check every 30s
 
     // Soft timeout: warn but continue
     const softTimer = setTimeout(() => {
@@ -370,6 +527,7 @@ function runClaudeSession(prompt, opts) {
     }, HARD_TIMEOUT_MS);
 
     function cleanup() {
+      clearInterval(activityCheck);
       clearTimeout(softTimer);
       clearTimeout(hardTimer);
     }
@@ -382,16 +540,24 @@ function runClaudeSession(prompt, opts) {
     child.on('close', (code, signal) => {
       cleanup();
       const elapsedMs = Date.now() - sessionStart;
+      const silenceMs = Date.now() - lastActivityAt;
 
       if (signal === 'SIGTERM' || signal === 'SIGKILL') {
-        const err = new Error(`Session killed after hard timeout (${Math.round(elapsedMs / 60000)}min)`);
+        const reason = silenceMs >= STUCK_KILL_MS
+          ? `stuck (no output for ${Math.round(silenceMs / 60000)}min)`
+          : `hard timeout (${Math.round(elapsedMs / 60000)}min)`;
+        const err = new Error(`Session killed: ${reason}`);
         err.timeout = true;
+        err.stuck = silenceMs >= STUCK_KILL_MS;
         err.elapsedMs = elapsedMs;
         err.stdout = stdout;
         reject(err);
       } else if (code !== 0) {
         const errMsg = `claude -p exited with code ${code}\nstderr: ${stderr.slice(0, 500)}`;
-        reject(new Error(errMsg));
+        const err = new Error(errMsg);
+        err.exitCode = code;
+        err.stderr = stderr;
+        reject(err);
       } else {
         resolve({ stdout, stderr, exitCode: code, elapsedMs, promptText: prompt });
       }
@@ -753,13 +919,57 @@ async function main() {
     fatal('claude CLI not found on PATH. Install Claude Code first.');
   }
 
-  // Handle --resume
+  // Initialize enriched status tracking
+  _autoStatus.projectDir = projectDir;
+  _autoStatus.startedAt = new Date().toISOString();
+  _autoStatus.phasesTotal = phasesToRun.length;
+  _autoStatus.stepsTotal = phasesToRun.length * PHASE_STEPS.length;
+
+  // Auto-open tracker dashboard
+  const { exec } = require('child_process');
+  const dashboardPort = 3847;
+  log('Opening dashboard...');
+  exec(`open http://127.0.0.1:${dashboardPort}`);
+
+  // Write initial active status
+  writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
+    active: true,
+    budget: opts.budget || null,
+    last_log_line: 'Auto-execution starting',
+  }));
+
+  // Handle --resume (check both .auto-state.json AND git log for completed phases)
   let resumeState = null;
   if (opts.resume) {
     resumeState = loadAutoState(projectDir);
     if (!resumeState) {
-      fatal('No .auto-state.json found — nothing to resume');
+      // Fallback: infer resume point from STATE.md + existing artifacts
+      const currentFromState = parseCurrentPhase(projectDir);
+      if (currentFromState) {
+        log(`No .auto-state.json found — inferring resume point from STATE.md (phase ${currentFromState})`);
+        resumeState = { phase: currentFromState, step: PHASE_STEPS[0], steps_completed: [] };
+      } else {
+        fatal('No .auto-state.json and no current phase in STATE.md — nothing to resume');
+      }
     }
+
+    // Cross-check: skip phases that have SUMMARY.md (completed in a previous run that crashed before state update)
+    for (const phase of phasesToRun) {
+      if (comparePhaseNum(phase.id, resumeState.phase) < 0) continue;
+      if (comparePhaseNum(phase.id, resumeState.phase) > 0) break;
+
+      const plan = findLatestPlan(projectDir, phase.id);
+      if (plan && summaryExists(plan) && phase.id === resumeState.phase) {
+        log(`Phase ${phase.id} has SUMMARY.md — skipping ahead`);
+        // Find next incomplete phase
+        const idx = phasesToRun.findIndex(p => p.id === phase.id);
+        if (idx + 1 < phasesToRun.length) {
+          resumeState = { phase: phasesToRun[idx + 1].id, step: PHASE_STEPS[0], steps_completed: [] };
+          log(`Resuming from phase ${resumeState.phase} instead`);
+        }
+      }
+    }
+
     log(`Resuming from phase ${resumeState.phase}, step ${resumeState.step}`);
   }
 
@@ -782,10 +992,18 @@ async function main() {
     // If resuming, skip phases before the saved phase
     if (resumeState && comparePhaseNum(phase.id, resumeState.phase) < 0) {
       log(`Skipping phase ${phase.id} (already completed)`);
+      _autoStatus.phasesSkipped++;
+      writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
+        phase: phase.id,
+        phase_name: phase.name,
+        total_cost_estimate: totalCostEstimate,
+        budget: opts.budget || null,
+      }));
       continue;
     }
 
     log(`═══ Phase ${phase.id}: ${phase.name} ═══`);
+    _autoStatus.phaseStartedAt = new Date().toISOString();
 
     // Determine which steps to run for this phase
     let stepsToRun = [...PHASE_STEPS];
@@ -817,33 +1035,39 @@ async function main() {
           affects: phasesToRun.filter(p => comparePhaseNum(p.id, phase.id) >= 0).map(p => `Phase ${p.id}`).join(', '),
         });
 
-        saveAutoState(projectDir, {
+        writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
+          active: false,
           phase: phase.id,
+          phase_name: phase.name,
           step,
-          plan: currentPlanPath ? path.relative(projectDir, currentPlanPath) : null,
-          started_at: new Date().toISOString(),
+          step_index: PHASE_STEPS.indexOf(step),
           steps_completed: completedSteps,
+          current_plan_path: currentPlanPath ? path.relative(projectDir, currentPlanPath) : null,
           total_cost_estimate: totalCostEstimate,
-          retry_count: retryCount,
-        });
+          budget: opts.budget || null,
+          last_log_line: `Budget ceiling reached ($${totalCostEstimate.toFixed(2)} >= $${opts.budget})`,
+        }));
         log('State saved for resume. Exiting.');
         process.exit(0);
       }
 
-      // Save state before each step
-      saveAutoState(projectDir, {
+      // Write enriched status before each step starts
+      _autoStatus.stepStartedAt = new Date().toISOString();
+      writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
         phase: phase.id,
+        phase_name: phase.name,
         step,
-        plan: currentPlanPath ? path.relative(projectDir, currentPlanPath) : null,
-        started_at: new Date().toISOString(),
+        step_index: PHASE_STEPS.indexOf(step),
         steps_completed: completedSteps,
+        current_plan_path: currentPlanPath ? path.relative(projectDir, currentPlanPath) : null,
         total_cost_estimate: totalCostEstimate,
-        retry_count: retryCount,
-      });
+        budget: opts.budget || null,
+        last_log_line: `Starting step: ${step}`,
+      }));
 
       log(`  ▸ ${step}`);
 
-      // Retry loop with stuck detection
+      // Retry loop with stuck detection + API health awareness
       const maxAttempts = MAX_RETRIES;
       let attempts = retryCount[stepKey] || 0;
       let stepResult = null;
@@ -854,6 +1078,46 @@ async function main() {
           log(`  ↻ Retry ${attempts}/${maxAttempts - 1} for ${step}`);
         }
 
+        // Pre-spawn API health check: avoid wasting sessions during outages
+        try {
+          await waitForHealthyApi();
+        } catch (healthErr) {
+          // API is down after all retries — save state and abort
+          log(`  ✗ API unreachable — saving state for --resume`);
+          const apiDecId = nextDecisionId(projectDir);
+          appendDecision(projectDir, {
+            id: apiDecId,
+            title: `API outage halted phase ${phase.id} at ${step}`,
+            status: 'ACTIVE ⚠ NEEDS REVIEW',
+            confidence: 'HIGH',
+            context: healthErr.message,
+            decision: `Saved state for --resume. Re-run after API recovery.`,
+            affects: `Phase ${phase.id}, step ${step}`,
+          });
+          _autoStatus.errors.push({
+            phase: phase.id,
+            step,
+            attempt: attempts + 1,
+            error_type: 'api',
+            message: healthErr.message.slice(0, 300),
+            timestamp: new Date().toISOString(),
+          });
+          writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
+            active: false,
+            phase: phase.id,
+            phase_name: phase.name,
+            step,
+            step_index: PHASE_STEPS.indexOf(step),
+            steps_completed: completedSteps,
+            current_plan_path: currentPlanPath ? path.relative(projectDir, currentPlanPath) : null,
+            total_cost_estimate: totalCostEstimate,
+            budget: opts.budget || null,
+            last_log_line: `API unreachable — saving state for --resume`,
+          }));
+          log(`  State saved for resume (decision ${apiDecId}). Exiting.`);
+          process.exit(1);
+        }
+
         try {
           stepResult = await executeStep(projectDir, phase.id, step, currentPlanPath);
           stepSucceeded = true;
@@ -861,27 +1125,47 @@ async function main() {
           attempts++;
           retryCount[stepKey] = attempts;
 
-          // Save retry state
-          saveAutoState(projectDir, {
+          const errType = err.stuck ? 'stuck (no output)' : err.timeout ? 'timeout' : 'failure';
+          const stepElapsedMs = _autoStatus.stepStartedAt ? Date.now() - new Date(_autoStatus.stepStartedAt).getTime() : 0;
+
+          // Track error in enriched status
+          _autoStatus.errors.push({
             phase: phase.id,
             step,
-            plan: currentPlanPath ? path.relative(projectDir, currentPlanPath) : null,
-            started_at: new Date().toISOString(),
-            steps_completed: completedSteps,
-            total_cost_estimate: totalCostEstimate,
-            retry_count: retryCount,
+            attempt: attempts,
+            error_type: err.stuck ? 'stuck' : err.timeout ? 'timeout' : isApiError(err) ? 'api' : 'logic',
+            message: err.message.slice(0, 300),
+            timestamp: new Date().toISOString(),
           });
 
-          if (err.timeout) {
-            log(`  ✗ ${step} timed out (attempt ${attempts}/${maxAttempts})`);
-          } else {
-            log(`  ✗ ${step} failed (attempt ${attempts}/${maxAttempts}): ${err.message}`);
+          // Write enriched status on step failure
+          writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
+            phase: phase.id,
+            phase_name: phase.name,
+            step,
+            step_index: PHASE_STEPS.indexOf(step),
+            steps_completed: completedSteps,
+            current_plan_path: currentPlanPath ? path.relative(projectDir, currentPlanPath) : null,
+            total_cost_estimate: totalCostEstimate,
+            budget: opts.budget || null,
+            last_log_line: `${step} ${errType} (attempt ${attempts}/${maxAttempts})`,
+          }));
+          log(`  ✗ ${step} ${errType} (attempt ${attempts}/${maxAttempts}): ${err.message.slice(0, 200)}`);
+
+          // On API errors, wait for recovery before retrying
+          if (isApiError(err) && attempts < maxAttempts) {
+            log(`  ⚠ Looks like an API/infra error — checking health before retry...`);
+            try {
+              await waitForHealthyApi();
+            } catch {
+              log(`  ✗ API did not recover — saving state`);
+            }
           }
 
           if (attempts >= maxAttempts) {
             // Max retries exhausted — skip step with logged decision
             const skipDecId = nextDecisionId(projectDir);
-            const reason = err.timeout ? 'hard timeout' : 'repeated failure';
+            const reason = err.stuck ? 'stuck session' : err.timeout ? 'hard timeout' : 'repeated failure';
             appendDecision(projectDir, {
               id: skipDecId,
               title: `Skipped ${step} in phase ${phase.id} after ${reason}`,
@@ -898,8 +1182,9 @@ async function main() {
       }
 
       // Cost tracking: estimate cost from session I/O
+      let sessionCost = 0;
       if (stepResult) {
-        const sessionCost = estimateSessionCost(
+        sessionCost = estimateSessionCost(
           stepResult.promptText || '',
           stepResult.stdout || ''
         );
@@ -909,6 +1194,32 @@ async function main() {
 
       if (stepSucceeded) {
         completedSteps.push(step);
+
+        // Record in step_history
+        const stepCompletedAt = new Date().toISOString();
+        const stepElapsedMs = _autoStatus.stepStartedAt ? Date.now() - new Date(_autoStatus.stepStartedAt).getTime() : 0;
+        _autoStatus.stepHistory.push({
+          phase: phase.id,
+          step,
+          status: 'success',
+          elapsed_ms: stepElapsedMs,
+          cost_estimate: sessionCost,
+          started_at: _autoStatus.stepStartedAt || stepCompletedAt,
+          completed_at: stepCompletedAt,
+        });
+
+        // Write enriched status after step completes
+        writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
+          phase: phase.id,
+          phase_name: phase.name,
+          step,
+          step_index: PHASE_STEPS.indexOf(step),
+          steps_completed: completedSteps,
+          current_plan_path: currentPlanPath ? path.relative(projectDir, currentPlanPath) : null,
+          total_cost_estimate: totalCostEstimate,
+          budget: opts.budget || null,
+          last_log_line: `${step} complete`,
+        }));
       }
 
       // Post-step verification — treat missing artifacts as step failure, not fatal
@@ -965,24 +1276,44 @@ async function main() {
     if (criticalsMissing.length > 0) {
       log(`Phase ${phase.id} INCOMPLETE — missing critical steps: ${criticalsMissing.join(', ')}`);
       log(`  Saving state for --resume. Run again to retry.`);
-      saveAutoState(projectDir, {
+      _autoStatus.phasesFailed++;
+      writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
+        active: false,
         phase: phase.id,
+        phase_name: phase.name,
         step: criticalsMissing[0],
-        plan: currentPlanPath ? path.relative(projectDir, currentPlanPath) : null,
-        started_at: new Date().toISOString(),
+        step_index: PHASE_STEPS.indexOf(criticalsMissing[0]),
         steps_completed: completedSteps,
+        current_plan_path: currentPlanPath ? path.relative(projectDir, currentPlanPath) : null,
         total_cost_estimate: totalCostEstimate,
-        retry_count: retryCount,
-      });
+        budget: opts.budget || null,
+        last_log_line: `Phase ${phase.id} INCOMPLETE — missing: ${criticalsMissing.join(', ')}`,
+      }));
       break; // exit phases loop — don't continue to next phase
     }
 
     updateStateViaGsd(projectDir, phase.id);
+    _autoStatus.phasesCompleted++;
+    writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
+      phase: phase.id,
+      phase_name: phase.name,
+      step: null,
+      steps_completed: completedSteps,
+      current_plan_path: currentPlanPath ? path.relative(projectDir, currentPlanPath) : null,
+      total_cost_estimate: totalCostEstimate,
+      budget: opts.budget || null,
+      last_log_line: `Phase ${phase.id} complete`,
+    }));
     log(`Phase ${phase.id} complete\n`);
   }
 
-  // Clear auto-state on successful completion
-  clearAutoState(projectDir);
+  // Write final inactive status on successful completion
+  writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
+    active: false,
+    total_cost_estimate: totalCostEstimate,
+    budget: opts.budget || null,
+    last_log_line: 'Auto-execution complete',
+  }));
 
   // Print summary
   const durationMs = Date.now() - startTime;
@@ -999,5 +1330,10 @@ async function main() {
 }
 
 main().catch((err) => {
+  writeAutoStatus(process.cwd(), {
+    active: false,
+    last_log_line: `Fatal error: ${err.message.slice(0, 200)}`,
+    errors: [{ phase: null, step: null, attempt: 1, error_type: 'fatal', message: err.message.slice(0, 300), timestamp: new Date().toISOString() }],
+  });
   fatal(err.message);
 });
