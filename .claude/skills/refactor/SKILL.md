@@ -131,3 +131,15 @@ Generate SUMMARY.md with refactoring steps, commit hashes, before/after metrics,
 Update STATE.md: note refactoring completed, structural changes made.
 
 Report: what was restructured, why it's better, test evidence confirming behavior preserved.
+
+---
+
+### Persist Findings
+
+After refactoring is complete, output key patterns discovered for future sessions:
+1. If ctx_search is available, query for coupling patterns and extraction outcomes from this session
+2. Only persist structural insights — skip mechanical rename/move details
+3. Output each finding as:
+   **[refactor-learning]** {module/area}: {pattern discovered} → {approach that worked}
+4. Max 3 findings per refactoring session
+5. Skip silently if refactoring was purely mechanical

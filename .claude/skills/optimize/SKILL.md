@@ -279,3 +279,15 @@ Test that optimizations worked:
 - **User perception**: Does it *feel* faster?
 
 Remember: Performance is a feature. Fast experiences feel more responsive, more polished, more professional. Optimize systematically, measure ruthlessly, and prioritize user-perceived performance.
+
+---
+
+### Persist Findings
+
+After optimization is complete, output performance insights for future sessions:
+1. If ctx_search is available, query for metrics and bottleneck analysis from this session
+2. Only persist optimization patterns with reuse value — skip one-off config tweaks
+3. Output each finding as:
+   **[optimize-learning]** {component/area}: {bottleneck found} → {optimization applied}, {measured improvement}
+4. Max 3 findings per optimization session
+5. Skip silently if no measurable improvements were achieved

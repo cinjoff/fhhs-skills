@@ -655,4 +655,16 @@ If any AskUserQuestion goes unanswered, note it here. Never silently default.
   └─────────────┴──────────────┴──────────────┴────────────────────┘
 ```
 
+### Persist Findings
+
+After the review is complete, output key architectural decisions and concerns for future sessions:
+1. If ctx_search is available, query for the most significant findings from this review session
+2. Only persist decisions and concerns with cross-session value — skip ephemeral scope discussions
+3. Output each finding as:
+   **[plan-review-learning]** {area}: {decision or concern} — {rationale}
+4. Max 3 findings per review
+5. Skip silently if no significant architectural decisions were made
+
+---
+
 _Engineering review sections adapted from gstack plan-eng-review (v0.3.3)_
