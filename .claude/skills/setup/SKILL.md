@@ -667,16 +667,20 @@ Do NOT ask the user whether to install — just install it. It's a recommended c
 
 ### 7a: Check if shadcn skills are already installed
 
-shadcn skills are installed **globally** (in `~/.skills/shadcn`) so they don't pollute individual project directories.
+shadcn skills are installed **globally** so they don't pollute individual project directories. The `skills` CLI installs to `~/.agents/skills/` by default with `-g`.
 
 ```bash
-[ -d "$HOME/.skills/shadcn" ] && echo "INSTALLED" || echo "NOT_INSTALLED"
+if [ -d "$HOME/.agents/skills/shadcn" ] || [ -d "$HOME/.skills/shadcn" ]; then
+  echo "INSTALLED"
+else
+  echo "NOT_INSTALLED"
+fi
 ```
 
 If `INSTALLED`:
 
 ```
-✓ shadcn skills already installed (global: ~/.skills/shadcn)
+✓ shadcn skills already installed
 ```
 
 Skip to Step 8.
@@ -684,19 +688,19 @@ Skip to Step 8.
 ### 7b: Install shadcn skills globally
 
 ```
-◆ Installing shadcn/ui skills globally (~/.skills/)...
+◆ Installing shadcn/ui skills globally...
 ```
+
+**Important:** Use `-g` (global), `-y` (skip prompts), and `--all` (all skills + agents) to avoid interactive mode:
 
 ```bash
-cd "$HOME" && npx skills add shadcn/ui
+npx -y skills add -g -y --all shadcn/ui 2>&1 | tail -5
 ```
-
-This creates `~/.skills/shadcn/` in the home directory, available to all projects without adding files to any project repo.
 
 On success:
 
 ```
-✓ shadcn skills installed globally (~/.skills/shadcn)
+✓ shadcn skills installed globally (~/.agents/skills/shadcn)
   → Agents now have context for shadcn/ui components, CLI, and registry
   → Available to all projects — no per-project install needed
 ```
@@ -707,7 +711,7 @@ If the install fails (e.g. network issue, npx not available), show a warning but
 ⚠ Could not install shadcn skills automatically.
   You can install them manually later:
 
-    cd ~ && npx skills add shadcn/ui
+    npx -y skills add -g -y --all shadcn/ui
 ```
 
 ---
