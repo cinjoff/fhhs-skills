@@ -369,7 +369,7 @@ src/lib/auth.ts       | CRITICAL     | 21     | login, platform-admin | roles.ts
 
 For each CRITICAL/HIGH file: check whether the plan includes tests that cover the affected downstream files. If not, flag as WARNING.
 
-Cache fallow JSON in context-mode for the session if ctx_index is available.
+Cache fallow JSON in context-mode for the session if ctx_batch_execute is available.
 
 **Data Flow Tracing:** For every new data flow, produce an ASCII diagram showing:
 ```
