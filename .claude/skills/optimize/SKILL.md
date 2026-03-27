@@ -26,7 +26,23 @@ Understand current performance and identify problems:
 
 **CRITICAL**: Measure before and after. Premature optimization wastes time. Optimize what actually matters.
 
+### Context-Mode Acceleration
+
+If ctx_batch_execute is available, index performance analysis output:
+- Run bundle analysis, Lighthouse metrics, or DevTools profiling commands via ctx_batch_execute
+- Use ctx_search to rank bottlenecks by impact, filter by category (loading, rendering, network)
+- Prevents large metrics output from consuming context
+- If unavailable, process output directly
+
 ## Optimization Strategy
+
+### Past Learnings Check
+
+If claude-mem is available, recall prior optimization work:
+1. Call `mcp__plugin_claude-mem_mcp-search__smart_search` with "optimize" + component/page name, limit=5
+2. Filter for: performance, optimize, bundle, render, "core web vitals", bottleneck, regression
+3. If relevant: "**Prior optimization context:** - {summary}" — max 3 items
+4. Skip silently if unavailable
 
 Create systematic improvement plan:
 
@@ -263,3 +279,15 @@ Test that optimizations worked:
 - **User perception**: Does it *feel* faster?
 
 Remember: Performance is a feature. Fast experiences feel more responsive, more polished, more professional. Optimize systematically, measure ruthlessly, and prioritize user-perceived performance.
+
+---
+
+### Persist Findings
+
+After optimization is complete, output performance insights for future sessions:
+1. If ctx_search is available, query for metrics and bottleneck analysis from this session
+2. Only persist optimization patterns with reuse value — skip one-off config tweaks
+3. Output each finding as:
+   **[optimize-learning]** {component/area}: {bottleneck found} → {optimization applied}, {measured improvement}
+4. Max 3 findings per optimization session
+5. Skip silently if no measurable improvements were achieved

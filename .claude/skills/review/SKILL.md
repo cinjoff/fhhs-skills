@@ -72,6 +72,17 @@ Budget: less than 2% context. Don't deep-dive errors — just surface file match
 
 ---
 
+### Past Learnings Check
+
+If claude-mem is available, check for recurring review patterns:
+1. Call `mcp__plugin_claude-mem_mcp-search__smart_search` with keywords from the diff scope (primary module/feature name, file paths), limit=5
+2. Filter for: review, gap, anti-pattern, regression, quality, "missed in review"
+3. If relevant: "**Recurring patterns from prior reviews:** - {summary}" — max 3 items
+4. Use these to bias agent dispatch queries toward known weak spots
+5. Skip silently if unavailable
+
+---
+
 ## Step 1.7: Static Analysis (if available)
 
 If `fallow` is installed, run static analysis to provide ground truth data for the review agents.
@@ -296,6 +307,19 @@ Generate a structured report. For each finding above Minor, include a **Next act
 
 ---
 
+### Learnings Digest
+
+If claude-mem is available, update the learnings digest at `~/.claude/cache/learnings-digest.json`:
+1. Call `smart_search` with key review findings (Critical/Important items), limit=5
+2. Call `timeline` with window=7d, limit=10
+3. Merge into existing digest using the algorithm defined in `/fh:build` (Step 4, "Learnings Digest"). Use `generated_by: "review"`.
+4. Recurring review findings (same pattern flagged across multiple reviews) are high-value — prioritize these when filtering for improvement themes.
+5. Skip silently if claude-mem not installed, review found no issues, or any MCP call fails.
+
+Budget: <2% context.
+
+---
+
 ## Step 8: Promote
 
 If all gates pass (or user explicitly overrides), read `skills/finishing-a-development-branch/PROMPT.md` and follow it.
@@ -311,6 +335,18 @@ Derive the type and scope from the diff analysis. Present options:
 - Merge to main
 - Keep branch (more work planned)
 - Discard
+
+---
+
+### Persist Findings
+
+After generating the review report, output a structured summary of recurring patterns:
+1. If ctx_search is available, query for the most significant findings from indexed agent reports
+2. Skip one-off issues — only persist patterns likely to recur
+3. Output each finding as:
+   **[review-learning]** {module/area}: {pattern found} — {recommendation}
+4. Max 3 findings per review
+5. Skip silently if no recurring patterns found
 
 ---
 

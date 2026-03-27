@@ -300,6 +300,34 @@ function runClaudeSession(prompt, opts) {
       '--permission-mode', 'bypassPermissions',
       '--plugin-dir', pluginDir,
     ];
+
+    // Resolve MCP plugin directories for context-mode and claude-mem
+    const homeDir = require('os').homedir();
+    const pluginCacheDir = path.join(homeDir, '.claude', 'plugins', 'cache');
+
+    // Find context-mode — check common install locations
+    const contextModeDirs = [
+      path.join(pluginCacheDir, 'context-mode'),
+      path.join(homeDir, '.claude', 'context-mode'),
+    ];
+    const contextModeDir = contextModeDirs.find(d => fs.existsSync(d));
+
+    // Find claude-mem
+    const claudeMemDirs = [
+      path.join(pluginCacheDir, 'thedotmack', 'claude-mem'),
+      path.join(pluginCacheDir, 'thedotmack'),
+    ];
+    const claudeMemDir = claudeMemDirs.find(d => fs.existsSync(d));
+
+    if (contextModeDir) {
+      args.push('--plugin-dir', contextModeDir);
+      log(`  MCP: context-mode from ${contextModeDir}`);
+    }
+    if (claudeMemDir) {
+      args.push('--plugin-dir', claudeMemDir);
+      log(`  MCP: claude-mem from ${claudeMemDir}`);
+    }
+
     // Inject project conventions so the session has full context
     const claudeMdPath = path.join(opts.cwd, 'CLAUDE.md');
     if (fs.existsSync(claudeMdPath)) {
@@ -311,6 +339,10 @@ function runClaudeSession(prompt, opts) {
     const child = spawn('claude', args, {
       stdio: ['ignore', 'pipe', 'pipe'],
       cwd: opts.cwd,
+      env: {
+        ...process.env,
+        ...(opts.sessionId ? { CLAUDE_SESSION_ID: opts.sessionId } : {}),
+      },
     });
 
     let stdout = '';
@@ -397,6 +429,8 @@ async function executeStep(projectDir, phaseId, step, planPath) {
     if (phaseMatch) phaseGoal = phaseMatch[1].trim();
   } catch { /* ignore */ }
 
+  const sessionId = `phase-${phaseId}-auto`;
+
   switch (step) {
     case 'plan-work':
       return await runClaudeSession(
@@ -404,7 +438,7 @@ async function executeStep(projectDir, phaseId, step, planPath) {
         `Plan phase ${phaseId}. Phase goal: "${phaseGoal}". ` +
         `Use /fh:plan-work to create the plan. Auto-decide all gray areas using best judgment. ` +
         `Write the plan to .planning/phases/ directory. Do not ask questions — make decisions autonomously.`,
-        { cwd: projectDir }
+        { cwd: projectDir, sessionId }
       );
 
     case 'plan-review': {
@@ -416,7 +450,7 @@ async function executeStep(projectDir, phaseId, step, planPath) {
       return await runClaudeSession(
         `You are in auto mode. Review the plan at ${relPlan} using /fh:plan-review with --mode hold. ` +
         `Phase goal: "${phaseGoal}". Apply feedback directly to the plan. Do not ask questions.`,
-        { cwd: projectDir }
+        { cwd: projectDir, sessionId }
       );
     }
 
@@ -429,7 +463,7 @@ async function executeStep(projectDir, phaseId, step, planPath) {
       return await runClaudeSession(
         `You are in auto mode. Execute the plan at ${relPlan} using /fh:build. ` +
         `Phase goal: "${phaseGoal}". Build all tasks, run tests, commit changes. Do not ask questions.`,
-        { cwd: projectDir }
+        { cwd: projectDir, sessionId }
       );
     }
 
@@ -437,7 +471,7 @@ async function executeStep(projectDir, phaseId, step, planPath) {
       return await runClaudeSession(
         `You are in auto mode. Run /fh:review --quick on the recent changes. ` +
         `Phase goal: "${phaseGoal}". Fix any issues found. Do not ask questions.`,
-        { cwd: projectDir }
+        { cwd: projectDir, sessionId }
       );
 
     default:

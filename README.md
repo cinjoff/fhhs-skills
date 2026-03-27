@@ -2,9 +2,35 @@
 
 A workflow plugin for [Claude Code](https://claude.com/claude-code) that combines engineering discipline, design quality, and project tracking in one install.
 
-## Install
+## Why
 
-**From Claude Code (interactive session):**
+Most AI coding tools forget everything between sessions. They repeat mistakes, re-research decisions, and can't tell you what they learned last time. This plugin fixes that.
+
+- **Learns from itself.** Every bug fix, code review, security scan, and research session persists its key findings. Next time, the same skill recalls what it discovered before — root causes, architectural decisions, vulnerability patterns, optimization wins.
+- **Manages its own context.** Large outputs (scan results, agent reports, build logs) are indexed in a session-scoped database instead of flooding the context window. Skills query the index for what they need, keeping the window clean for reasoning.
+- **Runs autonomously.** Hand off an entire project with `/fh:auto` — the system plans, reviews, builds, and verifies each phase without intervention. Every autonomous decision is logged with confidence levels for human audit.
+- **Ships quality gates, not just code.** Plans get stress-tested before building. Builds get spec-verified before promoting. Bugs get TDD'd. Refactors keep tests green at every step.
+
+### The Memory Lifecycle
+
+Two optional MCP plugins power cross-session learning and context efficiency:
+
+```
+  SESSION START              DURING                    SESSION END
+
+  claude-mem ──READ──▶  context-mode  ──WRITE──▶  claude-mem
+  smart_search          ctx_batch_execute            [*-learning]
+  (recall past)         ctx_search                   [*-finding]
+                        (index + distill)            (persist new)
+```
+
+**[context-mode](https://github.com/mksglu/context-mode)** indexes large outputs into a searchable FTS5 database scoped to the session. Skills use `ctx_search` to extract relevant findings without loading raw data into context.
+
+**[claude-mem](https://github.com/thedotmack/claude-mem)** provides persistent cross-session memory. Skills read past learnings at the start (via `smart_search`) and output structured findings at the end (via semantic markers like `[fix-learning]`, `[security-finding]`) that claude-mem's hooks automatically capture.
+
+Both are optional — every skill includes "skip silently if unavailable" guards. The pipeline works identically without them, just without the indexing optimization and cross-session memory.
+
+## Install
 
 ```
 /plugin marketplace add cinjoff/fhhs-skills
@@ -13,18 +39,13 @@ A workflow plugin for [Claude Code](https://claude.com/claude-code) that combine
 /fh:setup
 ```
 
-**From terminal (Conductor or headless):**
-
-If you're running inside Conductor or another environment where `/plugin` commands aren't available, run these in your terminal instead:
-
+From terminal (Conductor or headless):
 ```bash
 claude plugin marketplace add cinjoff/fhhs-skills
 claude plugin install fh@fhhs-skills
 ```
 
-Then start a Claude Code session and run `/fh:setup`.
-
-`/fh:setup` detects your platform (macOS, Linux, Windows) and walks you through installing dependencies: Node.js, GitHub CLI, TypeScript language server, TypeScript LSP plugin, and shadcn/ui skills for component-aware agents.
+Then start a Claude Code session and run `/fh:setup`. It detects your platform and walks you through installing dependencies.
 
 ## Quick Start
 
@@ -52,67 +73,12 @@ Hand off an entire project and walk away. `/fh:auto` runs plan-work, plan-review
 /fh:auto --phase 3               run only phase 3
 /fh:auto --budget 10             stop if estimated cost exceeds $10
 /fh:auto --resume                pick up where a crashed run left off
-/fh:auto --dry-run               preview what would execute
-/fh:auto --check-corrections     propagate corrected decisions to affected files
+/fh:new-project --auto "desc"    derive vision, stack, roadmap, then build everything
 ```
 
-Or start from scratch:
+Each step runs as a separate `claude -p` session with fresh context. The orchestrator loads context-mode and claude-mem into each session and shares a context-mode FTS5 database across all 4 steps via a deterministic `CLAUDE_SESSION_ID`. Plan-work indexes your project docs once; plan-review, build, and review all reuse that index.
 
-```
-/fh:new-project --auto "A SaaS platform for pet grooming appointments"
-```
-
-This derives vision, tech stack, and requirements from the description, creates a scope-expansion roadmap, then hands off to `/fh:auto` to build every phase.
-
-**How it works:** Each step (plan-work, plan-review, build, review) runs as a separate `claude -p` session with fresh context. State is persisted to `.planning/.auto-state.json` between steps so crashes can resume. Every autonomous decision is logged to `.planning/DECISIONS.md` with confidence levels — LOW confidence decisions are flagged with `NEEDS REVIEW` for human audit.
-
-**Supervision:** Sessions that run longer than 10 minutes get a warning; at 45 minutes they're killed with a logged decision. Failed steps retry once, then skip with an audit trail. The `--budget` flag sets a cost ceiling based on estimated token usage.
-
-## Native Task Tracking
-
-`/fh:plan-work` and `/fh:build` integrate with Claude Code's native task list for live progress visibility:
-
-```
-/fh:plan-work creates tasks:       /fh:build creates tasks from plan:
-  [~] Phase matching                 [~] Task 1: Add auth middleware
-  [ ] Research                          ├─ [~] Write failing test
-  [ ] Brainstorm                        ├─ [ ] Implement handler
-  [ ] Discuss implementation            ├─ [ ] Run verification
-  [ ] Derive must_haves              [ ] Task 2: Write tests
-  [ ] Create plan                    [ ] Commit + verify
-  [ ] Plan-check                     [ ] Phase completion check
-```
-
-Subagents create their own sub-tasks for granular progress. If task tools are unavailable, workflows degrade gracefully to GSD-only tracking.
-
-**Conductor users:** Each workspace gets its own task list via `CLAUDE_CODE_TASK_LIST_ID` in `conductor.json`, so parallel workspaces don't pollute each other's tracking.
-
-## Typical Workflows
-
-**Building a feature:**
-```
-/fh:plan-work  ->  /fh:plan-review  ->  /fh:build  ->  /fh:review
-```
-
-**Fixing a bug:**
-```
-/fh:fix
-```
-
-**Refactoring:**
-```
-/fh:refactor  ->  /fh:simplify
-```
-
-**Autonomous (hands-off):**
-```
-/fh:new-project --auto "description"   or   /fh:auto
-```
-
-**Starting a new session:**
-```
-/fh:progress
-```
+State persists to `.planning/.auto-state.json` between steps so crashes can resume. Decisions are logged to `.planning/DECISIONS.md` with confidence levels — LOW confidence decisions get flagged for human audit. Sessions exceeding 45 minutes are killed with a logged decision. Failed steps retry once, then skip with an audit trail.
 
 ## Commands
 
@@ -121,13 +87,12 @@ Subagents create their own sub-tasks for granular progress. If task tools are un
 
 | Command | What it does |
 |---------|-------------|
-| `/fh:new-project` | Set up a project with vision, tech stack, design language, domain research, and roadmap. Default stack uses the [fh-starter-project](https://github.com/cinjoff/fh-starter-project) template with Better Auth, Resend email, optional organizations, and shadcn/ui |
+| `/fh:new-project` | Set up a project with vision, tech stack, design language, domain research, and roadmap |
 | `/fh:plan-work` | Brainstorm, research, and produce an execution-ready plan |
-| `/fh:plan-review` | Stress-test a plan — business + engineering alignment, research verification, respect-but-flag for locked decisions |
+| `/fh:plan-review` | Stress-test a plan — business + engineering alignment |
 | `/fh:build` | Execute a plan with parallel subagents, TDD, and verification |
-| `/fh:ui-test` | Visual verification and QA testing with agent-browser backend |
 | `/fh:review` | Code quality, spec verification, goal verification, and branch promotion |
-| `/fh:auto` | Autonomous multi-phase execution — plans, reviews, builds, and reviews each phase without human intervention |
+| `/fh:auto` | Autonomous multi-phase execution without human intervention |
 
 </details>
 
@@ -160,7 +125,7 @@ Subagents create their own sub-tasks for granular progress. If task tools are un
 | `/fh:observability` | Query local Sentry error store for runtime errors |
 | `/fh:ui-branding` | One-time setup for your project's design language |
 
-Additional design skills (also auto-invoked by `/fh:build` and other pipelines): `/fh:adapt`, `/fh:bolder`, `/fh:quieter`, `/fh:distill`, `/fh:clarify`, `/fh:colorize`, `/fh:delight`, `/fh:extract`, `/fh:onboard`, `/fh:optimize`.
+Additional design skills (also auto-invoked by pipelines): `/fh:adapt`, `/fh:bolder`, `/fh:quieter`, `/fh:distill`, `/fh:clarify`, `/fh:colorize`, `/fh:delight`, `/fh:extract`, `/fh:onboard`, `/fh:optimize`.
 
 </details>
 
@@ -169,11 +134,9 @@ Additional design skills (also auto-invoked by `/fh:build` and other pipelines):
 
 | Command | What it does |
 |---------|-------------|
-| `/fh:progress` | Restore context (git + claude-mem), check status, route to next action. Also handles `improve N` for acting on learnings |
-| `/fh:tracker` | Launch the visual project dashboard (real-time web UI at localhost:3847) |
+| `/fh:progress` | Restore context, check status, route to next action |
+| `/fh:tracker` | Launch the visual project dashboard (localhost:3847) |
 | `/fh:todos` | Manage project todos — add new or review pending |
-
-Phase management, milestone lifecycle, and test generation are handled automatically by `/fh:plan-work`, `/fh:build`, and `/fh:review`.
 
 </details>
 
@@ -192,48 +155,11 @@ Phase management, milestone lifecycle, and test generation are handled automatic
 
 </details>
 
-## `/new-project` — What Gets Set Up
-
-The default stack is **Next.js + TypeScript + Tailwind + shadcn/ui + Supabase + Better Auth + Vercel**.
-
-With `--auto`, the entire setup is hands-off: vision, stack, and roadmap are derived from a project description, then `/fh:auto` takes over to build every phase.
-
-During setup, `/fh:new-project` handles:
-
-- **Brand-aware design system** — extracts colors, fonts, and style from your brand references and generates a custom shadcn preset
-- **Better Auth** — generates `BETTER_AUTH_SECRET`, configures auth env vars
-- **Resend email** — installs the Resend CLI, walks you through signup, and creates a project-scoped sending key for email verification and password resets
-- **Organizations** — opt-in for multi-tenant support (teams, roles, invitations)
-- **Supabase** — creates project, configures API keys, sets up `DATABASE_URL` with pooler
-- **Vercel** — links project, syncs env vars, enables auto-deploys
-- **shadcn/ui skills** — installs agent skills globally so Claude Code understands your components
-- **Observability** — scaffolds local Sentry error tracking (SQLite-backed)
-- **Conductor** — detects workspaces, creates `conductor.json` with `.env.local` symlinks
-
-Everything is optional — skip what you don't need and add it later.
-
 ## How It Works
 
-Each command is an orchestrator. It reads project state, decides which skills and agents to invoke, applies quality gates between steps, and updates state when done. The orchestrator never writes application code — it dispatches specialized subagents that each run in a fresh context.
+Each command is an orchestrator. It reads project state, dispatches specialized subagents that each run in fresh context, applies quality gates between steps, and updates state when done.
 
-```
- YOUR COMMAND
-      |
-      v
-+----------------------------------+
-|   ORCHESTRATOR                   |  Decides WHAT to do and WHEN
-|   Reads project state            |  Does NOT do the work itself
-+----------------------------------+
-           | dispatches
-           v
-+----------------------------------+
-|   SKILLS + AGENTS                |  Decides HOW to do each step
-|   Fresh subagent per task        |  Owns the domain expertise
-|   LSP for code navigation        |
-+----------------------------------+
-```
-
-The underlying skills and agents come from seven open-source projects:
+The underlying skills come from seven open-source projects:
 
 | Source | What it provides |
 |--------|-----------------|
@@ -245,308 +171,132 @@ The underlying skills and agents come from seven open-source projects:
 | [Next.js Best Practices](https://github.com/anthropics/claude-code-plugin-examples) | React/Next.js performance optimization (Vercel Engineering) |
 | [Playwright Best Practices](https://github.com/anthropics/claude-code-plugin-examples) | End-to-end testing patterns |
 
-All upstreams are forked and bundled. TypeScript Language Server provides code navigation (go-to-definition, find-references, rename) across all code-working commands. See [PATCHES.md](PATCHES.md) for modifications.
+All upstreams are forked and bundled. See [PATCHES.md](PATCHES.md) for modifications.
 
-### Continuous Improvement
+### Optional Integrations
 
-Every `/fh:build` captures observations from [claude-mem](https://github.com/thedotmack/claude-mem) and distills them into a learnings digest (`~/.claude/cache/learnings-digest.json`). On your next session, the digest is surfaced automatically — no skill invocation needed:
+| Tool | What it adds |
+|------|-------------|
+| [context-mode](https://github.com/mksglu/context-mode) | Session-scoped FTS5 indexing — large outputs stay out of context window |
+| [claude-mem](https://github.com/thedotmack/claude-mem) | Cross-session persistent memory — learnings, patterns, decisions |
+| [Fallow](https://docs.fallow.tools/) | Deterministic static analysis — dead code, circular deps, duplication |
+| TypeScript LSP | Code navigation — go-to-definition, find-references, rename |
 
-```
-★ [high] Tests for $& patterns in str.replace
-● [med]  Plan-work skips research on medium tasks
-○ [low]  Context usage spikes during build phases
-3 pending improvements (1 addressed recently)
-Say "improve <number>" to address any item, or continue with your task.
-```
+All optional — skills degrade gracefully without them.
 
-Say `improve 1` and a background agent addresses it — light items get a direct fix, medium items go through plan→build, heavy items get plan→review→build. The digest tracks what's been addressed and escalates recurring issues.
+<details>
+<summary><strong>Plugin Integration Map</strong></summary>
 
-During `/fh:plan-work`, past learnings relevant to your current task are queried from claude-mem and injected into the research context, so past mistakes inform future designs.
+Skills that read and write to cross-session memory:
 
-### Optional: Fallow Static Analysis
+| Skill | Reads (Past Learnings) | Indexes (context-mode) | Writes (Persist Findings) |
+|-------|----------------------|---------------------|------------------------|
+| plan-work | task keywords | planning docs | — (via build) |
+| build | phase name | source files + plans | learnings digest |
+| fix | bug area keywords | decisions/design | `[fix-learning]` |
+| review | diff scope | agent reports | `[review-learning]` |
+| plan-review | phase + architecture | planning state | `[plan-review-learning]` |
+| refactor | module/pattern | target module | `[refactor-learning]` |
+| audit | project/module | scan results | `[audit-finding]` |
+| optimize | component/page | metrics | `[optimize-learning]` |
+| secure | framework/stack | agent findings | `[security-finding]` |
+| research | topic keywords | web/doc sources | `[research-finding]` |
 
-If [Fallow](https://docs.fallow.tools/) is installed (`npm install -g fallow`), `/fh:simplify` and `/fh:review` automatically use it for deterministic dead-code detection, circular dependency analysis, code duplication, and complexity metrics. Fallow findings are injected into agent prompts as ground truth alongside the diff.
+Skills without plugins work identically — all integrations include "skip silently if unavailable" guards.
 
-When Fallow is not installed, all skills behave identically to before — no errors, no degraded output.
+</details>
 
----
+<details>
+<summary><strong>Pipeline Diagrams</strong></summary>
 
-## `/build` — The Full Pipeline
-
-Executes plans through waves of parallel subagents with quality gates between them.
+### `/build` Pipeline
 
 ```
  PLAN.md (from /plan-work)
       |
+  FIND + ANALYZE ──▶ WAVE 1 (parallel) ──▶ WAVE 2 ──▶ ... ──▶ WAVE N
+      |                   |                                        |
+      |              Each task = fresh subagent with LSP           |
+      |              + TDD / Playwright / Next.js perf as needed   |
+      |                                                            |
+  COMMIT + VERIFY ◀────────────────────────────────────────────────┘
+      |
+  PHASE COMPLETION (if all plans done)
+      |  Goal verification: must_haves truth table
+      |  Design quality gates (if visual work > 30%)
+      |  Final verification + VERIFICATION.md
       v
-+- FIND + ANALYZE PLAN -----------------------------------------+
-|  Read plan frontmatter                                         |
-|  Extract waves, dependencies, must-haves                       |
-|  Create native tasks from plan (TaskCreate per task + deps)    |
-+----------------------------+----------------------------------+
-                             |
-      +----------------------+---------------------+
-      v                      v                     v
-+-----------+    +--------------+    +--------------+
-|  WAVE 1   |    |   WAVE 2     |    |   WAVE N     |
-|  Task A   |    |   Task C     |    |   Task E     |
-|  Task B   |    |   Task D     |    |              |
-+-----+-----+    +------+-------+    +------+-------+
-      |                  |                   |
-      |  Each task = fresh subagent with LSP + task ID
-      |  Subagents create sub-tasks for live progress
+  /review (or /ui-test for frontend)
+```
+
+### `/review` Pipeline
+
+```
+  SCOPE + RUNTIME ERRORS ──▶ STATIC ANALYSIS (Fallow) ──▶ SPEC VERIFICATION
       |
-      |  Conditional skills per task:
-      |  +---------------------------------------------+
-      |  |  TDD                  (if tests needed)     |
-      |  |  Playwright           (if E2E needed)       |
-      |  |  Next.js perf         (if Next.js project)  |
-      |  |  Design quality       (if frontend code)    |
-      |  +---------------------------------------------+
+  2 PARALLEL AGENTS: Code Quality + Gap Analysis
       |
-      v  (repeat for each wave)
+  GOAL VERIFICATION (must_haves truth table)
       |
-+- COMMIT + VERIFY + SUMMARY -----------------------------------+
-|  Single commit for all waves                                   |
-|  Run test suite, build, lint — fresh evidence before claims    |
-|  Generate SUMMARY.md                                           |
-+----------------------------+----------------------------------+
-                             |
-+- PHASE COMPLETION (if all plans done) ------------------------+
-|                                                               |
-|  Goal verification: must_haves truth table                    |
-|  Artifact + key-link verification                             |
-|                                                               |
-|  Design quality gates (if visual work > 30%):                 |
-|  Round 1: critique + harden → Round 2: polish + adapt         |
-|  Round 3: normalize (if design system defined)                |
-|                                                               |
-|  Final verification + VERIFICATION.md                          |
-|                                                               |
-+----------------------------+----------------------------------+
-                             |
-                             v
-                        /review  (or /ui-test for frontend)
-```
-
-## `/review` — Pre-Promotion Gate
-
-Shared terminal step for `/build`, `/fix`, and `/refactor`.
-
-```
-+- REVIEW ------------------------------------------------------+
-|                                                               |
-|  1. SCOPE + RUNTIME ERROR CHECK                               |
-|  +---------------------------------------------------+       |
-|  |  Diff range + file list                            |       |
-|  |  Query sentry local store (last 2hrs)              |       |
-|  |  Cross-reference errors against diff by basename   |       |
-|  +---------------------------------------------------+       |
-|                                                               |
-|  1.7 STATIC ANALYSIS (if fallow installed)                    |
-|  +---------------------------------------------------+       |
-|  |  fallow check → dead code, circular deps           |       |
-|  |  fallow dupes → code duplication                   |       |
-|  |  fallow health → complexity metrics                |       |
-|  |  Post-filter to diff files, cap 200 lines          |       |
-|  |  Inject as ground truth into review agents          |       |
-|  +---------------------------------------------------+       |
-|                                                               |
-|  1.8 SPEC VERIFICATION (GSD projects only)                    |
-|  +---------------------------------------------------+       |
-|  |  Missing requirements, stubs, unwired code         |       |
-|  |  TypeScript strictness (any, as casts, switches)   |       |
-|  |  Wrong behavior (logic errors, type mismatches)    |       |
-|  |  Result: BLOCKING / WARN / PASS                    |       |
-|  +---------------------------------------------------+       |
-|                                                               |
-|  2. CODE QUALITY + GAP ANALYSIS (2 parallel agents)           |
-|  +---------------------------------------------------+       |
-|  |  Agent 1: code review + architecture + production  |       |
-|  |           safety (+ Next.js perf if relevant)      |       |
-|  |  Agent 2: gap analysis — untested paths,           |       |
-|  |           unhandled errors, incomplete features     |       |
-|  |  Severity: Critical > Important > Minor > Nit      |       |
-|  +---------------------------------------------------+       |
-|                                                               |
-|  3. GOAL VERIFICATION (GSD projects only)                     |
-|  +---------------------------------------------------+       |
-|  |  must_haves truth table: PASS / FAIL / PARTIAL     |       |
-|  |  Artifact + key-link verification                  |       |
-|  +---------------------------------------------------+       |
-|                                                               |
-|  4. EVIDENCE                                                  |
-|  +---------------------------------------------------+       |
-|  |  Run tests, build, lint — capture exit codes       |       |
-|  +---------------------------------------------------+       |
-|                                                               |
-|  5. GATE DECISION                                             |
-|  +---------------------------------------------------+       |
-|  |  BLOCK: critical issues or verification failures   |       |
-|  |  WARN:  runtime errors in changed files            |       |
-|  |  PASS:  otherwise → promote branch                 |       |
-|  +---------------------------------------------------+       |
-|                                                               |
-|  For security scanning, use /fh:secure (OWASP Top 10)         |
-+---------------------------------------------------------------+
-```
-
-## `/fix` — Bug Triage + TDD
-
-```
- BUG REPORT
+  EVIDENCE (tests, build, lint — fresh runs)
       |
-      v
-+- RUNTIME ERROR CHECK ----------------------------------------+
-|  Query sentry local store for matching errors (last 60min)   |
-|  Stack traces + breadcrumbs become starting evidence         |
-+----------------------------+---------------------------------+
-                             |
-+- TRIAGE (via LSP) ---------+---------------------------------+
-|                                                               |
-|  Trace the bug through code with go-to-definition,           |
-|  find-references, hover. Classify severity:                   |
-|                                                               |
-|  SIMPLE   ---------------------------------> TDD fix          |
-|  MODERATE --> systematic debugging --------> TDD fix          |
-|  PARALLEL --> N debugger subagents --------> TDD fix          |
-|  COMPLEX  --> persistent debug session ----> TDD fix          |
-|                                                               |
-+----------------------------+---------------------------------+
-                             |
-+- TDD FIX ------------------+---------------------------------+
-|                                                               |
-|  RED    → write failing test proving the bug                  |
-|  GREEN  → minimal fix to pass                                 |
-|  REFACTOR → clean up                                          |
-|                                                               |
-|  + Playwright if E2E project                                  |
-+----------------------------+---------------------------------+
-                             |
-+- DESIGN CHECK (frontend) -+----------------------------------+
-|  Verify against project design language                       |
-+----------------------------+---------------------------------+
-                             |
-+- VERIFICATION GATE --------+--------------------------------+
-|  Run tests fresh — evidence before completion claims          |
-+----------------------------+---------------------------------+
-                             |
-                             v
-                     MODERATE+: /simplify → /review
-                     SIMPLE:    /review directly
+  GATE: BLOCK / WARN / PASS ──▶ Promote branch
 ```
 
-## `/refactor` — Behavior-Preserving Restructuring
+### `/fix` Pipeline
 
 ```
- REFACTORING TARGET
+  BUG REPORT ──▶ RUNTIME ERROR CHECK ──▶ LSP TRIAGE
       |
-      v
-+- SCOPE (via LSP) --------------------------------------------+
-|  find-references, incoming/outgoing calls, document symbols   |
-|  Map the full blast radius before touching anything           |
-+----------------------------+---------------------------------+
-                             |
-+- BASELINE -----------------+---------------------------------+
-|  Run existing tests → record green state                      |
-|  If coverage insufficient → write characterization tests      |
-+----------------------------+---------------------------------+
-                             |
-+- ATOMIC STEPS -------------+---------------------------------+
-|                                                               |
-|  For each change:                                             |
-|  1. find-references before modifying                          |
-|  2. Prefer LSP rename over manual find-replace                |
-|  3. Apply change + commit                                     |
-|  4. Run full test suite                                       |
-|                                                               |
-|  +===============================================+            |
-|  |  IRON LAW: Tests NEVER go red.                |            |
-|  |  Violation = IMMEDIATE revert + rethink.      |            |
-|  +===============================================+            |
-|                                                               |
-+----------------------------+---------------------------------+
-                             |
-                             v
-                     /simplify → /review
-```
-
-## `/plan-work` — Research, Design, Plan
-
-Native task tracking shows progress through each step in real-time.
-
-```
- USER REQUEST + ROADMAP.md
+  SIMPLE ───────────────────────────────▶ TDD fix
+  MODERATE ──▶ systematic debugging ───▶ TDD fix
+  PARALLEL ──▶ N debugger subagents ───▶ TDD fix
+  COMPLEX ───▶ persistent debug session ▶ TDD fix
       |
-      v
-+- TASK INIT ---------------------------------------------------+
-|  Create native tasks for all planning steps (TaskCreate × 7)  |
-|  Steps may be skipped (marked completed with skipped metadata) |
-+----------------------------+----------------------------------+
-                             |
-+- PHASE MATCH -------------------------------------------------+
-|  Map request to roadmap phase                                  |
-+----------------------------+----------------------------------+
-                             |
-+- COMPLEXITY ASSESSMENT ----+----------------------------------+
-|  Gauge scope and risk to calibrate research + review depth     |
-+----------------------------+----------------------------------+
-                             |
-+- RESEARCH (conditional) ---+----------------------------------+
-|                                                                |
-|  Complex: spawn gsd-phase-researcher agent                     |
-|  Medium: inline research subagent                              |
-|  Simple: skip                                                  |
-|  Output: XX-RESEARCH.md with confidence tags (HIGH/MEDIUM/LOW)|
-|  Confidence gate: LOW findings → suggest deeper research       |
-|                                                                |
-+----------------------------+----------------------------------+
-                             |
-+- BRAINSTORM ---------------+----------------------------------+
-|                                                                |
-|  Explorer + architect agents trace code via LSP                |
-|  Reads project design language                                 |
-|  Output: design document with options                          |
-|                                                                |
-+----------------------------+----------------------------------+
-                             |
-+- DISCUSS ------------------+----------------------------------+
-|                                                                |
-|  Identify 3–4 gray areas → ask user                            |
-|  Lock decisions in CONTEXT.md (Decisions / Discretion Areas /  |
-|  Deferred Ideas) — 3 canonical sections                        |
-|                                                                |
-+----------------------------+----------------------------------+
-                             |
-+- WRITE PLAN ---------------+----------------------------------+
-|                                                                |
-|  Extract from design decisions:                                |
-|  - Truths (user-observable outcomes)                           |
-|  - Artifacts (files + content markers)                         |
-|  - Key links (how artifacts connect)                           |
-|                                                                |
-|  TDD coverage validation: WARN if <30% tasks mention tests    |
-|  Playwright E2E advisory: WARN if frontend project lacks E2E  |
-|                                                                |
-|  Output: PLAN.md with waves, dependencies, must-haves          |
-|                                                                |
-+----------------------------+----------------------------------+
-                             |
-+- PLAN-CHECK + HANDOFF ----+----------------------------------+
-|                                                                |
-|  Verify plan structure, task spec quality                      |
-|  Default: run /plan-review before proceeding to /build         |
-|                                                                |
-+----------------------------+----------------------------------+
-                             |
-                             v
-                     /plan-review (default) → /build
+  DESIGN CHECK (frontend) ──▶ VERIFICATION GATE ──▶ /review
 ```
+
+### `/plan-work` Pipeline
+
+```
+  USER REQUEST ──▶ PHASE MATCH ──▶ COMPLEXITY ASSESSMENT
+      |
+  RESEARCH (conditional: complex/medium/skip)
+      |
+  BRAINSTORM ──▶ DISCUSS (lock decisions in CONTEXT.md)
+      |
+  WRITE PLAN (truths, artifacts, key links, waves)
+      |
+  PLAN-CHECK ──▶ /plan-review (default) ──▶ /build
+```
+
+</details>
+
+## `/new-project` — What Gets Set Up
+
+The default stack is **Next.js + TypeScript + Tailwind + shadcn/ui + Supabase + Better Auth + Vercel**. With `--auto`, the entire setup is hands-off.
+
+<details>
+<summary>Setup details</summary>
+
+- **Brand-aware design system** — extracts colors, fonts, and style from your brand references
+- **Better Auth** — generates secret, configures auth env vars
+- **Resend email** — walks you through signup, creates a sending key
+- **Organizations** — opt-in multi-tenant support (teams, roles, invitations)
+- **Supabase** — creates project, configures API keys and `DATABASE_URL`
+- **Vercel** — links project, syncs env vars, enables auto-deploys
+- **shadcn/ui skills** — installs agent skills for component-aware workflows
+- **Observability** — scaffolds local Sentry error tracking (SQLite-backed)
+- **Conductor** — detects workspaces, creates `conductor.json` with `.env.local` symlinks
+
+Everything is optional — skip what you don't need.
+
+</details>
 
 ## Updating
 
 ```
-/fh:update           update the plugin itself
+/fh:update
 ```
 
 ## License

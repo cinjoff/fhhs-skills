@@ -50,6 +50,14 @@ Report: "This refactoring touches N files across M subsystems. Blast radius: [de
 
 If large (10+ files or 3+ subsystems), suggest writing a PLAN.md via `/fh:plan-work` first.
 
+### Context-Mode Acceleration
+
+If ctx_batch_execute is available, index the analysis scope before planning refactoring steps:
+- Index files in the target module/directory via ctx_batch_execute
+- Include `.planning/codebase/CONVENTIONS.md` and `.planning/codebase/ARCHITECTURE.md` for pattern reference
+- Use ctx_search for "coupling between modules", "dependency patterns", "abstraction layers" to find refactoring targets
+- If unavailable, fall back to direct Grep/Glob/Read
+
 ---
 
 ## Step 2: Capture Baseline
@@ -63,6 +71,16 @@ Run the existing test suite for the affected area. Record: X tests, all GREEN.
 4. Run again — all GREEN
 
 **Baseline established.** From here, tests must stay GREEN at every step.
+
+---
+
+### Past Learnings Check
+
+If claude-mem is available, recall prior refactoring outcomes:
+1. Call `mcp__plugin_claude-mem_mcp-search__smart_search` with the target module/pattern name, limit=5
+2. Filter for: refactor, extract, simplify, "blast radius", coupling, migration
+3. If relevant: "**Prior refactoring context:** - {summary}" — max 3 items
+4. Skip silently if unavailable
 
 ---
 
@@ -113,3 +131,15 @@ Generate SUMMARY.md with refactoring steps, commit hashes, before/after metrics,
 Update STATE.md: note refactoring completed, structural changes made.
 
 Report: what was restructured, why it's better, test evidence confirming behavior preserved.
+
+---
+
+### Persist Findings
+
+After refactoring is complete, output key patterns discovered for future sessions:
+1. If ctx_search is available, query for coupling patterns and extraction outcomes from this session
+2. Only persist structural insights — skip mechanical rename/move details
+3. Output each finding as:
+   **[refactor-learning]** {module/area}: {pattern discovered} → {approach that worked}
+4. Max 3 findings per refactoring session
+5. Skip silently if refactoring was purely mechanical
