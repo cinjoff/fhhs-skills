@@ -675,6 +675,30 @@ node ./.claude/get-shit-done/bin/gsd-tools.cjs init new-project
 node ./.claude/get-shit-done/bin/gsd-tools.cjs config-ensure-section
 ```
 
+**Ask the user to choose a model profile:**
+
+```
+AskUserQuestion([
+  {
+    question: "Which model profile should agents use?",
+    header: "Model Profile",
+    multiSelect: false,
+    options: [
+      { label: "Balanced (Recommended)", description: "Opus for planning, Sonnet for execution. Good balance of quality and cost." },
+      { label: "Budget", description: "Sonnet for execution, Haiku for research/verification. Uses far fewer tokens — best if you're hitting usage limits." },
+      { label: "Quality", description: "Opus for most agents. Highest quality but uses ~3-5x more tokens than Balanced — you'll hit your daily limit much faster." }
+    ]
+  }
+])
+```
+
+Map the selection to a profile value:
+- "Balanced (Recommended)" → `"balanced"`
+- "Budget" → `"budget"`
+- "Quality" → `"quality"`
+
+Read `.planning/config.json`, set the `model_profile` field to the mapped value, and write it back.
+
 Commit: `docs: initialize project planning with GSD structure`
 
 ---

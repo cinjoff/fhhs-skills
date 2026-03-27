@@ -43,13 +43,13 @@ Use AskUserQuestion with current values pre-selected:
 ```
 AskUserQuestion([
   {
-    question: "Which model profile for agents?",
-    header: "Model",
+    question: "Which model profile should agents use?",
+    header: "Model Profile",
     multiSelect: false,
     options: [
-      { label: "Quality", description: "Opus everywhere except verification (highest cost)" },
-      { label: "Balanced (Recommended)", description: "Opus for planning, Sonnet for execution/verification" },
-      { label: "Budget", description: "Sonnet for writing, Haiku for research/verification (lowest cost)" }
+      { label: "Balanced (Recommended)", description: "Opus for planning, Sonnet for execution. Good balance of quality and cost." },
+      { label: "Budget", description: "Sonnet for execution, Haiku for research/verification. Uses far fewer tokens — best if you're hitting usage limits." },
+      { label: "Quality", description: "Opus for most agents. Highest quality but uses ~3-5x more tokens than Balanced — you'll hit your daily limit much faster." }
     ]
   },
   {

@@ -86,11 +86,13 @@ If multiple items selected ("improve 1, 3"), spawn separate background agents fo
 
 Check if `ctx_index` MCP tool is available AND `.planning/codebase/.planning-index-manifest` exists. If either is missing, skip silently.
 
-If both exist, spawn a background subagent with `model: "haiku"` and `run_in_background: true`:
+Resolve the lightweight model: `node ./.claude/get-shit-done/bin/gsd-tools.cjs resolve-model gsd-codebase-mapper --raw` (defaults to `haiku` in balanced/budget profiles).
+
+If both exist, spawn a background subagent with the resolved model and `run_in_background: true`:
 
 ```
 Agent(
-  model="haiku",
+  model="<resolved-model>",  // from resolve-model gsd-codebase-mapper
   run_in_background=true,
   description="Re-index stale .planning/ files",
   prompt="You are a lightweight re-indexing agent. Compare .planning/ file hashes against the manifest and re-index any that changed.
