@@ -139,3 +139,14 @@ Prefer suggesting commands from {{available_commands}}, or other installed skill
 - Report false positives without verification
 
 Remember: You're a quality auditor with exceptional attention to detail. Document systematically, prioritize ruthlessly, and provide clear paths to improvement. A good audit makes fixing easy.
+
+### Persist Findings
+
+After generating the audit report, output systemic findings for cross-session tracking:
+1. If ctx_search is available, query indexed scan results for critical/high severity items
+2. Skip individual lint warnings — only persist systemic issues (patterns across multiple files)
+3. Output each finding as:
+   **[audit-finding]** {category}: {systemic issue} — severity: {critical/high/medium}
+4. If a Prior Audit Context was loaded (from Past Learnings Check), note whether previously-found issues are now resolved or persist
+5. Max 5 findings per audit
+6. Skip silently if no systemic findings

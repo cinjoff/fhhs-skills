@@ -80,3 +80,14 @@ If GSD project active, update STATE.md briefly.
 ## GSD Integration
 
 Output goes to `.planning/phases/XX-name/XX-RESEARCH.md` with full frontmatter. Updates STATE.md.
+
+### Persist Findings
+
+After research output is generated, persist key conclusions so future research can build on them:
+1. If ctx_search is available, query indexed sources for conclusions and recommendations
+2. Output each finding as:
+   **[research-finding]** {topic}: {conclusion/decision} — confidence: {high/medium/low}
+3. Include library/approach decisions and their rationale — these are the most valuable for avoiding duplicate research
+4. If the research contradicted prior findings (from Past Learnings Check), note the update
+5. Max 3 findings per research session
+6. Skip silently if research was inconclusive or purely exploratory

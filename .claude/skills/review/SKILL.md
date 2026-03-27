@@ -338,4 +338,16 @@ Derive the type and scope from the diff analysis. Present options:
 
 ---
 
+### Persist Findings
+
+After generating the review report, output a structured summary of recurring patterns:
+1. If ctx_search is available, query for the most significant findings from indexed agent reports
+2. Skip one-off issues — only persist patterns likely to recur
+3. Output each finding as:
+   **[review-learning]** {module/area}: {pattern found} — {recommendation}
+4. Max 3 findings per review
+5. Skip silently if no recurring patterns found
+
+---
+
 *Production safety checklist adapted from gstack review/checklist.md (v0.3.3).*

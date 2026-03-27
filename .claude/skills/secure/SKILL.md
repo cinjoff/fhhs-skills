@@ -123,3 +123,13 @@ Generate a structured security report:
 - Any HIGH (no CRITICAL) → return `WARN` with finding details
 - MEDIUM/LOW only → return `PASS` with notes
 - No findings → return `PASS (clean)`
+
+### Persist Findings
+
+After the security report, output vulnerability patterns for future scans:
+1. If ctx_search is available, query indexed agent findings for critical/high severity vulnerabilities
+2. Output each finding as:
+   **[security-finding]** {threat-category}: {vulnerability pattern} in {file/component} — status: {fixed/unfixed}
+3. Include remediation status so future scans can verify fixes held
+4. Max 5 findings per scan
+5. Skip silently if no critical/high findings

@@ -219,4 +219,16 @@ Budget: <2% context.
 
 ---
 
+### Persist Findings
+
+After the fix is verified, output a structured summary so claude-mem captures it for future sessions:
+1. If ctx_search is available, query for root cause analysis from this session's indexed data
+2. Skip if the fix was trivial (single typo, missing import, config change)
+3. Output each significant finding as:
+   **[fix-learning]** {subsystem/file}: {root cause pattern} → {fix approach that worked}
+4. Max 3 findings. Focus on patterns that could recur, not one-off mistakes
+5. Skip silently if no significant findings
+
+---
+
 Report: root cause, fix applied, test coverage added, related concerns.
