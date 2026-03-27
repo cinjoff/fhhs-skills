@@ -292,8 +292,21 @@ function appendDecision(projectDir, { id, title, status, confidence, context, de
 
 function runClaudeSession(prompt, opts) {
   return new Promise((resolve, reject) => {
-    const args = ['-p', prompt, '--cwd', opts.cwd];
-    log(`  Running: claude -p "${prompt}"`);
+    // Resolve plugin dir: auto-orchestrator lives at <plugin-root>/.claude/skills/auto/
+    // so __dirname/../../../ = plugin root where skills/SKILL.md etc. live
+    const pluginDir = path.resolve(__dirname, '..', '..', '..');
+    const args = [
+      '-p', prompt,
+      '--permission-mode', 'bypassPermissions',
+      '--plugin-dir', pluginDir,
+    ];
+    // Inject project conventions so the session has full context
+    const claudeMdPath = path.join(opts.cwd, 'CLAUDE.md');
+    if (fs.existsSync(claudeMdPath)) {
+      const claudeMd = fs.readFileSync(claudeMdPath, 'utf-8').slice(0, 4000);
+      args.push('--append-system-prompt', `Project conventions:\n${claudeMd}`);
+    }
+    log(`  Running: claude -p "${prompt}" (plugin-dir=${pluginDir})`);
 
     const child = spawn('claude', args, {
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -357,7 +370,8 @@ function runClaudeSession(prompt, opts) {
 // ─── State Update via gsd-tools ──────────────────────────────────────────────
 
 function updateStateViaGsd(projectDir, phaseId) {
-  const gsdPath = path.join(__dirname, 'gsd-tools.cjs');
+  // gsd-tools lives in the project, not next to this orchestrator
+  const gsdPath = path.join(projectDir, '.claude/get-shit-done/bin/gsd-tools.cjs');
   const { execSync } = require('child_process');
   try {
     execSync(`node "${gsdPath}" phase complete ${phaseId} --cwd "${projectDir}"`, {
@@ -375,10 +389,21 @@ function updateStateViaGsd(projectDir, phaseId) {
 const PHASE_STEPS = ['plan-work', 'plan-review', 'build', 'review'];
 
 async function executeStep(projectDir, phaseId, step, planPath) {
+  // Read phase goal from ROADMAP.md for richer autonomous prompts
+  let phaseGoal = '';
+  try {
+    const roadmap = fs.readFileSync(path.join(projectDir, '.planning/ROADMAP.md'), 'utf-8');
+    const phaseMatch = roadmap.match(new RegExp(`## Phase ${phaseId}[^\\n]*\\n\\*\\*Goal:\\*\\*\\s*([^\\n]+)`));
+    if (phaseMatch) phaseGoal = phaseMatch[1].trim();
+  } catch { /* ignore */ }
+
   switch (step) {
     case 'plan-work':
       return await runClaudeSession(
-        `/fh:plan-work plan next for phase ${phaseId}`,
+        `You are in auto mode (workflow.auto_advance=true). Read .planning/STATE.md and .planning/ROADMAP.md for context. ` +
+        `Plan phase ${phaseId}. Phase goal: "${phaseGoal}". ` +
+        `Use /fh:plan-work to create the plan. Auto-decide all gray areas using best judgment. ` +
+        `Write the plan to .planning/phases/ directory. Do not ask questions — make decisions autonomously.`,
         { cwd: projectDir }
       );
 
@@ -389,7 +414,8 @@ async function executeStep(projectDir, phaseId, step, planPath) {
       }
       const relPlan = path.relative(projectDir, latestPlan);
       return await runClaudeSession(
-        `/fh:plan-review ${relPlan} --mode hold`,
+        `You are in auto mode. Review the plan at ${relPlan} using /fh:plan-review with --mode hold. ` +
+        `Phase goal: "${phaseGoal}". Apply feedback directly to the plan. Do not ask questions.`,
         { cwd: projectDir }
       );
     }
@@ -401,14 +427,16 @@ async function executeStep(projectDir, phaseId, step, planPath) {
       }
       const relPlan = path.relative(projectDir, latestPlan);
       return await runClaudeSession(
-        `/fh:build ${relPlan}`,
+        `You are in auto mode. Execute the plan at ${relPlan} using /fh:build. ` +
+        `Phase goal: "${phaseGoal}". Build all tasks, run tests, commit changes. Do not ask questions.`,
         { cwd: projectDir }
       );
     }
 
     case 'review':
       return await runClaudeSession(
-        `/fh:review --quick`,
+        `You are in auto mode. Run /fh:review --quick on the recent changes. ` +
+        `Phase goal: "${phaseGoal}". Fix any issues found. Do not ask questions.`,
         { cwd: projectDir }
       );
 
