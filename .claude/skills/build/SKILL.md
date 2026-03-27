@@ -13,7 +13,7 @@ You are a **lean orchestrator**. Stay under 15% context usage. Delegate all heav
 > **Dependency check:** Verify `.planning/PROJECT.md` exists (required — if missing, tell user to run `/fh:new-project` first).
 
 > **Execution pipeline:**
-> Task execution: **`general-purpose`** subagents with `model: "sonnet"` using `references/implementer-prompt.md`. Fresh context per task.
+> Task execution: **`general-purpose`** subagents using `references/implementer-prompt.md`. Model is resolved from config via `gsd-tools resolve-model gsd-executor --raw`. Fresh context per task.
 > Subagents write code but do NOT commit. Orchestrator makes one commit per plan after all waves complete.
 > Do not use `gsd-executor` or `gsd-planner` — their state management conflicts with this orchestrator.
 
@@ -98,7 +98,13 @@ If ctx_batch_execute is not available, skip silently.
 
 ## Step 3: Execute Waves
 
-For each wave, dispatch **one subagent per task** using the Agent tool with **`subagent_type: "general-purpose"`** and **`model: "sonnet"`**.
+Resolve the execution model once before dispatching waves:
+
+```bash
+EXEC_MODEL=$(node ./.claude/get-shit-done/bin/gsd-tools.cjs resolve-model gsd-executor --raw)
+```
+
+For each wave, dispatch **one subagent per task** using the Agent tool with **`subagent_type: "general-purpose"`** and **`model: "$EXEC_MODEL"`** (use the resolved value, e.g. `"sonnet"` or `"opus"`).
 
 **Task tracking (optional):** On first dispatch, try `TaskCreate` for the task. If it works, update status on dispatch (`in_progress`) and completion (`completed`). If TaskCreate fails, skip all tracking silently.
 
@@ -240,7 +246,7 @@ Read `references/gsd-state-updates.md` and run the batch state update command. T
 
 These run once at plan completion. No state writes during wave execution.
 
-Use **`model: "haiku"`** — mechanical state updates don't require deep reasoning.
+Resolve via `node ./.claude/get-shit-done/bin/gsd-tools.cjs resolve-model gsd-codebase-mapper --raw` — mechanical state updates don't require deep reasoning.
 
 ---
 
