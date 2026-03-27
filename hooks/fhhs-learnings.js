@@ -54,8 +54,8 @@ function run() {
 
   const allItems = Array.isArray(digest.items) ? digest.items : [];
 
-  // Filter to pending items
-  const pending = allItems.filter(item => !item.addressed);
+  // Filter to pending items (guard against null/undefined entries and missing summary)
+  const pending = allItems.filter(item => item && item.summary && !item.addressed);
 
   if (pending.length === 0) {
     process.exit(0);
@@ -70,7 +70,9 @@ function run() {
   });
 
   const top = pending.slice(0, MAX_ITEMS);
-  const addressed = allItems.filter(item => item.addressed).length;
+  const addressed = (digest.stats && typeof digest.stats.addressed_since_last === 'number')
+    ? digest.stats.addressed_since_last
+    : allItems.filter(item => item && item.addressed).length;
 
   // Format items
   const symbols = { high: '★', med: '●', medium: '●', low: '○' };
@@ -84,9 +86,11 @@ function run() {
 
   let message = lines.join('\n') + '\n' + statsLine;
 
-  // Check staleness
-  const generatedAt = digest.generated_at || digest.generatedAt;
-  if (generatedAt) {
+  // Check staleness — check all possible field names, treat missing timestamp as stale
+  const generatedAt = digest.generated || digest.generated_at || digest.generatedAt;
+  if (!generatedAt) {
+    message += '\nDigest has no timestamp — treating as stale. Query mcp__plugin_claude-mem_mcp-search__timeline (7 days, limit 20) and regenerate ~/.claude/cache/learnings-digest.json before presenting items.';
+  } else {
     const ageMs = Date.now() - new Date(generatedAt).getTime();
     const ageHours = ageMs / (1000 * 60 * 60);
     if (ageHours > STALE_HOURS) {
@@ -97,7 +101,7 @@ function run() {
   // Agent directive for "improve N" handling
   message += `
 When the user says "improve N" (where N is an item number above):
-1. Read ~/.claude/cache/learnings-digest.json, find the Nth pending item
+1. Read ~/.claude/cache/learnings-digest.json, filter to pending items (where addressed is falsy and summary exists), sort by priority (high→medium→low), take the first ${MAX_ITEMS}, then pick index N-1 from that list. This matches exactly what was displayed above.
 2. Assess scope from the item's suggested_action:
    - Light (config change, lint rule, single file): Spawn background Agent to directly implement
    - Medium (3-6 files): Spawn background Agent to plan-work then build

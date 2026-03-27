@@ -85,17 +85,17 @@ process.stdin.on('end', () => {
     const isGsdActive = fs.existsSync(path.join(cwd, '.planning', 'STATE.md'));
 
     let message;
+    const digestInstruction = ' Also: if claude-mem is available, write a learnings digest to ~/.claude/cache/learnings-digest.json by querying timeline (7d, limit 5) and smart_search (current phase, limit 5). Merge into existing digest if present. This preserves improvement tracking across sessions.';
+
     if (isCritical) {
       message = isGsdActive
         ? `CONTEXT CRITICAL: Usage at ${usedPct}%. Remaining: ${remaining}%. ` +
           'Context is nearly exhausted. Do NOT start new complex work or write handoff files \u2014 ' +
           'Project state is already tracked in STATE.md. Inform the user so they can run ' +
-          '/fh:pause-work at the next natural stopping point. ' +
-          'Also: if claude-mem is available, write a learnings digest to ~/.claude/cache/learnings-digest.json by querying timeline (7d) and smart_search (current phase). Merge into existing digest if present. This preserves improvement tracking across sessions.'
+          '/fh:pause-work at the next natural stopping point.'
         : `CONTEXT CRITICAL: Usage at ${usedPct}%. Remaining: ${remaining}%. ` +
           'Context is nearly exhausted. Inform the user that context is low and ask how they ' +
-          'want to proceed. Do NOT autonomously save state or write handoff files unless the user asks. ' +
-          'Also: if claude-mem is available, write a learnings digest to ~/.claude/cache/learnings-digest.json by querying timeline (7d) and smart_search (current phase). Merge into existing digest if present. This preserves improvement tracking across sessions.';
+          'want to proceed. Do NOT autonomously save state or write handoff files unless the user asks.';
     } else {
       message = isGsdActive
         ? `CONTEXT WARNING: Usage at ${usedPct}%. Remaining: ${remaining}%. ` +
@@ -104,6 +104,8 @@ process.stdin.on('end', () => {
         : `CONTEXT WARNING: Usage at ${usedPct}%. Remaining: ${remaining}%. ` +
           'Be aware that context is getting limited. Avoid unnecessary exploration or ' +
           'starting new complex work.';
+      // Generate digest at WARNING when there's still enough context budget
+      message += digestInstruction;
     }
 
     const output = {
