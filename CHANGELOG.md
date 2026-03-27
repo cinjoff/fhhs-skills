@@ -5,6 +5,19 @@ All notable changes to fhhs-skills will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
+(`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
+
+## [1.31.0] - 2026-03-27
+
+### Added
+- **Changelog-driven reconciliation in `/fh:update`** — post-update Step 5 now checks tagged changelog entries deterministically via `gsd-tools.cjs changelog reconcile` instead of reading setup.md (894 lines) and new-project.md (16K+ tokens), eliminating ~17K tokens per update
+- **Reconciliation tag convention in `/release`** — changelog entries affecting `/fh:setup` or `/fh:new-project` environment now carry `[setup:TYPE:ID]` tags for automated post-update checks
+
+### Fixed
+- **Shell portability in `/fh:review`** — removes `DIFF_EXCLUDE` variable pattern that broke in fish shell; pathspec exclusions are now literal arguments on every `git diff` command
+- **Unquoted diff range in `/fh:secure`** — quotes `"$MERGE_BASE..HEAD"` to prevent word-splitting across shells
+
 ## [1.30.0] - 2026-03-27
 
 ### Added
@@ -75,7 +88,7 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [1.26.0] - 2026-03-26
 
 ### Added
-- **Fallow static analysis in setup** — `/fh:setup` Step 8 installs Fallow with package manager detection (pnpm/yarn/npm)
+- **Fallow static analysis in setup** — `/fh:setup` Step 8 installs Fallow with package manager detection (pnpm/yarn/npm) [setup:tool:fallow]
 - **Fallow in fix skill** — `/fh:fix` runs `fallow check` + `fallow health` before triage for deterministic dead-code, circular dependency, and complexity findings
 - **Supabase DATABASE_URL with pooler** — `/fh:new-project` resets the DB password after Supabase setup and writes `DATABASE_URL` with the pooler connection string to `.env.local` and Vercel
 
@@ -87,7 +100,7 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 - **Brand-aware shadcn preset generation** — `/fh:new-project` Step 2b extracts colors, fonts, and style from user-provided references (websites, images, brand guidelines) and generates a shadcn preset with a live preview URL at `ui.shadcn.com/create`
-- **Task tracking in setup** — `/fh:setup` enables `CLAUDE_CODE_ENABLE_TASKS` for native task tracking used by `/fh:plan-work` and `/fh:build`
+- **Task tracking in setup** — `/fh:setup` enables `CLAUDE_CODE_ENABLE_TASKS` for native task tracking used by `/fh:plan-work` and `/fh:build` [setup:env:CLAUDE_CODE_ENABLE_TASKS]
 
 ### Changed
 - **Setup LSP guidance** — improved instructions for Conductor and non-interactive environments
@@ -249,7 +262,7 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [1.19.0] - 2026-03-20
 
 ### Added
-- **shadcn/ui skills in `/fh:setup`** — installs `shadcn/ui` skills (`npx skills add shadcn/ui`) giving agents context for components, CLI, and registry workflows
+- **shadcn/ui skills in `/fh:setup`** — installs `shadcn/ui` skills (`npx skills add shadcn/ui`) giving agents context for components, CLI, and registry workflows [setup:dir:~/.skills/shadcn]
 - **shadcn/ui preset support in `/fh:new-project`** — optional Step 2b prompts users to design a custom preset at shadcn/create and paste the code; Phosphor Icons enforced regardless of preset
 - **Supabase CLI automation in `/fh:new-project`** — full Step 2c automates project creation, auth config (email confirmations, redirect URLs for Vercel), email template scaffolding, API key retrieval, and config push — zero dashboard visits required
 - **Supabase email templates** — scaffolds clean, minimal HTML templates for confirmation, recovery, magic link, and email change with Go template variables and inline styles
@@ -282,7 +295,7 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [1.16.0] - 2026-03-19
 
 ### Added
-- **claude-mem in `/fh:setup`** — setup now installs claude-mem plugin automatically for persistent session memory across conversations
+- **claude-mem in `/fh:setup`** — setup now installs claude-mem plugin automatically for persistent session memory across conversations [setup:plugin:claude-mem@thedotmack]
 
 ## [1.15.3] - 2026-03-18
 
