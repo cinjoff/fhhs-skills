@@ -9,7 +9,7 @@ Most AI coding tools forget everything between sessions. They repeat mistakes, r
 - **Learns from itself.** Every bug fix, code review, security scan, and research session persists its key findings. Next time, the same skill recalls what it discovered before — root causes, architectural decisions, vulnerability patterns, optimization wins.
 - **Manages its own context.** Large outputs (scan results, agent reports, build logs) are indexed in a session-scoped database instead of flooding the context window. Skills query the index for what they need, keeping the window clean for reasoning.
 - **Runs autonomously.** Hand off an entire project with `/fh:auto` — the system plans, reviews, builds, and verifies each phase without intervention. Every autonomous decision is logged with confidence levels for human audit.
-- **Ships quality gates, not just code.** Plans get stress-tested before building. Builds get spec-verified before promoting. Bugs get TDD'd. Refactors keep tests green at every step.
+- **Ships quality gates, not just code.** Plans get stress-tested before building. Builds run integration checks (blast-radius analysis via Fallow), security review (OWASP top 10), and architecture artifact refresh before promoting. Bugs get TDD'd. Refactors keep tests green at every step.
 
 ### The Memory Lifecycle
 
@@ -89,8 +89,8 @@ State persists to `.planning/.auto-state.json` between steps so crashes can resu
 |---------|-------------|
 | `/fh:new-project` | Set up a project with vision, tech stack, design language, domain research, and roadmap |
 | `/fh:plan-work` | Brainstorm, research, and produce an execution-ready plan |
-| `/fh:plan-review` | Stress-test a plan — business + engineering alignment |
-| `/fh:build` | Execute a plan with parallel subagents, TDD, and verification |
+| `/fh:plan-review` | Stress-test a plan — business + engineering alignment + impact radius |
+| `/fh:build` | Execute a plan with parallel subagents, TDD, quality gates, and verification |
 | `/fh:review` | Code quality, spec verification, goal verification, and branch promotion |
 | `/fh:auto` | Autonomous multi-phase execution without human intervention |
 
@@ -148,7 +148,7 @@ Additional design skills (also auto-invoked by pipelines): `/fh:adapt`, `/fh:bol
 | `/fh:setup` | One-time setup after installing |
 | `/fh:settings` | Configure workflow preferences |
 | `/fh:health` | Check if your project files are in good shape |
-| `/fh:map-codebase` | Analyze your codebase structure |
+| `/fh:map-codebase` | Analyze codebase structure, generate FLOWS.md and ERD.md |
 | `/fh:revise-claude-md` | Update CLAUDE.md with learnings from the session |
 | `/fh:update` | Check for updates and install the latest version |
 | `/fh:help` | Command reference and architecture guide |
@@ -222,9 +222,11 @@ Skills without plugins work identically — all integrations include "skip silen
   COMMIT + VERIFY ◀────────────────────────────────────────────────┘
       |
   PHASE COMPLETION (if all plans done)
-      |  Goal verification: must_haves truth table
-      |  Design quality gates (if visual work > 30%)
-      |  Final verification + VERIFICATION.md
+      |  Gate 0: Integration check (fallow blast-radius analysis)
+      |  Gate 1: Goal verification (must_haves truth table)
+      |  Gate 1.5: Security review (OWASP top 10, phase-end only)
+      |  Gate 2: Design quality gates (if visual work > 30%)
+      |  Gate 3: Final verification + architecture artifact refresh
       v
   /review (or /ui-test for frontend)
 ```

@@ -33,6 +33,15 @@ If the above section is empty, query context-mode or read CONTEXT.md directly:
 Do not contradict locked decisions. Stay within discretion bounds.
 Do not implement deferred ideas.
 
+### Hard Constraints
+
+The following constraints are project-level rules that MUST NOT be violated.
+Violations will cause runtime failures.
+
+{PROJECT_CONSTRAINTS}
+
+If the above section is empty, read the "Gotchas" section of `./CLAUDE.md` for project-specific constraints.
+
 ## Before You Begin
 
 You are running as a subagent — you cannot interactively ask questions. Make reasonable

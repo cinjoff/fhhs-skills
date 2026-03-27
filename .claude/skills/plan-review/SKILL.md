@@ -80,6 +80,11 @@ If STALE, warn: "Codebase mapping is outdated ($CHANGED). Consider `/fh:map-code
 If `.planning/codebase/` doesn't exist, skip silently.
 Advisory only — never block.
 
+### Architecture Artifacts Check
+Check for `.planning/codebase/FLOWS.md` and `.planning/codebase/ERD.md`.
+If missing, warn: "No FLOWS.md/ERD.md found. Run `/fh:map-codebase` to generate architecture artifacts for impact analysis."
+If present, note their existence for use in Section 4 Impact Radius Analysis.
+
 ---
 
 ## PRE-REVIEW SYSTEM AUDIT (before Step 0)
@@ -326,6 +331,45 @@ For each finding: threat, likelihood (High/Med/Low), impact (High/Med/Low), and 
 
 ### Section 4: Data Flow & Interaction Edge Cases
 This section traces data through the system and interactions through the UI with adversarial thoroughness.
+
+### Impact Radius Analysis (runs before data flow tracing)
+
+For every plan with `files_modified`, run impact analysis using available tools:
+
+**Step 1: Batch dependency analysis**
+If `fallow` is installed:
+```bash
+FALLOW_DEPS=$(timeout 30 fallow dead-code --format json --quiet 2>/dev/null) || FALLOW_DEPS=""
+FALLOW_HEALTH=$(timeout 30 fallow health --file-scores --format json --quiet 2>/dev/null) || FALLOW_HEALTH=""
+```
+If fallow is not available or times out, fall back to grep-based import tracing with warning.
+
+**Step 2: Classify blast radius for each file in files_modified**
+From FALLOW_HEALTH, extract fan_in per file:
+- fan_in >= 10 → CRITICAL (flag for deep analysis)
+- fan_in >= 5 → HIGH (flag for review)
+- fan_in >= 2 → MEDIUM (note)
+- fan_in < 2 → LOW (skip)
+
+**Step 3: Trace affected downstream files**
+From FALLOW_DEPS, for each CRITICAL/HIGH file, extract all `referenced_by` entries.
+If LSP is available, run `incomingCalls` on key exports for call-chain depth=2.
+Timeout: 30s per LSP operation. Skip on timeout.
+
+**Step 4: Cross-reference with user flows**
+If `.planning/codebase/FLOWS.md` exists, grep each CRITICAL/HIGH file against flow-meta `files:` entries.
+Report which user flows are affected.
+
+**Step 5: Report**
+Present as a table:
+```
+FILE                  | BLAST RADIUS | FAN_IN | AFFECTED FLOWS        | DOWNSTREAM FILES
+src/lib/auth.ts       | CRITICAL     | 21     | login, platform-admin | roles.ts, layout.tsx, 9 pages...
+```
+
+For each CRITICAL/HIGH file: check whether the plan includes tests that cover the affected downstream files. If not, flag as WARNING.
+
+Cache fallow JSON in context-mode for the session if ctx_batch_execute is available.
 
 **Data Flow Tracing:** For every new data flow, produce an ASCII diagram showing:
 ```
