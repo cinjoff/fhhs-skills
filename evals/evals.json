@@ -1355,7 +1355,7 @@
       "id": 56,
       "command": "build",
       "prompt": "Build the auth plan at .planning/phases/01-auth/01-01-PLAN.md. It has 3 tasks \u2014 JWT auth middleware, refresh token rotation (both backend, independent), and a login form that depends on both.",
-      "expected_output": "Should detect GSD mode, find the plan, identify 2 waves (wave 1: 2 parallel backend tasks, wave 2: 1 frontend task). Dispatch general-purpose subagents (model: sonnet) — subagents self-discover Next.js perf rules and do NOT commit (orchestrator commits once per plan). After all waves: single commit, run verification (tests, build, lint), generate SUMMARY.md. Phase completion gates (when all phase plans done): goal verification, design quality gates (critique+harden, polish+adapt, normalize), final verification. User runs /review and /simplify on demand.",
+      "expected_output": "Should detect GSD mode, find the plan, identify 2 waves (wave 1: 2 parallel backend tasks, wave 2: 1 frontend task). Dispatch general-purpose subagents (model: sonnet) \u2014 subagents self-discover Next.js perf rules and do NOT commit (orchestrator commits once per plan). After all waves: single commit, run verification (tests, build, lint), generate SUMMARY.md. Phase completion gates (when all phase plans done): goal verification, design quality gates (critique+harden, polish+adapt, normalize), final verification. User runs /review and /simplify on demand.",
       "files": [
         "evals/fixtures/nextjs-app-deep/next.config.ts",
         "evals/fixtures/nextjs-app-deep/tsconfig.json",
@@ -1755,7 +1755,7 @@
       "id": 63,
       "command": "review",
       "prompt": "Review my changes before creating a PR",
-      "expected_output": "Should run the full /review pipeline: spec verification (Step 1.8, GSD projects), then 2 parallel agents — Agent 1 (code quality + architecture) and Agent 2 (gap analysis). Gate decision aggregates all findings. If Next.js project detected, includes perf patterns in review. Review report includes quality score, spec verification results, and gap analysis. Presents promotion options (PR/merge/keep/discard from finishing-a-development-branch). PR title enforces conventional commit format. Security scanning is handled by /fh:secure, not /review.",
+      "expected_output": "Should run the full /review pipeline: spec verification (Step 1.8, GSD projects), then 2 parallel agents \u2014 Agent 1 (code quality + architecture) and Agent 2 (gap analysis). Gate decision aggregates all findings. If Next.js project detected, includes perf patterns in review. Review report includes quality score, spec verification results, and gap analysis. Presents promotion options (PR/merge/keep/discard from finishing-a-development-branch). PR title enforces conventional commit format. Security scanning is handled by /fh:secure, not /review.",
       "files": [
         "evals/fixtures/nextjs-app-deep/next.config.ts",
         "evals/fixtures/nextjs-app-deep/tsconfig.json",
@@ -6073,7 +6073,7 @@
       "id": 230,
       "command": "new-project",
       "prompt": "After /fh:new-project --auto completes all setup steps (PROJECT.md, ROADMAP.md, STATE.md created), what should happen next to continue the auto workflow?",
-      "expected_output": "Should chain to auto-orchestrator.cjs after setup completes. Set workflow.auto_advance=true so the orchestrator knows to proceed without user confirmation. The transition should be seamless — new-project finishes setup then hands off to auto mode for plan-and-build execution.",
+      "expected_output": "Should chain to auto-orchestrator.cjs after setup completes. Set workflow.auto_advance=true so the orchestrator knows to proceed without user confirmation. The transition should be seamless \u2014 new-project finishes setup then hands off to auto mode for plan-and-build execution.",
       "files": [],
       "assertions": [
         {
@@ -6094,7 +6094,7 @@
       "id": 231,
       "command": "build",
       "prompt": "execute the plan at .planning/phases/03-billing/03-01-PLAN.md",
-      "expected_output": "Should dispatch general-purpose subagents with model: sonnet for all task execution. Haiku model is used only for GSD state updates (Step 5). Subagents should not be dispatched with haiku or opus — sonnet is the implementer model.",
+      "expected_output": "Should dispatch general-purpose subagents with model: sonnet for all task execution. Haiku model is used only for GSD state updates (Step 5). Subagents should not be dispatched with haiku or opus \u2014 sonnet is the implementer model.",
       "files": [],
       "assertions": [
         {
@@ -6210,7 +6210,7 @@
       "id": 235,
       "command": "plan-work",
       "prompt": "plan fixing the button label typo on the settings page from 'Subbmit' to 'Submit'",
-      "expected_output": "Should assess complexity as Simple (1 task, single file, trivial pattern). Should skip brainstorm (Step 2) entirely — Simple complexity skips brainstorming. Should jump directly to Step 3 (Discuss Implementation) with abbreviated scope: identify 1-2 gray areas only. Handoff should still recommend /fh:plan-review, but note this is trivially obvious work where /fh:build directly is acceptable.",
+      "expected_output": "Should assess complexity as Simple (1 task, single file, trivial pattern). Should skip brainstorm (Step 2) entirely \u2014 Simple complexity skips brainstorming. Should jump directly to Step 3 (Discuss Implementation) with abbreviated scope: identify 1-2 gray areas only. Handoff should still recommend /fh:plan-review, but note this is trivially obvious work where /fh:build directly is acceptable.",
       "files": [],
       "assertions": [
         {
@@ -6292,7 +6292,9 @@
           "type": "guard"
         }
       ],
-      "scenario_requires": ["no_claude_mem"]
+      "scenario_requires": [
+        "no_claude_mem"
+      ]
     },
     {
       "id": 238,
@@ -6508,6 +6510,160 @@
         {
           "text": "step_history entry contains 'elapsed_ms'",
           "type": "output"
+        }
+      ]
+    },
+    {
+      "id": 247,
+      "command": "auto",
+      "prompt": "User has a project with 4 remaining phases. They run /fh:auto.",
+      "expected_output": "Orchestrator plans all 4 phases concurrently in the planning wave.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "mentions 'concurrent' or 'parallel' or 'wave'",
+          "type": "behavioral"
+        },
+        {
+          "text": "mentions 'plan'",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 248,
+      "command": "auto",
+      "prompt": "Phase 3 and Phase 4 plans both modify shared files. Auto mode enters the build wave.",
+      "expected_output": "Validation checks file overlap and adjusts or replans Phase 4.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "mentions 'validat'",
+          "type": "behavioral"
+        },
+        {
+          "text": "mentions 'overlap' or 'adjust' or 'replan'",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 249,
+      "command": "auto",
+      "prompt": "Auto mode completed building 3 phases. Quick review is due.",
+      "expected_output": "Single batched review covering all 3 phases.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "mentions 'batch' or 'combined'",
+          "type": "behavioral"
+        },
+        {
+          "text": "mentions 'review'",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 250,
+      "command": "auto",
+      "prompt": "User runs /fh:auto --concurrency 3 on a project.",
+      "expected_output": "Orchestrator runs max 3 concurrent sessions.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "mentions 'concurrency' or 'parallel'",
+          "type": "behavioral"
+        },
+        {
+          "text": "mentions '3'",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 251,
+      "command": "auto",
+      "prompt": "Phase 2 build fails. Phase 3's plan has no overlapping files.",
+      "expected_output": "Phase 3's plan is retained, not discarded.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "mentions 'retain' or 'keep' or 'valid'",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 252,
+      "command": "auto",
+      "prompt": "User runs /fh:auto --no-speculative on a project.",
+      "expected_output": "Orchestrator runs phases sequentially (plan \u2192 review \u2192 build per phase).",
+      "files": [],
+      "assertions": [
+        {
+          "text": "mentions 'sequential' or 'one at a time'",
+          "type": "behavioral"
+        },
+        {
+          "text": "mentions 'no-speculative' or 'fallback'",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 253,
+      "command": "auto",
+      "prompt": "After planning wave, two phases modify completely different files.",
+      "expected_output": "Dependency graph shows them as independent, in the same build wave.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "mentions 'independent' or 'no overlap' or 'same wave'",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 254,
+      "command": "auto",
+      "prompt": "All 4 phase plans modify the same core file.",
+      "expected_output": "All phases in different build waves, effectively sequential.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "mentions 'sequential' or 'dependent' or 'overlap'",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 255,
+      "command": "auto",
+      "prompt": "Auto mode crashed after planning wave completed but during build wave. User runs /fh:auto --resume.",
+      "expected_output": "Resumes from build wave, skips planning and review.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "mentions 'resume'",
+          "type": "behavioral"
+        },
+        {
+          "text": "mentions 'build' or 'skip.*plan'",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 256,
+      "command": "auto",
+      "prompt": "During planning wave, Phase 3 plan-work fails. Phase 4 depends on Phase 3 (file overlap).",
+      "expected_output": "Phase 4 rescheduled to sequential after parallel phases complete.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "mentions 'reschedule' or 'sequential' or 'fail'",
+          "type": "behavioral"
         }
       ]
     }

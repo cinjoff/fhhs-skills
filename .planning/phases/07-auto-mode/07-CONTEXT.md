@@ -20,6 +20,14 @@
 - [Recharts for charts]: Recharts chosen for time-series cost charts and step timeline. Works via preact-compat. Adds ~150KB to bundle but provides full-featured animated charts matching shadcn's chart component.
 - [Enriched auto-state JSON]: Orchestrator writes enriched `.auto-state.json` with `step_history` array (timing + cost per step), `errors` array, and `last_log_line`. This is the single data source for all dashboard auto-mode panels.
 - [Auto-open browser]: Orchestrator opens `http://127.0.0.1:3847` via macOS `open` command at startup. Non-blocking, no error if tracker isn't running.
+- [review] [Parallel pipeline architecture]: Orchestrator uses 3-wave pipeline (concurrent planning → concurrent review → dependency-ordered build) with speculative planning and file-overlap validation. Max concurrency configurable via --concurrency (default 2, max 4). Builds remain sequential in v1.
+- [review] [Phase-local decisions]: Concurrent planning sessions write to .decisions-pending.md per phase, merged by orchestrator after planning wave. Prevents DECISIONS.md write races.
+- [review] [Context-mode pre-indexing]: Orchestrator indexes shared docs (PROJECT, ROADMAP, research, codebase mapping) once before planning wave. Sessions use ctx_search (read-only) for shared docs, only index phase-local files. Prevents SQLite write contention.
+- [review] [No git SHA tracking for validation]: Validation uses plan frontmatter files_modified instead of git diff. Simpler — plan-check already validates files_modified completeness.
+- [review] [Partial failure handling]: If planning fails for Phase X, dependent phases (from dep graph) rescheduled to sequential; independent phases continue normally.
+- [review] [Conditional build failure handling]: If Phase N build fails and no file overlap with Phase N+1's speculative plan, retain the plan. If overlap, discard and replan.
+- [Quick review batching]: Reviews batched every 3 phases instead of per-phase. Reduces review overhead by ~66%. Batches split if >20 files.
+- [Speculative plan validation]: File-overlap check between plan frontmatter files_modified arrays. On overlap, lightweight validation session checks semantic conflicts. REPLAN fallback for fundamental conflicts.
 
 ## Discretion Areas
 
@@ -33,5 +41,7 @@
 
 - [Slack/Discord integration for remote questions]: GSD-2 routes questions to Slack/Discord. Interesting but out of scope for v1 of auto mode.
 - [Web dashboard for auto mode monitoring]: ~~Out of scope~~ → Now in scope as Plan 07-05. Consolidated into `/fh:tracker`.
-- [Multi-worker coordination]: Parallel `claude -p` sessions working on different phases simultaneously. Complex IPC needed. Defer to v2.
+- [Multi-worker coordination]: ~~Deferred to v2~~ → Now in scope as Plan 07-06. Parallel pipeline with concurrent planning + review, sequential builds.
+- [Parallel builds via git worktrees]: Wave structure from 07-06 supports this but v1 builds sequentially. Revisit when build-phase parallelism becomes the bottleneck after planning parallelism is proven.
+- [Cross-machine distribution]: Multiple machines running phases in parallel via shared git remote. Far future.
 - [Conductor API integration]: When Conductor exposes a programmatic API for tab/workspace creation, integrate. Not available today.
