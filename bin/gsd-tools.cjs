@@ -128,6 +128,12 @@
  *   init milestone-op                  All context for milestone operations
  *   init map-codebase                  All context for map-codebase workflow
  *   init progress                      All context for progress workflow
+ *
+ * Changelog:
+ *   changelog reconcile                  Check setup/project reconciliation tags
+ *     --from X.Y.Z --to X.Y.Z
+ *     [--changelog-file PATH]
+ *     [--project-root PATH]
  */
 
 const fs = require('fs');
@@ -143,6 +149,7 @@ const milestone = require('./lib/milestone.cjs');
 const commands = require('./lib/commands.cjs');
 const init = require('./lib/init.cjs');
 const frontmatter = require('./lib/frontmatter.cjs');
+const changelog = require('./lib/changelog.cjs');
 
 // ─── CLI Router ───────────────────────────────────────────────────────────────
 
@@ -600,6 +607,27 @@ async function main() {
         limit: limitIdx !== -1 ? parseInt(args[limitIdx + 1], 10) : 10,
         freshness: freshnessIdx !== -1 ? args[freshnessIdx + 1] : null,
       }, raw);
+      break;
+    }
+
+    case 'changelog': {
+      const sub = args[1];
+      if (sub === 'reconcile') {
+        const fromIdx = args.indexOf('--from');
+        const toIdx = args.indexOf('--to');
+        const fileIdx = args.indexOf('--changelog-file');
+        const projIdx = args.indexOf('--project-root');
+        const fromVal = fromIdx !== -1 ? args[fromIdx + 1] : undefined;
+        const toVal = toIdx !== -1 ? args[toIdx + 1] : undefined;
+        if (!fromVal || !toVal || !/^\d+\.\d+\.\d+$/.test(fromVal) || !/^\d+\.\d+\.\d+$/.test(toVal)) {
+          error('Usage: changelog reconcile --from X.Y.Z --to X.Y.Z [--changelog-file PATH] [--project-root PATH]');
+        }
+        const changelogFile = fileIdx !== -1 ? args[fileIdx + 1] : path.join(cwd, 'CHANGELOG.md');
+        const projectRoot = projIdx !== -1 ? args[projIdx + 1] : cwd;
+        changelog.cmdChangelogReconcile(changelogFile, fromVal, toVal, projectRoot, raw);
+      } else {
+        error('Unknown changelog subcommand: ' + sub + '. Available: reconcile');
+      }
       break;
     }
 
