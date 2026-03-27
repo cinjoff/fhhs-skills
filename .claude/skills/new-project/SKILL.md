@@ -94,7 +94,7 @@ These are one-time external integrations. Sync mode only checks and reports stat
 |-------|-----|--------|
 | Git repo | `git rev-parse --is-inside-work-tree 2>/dev/null` | `✓ git` or `⚠ not a git repo` |
 | GitHub remote | `git remote get-url origin 2>/dev/null` | `✓ origin: <url>` or `⊘ no remote` |
-| Vercel project | `[ -d .vercel ]` | `✓ vercel linked` or `⊘ not linked (run vercel link)` |
+| Vercel project | `[ -d .vercel ] \|\| [ -d "$CONDUCTOR_ROOT_PATH/.vercel" ]` | `✓ vercel linked` or `⊘ not linked (run vercel link)`. If found at `$CONDUCTOR_ROOT_PATH` but not locally, create symlink: `ln -sf "$CONDUCTOR_ROOT_PATH/.vercel" .vercel` |
 | Supabase | `[ -d supabase ]` or `grep -q SUPABASE .env.local 2>/dev/null` | `✓ supabase configured` or `⊘ no supabase` |
 | `components.json` | `[ -f components.json ]` | `✓ shadcn/ui configured` or `⊘ no shadcn/ui init` |
 
@@ -762,10 +762,18 @@ if [ "$WORKTREE_FIX" = true ]; then
   # Restore the worktree .git file
   rm .git
   mv .git.worktree.bak .git
+
+  # Move .vercel to main repo and symlink back so all worktrees share it
+  if [ -d .vercel ] && [ ! -L .vercel ]; then
+    MAIN_REPO=$(git rev-parse --git-common-dir | sed 's|/\.git.*|/|')
+    cp -r .vercel "$MAIN_REPO/.vercel"
+    rm -rf .vercel
+    ln -sf "$MAIN_REPO/.vercel" .vercel
+  fi
 fi
 ```
 
-This writes `.vercel/project.json` with the project and org IDs.
+This writes `.vercel/project.json` with the project and org IDs. In worktree environments, the directory is moved to the main repo and symlinked back so future worktrees get it via the conductor setup script.
 
 ### 8d: Connect GitHub to Vercel for auto-deployments
 
@@ -1136,11 +1144,19 @@ Note in the Phase 1 plan that `app/layout.tsx` needs to call `initSentryClient()
 if [ -f .git ]; then
   MAIN_REPO=$(git rev-parse --git-common-dir | sed 's|/\.git.*|/|')
 
-  # Copy .env.local
-  [ -f .env.local ] && cp .env.local "$MAIN_REPO/.env.local"
+  # Copy .env.local to main repo and symlink back
+  if [ -f .env.local ] && [ ! -L .env.local ]; then
+    cp .env.local "$MAIN_REPO/.env.local"
+    rm .env.local
+    ln -sf "$MAIN_REPO/.env.local" .env.local
+  fi
 
-  # Copy .vercel project config
-  [ -d .vercel ] && cp -r .vercel "$MAIN_REPO/.vercel"
+  # Copy .vercel to main repo and symlink back
+  if [ -d .vercel ] && [ ! -L .vercel ]; then
+    cp -r .vercel "$MAIN_REPO/.vercel"
+    rm -rf .vercel
+    ln -sf "$MAIN_REPO/.vercel" .vercel
+  fi
 fi
 ```
 

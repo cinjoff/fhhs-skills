@@ -8,6 +8,12 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.34.1] - 2026-03-27
+
+### Fixed
+- **shadcn skills detection** — `/fh:setup` checks correct install path (`~/.agents/skills/shadcn` instead of `~/.skills/shadcn`) and uses non-interactive flags (`-g -y --all`) to prevent interactive mode prompts
+- **Vercel worktree linking** — `/fh:new-project` moves `.vercel` to main repo and symlinks back after `vercel link` in worktrees, so config survives archival and is available to future worktrees. Sync mode also checks `$CONDUCTOR_ROOT_PATH/.vercel`
+
 ## [1.34.0] - 2026-03-27
 
 ### Added
