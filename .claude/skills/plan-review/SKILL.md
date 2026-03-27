@@ -108,8 +108,11 @@ ctx_batch_execute([
   { label: "STRUCTURE", cmd: "cat .planning/codebase/STRUCTURE.md" },
   { label: "CONVENTIONS", cmd: "cat .planning/codebase/CONVENTIONS.md" },
   { label: "TESTING", cmd: "cat .planning/codebase/TESTING.md" },
+  { label: "PROJECT_RESEARCH", cmd: "cat .planning/research/*.md 2>/dev/null || echo ''" },
 ], queries: ["architecture", "conventions", "design context"])
 ```
+
+Also indexes `.planning/research/*.md` (project-level research) and phase-specific RESEARCH.md when available.
 
 If ctx_search is not available, skip silently and use direct file reads as today.
 

@@ -63,8 +63,9 @@ ctx_batch_execute([
 ])
 ```
 
-Also index phase-specific research if it exists:
-- `.planning/phases/{phase}/{phase}-RESEARCH.md`
+Also index research files if they exist:
+- `.planning/research/*.md` (project-level research from /fh:new-project)
+- `.planning/phases/{phase}/{phase}-RESEARCH.md` (phase-level research)
 - `.planning/research/v2/*.md` (milestone-level research)
 
 If `ctx_batch_execute` is not available, skip silently. The rest of plan-work reads these files directly as fallback.

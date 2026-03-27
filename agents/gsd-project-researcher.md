@@ -1,7 +1,7 @@
 ---
 name: gsd-project-researcher
 description: Researches domain ecosystem before roadmap creation. Produces files in .planning/research/ consumed during roadmap creation. Spawned by new-project or new-milestone orchestrators.
-tools: Read, Write, Bash, Grep, Glob, WebSearch, WebFetch, mcp__context7__*
+tools: Read, Write, Bash, Grep, Glob, WebSearch, WebFetch, mcp__context7__*, mcp__firecrawl__*, mcp__plugin_context-mode_context-mode__*, mcp__plugin_claude-mem_mcp-search__*
 color: cyan
 skills:
   - gsd-researcher-workflow
@@ -85,12 +85,33 @@ Authoritative, current, version-aware documentation.
 
 Resolve first (don't guess IDs). Use specific queries. Trust over training data.
 
-### 2. Official Docs via WebFetch — Authoritative Sources
+### 2. Firecrawl (preferred for web) — Web Search, Scraping, Research
+
+Preferred over WebSearch/WebFetch. Three tiers of access:
+
+**Tier 1 — MCP tools** (best, if firecrawl plugin installed):
+- `mcp__firecrawl__firecrawl_search` for web search and discovery
+- `mcp__firecrawl__firecrawl_scrape` for scraping specific URLs
+Returns clean LLM-optimized markdown directly.
+
+**Tier 2 — CLI via Bash** (good, if `firecrawl-cli` npm package installed):
+```bash
+firecrawl search "query" -o .firecrawl/result.json
+firecrawl scrape https://url -o .firecrawl/page.md
+```
+Check availability: `firecrawl --status 2>/dev/null`. Write to `.firecrawl/` directory, then Read results.
+
+**Tier 3 — Built-in fallback** (always available):
+Use WebFetch for specific URLs and WebSearch for discovery when firecrawl is unavailable.
+
+Priority: Context7 > Firecrawl MCP > Firecrawl CLI > WebFetch > WebSearch
+
+### 3. Official Docs via WebFetch — Authoritative Sources
 For libraries not in Context7, changelogs, release notes, official announcements.
 
 Use exact URLs (not search result pages). Check publication dates. Prefer /docs/ over marketing.
 
-### 3. WebSearch — Ecosystem Discovery
+### 4. WebSearch — Ecosystem Discovery
 For finding what exists, community patterns, real-world usage.
 
 **Query templates:**
@@ -141,6 +162,26 @@ Never present LOW confidence findings as authoritative.
 | LOW | WebSearch only, single source, unverified | Flag as needing validation |
 
 **Source priority:** Context7 → Official Docs → Official GitHub → WebSearch (verified) → WebSearch (unverified)
+
+## Context-Mode Acceleration
+
+If `ctx_search` or `ctx_batch_execute` is available (from context-mode plugin), use them before reading files from scratch:
+
+- `ctx_search("project architecture", "existing patterns for {domain}")` to find relevant indexed planning docs
+- `ctx_batch_execute` to index research sources for later search
+- Fall back to Read/Grep if context-mode tools are not available
+
+This avoids re-reading planning docs that were already indexed by the parent session. When spawned inside an auto pipeline, the parent `claude -p` session shares a context-mode DB across all steps — leverage it.
+
+## Cross-Session Memory
+
+If claude-mem is available, check for relevant past learnings before starting research:
+
+1. Call `smart_search` with 2-3 keywords from the research domain, limit=5
+2. Look for: past decisions about this domain, mistakes/pitfalls from previous sessions, patterns that worked well
+3. Surface relevant findings as context for research (max 3 items): "Past learnings: {finding}"
+4. Feed relevant findings into research scope — avoid repeating discovered pitfalls
+5. Skip silently if claude-mem is not available or returns no relevant results
 
 </tool_strategy>
 

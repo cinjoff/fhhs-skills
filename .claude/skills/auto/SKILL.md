@@ -22,7 +22,102 @@ Read STATE.md and ROADMAP.md to determine current position, total phases, and wh
 
 ---
 
-## Step 2: Parse Arguments
+## Step 2: Strategic Requirements Workshop
+
+Before autonomous execution, engage the user as a strategic advisor to shape and validate the project vision. This step ensures the autonomous pipeline builds the RIGHT thing, not just builds things.
+
+**Skip this step if:**
+- `--skip-workshop` or `--resume` flag is set
+- User says "just go", "proceed", "start building", or similar
+- All three conditions met: PROJECT.md has clear vision with north star, REQUIREMENTS.md has exhaustive requirements, ROADMAP.md has well-formed phases with no gaps
+
+### 2.1: Load Existing Context
+
+Read existing planning artifacts to understand what's already defined:
+- `.planning/PROJECT.md` — vision, goals, differentiation
+- `.planning/REQUIREMENTS.md` — requirements and success criteria
+- `.planning/ROADMAP.md` — phases and scope
+- `.planning/DESIGN.md` — brand/design context (from `/fh:ui-branding`)
+- `.planning/research/` — existing research (FEATURES.md, PITFALLS.md, STACK.md, ARCHITECTURE.md, SUMMARY.md from `/fh:new-project`)
+
+If DESIGN.md exists, use it throughout to ground UX/UI guidance in the project's actual brand direction — color palette, typography, component patterns, design language, tone. When suggesting UX patterns, frame them in the project's design context: "Your brand is {tone} — for that, the proven pattern is {X}" rather than generic advice.
+
+If context-mode is available, index these via `ctx_batch_execute` for efficient search during the conversation.
+
+If claude-mem is available, call `smart_search` with 2-3 keywords from the project domain (limit=5) to surface relevant past learnings, decisions, and session context. Present as: "From previous sessions, here's what we've learned that might matter..."
+
+Identify what's well-defined vs what has gaps: missing vision, vague success criteria, no differentiation story, unclear scope ambition, missing UX/domain research, missing design context.
+
+### 2.2: Domain Research
+
+Do research BEFORE engaging the user. Informed questions beat open questions.
+
+Use firecrawl (preferred), WebSearch (fallback), or WebFetch (fallback) to research:
+
+- **Competitor analysis**: Search for similar tools/products. What do they do well? Where do users complain? What's missing from the market?
+- **Community pain points**: Search forums, GitHub issues, Reddit, HN for discussions about problems in this domain. What do people struggle with? What do they wish existed?
+- **Domain landscape**: What's the state of the art? What approaches have been tried? What failed and why?
+- **User sentiment**: What do users of competing/similar tools actually say? Common frustrations, feature requests, praise?
+- **UX/UI best practices**: Research established UX patterns for the target user type and product category. For a SaaS product: onboarding flows, pricing pages, dashboard layouts, settings organization, notification patterns. For a CLI tool: DX patterns. For a mobile app: platform conventions. Identify what "good" looks like in this category.
+- **Established domain patterns**: What are the proven patterns for this type of product? What do best-in-class products do that users take for granted? These become the baseline — table stakes the project should match before trying to differentiate.
+
+If `.planning/research/` already has research files, use those findings as the base. Only research gaps not already covered.
+
+Present a **brief research summary** to the user: "Here's what I found about the landscape..." (3-5 key findings, competitors, pain points, established patterns). This grounds the conversation.
+
+### 2.3: Strategic Conversation
+
+Engage as a VC evaluating a startup pitch. Use research findings to drive concrete, informed discussions — not abstract open questions.
+
+**Research-driven questions:**
+- "Competitor X does {thing} — are you doing it better, differently, or not at all? Why?"
+- "Users of {similar tool} consistently complain about {pain point} — is solving that part of your vision?"
+- "The community is moving toward {trend} — does your roadmap account for that?"
+- "Nobody in this space does {gap} — is that your moat?"
+- "Here's what kills projects like this: {common failure mode}. How are you avoiding it?"
+
+**Ambitious thinking (push for scope expansion):**
+- "What's the north star? What does wild success look like in 6 months?"
+- "If you could only ship ONE thing, what would make users tell their friends?"
+- "What would make this a 10x solution, not a 1x?"
+- "What are you afraid you're not thinking about?"
+
+**Concrete directions based on research:**
+- "Based on {finding}, you might want to consider {suggestion}"
+- "Three directions this could go: (a) {option based on research}, (b) {option}, (c) {option} — which resonates?"
+- "The biggest opportunity I see from the research is {X} — want to explore that?"
+
+**UX/UI and domain guidance (use research + DESIGN.md):**
+- If DESIGN.md exists: "Your design language is {tone/style} — for that brand, the proven {category} pattern is {X}. Does that fit your vision?"
+- "For {product type}, the established pattern is {pattern} — are you following that or deliberately breaking from it?"
+- "Best-in-class {category} products all have {feature} — that's table stakes, not differentiation"
+- "Your target users ({user type}) expect {UX pattern} — have you accounted for that?"
+- "Here are the proven patterns for {domain}: {list}. Which are you adopting, and where are you innovating?"
+- If DESIGN.md is missing and the project has UI: suggest running `/fh:ui-branding` first, or help capture basic brand direction during the workshop.
+
+**Strategic stress-testing (borrow from plan-work and plan-review):**
+- "What big architectural bets are you making? What if they're wrong?"
+- "What kills this project? What makes users leave?"
+- "What would make this category-defining?"
+
+Challenge safe/obvious answers. Push toward differentiation and ambition. Help users think bigger by offering concrete directions grounded in evidence.
+
+### 2.4: Capture and Update
+
+Update planning artifacts with the refined vision:
+- Update PROJECT.md with clarified vision, north star, differentiation
+- Update REQUIREMENTS.md with discovered requirements
+- Optionally update ROADMAP.md if scope changed significantly
+
+### 2.5: Confirm and Proceed
+
+Get explicit approval: "Your vision is captured and the planning artifacts are updated. Ready to start autonomous execution?"
+
+Only proceed to the orchestrator (Step 6) after the user confirms. If the user wants to iterate, return to 2.3.
+
+---
+
+## Step 3: Parse Arguments
 
 Parse `$ARGUMENTS` for flags:
 
@@ -30,9 +125,10 @@ Parse `$ARGUMENTS` for flags:
 |------|----------|
 | `--resume` | Resume from last crash/stop point. Read STATE.md for the last completed step and continue from there. |
 | `--phase N` | Run only phase N (skip all others). |
-| `--dry-run` | Show what would run without executing. See Step 3. |
+| `--dry-run` | Show what would run without executing. See Step 4. |
 | `--budget N` | Set cost ceiling in dollars. Passed to the orchestrator as `--budget N`. |
-| `--check-corrections` | Run decision correction cascade instead of normal execution. See Step 7. |
+| `--check-corrections` | Run decision correction cascade instead of normal execution. See Step 8. |
+| `--skip-workshop` | Skip the Strategic Requirements Workshop (Step 2) and go straight to execution. |
 | *(no flags)* | Run all incomplete phases from current position in STATE.md. |
 
 Determine `START_PHASE` and `END_PHASE`:
@@ -42,7 +138,7 @@ Determine `START_PHASE` and `END_PHASE`:
 
 ---
 
-## Step 3: Dry-Run Mode
+## Step 4: Dry-Run Mode
 
 If `--dry-run` is set:
 
@@ -61,7 +157,7 @@ If `--dry-run` is set:
 
 ---
 
-## Step 4: Set AUTO_MODE
+## Step 5: Set AUTO_MODE
 
 Enable autonomous advance so downstream skills (build, plan-work) make decisions without stopping:
 
@@ -73,7 +169,7 @@ Confirm the config was set successfully before proceeding.
 
 ---
 
-## Step 5: Shell Out to Orchestrator
+## Step 6: Shell Out to Orchestrator
 
 **Find the orchestrator path first** — it lives in the plugin cache, not in the project:
 
@@ -125,7 +221,7 @@ Monitor the orchestrator's stdout for progress updates. If the orchestrator exit
 
 ---
 
-## Step 6: Completion or Interruption
+## Step 7: Completion or Interruption
 
 Whether the orchestrator completes successfully or is interrupted, always:
 
@@ -144,7 +240,7 @@ Whether the orchestrator completes successfully or is interrupted, always:
 
 ---
 
-## Step 7: Decision Correction Cascade (`--check-corrections`)
+## Step 8: Decision Correction Cascade (`--check-corrections`)
 
 When invoked with `--check-corrections`, the orchestrator runs in a separate mode that does NOT execute the normal phase loop. Instead:
 

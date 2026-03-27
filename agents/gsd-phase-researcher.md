@@ -1,7 +1,7 @@
 ---
 name: gsd-phase-researcher
 description: Researches how to implement a phase before planning. Produces RESEARCH.md consumed by gsd-planner. Spawned by plan-phase orchestrator.
-tools: Read, Write, Bash, Grep, Glob, WebSearch, WebFetch, mcp__context7__*
+tools: Read, Write, Bash, Grep, Glob, WebSearch, WebFetch, mcp__context7__*, mcp__firecrawl__*, mcp__plugin_context-mode_context-mode__*, mcp__plugin_claude-mem_mcp-search__*
 color: cyan
 skills:
   - gsd-researcher-workflow
@@ -114,14 +114,40 @@ When researching "best library for X": find what the ecosystem actually uses, do
 | Priority | Tool | Use For | Trust Level |
 |----------|------|---------|-------------|
 | 1st | Context7 | Library APIs, features, configuration, versions | HIGH |
-| 2nd | WebFetch | Official docs/READMEs not in Context7, changelogs | HIGH-MEDIUM |
-| 3rd | WebSearch | Ecosystem discovery, community patterns, pitfalls | Needs verification |
+| 2nd | Firecrawl | Web search, scraping, research (preferred over WebSearch/WebFetch) | HIGH-MEDIUM |
+| 3rd | WebFetch | Official docs/READMEs not in Context7, changelogs | HIGH-MEDIUM |
+| 4th | WebSearch | Ecosystem discovery, community patterns, pitfalls | Needs verification |
 
 **Context7 flow:**
 1. `mcp__context7__resolve-library-id` with libraryName
 2. `mcp__context7__query-docs` with resolved ID + specific query
 
+### 2. Firecrawl (preferred for web) — Web Search, Scraping, Research
+
+Preferred over WebSearch/WebFetch. Three tiers of access:
+
+**Tier 1 — MCP tools** (best, if firecrawl plugin installed):
+- `mcp__firecrawl__firecrawl_search` for web search and discovery
+- `mcp__firecrawl__firecrawl_scrape` for scraping specific URLs
+Returns clean LLM-optimized markdown directly.
+
+**Tier 2 — CLI via Bash** (good, if `firecrawl-cli` npm package installed):
+```bash
+firecrawl search "query" -o .firecrawl/result.json
+firecrawl scrape https://url -o .firecrawl/page.md
+```
+Check availability: `firecrawl --status 2>/dev/null`. Write to `.firecrawl/` directory, then Read results.
+
+**Tier 3 — Built-in fallback** (always available):
+Use WebFetch for specific URLs and WebSearch for discovery when firecrawl is unavailable.
+
+Priority: Context7 > Firecrawl MCP > Firecrawl CLI > WebFetch > WebSearch
+
+### 3. Official Docs via WebFetch
+
 **WebSearch tips:** Always include current year. Use multiple query variations. Cross-verify with authoritative sources.
+
+### 4. WebSearch — Ecosystem Discovery
 
 ## Enhanced Web Search (Brave API)
 
@@ -152,6 +178,26 @@ For each WebSearch finding:
 ```
 
 **Never present LOW confidence findings as authoritative.**
+
+## Context-Mode Acceleration
+
+If `ctx_search` or `ctx_batch_execute` is available (from context-mode plugin), use them before reading files from scratch:
+
+- `ctx_search("project architecture", "existing patterns for {domain}")` to find relevant indexed planning docs
+- `ctx_batch_execute` to index research sources for later search
+- Fall back to Read/Grep if context-mode tools are not available
+
+This avoids re-reading planning docs that were already indexed by the parent session. When spawned inside an auto pipeline, the parent `claude -p` session shares a context-mode DB across all steps — leverage it.
+
+## Cross-Session Memory
+
+If claude-mem is available, check for relevant past learnings before starting research:
+
+1. Call `smart_search` with 2-3 keywords from the research domain, limit=5
+2. Look for: past decisions about this domain, mistakes/pitfalls from previous sessions, patterns that worked well
+3. Surface relevant findings as context for research (max 3 items): "Past learnings: {finding}"
+4. Feed relevant findings into research scope — avoid repeating discovered pitfalls
+5. Skip silently if claude-mem is not available or returns no relevant results
 
 </tool_strategy>
 
