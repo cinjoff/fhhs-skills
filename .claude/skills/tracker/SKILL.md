@@ -90,7 +90,7 @@ The server loads the global registry at startup so the dashboard can display all
 Tell the user:
 
 ```
-Live dashboard at http://localhost:3847 — showing N projects
+Live dashboard at http://localhost:4111 — showing N projects
 
 The dashboard auto-refreshes every 2 seconds and shows:
 - Project overview from PROJECT.md

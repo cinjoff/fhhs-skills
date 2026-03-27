@@ -53,13 +53,13 @@ node -e "
 const http = require('http');
 const projectDir = process.cwd();
 const projectName = require('path').basename(projectDir);
-const req = http.get('http://localhost:3847/api/state', { timeout: 2000 }, (res) => {
+const req = http.get('http://localhost:4111/api/state', { timeout: 2000 }, (res) => {
   if (res.statusCode === 200) {
     // Dashboard is running — register this project
     const postData = JSON.stringify({ path: projectDir, name: projectName });
     const postReq = http.request({
       hostname: 'localhost',
-      port: 3847,
+      port: 4111,
       path: '/api/register',
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(postData) }
@@ -77,7 +77,7 @@ req.on('timeout', () => { req.destroy(); console.log('TRACKER_NOT_RUNNING'); });
 " 2>/dev/null
 ```
 
-- If output is `TRACKER_RUNNING`: print `Live dashboard running at http://localhost:3847 — open it to watch progress`
+- If output is `TRACKER_RUNNING`: print `Live dashboard running at http://localhost:4111 — open it to watch progress`
 - If output is `TRACKER_NOT_RUNNING`: print `Tip: Run \`/fh:tracker\` in another terminal to watch progress live`
 
 This step always succeeds — tracker errors are non-fatal.

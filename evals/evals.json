@@ -2660,7 +2660,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Starts node server on port 3847",
+          "text": "Starts node server on port 4111",
           "type": "behavioral"
         },
         {
@@ -2697,7 +2697,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Reports URL to user (localhost:3847)",
+          "text": "Reports URL to user (localhost:4111)",
           "type": "output"
         }
       ]

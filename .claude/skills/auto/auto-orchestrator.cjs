@@ -1390,7 +1390,7 @@ async function main() {
 
   // Auto-open tracker dashboard
   const { exec } = require('child_process');
-  const dashboardPort = 3847;
+  const dashboardPort = 4111;
   log('Opening dashboard...');
   exec(`open http://127.0.0.1:${dashboardPort}`);
 

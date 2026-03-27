@@ -135,7 +135,7 @@ Additional design skills (also auto-invoked by pipelines): `/fh:adapt`, `/fh:bol
 | Command | What it does |
 |---------|-------------|
 | `/fh:progress` | Restore context, check status, route to next action |
-| `/fh:tracker` | Launch the visual project dashboard (localhost:3847) |
+| `/fh:tracker` | Launch the visual project dashboard (localhost:4111) |
 | `/fh:todos` | Manage project todos — add new or review pending |
 
 </details>
