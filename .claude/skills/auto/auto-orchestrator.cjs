@@ -360,7 +360,7 @@ function nextDecisionId(projectDir) {
   return `DEC-${String(countDecisions(projectDir) + 1).padStart(3, '0')}`;
 }
 
-function appendDecision(projectDir, { id, title, status, confidence, context, decision, affects }) {
+function appendDecision(projectDir, { id, title, status, confidence, context, decision, affects, category, alternatives }) {
   const dp = decisionsPath(projectDir);
   let content = '';
   if (fs.existsSync(dp)) {
@@ -369,18 +369,28 @@ function appendDecision(projectDir, { id, title, status, confidence, context, de
     content = '# Decisions\n\nAuto-generated decision log.\n';
   }
 
-  const entry = [
+  const lines = [
     '',
     `## ${id}: ${title}`,
+    `- **Category:** ${category || 'implementation'}`,
     `- **Status:** ${status}`,
     `- **Confidence:** ${confidence}`,
     `- **Context:** ${context}`,
     `- **Decision:** ${decision}`,
-    `- **Affects:** ${affects}`,
-    '',
-  ].join('\n');
+  ];
 
-  fs.writeFileSync(dp, content.trimEnd() + '\n' + entry, 'utf-8');
+  // Record alternatives for product/architecture decisions
+  if (alternatives && alternatives.length > 0) {
+    lines.push(`- **Alternatives considered:**`);
+    for (const alt of alternatives) {
+      lines.push(`  - ${alt}`);
+    }
+  }
+
+  lines.push(`- **Affects:** ${affects}`);
+  lines.push('');
+
+  fs.writeFileSync(dp, content.trimEnd() + '\n' + lines.join('\n'), 'utf-8');
 }
 
 // ─── API Health Check ─────────────────────────────────────────────────────────

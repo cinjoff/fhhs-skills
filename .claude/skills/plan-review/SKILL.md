@@ -104,10 +104,7 @@ ctx_batch_execute([
   { label: "PROJECT", cmd: "cat .planning/PROJECT.md" },
   { label: "ROADMAP", cmd: "cat .planning/ROADMAP.md" },
   { label: "DESIGN", cmd: "cat .planning/DESIGN.md" },
-  { label: "ARCHITECTURE", cmd: "cat .planning/codebase/ARCHITECTURE.md" },
-  { label: "STRUCTURE", cmd: "cat .planning/codebase/STRUCTURE.md" },
-  { label: "CONVENTIONS", cmd: "cat .planning/codebase/CONVENTIONS.md" },
-  { label: "TESTING", cmd: "cat .planning/codebase/TESTING.md" },
+  { label: "CODEBASE", cmd: "cat .planning/codebase/CODEBASE.md" },
   { label: "PROJECT_RESEARCH", cmd: "cat .planning/research/*.md 2>/dev/null || echo ''" },
 ], queries: ["architecture", "conventions", "design context"])
 ```
@@ -223,6 +220,7 @@ Describe the ideal end state of this system 12 months from now. Does this plan m
 **For HOLD SCOPE** — run this:
 1. Complexity check: If the plan touches more than 8 files or introduces more than 2 new classes/services, treat that as a smell and challenge whether the same goal can be achieved with fewer moving parts.
 2. What is the minimum set of changes that achieves the stated goal? Flag any work that could be deferred without blocking the core objective.
+3. **Expansion opportunities snapshot** (1-2 sentences, not scope creep): "If we were in EXPAND mode, the ambitious version would be: _{one sentence describing the 10x version}_." Save this to CONTEXT.md's Deferred Ideas as `[Expansion opportunity]: {description}`. This preserves the "thinking bigger" insight for future planning sessions without expanding current scope.
 
 **For SCOPE REDUCTION** — run this:
 1. Ruthless cut: What is the absolute minimum that ships value to a user? Everything else is deferred. No exceptions.

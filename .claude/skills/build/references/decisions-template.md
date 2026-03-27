@@ -36,6 +36,7 @@ Each decision is an H3 block under `## Decision Log`:
 ```markdown
 ### D-{NNN}: {title}
 
+- **Category:** {product | architecture | implementation}
 - **Phase:** {phase directory name, e.g. "07-auto-mode", or "project" for cross-phase decisions}
 - **Step:** {which skill/step made this decision, e.g., "plan-work Step 3", "build Wave 2"}
 - **Context:** {what prompted the decision — 1-2 sentences}
@@ -46,9 +47,23 @@ Each decision is an H3 block under `## Decision Log`:
 - **Selected:** {letter}) {option name}
 - **Rationale:** {why this option — 1-2 sentences}
 - **Confidence:** {HIGH | MEDIUM | LOW}
-- **Affects:** {comma-separated list of artifacts/plans impacted}
+- **Affects:** {high-level area, e.g. "auto-mode pipeline", "auth flow", "data model"}
 - **Status:** ACTIVE
 ```
+
+### Decision Categories
+
+Classify every decision into one of three categories:
+
+| Category | What it covers | Alternatives required? | Affects format |
+|----------|---------------|----------------------|----------------|
+| **product** | User experience, feature scope, what to build, how users interact | Yes — always record what "thinking bigger" would look like | High-level: "onboarding flow", "pricing model" |
+| **architecture** | System design, data model, service boundaries, tech choices | Yes — record trade-offs between approaches | High-level: "auth subsystem", "data pipeline" |
+| **implementation** | Naming, file structure, library API usage, config format | Optional — only when the choice is non-obvious | Can be terse |
+
+**Product and architecture decisions are the most valuable to record.** They shape the system long-term and are expensive to reverse. Implementation decisions matter less — skip alternatives for obvious choices.
+
+**Affects field:** Use high-level descriptions ("auto-mode pipeline", "user onboarding"), not file paths. File paths change; subsystem names persist.
 
 When confidence is LOW, append ` — ⚠ NEEDS REVIEW` to the Confidence line:
 
