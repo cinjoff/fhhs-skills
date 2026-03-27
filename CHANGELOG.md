@@ -8,6 +8,11 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.37.0] - 2026-03-27
+
+### Added
+- **Configurable model profiles** — `/fh:new-project` now asks which model profile to use (Balanced, Budget, or Quality) with token cost context. `/fh:build` and `/fh:progress` resolve models from config instead of hardcoding Opus/Sonnet. `/fh:settings` updated for consistency
+
 ## [1.36.0] - 2026-03-27
 
 ### Added
