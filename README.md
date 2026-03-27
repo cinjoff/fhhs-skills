@@ -40,6 +40,7 @@ When you come back to an existing project:
 
 ```
 /fh:progress    restore context, check cross-session memory, and route to next action
+improve 2       address an improvement item surfaced at session start
 ```
 
 ## Autonomous Execution
@@ -168,7 +169,7 @@ Additional design skills (also auto-invoked by `/fh:build` and other pipelines):
 
 | Command | What it does |
 |---------|-------------|
-| `/fh:progress` | Restore context (git + claude-mem), check status, route to next action |
+| `/fh:progress` | Restore context (git + claude-mem), check status, route to next action. Also handles `improve N` for acting on learnings |
 | `/fh:tracker` | Launch the visual project dashboard (real-time web UI at localhost:3847) |
 | `/fh:todos` | Manage project todos — add new or review pending |
 
@@ -245,6 +246,22 @@ The underlying skills and agents come from seven open-source projects:
 | [Playwright Best Practices](https://github.com/anthropics/claude-code-plugin-examples) | End-to-end testing patterns |
 
 All upstreams are forked and bundled. TypeScript Language Server provides code navigation (go-to-definition, find-references, rename) across all code-working commands. See [PATCHES.md](PATCHES.md) for modifications.
+
+### Continuous Improvement
+
+Every `/fh:build` captures observations from [claude-mem](https://github.com/thedotmack/claude-mem) and distills them into a learnings digest (`~/.claude/cache/learnings-digest.json`). On your next session, the digest is surfaced automatically — no skill invocation needed:
+
+```
+★ [high] Tests for $& patterns in str.replace
+● [med]  Plan-work skips research on medium tasks
+○ [low]  Context usage spikes during build phases
+3 pending improvements (1 addressed recently)
+Say "improve <number>" to address any item, or continue with your task.
+```
+
+Say `improve 1` and a background agent addresses it — light items get a direct fix, medium items go through plan→build, heavy items get plan→review→build. The digest tracks what's been addressed and escalates recurring issues.
+
+During `/fh:plan-work`, past learnings relevant to your current task are queried from claude-mem and injected into the research context, so past mistakes inform future designs.
 
 ### Optional: Fallow Static Analysis
 
