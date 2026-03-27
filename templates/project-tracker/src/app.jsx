@@ -128,12 +128,19 @@ function App() {
   // Detect multi-project mode: API returns { projects: [...], active: {...} }
   const isMultiProject = data.projects && data.projects.length > 1;
 
+  // When a project card is clicked, fetch that project's full state
+  const handleSelectProject = (project) => {
+    setSelectedProject(project);
+    if (project && project.path) {
+      fetch(`/api/state?project=${encodeURIComponent(project.path)}`)
+        .then(r => r.json())
+        .then(d => { if (d && d.active) setData(prev => ({ ...prev, active: d.active })); })
+        .catch(() => {});
+    }
+  };
+
   // In single-project mode, fall back to data itself as active (backwards compat)
-  const activeData = isMultiProject
-    ? (selectedProject
-        ? data.projects.find(p => p.name === selectedProject.name) && data.active
-        : data.active)
-    : (data.active || data);
+  const activeData = data.active || data;
 
   if (!isMultiProject) {
     return (
@@ -176,7 +183,7 @@ function App() {
                   key={p.path || p.name}
                   project={p}
                   isSelected={activeProject && activeProject.name === p.name}
-                  onSelect={setSelectedProject}
+                  onSelect={handleSelectProject}
                 />
               ))}
             </div>

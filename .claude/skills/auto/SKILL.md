@@ -35,10 +35,12 @@ node -e "
 const fs = require('fs');
 const path = require('path');
 const registryPath = path.join(process.env.HOME, '.claude', 'tracker', 'projects.json');
-let registry = {};
-try { registry = JSON.parse(fs.readFileSync(registryPath, 'utf8')); } catch {}
+let registry = [];
+try { const d = JSON.parse(fs.readFileSync(registryPath, 'utf8')); if (Array.isArray(d)) registry = d; } catch {}
 const projectDir = process.cwd();
-registry[projectDir] = { name: path.basename(projectDir), path: projectDir, lastSeen: new Date().toISOString() };
+const now = new Date().toISOString();
+const idx = registry.findIndex(e => e.path === projectDir);
+if (idx >= 0) { registry[idx].lastSeen = now; } else { registry.push({ path: projectDir, name: path.basename(projectDir), addedAt: now, lastSeen: now }); }
 fs.writeFileSync(registryPath, JSON.stringify(registry, null, 2));
 "
 ```

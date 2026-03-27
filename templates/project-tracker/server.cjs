@@ -577,14 +577,29 @@ function buildPhases(ps, planningDir, roadmapData, state, needs, isFullParse) {
 
 function buildProjectSummary(entry, ps) {
   const state = ps.lastState;
+  const stages = state ? (state.stages || []) : [];
+  const activeStage = stages.find(s => s.status === 'active');
+  const completedStages = stages.filter(s => s.status === 'complete');
+  const nextStage = activeStage || stages.find(s => s.status === 'up next');
+  const totalPhases = stages.length;
+  const completedPhases = completedStages.length;
+  const progressPct = totalPhases > 0 ? Math.round((completedPhases / totalPhases) * 100) : 0;
+  const nextItem = nextStage ? nextStage.goal || nextStage.name || null : null;
+  const lastActivity = state ? (state.lastActivity || entry.lastSeen) : entry.lastSeen;
+
   return {
     id: entry.path,
     path: entry.path,
-    name: entry.name,
+    name: state ? (state.project?.name || entry.name) : entry.name,
     lastSeen: entry.lastSeen,
+    lastActivity: typeof lastActivity === 'object' ? lastActivity.date : lastActivity,
     conductorWorkspace: entry.conductorWorkspace || null,
-    currentPhase: state ? (state.stages || []).find(s => s.status === 'active')?.number || null : null,
-    projectName: state ? state.project?.name || null : null,
+    currentPhase: activeStage ? (activeStage.name || `Phase ${activeStage.number}`) : null,
+    totalPhases,
+    completedPhases,
+    progressPct,
+    nextItem,
+    status: activeStage ? 'active' : (completedPhases === totalPhases && totalPhases > 0 ? 'complete' : 'unknown'),
   };
 }
 
@@ -719,7 +734,7 @@ function serveIndex(res) {
 // ---------------------------------------------------------------------------
 // API: /api/state  (dual-shape)
 // ---------------------------------------------------------------------------
-function serveState(res) {
+function serveState(res, requestedProjectId) {
   try {
     const projects = loadRegistry();
 
@@ -729,22 +744,16 @@ function serveState(res) {
       return buildProjectSummary(entry, ps || { lastState: null });
     });
 
-    // Active project: first registered project with a watcher (or first in registry)
+    // Active project: requested project, or first with a watcher, or first in registry
     let activeState = null;
-    for (const entry of projects) {
+    const targetEntries = requestedProjectId
+      ? projects.filter(e => e.path === requestedProjectId)
+      : projects;
+
+    for (const entry of targetEntries) {
       const ps = projectStates.get(entry.path);
       if (ps && ps.lastState) {
-        // Refresh active project state if files changed
-        ensureCache(ps);
-        const newMtimes = scanMtimes(ps.planningDir);
-        const changedFiles = getChangedFiles(ps.cache.mtimes, newMtimes);
-        ps.cache.mtimes = newMtimes;
-
-        if (changedFiles.size > 0 || !ps.lastState) {
-          activeState = buildState(ps, changedFiles.size > 0 ? changedFiles : null);
-        } else {
-          activeState = ps.lastState;
-        }
+        activeState = ps.lastState;
         break;
       }
     }
@@ -836,7 +845,7 @@ const server = http.createServer((req, res) => {
   }
 
   if (req.method === 'GET' && pathname === '/api/state') {
-    return serveState(res);
+    return serveState(res, url.searchParams.get('project') || null);
   }
 
   if (req.method === 'POST' && pathname === '/api/register') {

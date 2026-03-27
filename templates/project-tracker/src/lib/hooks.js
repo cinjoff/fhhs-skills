@@ -26,7 +26,7 @@ export function useSSE(onData) {
   onDataRef.current = onData;
 
   const fetchState = useCallback((projectId) => {
-    const url = projectId ? `/api/state?projectId=${encodeURIComponent(projectId)}` : '/api/state';
+    const url = projectId ? `/api/state?project=${encodeURIComponent(projectId)}` : '/api/state';
     fetch(url)
       .then(r => r.json())
       .then(d => {
