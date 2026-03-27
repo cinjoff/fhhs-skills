@@ -59,8 +59,9 @@ print(data['plugins'][0]['version'])
 ```
 
 ```bash
-# Get changelog
-curl -sL "https://raw.githubusercontent.com/cinjoff/fhhs-skills/main/CHANGELOG.md" 2>/dev/null
+# Get changelog — capture into variable for use in Step 5b reconciliation
+CHANGELOG_CONTENT=$(curl -sL "https://raw.githubusercontent.com/cinjoff/fhhs-skills/main/CHANGELOG.md" 2>/dev/null)
+echo "$CHANGELOG_CONTENT"
 ```
 
 **If fetch fails:**
@@ -209,98 +210,67 @@ Proceed to Step 5.
 
 ## Step 5: Post-Update Reconciliation
 
-After the plugin is updated, reconcile the user's environment and project to pick up new features.
+After the plugin is updated, check whether the user's environment needs changes introduced between their old and new version. This uses reconciliation tags in the changelog — no need to read setup.md or new-project.md.
 
-### Resolve Plugin Root
+### 5a: Re-link CLI tools
 
-Before reading source files, find the plugin installation directory:
+Always re-link CLI tools after update — symlinks may point to the old cached version:
 
 ```bash
-# Find the latest cached version of fhhs-skills
-PLUGIN_ROOT=$(ls -d ~/.claude/plugins/fh@fhhs-skills/*/  2>/dev/null | sort -V | tail -1)
-
-# Fallback: check for dev checkout
-if [ -z "$PLUGIN_ROOT" ]; then
-  for dir in ~/Documents/github*/fhhs-skills ~/code/fhhs-skills; do
-    [ -d "$dir/commands" ] && PLUGIN_ROOT="$dir/" && break
-  done
+PLUGIN_ROOT=""
+LATEST="$(ls -d "$HOME/.claude/plugins/cache/fhhs-skills/fh"/*/ 2>/dev/null | sort | tail -1)"
+LATEST="${LATEST%/}"
+if [ -n "$LATEST" ] && [ -f "$LATEST/bin/gsd-tools.cjs" ]; then
+  PLUGIN_ROOT="$LATEST"
+fi
+if [ -n "$PLUGIN_ROOT" ] && [ -d "$PLUGIN_ROOT/bin" ]; then
+  mkdir -p "$HOME/.claude/get-shit-done"
+  ln -sfn "$PLUGIN_ROOT/bin" "$HOME/.claude/get-shit-done/bin"
+  [ -d "$PLUGIN_ROOT/hooks" ] && ln -sfn "$PLUGIN_ROOT/hooks" "$HOME/.claude/get-shit-done/hooks"
+  echo "✓ CLI tools re-linked"
+else
+  echo "⚠ Could not find plugin root for re-linking"
 fi
 ```
 
-If PLUGIN_ROOT cannot be resolved, skip Steps 5a and 5b with: "Could not find plugin files for reconciliation. Run `/fh:setup` manually to ensure your environment is up to date."
+### 5b: Changelog-driven reconciliation
 
-### Step 5a: Machine Reconciliation
+Save the changelog (already fetched in Step 2) to a temp file and run the reconciliation check:
 
-Re-apply machine-level setup to ensure the user's environment matches what the latest version expects. This runs automatically — no prompt needed.
-
-1. Read `${PLUGIN_ROOT}commands/setup.md` to understand current machine-level requirements
-2. Check each requirement against the user's actual environment
-3. Fix anything missing or stale — all operations are idempotent
-
-What to check and fix (derived from reading setup.md each time — do NOT use a hardcoded checklist):
-- **CLI symlinks** — re-run the symlink block (ln -sfn to latest cached version). Fixes stale symlinks pointing to the old version.
-- **Hooks** — read `~/.claude/settings.json` and compare against hooks defined in setup.md. Add any missing fhhs hooks. **IMPORTANT: Do NOT remove existing hooks — including gsd-* hooks that may serve other projects. Only append missing hooks.**
-- **Env vars** — check settings.json env block for vars required by setup.md. Add any missing ones.
-- **Plugins** — check if plugins mentioned in setup.md (e.g., typescript-lsp, claude-mem) are installed. Note missing ones but don't auto-install (may require terminal).
-
-Report what was fixed:
-```
-✓ CLI tools re-linked to vX.Y.Z
-✓ Context monitor hook added (new in vX.Y.Z)
-✓ CLAUDE_CODE_ENABLE_TASKS added to settings
-○ All hooks up to date
+```bash
+# CHANGELOG_CONTENT was already fetched via curl in Step 2
+echo "$CHANGELOG_CONTENT" > /tmp/fhhs-changelog.md
+node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" changelog reconcile \
+  --from "$PREV_VERSION" --to "$LATEST_VERSION" \
+  --changelog-file /tmp/fhhs-changelog.md \
+  --project-root "$PWD"
 ```
 
-### Step 5b: Project Reconciliation
+The command outputs JSON with `missing` and `ok` arrays. Each item has `type`, `check`, `id`, `description`, and `version`.
 
-**Only run if `.planning/` exists in the current working directory.** If not, skip with: "No project detected in this directory. Run `/fh:update` from your project root to check for new features."
-
-This step checks whether the user's existing project has all the features that a new project would get.
-
-1. Read `${PLUGIN_ROOT}commands/new-project.md` to understand what project-level features exist
-2. Read `${PLUGIN_ROOT}commands/setup.md` for any project-relevant setup (e.g., claude-mem)
-3. For each feature, check the characteristic files/directories that would exist if it was set up
-4. If a feature in new-project.md is stack-specific (e.g., Next.js API routes, instrumentation.ts), check whether the project uses that stack before offering it
-5. Present missing features in a grouped prompt
-
-**If nothing is missing:** "Your project is up to date with all available features." Skip the prompt.
-
-**If features are missing**, present them grouped with plain human language describing the benefit:
+**If `missing` is empty:**
 
 ```
-## New features available for this project
-
-This update includes features that your project doesn't have yet.
-Pick which ones to add:
-
-  1. ◻ Catch runtime errors automatically
-     Captures browser and server errors to a local database that
-     /fh:fix and /fh:build query during debugging.
-
-  2. ◻ Project dashboard
-     Visual progress tracker showing phases, plans, and status
-     at a glance. Launch anytime with /fh:tracker.
-
-  3. ◻ Conductor workspace scripts
-     Auto-configures dev server, env vars, and task tracking
-     for each parallel workspace.
-
-  4. ◻ Persistent memory (claude-mem)
-     Automatically captures session context and reinjects
-     relevant history into future sessions.
-
-Which would you like to add? (e.g. "1 and 2", "all", or "none")
+✓ Your environment is up to date with all setup changes.
 ```
 
-For each selected feature, follow the relevant section of new-project.md or setup.md to scaffold it. Do not duplicate the scaffold instructions here — read and follow the source commands.
+**If `missing` has items**, display them grouped by type:
 
-After applying, report what was added:
 ```
-✓ Local error tracking added (lib/sentry-local.ts + query tool)
-✓ Project tracker scaffolded (.project-tracker/)
+## Setup items to reconcile
+
+These setup changes were introduced between your old and new version:
+
+| Status | What | Added in | Description |
+|--------|------|----------|-------------|
+| ✗ | fallow (CLI tool) | v1.26.0 | Fallow static analysis in setup |
+| ✗ | ~/.skills/shadcn (directory) | v1.19.0 | shadcn/ui skills in /fh:setup |
+| ✓ | CLAUDE_CODE_ENABLE_TASKS (env) | v1.25.0 | Task tracking in setup |
+
+Run `/fh:setup` to install missing items, or install them manually.
 ```
 
-Suggest running `/fh:revise-claude-md` afterward if any features were added, so CLAUDE.md reflects the new capabilities.
+Do NOT read setup.md or new-project.md. Do NOT auto-install anything. Just report what's missing and point to `/fh:setup`.
 
 **After reconciliation is complete:**
 

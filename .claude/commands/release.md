@@ -135,6 +135,14 @@ Generate a changelog entry for the new version by parsing conventional commit me
 - Write for users, not developers — skip internal refactors nobody sees
 - Group related commits into single bullets when they're part of the same change
 - Use present tense ("adds", not "added")
+- **Reconciliation tags** — if the entry adds something that `/fh:setup` or `/fh:new-project` would install/configure, append a tag at the end of the bullet:
+  - `[setup:tool:NAME]` — CLI tool (checked via `command -v`)
+  - `[setup:env:KEY]` — env var in `~/.claude/settings.json`
+  - `[setup:hook:SUBSTRING]` — hook command containing substring
+  - `[setup:plugin:KEY]` — plugin key in `installed_plugins.json`
+  - `[setup:dir:PATH]` — directory (`~` expanded)
+  - `[project:file:PATH]` / `[project:dir:PATH]` — project-relative path
+  - Example: `- **Fallow in setup** — installs Fallow CLI [setup:tool:fallow]`
 
 Show the generated entry and ask:
 
