@@ -20,6 +20,7 @@
     "context_target": 60
   },
   "workflow": {
-    "auto_advance": false
+    "auto_advance": false,
+    "nyquist_validation": true
   }
 }

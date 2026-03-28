@@ -113,10 +113,12 @@ This step always succeeds — tracker errors are non-fatal.
 
 Before autonomous execution, engage the user as a strategic advisor to shape and validate the project vision. This step ensures the autonomous pipeline builds the RIGHT thing, not just builds things.
 
-**Skip this step if:**
+**Skip conditions — but always do minimal research (Step 2.1b):**
 - `--skip-workshop` or `--resume` flag is set
 - User says "just go", "proceed", "start building", or similar
 - All three conditions met: PROJECT.md has clear vision with north star, REQUIREMENTS.md has exhaustive requirements, ROADMAP.md has well-formed phases with no gaps
+
+Even when skipping the full workshop, ALWAYS run Step 2.1b (Quick Sanity Check) below. The only exception is `--resume`, which skips everything.
 
 ### 2.1: Load Existing Context
 
@@ -135,6 +137,17 @@ If context-mode is available, index these via `ctx_batch_execute` for efficient 
 If claude-mem is available, call `smart_search` with 2-3 keywords from the project domain (limit=5) to surface relevant past learnings, decisions, and session context. Present as: "From previous sessions, here's what we've learned that might matter..."
 
 Identify what's well-defined vs what has gaps: missing vision, vague success criteria, no differentiation story, unclear scope ambition, missing UX/domain research, missing design context.
+
+### 2.1b: Quick Sanity Check (always runs, even when workshop is skipped)
+
+This step runs even when the full workshop is skipped. It takes <30 seconds and prevents the pipeline from building on a shaky foundation:
+
+1. **Read PROJECT.md, REQUIREMENTS.md, ROADMAP.md** — confirm they exist and are non-trivial (>3 lines each)
+2. **Flag critical gaps silently** — if any of these are missing or empty, warn the user: "I'm skipping the workshop as requested, but I noticed [gap]. The pipeline may produce suboptimal results."
+3. **Quick domain check** — if claude-mem is available, `smart_search` with 2-3 project keywords (limit=3). Surface any relevant prior learnings that might affect the build.
+4. **Validate phase readiness** — check that at least the first incomplete phase has a clear goal in ROADMAP.md. If the goal is vague (e.g., "improve things"), warn: "Phase N goal is vague — the planning step may struggle. Consider clarifying before proceeding."
+
+This step NEVER blocks execution. It only warns. The user already said "go" — respect that while providing visibility.
 
 ### 2.2: Domain Research
 
@@ -401,13 +414,20 @@ Whether the orchestrator completes successfully or is interrupted, always:
    node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs config-set workflow.auto_advance false
    ```
 
-2. **Report final state:**
+2. **Report final state** (format as a clear summary the user can act on):
    - Phases completed (e.g., "Completed phases 3-5 of 8")
    - Total decisions logged to `.planning/DECISIONS.md`
    - Any LOW confidence decisions that need human review (flagged with `⚠ NEEDS REVIEW`)
    - If interrupted: the exact stop point so `--resume` can pick up
 
-3. **Read final STATE.md** and confirm it reflects the orchestrator's last successful step.
+3. **If orchestrator failed**, provide actionable diagnostics:
+   - Read the error output and any `{step}-error.log` files in the failed phase directory
+   - Classify the failure: API error (suggest retry with `--resume`), logic error (show the error and suggest investigating), stuck session (note the phase and suggest `--resume`)
+   - If PARTIAL-SUMMARY.md exists, read it and summarize what was completed before failure
+   - Always end with: "Run `/fh:auto --resume` to continue from where it stopped."
+   - Never leave the user without a clear next action
+
+4. **Read final STATE.md** and confirm it reflects the orchestrator's last successful step.
 
 ---
 
