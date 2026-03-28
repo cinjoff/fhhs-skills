@@ -492,13 +492,15 @@ async function waitForHealthyApi() {
  * API errors benefit from backoff+retry; logic errors do not.
  */
 function isApiError(err) {
+  // Orchestrator-initiated kills (stuck/timeout) are NOT API errors
+  if (err.stuck || err.timeout) return false;
   const msg = (err.message || '').toLowerCase();
   const apiPatterns = [
     'econnrefused', 'econnreset', 'etimedout', 'enotfound',
     'socket hang up', 'network', 'api error', '502', '503', '529',
-    'overloaded', 'rate limit', 'spawn', 'killed',
+    'overloaded', 'rate limit', 'spawn',
   ];
-  return apiPatterns.some(p => msg.includes(p)) || err.timeout;
+  return apiPatterns.some(p => msg.includes(p));
 }
 
 // ─── Per-Session Metrics ──────────────────────────────────────────────────────
@@ -530,12 +532,17 @@ function parseSessionMetrics(stdout) {
 function resolveProjectName(cwd) {
   try {
     const { execSync } = require('child_process');
-    const gitRoot = execSync('git rev-parse --show-toplevel', {
+    // Use --git-common-dir for worktree support (returns /path/to/repo/.git)
+    // This resolves the actual repo name, not the worktree directory name
+    const commonDir = execSync('git rev-parse --git-common-dir', {
       cwd,
       timeout: 5000,
       stdio: ['ignore', 'pipe', 'ignore'],
     }).toString().trim();
-    return path.basename(gitRoot);
+    const resolved = path.resolve(cwd, commonDir);
+    // Strip trailing /.git or /.git/worktrees/xxx
+    const repoRoot = resolved.replace(/\/\.git(\/worktrees\/[^/]+)?$/, '');
+    return path.basename(repoRoot);
   } catch {
     return path.basename(cwd);
   }
@@ -580,6 +587,8 @@ function runClaudeSession(prompt, opts) {
     if (claudeMemDir) {
       args.push('--plugin-dir', claudeMemDir);
       log(`  MCP: claude-mem from ${claudeMemDir}`);
+    } else {
+      log(`  ⚠ claude-mem not found — observations will NOT be captured for this session`);
     }
 
     // Inject project conventions so the session has full context
@@ -683,6 +692,7 @@ function runClaudeSession(prompt, opts) {
         const err = new Error(errMsg);
         err.exitCode = code;
         err.stderr = stderr;
+        err.stdout = stdout;
         reject(err);
       } else {
         resolve({ stdout, stderr, exitCode: code, elapsedMs, promptText: prompt });
@@ -1585,15 +1595,68 @@ async function main() {
         if (attempts >= MAX_RETRIES) {
           const skipDecId = nextDecisionId(projectDir);
           const reason = err.stuck ? 'stuck session' : err.timeout ? 'hard timeout' : 'repeated failure';
+          // Capture stdout tail for diagnostic context
+          const stdoutTail = (err.stdout || '').split('\n').filter(l => l.trim()).slice(-20).join('\n');
+          const stderrTail = (err.stderr || '').split('\n').filter(l => l.trim()).slice(-10).join('\n');
           appendDecision(projectDir, {
             id: skipDecId,
             title: `Skipped ${step} in phase ${phase.id} after ${reason}`,
             status: 'ACTIVE ⚠ NEEDS REVIEW',
             confidence: 'LOW',
-            context: `Step "${step}" failed ${attempts} time(s). Last error: ${err.message.slice(0, 200)}`,
+            context: `Step "${step}" failed ${attempts} time(s). Last error: ${err.message.slice(0, 200)}${stdoutTail ? '\n\nLast output (tail):\n```\n' + stdoutTail + '\n```' : ''}${stderrTail ? '\nStderr:\n```\n' + stderrTail + '\n```' : ''}`,
             decision: `Skipping step and continuing to next. Manual intervention required.`,
             affects: `Phase ${phase.id}, step ${step}`,
           });
+          // Write error log file for post-mortem analysis
+          try {
+            const phaseDir = findPhaseDir(projectDir, phase.id);
+            if (phaseDir) {
+              const errorLogPath = path.join(phaseDir, `${step}-error.log`);
+              const errorLog = [
+                `# Error Log: Phase ${phase.id}, Step ${step}`,
+                `Timestamp: ${new Date().toISOString()}`,
+                `Exit code: ${err.exitCode || 'N/A'}`,
+                `Reason: ${reason}`,
+                `Attempts: ${attempts}`,
+                `Elapsed: ${err.elapsedMs ? Math.round(err.elapsedMs / 1000) + 's' : 'N/A'}`,
+                '',
+                '## stderr',
+                err.stderr || '(empty)',
+                '',
+                '## stdout (last 3000 chars)',
+                (err.stdout || '').slice(-3000),
+              ].join('\n');
+              fs.writeFileSync(errorLogPath, errorLog, 'utf-8');
+              log(`  Error log written to ${errorLogPath}`);
+            }
+          } catch { /* non-fatal */ }
+          // Write partial SUMMARY for killed builds
+          if (step === 'build' && (err.stuck || err.timeout)) {
+            try {
+              const phaseDir = findPhaseDir(projectDir, phase.id);
+              if (phaseDir) {
+                const partialPath = path.join(phaseDir, 'PARTIAL-SUMMARY.md');
+                const partial = [
+                  '---',
+                  'status: partial',
+                  `killed_at: ${new Date().toISOString()}`,
+                  `reason: ${reason}`,
+                  '---',
+                  '',
+                  '# Partial Build Summary',
+                  '',
+                  `Session was killed (${reason}). Build did not complete.`,
+                  '',
+                  '## Last Output',
+                  '```',
+                  (err.stdout || '').slice(-2000),
+                  '```',
+                ].join('\n');
+                fs.writeFileSync(partialPath, partial, 'utf-8');
+                log(`  Partial SUMMARY written to ${partialPath}`);
+              }
+            } catch { /* non-fatal */ }
+          }
           log(`  ⚠ Skipping ${step} after ${attempts} attempts — decision logged as ${skipDecId}`);
           return { skipped: true, reason: 'max-retries', error: err };
         }

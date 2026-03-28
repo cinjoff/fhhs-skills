@@ -8654,6 +8654,212 @@
           ]
         }
       ]
+    },
+    {
+      "id": 267,
+      "command": "auto",
+      "prompt": "Run /fh:auto on a project in a Conductor worktree (e.g., havana workspace for fh-starter-project). The git worktree path is /workspaces/fh-starter-project/havana but the actual repo is fh-starter-project.",
+      "expected_output": "Should resolve project name using git rev-parse --git-common-dir (not --show-toplevel) to get the actual repo name fh-starter-project instead of the worktree name havana. Should set CLAUDE_MEM_PROJECT to fh-starter-project in spawned sessions.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Uses git-common-dir for project name resolution, not show-toplevel",
+          "type": "behavioral"
+        },
+        {
+          "text": "Sets CLAUDE_MEM_PROJECT to actual repo name, not worktree basename",
+          "type": "behavioral"
+        },
+        {
+          "text": "Resolves worktree paths correctly for Conductor workspaces",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "guard",
+        "edge-case"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "git-common-dir",
+            "CLAUDE_MEM_PROJECT"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "show-toplevel"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 268,
+      "command": "auto",
+      "prompt": "Run /fh:auto but phase 3 build gets killed by stuck detector after 8 minutes of no output (exit code 143). What happens?",
+      "expected_output": "Should capture stdout from the killed session. Should write {step}-error.log to the phase directory with full stdout/stderr. Should write PARTIAL-SUMMARY.md with last output. Decision entry should include stdout tail (last 20 lines) not just empty stderr. Should NOT classify stuck kills as API errors (no health check backoff). Should NOT retry with API health check.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Writes error log file ({step}-error.log) to phase directory",
+          "type": "behavioral"
+        },
+        {
+          "text": "Writes PARTIAL-SUMMARY.md with last output from killed build",
+          "type": "behavioral"
+        },
+        {
+          "text": "Decision entry includes stdout tail, not just exit code",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT classify stuck kills as API errors",
+          "type": "guard"
+        },
+        {
+          "text": "Does NOT trigger health check backoff for stuck sessions",
+          "type": "guard"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "guard",
+        "edge-case"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "error.log",
+            "PARTIAL-SUMMARY",
+            "stdout",
+            "stuck"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "API error",
+            "health check backoff"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 269,
+      "command": "auto",
+      "prompt": "Run /fh:auto on a 5-phase project. Phases 1 and 3 fail but phases 2, 4, 5 succeed. What should STATE.md show?",
+      "expected_output": "STATE.md should accurately reflect which phases completed and which failed. Active phase should be the first incomplete phase (phase 1). Should NOT show phase 1 as planned when phases 2,4,5 are done. The completed count should be 3, not 5.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "STATE.md reflects accurate completion status for out-of-order phases",
+          "type": "behavioral"
+        },
+        {
+          "text": "Active phase is first incomplete phase, not last sequential",
+          "type": "behavioral"
+        },
+        {
+          "text": "Completed phases listed accurately despite non-sequential completion",
+          "type": "output"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "STATE",
+            "phase",
+            "complete",
+            "failed"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 270,
+      "command": "auto",
+      "prompt": "What happens when claude-mem is not installed and /fh:auto runs headless sessions?",
+      "expected_output": "Should detect claude-mem is missing at session startup and log a clear warning. Should still proceed with execution (claude-mem is optional). Should NOT silently skip \u2014 the warning should be visible in orchestrator logs so the user knows observations are not being captured.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Warns when claude-mem is not found for headless sessions",
+          "type": "behavioral"
+        },
+        {
+          "text": "Proceeds with execution despite missing claude-mem",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT silently skip claude-mem without warning",
+          "type": "guard"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case",
+        "guard"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "claude-mem",
+            "warning",
+            "not found"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 271,
+      "command": "auto",
+      "prompt": "A claude -p session exits with code 1 (not stuck, not timeout). How does the orchestrator handle it differently from exit code 143?",
+      "expected_output": "Exit code 1 is a logic error, not API or stuck. Should capture both stdout and stderr from the failed session. Should NOT trigger API health check or backoff. Should write error log. Decision entry should include stderr content (which is populated for code 1 unlike code 143). Should retry up to MAX_RETRIES without API backoff.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Captures both stdout and stderr for exit code 1",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT trigger API health check for logic errors",
+          "type": "guard"
+        },
+        {
+          "text": "Writes error log with stderr content",
+          "type": "behavioral"
+        },
+        {
+          "text": "Retries without API backoff",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case",
+        "guard"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "stderr",
+            "stdout",
+            "error",
+            "retry"
+          ]
+        }
+      ]
     }
   ]
 }

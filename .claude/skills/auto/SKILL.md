@@ -305,13 +305,16 @@ Each step is a separate `claude -p` session with fresh context. The orchestrator
 - Without `--permission-mode bypassPermissions`, interactive prompts hang the process
 - Bare skill invocations (e.g. `/fh:plan-work`) alone are insufficient — include phase goal and autonomy instructions
 - Without `CLAUDE_MEM_PROJECT` env var, claude-mem stores observations under the plugin-dir project name instead of the actual project name, causing observation misattribution across projects
-- Project name must use `git rev-parse --show-toplevel` (not `path.basename`) for Conductor workspaces where the cwd basename differs from the project name (e.g., "cairo" vs "fhhs-skills")
+- Project name uses `git rev-parse --git-common-dir` (not `--show-toplevel`) to resolve actual repo name in Conductor worktrees (e.g., "fh-starter-project" not "havana")
 
 **Resilience features (built into orchestrator):**
 - **Stuck detection:** Sessions producing no output for 3min get warned, killed at 8min silence — prevents API stalls from running to the 45min hard timeout
 - **API health check:** Before each session spawn, verifies `claude --version` responds. On failure, retries with exponential backoff (10s → 20s → 40s → 80s → 120s) up to 5 times before aborting with saved state
-- **API error classification:** Distinguishes API/infra errors (connection refused, 502/503, rate limit) from logic errors. Only backs off on infra errors.
+- **API error classification:** Distinguishes API/infra errors (connection refused, 502/503, rate limit) from logic errors. Orchestrator-initiated kills (stuck/timeout) are NOT classified as API errors — they skip health check backoff.
 - **Smart resume:** `--resume` checks both `.auto-state.json` AND existing SUMMARY.md artifacts. If a phase has SUMMARY.md but the state file says incomplete (crashed between build and state update), skips ahead automatically.
+- **Error log persistence:** On failure, writes `{step}-error.log` to the phase directory with full stdout/stderr tail for post-mortem analysis
+- **Partial SUMMARY:** When a build session is killed (stuck/timeout), writes `PARTIAL-SUMMARY.md` with last output — preserves diagnostic context even for incomplete builds
+- **Decision context:** Skip decisions include stdout tail (last 20 lines) in the context field, not just exit codes
 
 Monitor the orchestrator's stdout for progress updates. If the orchestrator exits with a non-zero code, read its error output and report the failure point.
 
