@@ -9341,6 +9341,316 @@
           ]
         }
       ]
+    },
+    {
+      "id": 284,
+      "command": "auto",
+      "prompt": "Run /fh:auto on a project where STATE.md has '**Active Phase:** 3 (API Routes)' instead of '**Current Phase:** 03'. The parseCurrentPhase() function needs to determine the current phase. What does it return?",
+      "expected_output": "parseCurrentPhase() should match both '**Current Phase:**' and '**Active Phase:**' field names. The regex handles the optional 'Phase' prefix before the number, so '**Active Phase:** 3 (API Routes)' extracts '3'. Previously this returned null causing the orchestrator to fall back to phase 01.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Matches both 'Current Phase' and 'Active Phase' field names in STATE.md body",
+          "type": "behavioral"
+        },
+        {
+          "text": "Extracts the phase number even without 'Phase' prefix (e.g., '3' from 'Active Phase: 3')",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT return null when STATE.md uses Active Phase instead of Current Phase",
+          "type": "guard"
+        }
+      ],
+      "tier": "micro",
+      "tags": [
+        "bug-fix",
+        "guard",
+        "state-parsing"
+      ],
+      "checks": {
+        "type": "required_terms",
+        "terms": [
+          "Active Phase",
+          "Current Phase",
+          "parseCurrentPhase"
+        ]
+      }
+    },
+    {
+      "id": 285,
+      "command": "auto",
+      "prompt": "Run /fh:auto (no --resume) on a project where phases 01, 02, 04, 05 are already completed (each has a SUMMARY.md). Phase 03 is the only incomplete phase. The orchestrator starts iterating from phase 01. What happens to the completed phases?",
+      "expected_output": "The orchestrator should detect that phases 01, 02, 04, 05 already have SUMMARY.md files and skip them. In sequential mode, each phase is checked via findLatestPlan() + summaryExists() before execution. In speculative pipeline mode, a pre-scan marks phases with SUMMARY.md as 'built' in the phase_states map. Only phase 03 should actually execute.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Skips phases that have existing SUMMARY.md even without --resume flag",
+          "type": "behavioral"
+        },
+        {
+          "text": "Uses findLatestPlan() and summaryExists() to detect completed phases",
+          "type": "behavioral"
+        },
+        {
+          "text": "In pipeline mode, pre-scan marks completed phases as 'built' in phase_states",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT re-plan or re-build phases that already have SUMMARY.md",
+          "type": "guard"
+        }
+      ],
+      "tier": "full",
+      "tags": [
+        "bug-fix",
+        "guard",
+        "completion-detection"
+      ],
+      "checks": {
+        "type": "required_terms",
+        "terms": [
+          "SUMMARY.md",
+          "summaryExists",
+          "findLatestPlan"
+        ]
+      }
+    },
+    {
+      "id": 286,
+      "command": "auto",
+      "prompt": "The auto orchestrator writes .auto-state.json for the tracker dashboard. What mechanism prevents the tracker from reading a half-written JSON file during a write?",
+      "expected_output": "All three write paths (writeAutoStatus, saveAutoState, and the debounced log() updater) use atomic writes: write to a .tmp file first, then fs.renameSync() to the target path. rename is atomic on POSIX filesystems, so the tracker always reads either the old complete file or the new complete file, never a partial write.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "writeAutoStatus uses tmp file + renameSync for atomic writes",
+          "type": "behavioral"
+        },
+        {
+          "text": "saveAutoState uses tmp file + renameSync for atomic writes",
+          "type": "behavioral"
+        },
+        {
+          "text": "log() debounced updater also uses tmp file + renameSync",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT write directly to .auto-state.json without atomicity",
+          "type": "guard"
+        }
+      ],
+      "tier": "micro",
+      "tags": [
+        "bug-fix",
+        "atomicity",
+        "tracker"
+      ],
+      "checks": {
+        "type": "required_terms",
+        "terms": [
+          "renameSync",
+          ".tmp",
+          "atomic"
+        ]
+      }
+    },
+    {
+      "id": 287,
+      "command": "auto",
+      "prompt": "The auto orchestrator runs a speculative 3-wave pipeline (planning, review, build). If it crashes between the planning wave and the build wave, can --resume recover the planning results? What state is persisted?",
+      "expected_output": "Yes. After the planning wave completes (Promise.allSettled), the orchestrator calls saveAutoState() with the current phase_states map (showing which phases are 'planned'), phasePlanPaths (relative paths to each PLAN.md), totalCostEstimate, and retryCount. Similarly after the review wave. On --resume, these are restored to skip re-planning completed phases.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "saveAutoState is called after the planning wave completes",
+          "type": "behavioral"
+        },
+        {
+          "text": "saveAutoState is called after the review wave completes",
+          "type": "behavioral"
+        },
+        {
+          "text": "Persisted state includes phase_states, phase_plan_paths, total_cost_estimate",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT only persist state during the build wave",
+          "type": "guard"
+        }
+      ],
+      "tier": "full",
+      "tags": [
+        "bug-fix",
+        "crash-recovery",
+        "state-persistence"
+      ],
+      "checks": {
+        "type": "required_terms",
+        "terms": [
+          "saveAutoState",
+          "planning-wave-complete",
+          "review-wave-complete",
+          "phase_plan_paths"
+        ]
+      }
+    },
+    {
+      "id": 288,
+      "command": "auto",
+      "prompt": "The auto orchestrator runs in sequential mode (--no-speculative). Phase 03 fails with missing critical steps. Is state persisted for --resume? What happens?",
+      "expected_output": "Yes. When critical steps are missing in sequential mode, the orchestrator now calls saveAutoState() with the failed phase ID, completed steps, cost estimate, and plan paths before writing the inactive status. Previously sequential mode never called saveAutoState, so --resume had no state to restore and would fall back to STATE.md inference only.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Sequential mode calls saveAutoState on phase failure",
+          "type": "behavioral"
+        },
+        {
+          "text": "Persisted state includes phase, steps_completed, and phase_plan_paths",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT only use writeAutoStatus (which omits plan paths) in sequential mode",
+          "type": "guard"
+        }
+      ],
+      "tier": "full",
+      "tags": [
+        "bug-fix",
+        "sequential-mode",
+        "state-persistence"
+      ],
+      "checks": {
+        "type": "required_terms",
+        "terms": [
+          "saveAutoState",
+          "sequential",
+          "steps_completed"
+        ]
+      }
+    },
+    {
+      "id": 289,
+      "command": "auto",
+      "prompt": "After /fh:auto completes successfully, what happens to .auto-state.json? The tracker dashboard needs to show 'completed' status. But --resume should not find stale state from a completed run.",
+      "expected_output": "The file is kept with active: false (not deleted). The tracker reads this and shows completed status. When --resume loads auto-state and finds active: false, it treats it as no state (logs 'completed run, starting fresh') and falls back to STATE.md inference. The next auto run overwrites the file. Previously clearAutoState() deleted the file immediately, so the tracker never saw the completed transition.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Keeps .auto-state.json with active: false on completion (does not delete)",
+          "type": "behavioral"
+        },
+        {
+          "text": "--resume skips auto-state files that have active: false",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT call clearAutoState on successful completion",
+          "type": "guard"
+        }
+      ],
+      "tier": "micro",
+      "tags": [
+        "bug-fix",
+        "tracker",
+        "completion"
+      ],
+      "checks": {
+        "type": "required_terms",
+        "terms": [
+          "auto-state.json",
+          "active",
+          "false",
+          "clearAutoState"
+        ]
+      }
+    },
+    {
+      "id": 290,
+      "command": "tracker",
+      "prompt": "The tracker dashboard has a live auto-pipeline display showing plan/review/build/verify steps. The auto orchestrator emits step names like 'plan-work', 'plan-review', 'build', 'review'. How does the frontend map these to display names?",
+      "expected_output": "The AutoPipeline component uses a stepAliases mapping: 'plan' maps to ['plan', 'plan-work'], 'review' maps to ['review', 'plan-review'], 'build' maps to ['build'], 'verify' maps to ['verify', 'review']. The stepStatus() function checks if the current step or any completed step matches any alias for the display name. This ensures 'plan-work' lights up the 'plan' indicator, and post-build 'review' lights up 'verify'.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Uses stepAliases mapping for orchestrator step names to display names",
+          "type": "behavioral"
+        },
+        {
+          "text": "plan-work maps to the 'plan' display step",
+          "type": "output"
+        },
+        {
+          "text": "plan-review maps to the 'review' display step",
+          "type": "output"
+        },
+        {
+          "text": "Post-build 'review' step maps to the 'verify' display step",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT use hardcoded step names that don't match orchestrator values",
+          "type": "guard"
+        }
+      ],
+      "tier": "micro",
+      "tags": [
+        "bug-fix",
+        "tracker",
+        "frontend"
+      ],
+      "checks": {
+        "type": "required_terms",
+        "terms": [
+          "stepAliases",
+          "plan-work",
+          "plan-review"
+        ]
+      }
+    },
+    {
+      "id": 291,
+      "command": "tracker",
+      "prompt": "The tracker server shows which projects have active auto jobs in the sidebar. How does it populate the autoJobs array and each project's autoState in the API response?",
+      "expected_output": "buildProjectSummary() reads .planning/.auto-state.json for each registered project and sets the autoState field on the summary object. The /api/state endpoint returns autoJobs as projectsList.filter(p => p.autoState && p.autoState.active). For the active project detail view, buildState() also reads .auto-state.json and includes autoState in the result object. Previously autoJobs was hardcoded to [] and autoState was always null.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "buildProjectSummary reads .planning/.auto-state.json for each project",
+          "type": "behavioral"
+        },
+        {
+          "text": "autoJobs filters projectsList for active autoState",
+          "type": "behavioral"
+        },
+        {
+          "text": "buildState includes autoState in the active project detail",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT hardcode autoJobs to empty array",
+          "type": "guard"
+        },
+        {
+          "text": "Does NOT hardcode autoState to null",
+          "type": "guard"
+        }
+      ],
+      "tier": "full",
+      "tags": [
+        "bug-fix",
+        "tracker",
+        "server"
+      ],
+      "checks": {
+        "type": "required_terms",
+        "terms": [
+          "buildProjectSummary",
+          "autoState",
+          ".auto-state.json"
+        ]
+      }
     }
   ]
 }

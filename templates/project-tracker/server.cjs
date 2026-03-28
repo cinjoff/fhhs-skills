@@ -109,18 +109,29 @@ function autoRegisterProject(projectPath) {
   }
 }
 
+// Read .auto-state.json from a planning directory (atomic-write safe)
+function readAutoState(planningDir) {
+  try {
+    const p = path.join(planningDir, '.auto-state.json');
+    if (fs.existsSync(p)) return JSON.parse(fs.readFileSync(p, 'utf8'));
+  } catch { /* half-written or invalid JSON — ignore */ }
+  return null;
+}
+
 // Build a lightweight summary for the sidebar from a registry entry.
 function buildProjectSummary(entry) {
   const projectPath = entry.path;
   const planningDir = path.join(projectPath, '.planning');
   const hasPlanningDir = fs.existsSync(planningDir);
 
+  const autoState = readAutoState(planningDir);
+
   const base = {
     id: projectPath,
     name: entry.name || path.basename(projectPath),
     path: projectPath,
     conductorWorkspace: entry.conductorWorkspace || null,
-    autoState: null,
+    autoState,
   };
 
   if (!hasPlanningDir) {
@@ -470,6 +481,8 @@ function buildState(changedFiles) {
   recentActivity.sort((a, b) => (b.time || '').localeCompare(a.time || ''));
   recentActivity.splice(10);
 
+  const autoState = readAutoState(activePlanningDir);
+
   const result = {
     project,
     milestone: roadmapData.milestone,
@@ -480,6 +493,7 @@ function buildState(changedFiles) {
     concerns,
     codebaseFreshness,
     lastActivity: state.lastActivity || null,
+    autoState,
   };
 
   lastState = result;
@@ -586,7 +600,7 @@ function serveState(req, res) {
     const response = {
       projects: projectsList,
       active: activeData,
-      autoJobs: [],
+      autoJobs: projectsList.filter(p => p.autoState && p.autoState.active),
     };
 
     const json = JSON.stringify(response);
