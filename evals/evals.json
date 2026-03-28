@@ -9651,6 +9651,239 @@
           ".auto-state.json"
         ]
       }
+    },
+    {
+      "id": 292,
+      "command": "update",
+      "prompt": "update --global",
+      "expected_output": "Should update the plugin globally (once), then discover ALL projects using fhhs-skills across the filesystem. Discovery uses two sources: tracker registry (~/.claude/tracker/projects.json) and Conductor workspace scan (~/conductor/workspaces/*/*). For each discovered project, should run post-update-reconcile.sh, changelog reconcile, and health --repair. Should display an aggregate table showing per-project status. Should clean up stale registry entries (paths that no longer exist).",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Updates plugin globally before per-project reconciliation",
+          "type": "behavioral"
+        },
+        {
+          "text": "Discovers projects from tracker registry and Conductor workspace scan",
+          "type": "behavioral"
+        },
+        {
+          "text": "Runs reconciliation on each discovered project",
+          "type": "behavioral"
+        },
+        {
+          "text": "Displays aggregate results table with per-project status",
+          "type": "output"
+        },
+        {
+          "text": "Cleans up stale registry entries for non-existent paths",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "happy-path",
+        "global-update"
+      ],
+      "checks": {
+        "type": "required_terms",
+        "terms": [
+          "global",
+          "projects.json",
+          "reconcil"
+        ]
+      }
+    },
+    {
+      "id": 293,
+      "command": "update",
+      "prompt": "update --global — I have 5 projects across 3 Conductor workspaces, but 2 of the projects were deleted from disk last week. What happens to those stale entries?",
+      "expected_output": "Should discover all 5 registered projects, detect that 2 paths no longer exist on disk (fs.existsSync returns false), skip reconciliation for those 2, auto-remove the stale entries from ~/.claude/tracker/projects.json, and report the cleanup in the summary. Should NOT error out or stop processing because of missing paths.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects stale paths that no longer exist on disk",
+          "type": "behavioral"
+        },
+        {
+          "text": "Skips reconciliation for non-existent projects",
+          "type": "behavioral"
+        },
+        {
+          "text": "Auto-removes stale entries from tracker registry",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT error out or stop processing due to missing paths",
+          "type": "guard"
+        },
+        {
+          "text": "Reports cleanup count in summary",
+          "type": "output"
+        }
+      ],
+      "tier": "full",
+      "tags": [
+        "edge-case",
+        "global-update"
+      ],
+      "checks": {
+        "type": "required_terms",
+        "terms": [
+          "stale",
+          "removed",
+          "registry"
+        ]
+      }
+    },
+    {
+      "id": 294,
+      "command": "update",
+      "prompt": "update --global — some of my projects don't have a .planning/ directory yet (they're just regular repos with .claude/settings.json). How does global update handle those?",
+      "expected_output": "Projects without .planning/ should still receive environment reconciliation (post-update-reconcile.sh for claude-mem patch and env vars, changelog reconcile for tool/hook/env gap checks). Health --repair should be skipped since there's no .planning/ to validate. The results table should show health as 'skipped' or '—' for those projects.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Runs environment reconciliation even without .planning/",
+          "type": "behavioral"
+        },
+        {
+          "text": "Skips health --repair for projects without .planning/",
+          "type": "behavioral"
+        },
+        {
+          "text": "Shows skipped health status in results table",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT fail or skip the entire project just because .planning/ is missing",
+          "type": "guard"
+        }
+      ],
+      "tier": "full",
+      "tags": [
+        "edge-case",
+        "global-update"
+      ],
+      "checks": {
+        "type": "required_terms",
+        "terms": [
+          "planning",
+          "skip",
+          "reconcil"
+        ]
+      }
+    },
+    {
+      "id": 295,
+      "command": "update",
+      "prompt": "update --global — I use Conductor with worktrees. I have 3 worktrees for the same repo (fh-starter-project/havana, fh-starter-project/kyoto, fh-starter-project/tokyo). Will each worktree get its own reconciliation pass?",
+      "expected_output": "Yes — each Conductor worktree is treated as a separate project because each has its own .claude/settings.json and potentially different .planning/ state. The global reconcile discovers them individually (from tracker registry or Conductor scan) and runs reconciliation on each. The CLAUDE_MEM_PROJECT env var is set correctly per-worktree using git rev-parse --git-common-dir to resolve the actual repo name. Results table should show each worktree with its Conductor workspace group.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Each worktree gets its own reconciliation pass",
+          "type": "behavioral"
+        },
+        {
+          "text": "CLAUDE_MEM_PROJECT uses git-common-dir for worktree-safe repo name",
+          "type": "behavioral"
+        },
+        {
+          "text": "Results table shows Conductor workspace grouping",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT skip worktrees because they share a git repo",
+          "type": "guard"
+        }
+      ],
+      "tier": "full",
+      "tags": [
+        "edge-case",
+        "global-update",
+        "conductor"
+      ],
+      "checks": {
+        "type": "required_terms",
+        "terms": [
+          "worktree",
+          "git-common-dir",
+          "workspace"
+        ]
+      }
+    },
+    {
+      "id": 296,
+      "command": "update",
+      "prompt": "update --global — what if a project has env gaps that the global reconcile detects but can't auto-fix (like missing tool installs or hooks)? How does it report that?",
+      "expected_output": "The global reconcile script runs changelog reconcile which detects env gaps but does NOT auto-remediate them (tool installs, hook additions require the full SKILL.md remediation logic). It reports the gap count per project in the results table. For projects with remaining gaps, suggests running /fh:update individually in each project to apply the full remediation. The summary shows total env gaps across all projects.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects env gaps per project via changelog reconcile",
+          "type": "behavioral"
+        },
+        {
+          "text": "Reports gap count in per-project results table",
+          "type": "output"
+        },
+        {
+          "text": "Suggests running /fh:update individually for projects with gaps",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT attempt auto-remediation of tool installs in global mode",
+          "type": "guard"
+        }
+      ],
+      "tier": "full",
+      "tags": [
+        "edge-case",
+        "global-update"
+      ],
+      "checks": {
+        "type": "required_terms",
+        "terms": [
+          "gap",
+          "reconcil",
+          "/fh:update"
+        ]
+      }
+    },
+    {
+      "id": 297,
+      "command": "update",
+      "prompt": "update --global — what if the tracker registry doesn't exist yet (fresh install, no projects tracked)?",
+      "expected_output": "Should fall back to Conductor workspace scan as the secondary discovery source. If ~/conductor/workspaces/ exists, scan all subdirectories for .planning/ or .claude/settings.json. If neither source finds any projects, report 'No projects found' and suggest running /fh:new-project. Should NOT error out or crash when projects.json is missing.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Falls back to Conductor scan when tracker registry is missing",
+          "type": "behavioral"
+        },
+        {
+          "text": "Reports 'No projects found' when no projects discovered from any source",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT crash when projects.json does not exist",
+          "type": "guard"
+        }
+      ],
+      "tier": "full",
+      "tags": [
+        "edge-case",
+        "global-update"
+      ],
+      "checks": {
+        "type": "required_terms",
+        "terms": [
+          "projects.json",
+          "conductor",
+          "scan"
+        ]
+      }
     }
   ]
 }

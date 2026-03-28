@@ -8,6 +8,17 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.49.0] - 2026-03-28
+
+### Added
+- **Global update** — `/fh:update --global` discovers all projects using fhhs-skills (from tracker registry and Conductor workspace scan) and reconciles each: env gap checks, health repair, tracker registration
+- **Auto-create `.claude/settings.json`** — `post-update-reconcile.sh` and `/fh:new-project` now create `.claude/settings.json` if missing, ensuring global update can reach all projects
+
+### Fixed
+- **Shell injection in post-update-reconcile** — Python heredocs replaced with `sys.argv` passing, preventing breakage with special characters in project names
+- **Non-git project crash** — `post-update-reconcile.sh` no longer crashes on `git rev-parse` for directories that aren't git repos
+- **Symlink resilience in Conductor scan** — `global-reconcile.cjs` uses `lstatSync` with per-entry error handling, so one bad directory doesn't skip the rest
+
 ## [1.48.2] - 2026-03-28
 
 ### Fixed
