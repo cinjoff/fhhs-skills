@@ -8,6 +8,15 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.45.1] - 2026-03-28
+
+### Fixed
+- **RAM-aware OrbStack memory configuration** — `/fh:new-project` and `/fh:update` now detect physical RAM via `sysctl hw.memsize` and scale the OrbStack memory recommendation: 4096 MiB on 8GB machines (50%, avoids starving macOS), 8192 MiB on 16GB+. Previously hardcoded 8192 MiB which would consume ALL RAM on 8GB MacBook Airs
+- **`orb config show` syntax** — fixed from `orb config show memory_mib` (invalid) to `orb config show | grep memory_mib` (correct parsing)
+
+### Changed
+- **Updated OrbStack evals** (IDs 277, 280) to test RAM-aware behavior; new eval (ID 281) covers 32GB machines where default is already sufficient
+
 ## [1.45.0] - 2026-03-28
 
 ### Changed

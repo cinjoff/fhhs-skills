@@ -635,9 +635,18 @@ Do NOT auto-apply — `db reset` is destructive to local data. Let the user deci
 
 ```bash
 if docker context show 2>/dev/null | grep -q orbstack; then
-  # Check memory config — only flag if below recommended
-  MEM=$(orb config show memory_mib 2>/dev/null || echo "0")
-  [ "$MEM" -lt 8192 ] 2>/dev/null && echo "ORBSTACK_MEM_LOW — memory_mib=$MEM (recommended: 8192)" || echo "ORBSTACK_MEM_OK — $MEM MiB"
+  # Compute RAM-aware recommended memory (same logic as /fh:new-project Step 10)
+  TOTAL_RAM_MIB=$(( $(sysctl -n hw.memsize 2>/dev/null || echo "0") / 1048576 ))
+  if [ "$TOTAL_RAM_MIB" -le 8192 ] 2>/dev/null; then
+    RECOMMENDED=4096
+  elif [ "$TOTAL_RAM_MIB" -le 16384 ] 2>/dev/null; then
+    RECOMMENDED=8192
+  else
+    RECOMMENDED=8192
+  fi
+
+  MEM=$(orb config show 2>/dev/null | grep memory_mib | sed 's/.*: *//' || echo "0")
+  [ "$MEM" -lt "$RECOMMENDED" ] 2>/dev/null && echo "ORBSTACK_MEM_LOW — memory_mib=$MEM (recommended: $RECOMMENDED for ${TOTAL_RAM_MIB} MiB RAM)" || echo "ORBSTACK_MEM_OK — $MEM MiB"
 
   # Check package.json for smart db:studio (uses open-studio.sh helper)
   if [ -f "package.json" ]; then
@@ -647,7 +656,7 @@ if docker context show 2>/dev/null | grep -q orbstack; then
 fi
 ```
 
-**If `ORBSTACK_MEM_LOW`:** Fix inline: `orb config set memory_mib 8192`
+**If `ORBSTACK_MEM_LOW`:** Fix inline: `orb config set memory_mib $RECOMMENDED`
 
 **If `DB_STUDIO_BASIC`:** Update `package.json` db:studio to `"sh scripts/open-studio.sh"` and create `scripts/open-studio.sh` with OrbStack detection (same as `/fh:new-project` Step 8e-local section 9).
 
@@ -660,7 +669,7 @@ Add results to the reconciliation table:
 | ✓ | Supabase CLI             | Already installed |
 | ⊘ | Supabase containers      | Stopped (run $PM run db:start to restart) |
 | ⚠ | Migration drift          | 2 unapplied migration(s) — run supabase db reset |
-| ✓ | OrbStack memory          | Raised to 8192 MiB (was: 4096) |
+| ✓ | OrbStack memory          | Raised to {RECOMMENDED} MiB (was: {MEM}, machine has {TOTAL_RAM_MIB} MiB) |
 | ✓ | db:studio                | Updated to OrbStack-aware version |
 | ✓ | db:clean                 | Added to package.json |
 ```

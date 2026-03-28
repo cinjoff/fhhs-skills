@@ -1151,15 +1151,30 @@ Use the Edit tool to merge scripts into existing entries — do NOT overwrite ex
 
 **Run this section only if OrbStack is the active container runtime.** Skip for Docker Desktop and Linux.
 
+OrbStack's `memory_mib` is a hard ceiling — exceeding it triggers Linux OOM kills. Supabase uses ~1.5-2 GB typical, up to ~4 GB under load. The recommendation scales with physical RAM to avoid starving macOS:
+
 ```bash
 if docker context show 2>/dev/null | grep -q orbstack; then
-  # Check current memory limit — only RAISE, never lower
-  CURRENT_MEM=$(orb config show memory_mib 2>/dev/null || echo "0")
-  if [ "$CURRENT_MEM" -lt 8192 ] 2>/dev/null; then
-    orb config set memory_mib 8192
-    echo "✓ OrbStack memory raised to 8192 MiB (was: ${CURRENT_MEM} MiB)"
+  # Detect physical RAM and compute recommended OrbStack memory
+  TOTAL_RAM_MIB=$(( $(sysctl -n hw.memsize 2>/dev/null || echo "0") / 1048576 ))
+  CURRENT_MEM=$(orb config show 2>/dev/null | grep memory_mib | sed 's/.*: *//' || echo "0")
+
+  # Scale recommendation: 50% of RAM, min 4096, max 8192
+  # Supabase needs ~2GB typical, ~4GB peak — leave headroom for macOS
+  if [ "$TOTAL_RAM_MIB" -le 8192 ] 2>/dev/null; then
+    RECOMMENDED=4096    # 8GB machine: 4GB for OrbStack, 4GB for macOS
+  elif [ "$TOTAL_RAM_MIB" -le 16384 ] 2>/dev/null; then
+    RECOMMENDED=8192    # 16GB machine: 8GB for OrbStack
   else
-    echo "✓ OrbStack memory already at ${CURRENT_MEM} MiB — no change needed"
+    RECOMMENDED=8192    # 32GB+: 8GB is plenty, OrbStack default
+  fi
+
+  # Only RAISE the limit, never lower
+  if [ "$CURRENT_MEM" -lt "$RECOMMENDED" ] 2>/dev/null; then
+    orb config set memory_mib "$RECOMMENDED"
+    echo "✓ OrbStack memory raised to ${RECOMMENDED} MiB (was: ${CURRENT_MEM} MiB, machine has ${TOTAL_RAM_MIB} MiB)"
+  else
+    echo "✓ OrbStack memory at ${CURRENT_MEM} MiB — sufficient for Supabase (machine has ${TOTAL_RAM_MIB} MiB)"
   fi
 else
   echo "Not using OrbStack — skipping auto-configuration"

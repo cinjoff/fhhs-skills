@@ -9062,12 +9062,16 @@
     {
       "id": 277,
       "command": "new-project",
-      "prompt": "Set up a new project with local Supabase using OrbStack. After setup, verify that OrbStack memory is configured and db:studio opens the .orb.local URL.",
-      "expected_output": "Should auto-configure OrbStack memory to 8192 MiB via orb config set (only if current is lower). Should create scripts/open-studio.sh helper that detects OrbStack and opens supabase_studio_{project_id}.orb.local. Should add db:clean and db:clean:all scripts to package.json. Status report should show .orb.local Studio URL.",
+      "prompt": "Set up a new project with local Supabase using OrbStack on a 16GB MacBook Pro. Verify OrbStack memory is configured based on physical RAM and db:studio opens the .orb.local URL.",
+      "expected_output": "Should detect physical RAM via sysctl hw.memsize, compute recommended memory (8192 for 16GB machine), auto-configure via orb config set. Should create scripts/open-studio.sh helper. Should show machine RAM in status report.",
       "files": [],
       "assertions": [
         {
-          "text": "Auto-configures OrbStack memory via orb config set",
+          "text": "Detects physical RAM via sysctl hw.memsize",
+          "type": "behavioral"
+        },
+        {
+          "text": "Computes recommended memory based on physical RAM",
           "type": "behavioral"
         },
         {
@@ -9079,7 +9083,7 @@
           "type": "output"
         },
         {
-          "text": "Adds db:clean scripts to package.json",
+          "text": "Shows machine RAM in status report",
           "type": "output"
         }
       ],
@@ -9091,11 +9095,10 @@
         {
           "type": "required_terms",
           "terms": [
-            "orb config",
+            "sysctl",
             "memory_mib",
             "orb.local",
-            "db:studio",
-            "db:clean"
+            "db:studio"
           ]
         }
       ]
@@ -9191,20 +9194,20 @@
     {
       "id": 280,
       "command": "new-project",
-      "prompt": "Set up local Supabase with OrbStack. My OrbStack memory is already configured to 16384 MiB. The auto-configuration should NOT lower it to 8192.",
-      "expected_output": "Should detect OrbStack memory is already at 16384 MiB which is above the 8192 recommendation. Should skip the memory configuration step and note 'memory already at 16384 MiB — no change needed'. Should NOT run orb config set memory_mib 8192.",
+      "prompt": "Set up local Supabase with OrbStack on a MacBook Air with 8GB RAM. Should configure memory to 4096 MiB, not 8192, to leave headroom for macOS.",
+      "expected_output": "Should detect 8GB physical RAM via sysctl hw.memsize. Should compute recommended memory as 4096 MiB (50% of 8GB). Should NOT set 8192 which would be ALL the machine's RAM. Status report should show machine RAM context.",
       "files": [],
       "assertions": [
         {
-          "text": "Checks current OrbStack memory before setting",
+          "text": "Detects 8GB RAM",
           "type": "behavioral"
         },
         {
-          "text": "Does NOT lower memory from 16384 to 8192",
+          "text": "Sets 4096 not 8192",
           "type": "guard"
         },
         {
-          "text": "Reports memory is already sufficient",
+          "text": "Shows RAM in report",
           "type": "output"
         }
       ],
@@ -9217,14 +9220,45 @@
         {
           "type": "required_terms",
           "terms": [
-            "memory_mib",
-            "16384"
+            "sysctl",
+            "4096",
+            "memory_mib"
           ]
         },
         {
           "type": "forbidden_terms",
           "terms": [
             "orb config set memory_mib 8192"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 281,
+      "command": "new-project",
+      "prompt": "Set up local Supabase with OrbStack on a 32GB Mac Studio. OrbStack default memory is 8192. Should leave it as-is since the default is already sufficient.",
+      "expected_output": "Should detect 32GB RAM. Recommended is 8192. OrbStack default is already 8192. Should skip memory configuration and report 'memory already sufficient'.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects 32GB RAM",
+          "type": "behavioral"
+        },
+        {
+          "text": "Skips config since default matches recommendation",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "memory_mib",
+            "sufficient"
           ]
         }
       ]
