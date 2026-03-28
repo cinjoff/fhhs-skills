@@ -8,6 +8,12 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.50.0] - 2026-03-28
+
+### Added
+- **Pre-scan visualization** — `/fh:update --global` shows an ASCII tree of all projects grouped by workspace before making changes, with progress bars showing health status, env gaps, and missing settings flags
+- **No-merge messaging** — clarifies that global update runs scripts directly in each project directory with no git merge or branch changes; plugin skills come from the global cache
+
 ## [1.49.1] - 2026-03-28
 
 ### Added
