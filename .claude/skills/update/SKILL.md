@@ -1,6 +1,6 @@
 ---
 name: fh:update
-description: Check for updates and install the latest version. Use when the user says 'update', 'upgrade', 'check for updates', or 'get latest version'.
+description: Check for updates and install the latest version. Use when the user says 'update', 'upgrade', 'check for updates', or 'get latest version'. Supports --global to update all projects at once.
 user-invocable: true
 disable-model-invocation: true
 ---
@@ -8,6 +8,13 @@ disable-model-invocation: true
 Update the fhhs-skills plugin to the latest version.
 
 $ARGUMENTS
+
+### Flags
+
+| Flag | Behavior |
+|------|----------|
+| `--global` | After updating the plugin, discover ALL projects using fhhs-skills and reconcile each one (env gaps, health repair, tracker registration). |
+| *(no flags)* | Update plugin and reconcile current project only (existing behavior). |
 
 ---
 
@@ -623,8 +630,146 @@ invalid state references, or outdated directory layouts.
 
 ---
 
-**After reconciliation is complete:**
+**After reconciliation is complete (current project):**
+
+If `--global` flag is NOT set:
 
 ```
+Restart Claude Code to use the new version.
+```
+
+If `--global` flag IS set, proceed to Step 6.
+
+---
+
+## Step 6: Global Project Reconciliation (`--global` only)
+
+Discover and reconcile ALL projects using fhhs-skills across the filesystem. This step runs the same reconciliation logic (Steps 5a through 5c) on every discovered project, not just the current one.
+
+### 6a: Run global reconcile
+
+The global reconcile uses the **fhhs-skills plugin changelog** (not each project's own changelog) to check environment requirements. The plugin changelog contains reconciliation tags like `[setup:tool:fallow]` and `[setup:hook:fhhs-statusline]` that verify whether each project's environment has the required tools, hooks, and env vars installed. User projects don't need their own changelogs — this is purely about plugin environment sync.
+
+```bash
+# Fetch the fhhs-skills plugin changelog (used for env gap detection across all projects)
+# This was likely already fetched in Step 2, but re-fetch if missing
+if [ ! -f /tmp/fhhs-changelog.md ] || [ ! -s /tmp/fhhs-changelog.md ]; then
+  curl -sL "https://raw.githubusercontent.com/cinjoff/fhhs-skills/main/CHANGELOG.md" > /tmp/fhhs-changelog.md 2>/dev/null
+fi
+
+# Build the changelog flag — omit entirely if fetch failed (reconcile still works without it)
+CHANGELOG_FLAG=""
+if [ -s /tmp/fhhs-changelog.md ]; then
+  CHANGELOG_FLAG="--changelog-file /tmp/fhhs-changelog.md"
+fi
+
+# Run global reconcile — discovers projects from tracker registry + Conductor scan
+node "$HOME/.claude/get-shit-done/bin/global-reconcile.cjs" \
+  --from "$PREV_VERSION" --to "$LATEST_VERSION" \
+  $CHANGELOG_FLAG
+```
+
+Parse the JSON output. The script discovers projects from two sources:
+1. **Tracker registry** (`~/.claude/tracker/projects.json`) — projects that have been seen before
+2. **Conductor scan** (`~/conductor/workspaces/*/*`) — any workspace with `.planning/` or `.claude/settings.json`
+
+For each project, it runs:
+- `post-update-reconcile.sh` (claude-mem patch, CLAUDE_MEM_PROJECT env var, tracker registration)
+- `changelog reconcile` (env gap detection using the fhhs-skills plugin changelog — skipped if changelog unavailable)
+- `validate health --repair` (planning directory health)
+
+### 6b: Display aggregate results
+
+Format the JSON report into a human-readable summary:
+
+```
+## Global Update Report
+
+Discovered N projects (M from tracker, K from Conductor scan)
+
+| Project | Workspace | Health | Env Gaps | Repairs | Status |
+|---------|-----------|--------|----------|---------|--------|
+| havana | fh-starter-project | healthy | 0 | 0 | ✓ |
+| kyoto | fh-starter-project | healthy | 0 | 0 | ✓ |
+| san-juan | konstantout | degraded | 2 | 1 | ⚠ |
+| quito | nerve-os | — | 0 | — | ✓ (no .planning/) |
+```
+
+**Status icons:**
+- `✓` — fully reconciled, no issues
+- `⚠` — partial: some steps had errors (show which in a footnote)
+- `—` — step was skipped (no .planning/ for health, etc.)
+
+**If any projects have env gaps that couldn't be auto-fixed:**
+
+```
+### Projects with remaining env gaps
+
+The following projects still have environment gaps after reconciliation.
+Run /fh:update in each project individually to apply the full remediation
+(auto-install tools, hooks, etc.):
+
+  cd /path/to/project && claude  →  /fh:update
+```
+
+The global reconcile script handles env *detection* but not remediation (tool installs, hook additions need the full SKILL.md logic). The per-project `/fh:update` handles the actual fixes.
+
+### 6c: Stale project cleanup
+
+If any projects from the tracker registry no longer exist on disk (paths that 404'd during discovery), offer to clean them up:
+
+```bash
+# Check for stale entries
+python3 -c "
+import json, os, pathlib
+registry = json.loads(pathlib.Path(os.path.expanduser('~/.claude/tracker/projects.json')).read_text())
+stale = [e for e in registry if not os.path.exists(e['path'])]
+if stale:
+    print('STALE_FOUND')
+    for e in stale:
+        print(f'  {e[\"path\"]} (last seen: {e.get(\"lastSeen\", \"unknown\")})')
+else:
+    print('NO_STALE')
+"
+```
+
+**If STALE_FOUND:**
+
+```
+### Stale project entries
+
+These projects are registered but no longer exist on disk:
+
+  /path/to/deleted/project (last seen: 2026-03-15)
+  /path/to/another/project (last seen: 2026-03-20)
+
+Removing stale entries from tracker registry...
+```
+
+Auto-remove stale entries (they're clearly gone):
+
+```bash
+python3 -c "
+import json, os, pathlib
+registry_path = pathlib.Path(os.path.expanduser('~/.claude/tracker/projects.json'))
+registry = json.loads(registry_path.read_text())
+cleaned = [e for e in registry if os.path.exists(e['path'])]
+removed = len(registry) - len(cleaned)
+registry_path.write_text(json.dumps(cleaned, indent=2) + '\n')
+print(f'Removed {removed} stale entries')
+"
+```
+
+### 6d: Final summary
+
+```
+## Summary
+
+Updated fhhs-skills to vX.Y.Z
+Reconciled N projects across M workspaces
+  ✓ K projects fully up to date
+  ⚠ J projects with remaining gaps (run /fh:update individually)
+  🗑 R stale entries cleaned from registry
+
 Restart Claude Code to use the new version.
 ```

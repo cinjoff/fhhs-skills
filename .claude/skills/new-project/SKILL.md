@@ -742,6 +742,27 @@ Map the selection to a profile value:
 
 Read `.planning/config.json`, set the `model_profile` field to the mapped value, and write it back.
 
+### 7b: Ensure `.claude/settings.json` exists
+
+The global update (`/fh:update --global`) and post-update reconciliation depend on `.claude/settings.json` to store per-project env vars like `CLAUDE_MEM_PROJECT`. Create it if missing:
+
+```bash
+mkdir -p .claude
+if [ ! -f .claude/settings.json ]; then
+  echo '{}' > .claude/settings.json
+  echo "SETTINGS_CREATED"
+else
+  echo "SETTINGS_EXISTS"
+fi
+```
+
+Then run the post-update-reconcile script to populate `CLAUDE_MEM_PROJECT` and register the project in the tracker:
+
+```bash
+[ -f "$HOME/.claude/get-shit-done/bin/post-update-reconcile.sh" ] && \
+  sh "$HOME/.claude/get-shit-done/bin/post-update-reconcile.sh" --project-root "$PWD" || true
+```
+
 Commit: `docs: initialize project planning with GSD structure`
 
 ---

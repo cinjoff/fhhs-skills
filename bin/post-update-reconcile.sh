@@ -33,7 +33,7 @@ fi
 # --git-common-dir returns .git (regular) or /abs/path/to/repo/.git/worktrees/name (worktree)
 # Resolve relative to cwd, then strip /.git* suffix to get the real repo root
 
-COMMON_DIR=$(git -C "$PROJECT_ROOT" rev-parse --git-common-dir 2>/dev/null)
+COMMON_DIR=$(git -C "$PROJECT_ROOT" rev-parse --git-common-dir 2>/dev/null || true)
 if [ -n "$COMMON_DIR" ]; then
   # Resolve to absolute path (handles relative ".git" case)
   RESOLVED=$(cd "$PROJECT_ROOT" && cd "$COMMON_DIR" 2>/dev/null && pwd)
@@ -46,30 +46,32 @@ fi
 
 if [ -n "$PROJECT_NAME" ]; then
   SETTINGS="$PROJECT_ROOT/.claude/settings.json"
-  if [ -f "$SETTINGS" ]; then
-    CURRENT=$(python3 -c "
+  # Create .claude/settings.json if missing — global update depends on it
+  if [ ! -f "$SETTINGS" ]; then
+    mkdir -p "$PROJECT_ROOT/.claude"
+    echo '{}' > "$SETTINGS"
+    echo "✓ Created .claude/settings.json"
+  fi
+  CURRENT=$(python3 -c "
 import json, sys
 try:
-    s = json.load(open('$SETTINGS'))
+    s = json.load(open(sys.argv[1]))
     print(s.get('env', {}).get('CLAUDE_MEM_PROJECT', ''))
 except: pass
-" 2>/dev/null)
-    if [ "$CURRENT" = "$PROJECT_NAME" ]; then
-      echo "✓ CLAUDE_MEM_PROJECT already set to $PROJECT_NAME"
-    else
-      python3 -c "
-import json
-f = '$SETTINGS'
+" "$SETTINGS" 2>/dev/null)
+  if [ "$CURRENT" = "$PROJECT_NAME" ]; then
+    echo "✓ CLAUDE_MEM_PROJECT already set to $PROJECT_NAME"
+  else
+    python3 -c "
+import json, sys
+f, name = sys.argv[1], sys.argv[2]
 try:
     s = json.load(open(f))
 except: s = {}
-s.setdefault('env', {})['CLAUDE_MEM_PROJECT'] = '$PROJECT_NAME'
+s.setdefault('env', {})['CLAUDE_MEM_PROJECT'] = name
 with open(f, 'w') as fh: json.dump(s, fh, indent=2); fh.write('\n')
-print('✓ CLAUDE_MEM_PROJECT set to $PROJECT_NAME')
-" 2>/dev/null
-    fi
-  else
-    echo "⚠ No .claude/settings.json — skipping CLAUDE_MEM_PROJECT (run /fh:new-project first)"
+print('✓ CLAUDE_MEM_PROJECT set to ' + name)
+" "$SETTINGS" "$PROJECT_NAME" 2>/dev/null
   fi
 else
   echo "⚠ Not a git repo — skipping CLAUDE_MEM_PROJECT"
@@ -98,11 +100,9 @@ if [ -d "$PROJECT_ROOT/.planning" ]; then
 import json, os, sys
 from datetime import datetime
 
-registry_file = '$REGISTRY_FILE'
-project_root = '$PROJECT_ROOT'
-proj_name = '$PROJ_NAME'
-is_conductor = '$IS_CONDUCTOR' == 'true'
-conductor_ws = '$CONDUCTOR_WS'
+registry_file, project_root, proj_name = sys.argv[1], sys.argv[2], sys.argv[3]
+is_conductor = sys.argv[4] == 'true'
+conductor_ws = sys.argv[5]
 
 # Read existing registry
 try:
@@ -137,7 +137,7 @@ with open(registry_file, 'w') as f:
     f.write('\n')
 
 print('✓ Project registered in tracker: ' + proj_name + (' (conductor: ' + conductor_ws + ')' if is_conductor else ''))
-" 2>/dev/null || echo "⚠ Could not register project in tracker"
+" "$REGISTRY_FILE" "$PROJECT_ROOT" "$PROJ_NAME" "$IS_CONDUCTOR" "$CONDUCTOR_WS" 2>/dev/null || echo "⚠ Could not register project in tracker"
 else
   echo "⊘ No .planning/ — skipping tracker registration (run /fh:new-project first)"
 fi
