@@ -31,16 +31,19 @@ const args = process.argv.slice(2);
 let fromVersion = '0.0.0';
 let toVersion = '';
 let changelogFile = '';
+let scanOnly = false;
 for (let i = 0; i < args.length; i++) {
   switch (args[i]) {
     case '--from': fromVersion = args[++i]; break;
     case '--to': toVersion = args[++i]; break;
     case '--changelog-file': changelogFile = args[++i]; break;
+    case '--scan-only': scanOnly = true; break;
   }
 }
 
-if (!toVersion) {
+if (!scanOnly && !toVersion) {
   console.error('Usage: global-reconcile.cjs --from <ver> --to <ver> --changelog-file <path>');
+  console.error('       global-reconcile.cjs --scan-only');
   process.exit(1);
 }
 
@@ -228,6 +231,66 @@ function reconcileProject(project) {
   return result;
 }
 
+// ─── Scan (pre-update preview) ───────────────────────────────────────────────
+
+function scanProject(project) {
+  const scan = {
+    path: project.path,
+    name: project.name,
+    isConductor: project.isConductor,
+    conductorWorkspace: project.conductorWorkspace,
+    hasPlanning: project.hasPlanning,
+    hasClaudeSettings: project.hasClaudeSettings,
+    health: null,
+    envGaps: 0,
+  };
+
+  // Check health status (read-only, no --repair)
+  if (project.hasPlanning) {
+    const gsdTools = path.join(os.homedir(), '.claude', 'get-shit-done', 'bin', 'gsd-tools.cjs');
+    if (fs.existsSync(gsdTools)) {
+      try {
+        const out = execFileSync('node', [gsdTools, 'validate', 'health'], {
+          cwd: project.path, timeout: 15000, stdio: ['pipe', 'pipe', 'pipe'],
+        });
+        const parsed = JSON.parse(out.toString().trim());
+        scan.health = {
+          status: parsed.status || 'unknown',
+          errors: (parsed.errors || []).length,
+          warnings: (parsed.warnings || []).length,
+          repairable: parsed.repairable_count || 0,
+        };
+      } catch {
+        scan.health = { status: 'error', errors: 0, warnings: 0, repairable: 0 };
+      }
+    }
+  }
+
+  // Check env gaps (read-only)
+  if (changelogFile && fs.existsSync(changelogFile)) {
+    const gsdTools = path.join(os.homedir(), '.claude', 'get-shit-done', 'bin', 'gsd-tools.cjs');
+    if (fs.existsSync(gsdTools)) {
+      try {
+        const out = execFileSync('node', [
+          gsdTools, 'changelog', 'reconcile',
+          '--from', fromVersion, '--to', toVersion || '99.99.99',
+          '--changelog-file', changelogFile,
+          '--project-root', project.path,
+        ], { cwd: project.path, timeout: 15000, stdio: ['pipe', 'pipe', 'pipe'] });
+        const parsed = JSON.parse(out.toString().trim());
+        scan.envGaps = parsed.missing ? parsed.missing.length : 0;
+      } catch {
+        // ignore
+      }
+    }
+  }
+
+  // Check if .claude/settings.json is missing
+  scan.missingSettings = !project.hasClaudeSettings;
+
+  return scan;
+}
+
 // ─── Main ────────────────────────────────────────────────────────────────────
 
 function main() {
@@ -235,6 +298,23 @@ function main() {
 
   if (projects.length === 0) {
     const report = { projects: [], summary: 'No projects found' };
+    console.log(JSON.stringify(report, null, 2));
+    process.exit(0);
+  }
+
+  // Scan-only mode: preview without changes
+  if (scanOnly) {
+    const scans = projects.map(p => scanProject(p));
+    const report = {
+      mode: 'scan',
+      discovery: {
+        total: projects.length,
+        fromTracker: projects.filter(p => p.source === 'tracker').length,
+        fromScan: projects.filter(p => p.source === 'conductor-scan').length,
+        withPlanning: projects.filter(p => p.hasPlanning).length,
+      },
+      projects: scans,
+    };
     console.log(JSON.stringify(report, null, 2));
     process.exit(0);
   }
