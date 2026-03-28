@@ -83,7 +83,8 @@ mkdir -p "$TRACKER_DIR"
 # Register current project in the global tracker registry
 REGISTRY_FILE="$TRACKER_DIR/projects.json"
 if [ -d "$PROJECT_ROOT/.planning" ]; then
-  PROJ_NAME=$(basename "$PROJECT_ROOT")
+  # Use the same worktree-safe resolution as CLAUDE_MEM_PROJECT above
+  PROJ_NAME="${PROJECT_NAME:-$(basename "$PROJECT_ROOT")}"
   # Detect Conductor workspace pattern
   IS_CONDUCTOR="false"
   CONDUCTOR_WS=""
