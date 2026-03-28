@@ -20,6 +20,6 @@
     "context_target": 60
   },
   "workflow": {
-    "auto_advance": true
+    "auto_advance": false
   }
 }
