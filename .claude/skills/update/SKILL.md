@@ -260,7 +260,9 @@ Then run Steps 5a, 5a½, 5a¾, 5a⅞, and 5b with `PREV_VERSION="0.0.0"` and `LA
 - If ALL items were already OK (nothing missing): `You're on the latest version — environment is fully synced.`
 - If gaps were found and fixed: show the reconciliation table, then `Environment synced. Restart Claude Code to pick up any hook or plugin changes.`
 
-Then check Step 5c (`.planning/` health suggestion) and exit.
+Then check Step 5c (`.planning/` health suggestion).
+
+After Step 5c, also check how many other projects exist (same logic as the post-reconciliation tip in the main flow) and show the `--global` tip if applicable. Then exit.
 
 ---
 
@@ -633,6 +635,32 @@ invalid state references, or outdated directory layouts.
 **After reconciliation is complete (current project):**
 
 If `--global` flag is NOT set:
+
+Check how many other projects exist in the tracker registry:
+
+```bash
+python3 -c "
+import json, pathlib, os
+registry = pathlib.Path(os.path.expanduser('~/.claude/tracker/projects.json'))
+if registry.exists():
+    projects = json.loads(registry.read_text())
+    other = [p for p in projects if os.path.exists(p['path']) and p['path'] != os.getcwd()]
+    print(len(other))
+else:
+    print('0')
+" 2>/dev/null
+```
+
+If the count is greater than 0, show:
+
+```
+Restart Claude Code to use the new version.
+
+Tip: You have N other projects using fhhs-skills. Run /fh:update --global
+to reconcile all of them at once (env sync, health repair, tracker registration).
+```
+
+If 0 or check fails:
 
 ```
 Restart Claude Code to use the new version.

@@ -9884,6 +9884,78 @@
           "scan"
         ]
       }
+    },
+    {
+      "id": 298,
+      "command": "update",
+      "prompt": "update the plugin to the latest version",
+      "expected_output": "After completing the update and reconciliation for the current project, should check how many other projects exist in the tracker registry. If other projects exist, should suggest running /fh:update --global to reconcile all projects at once. The tip should mention the count of other projects and explain that --global handles env sync, health repair, and tracker registration for all of them.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Checks tracker registry for other projects after current-project reconciliation",
+          "type": "behavioral"
+        },
+        {
+          "text": "Suggests /fh:update --global when other projects exist",
+          "type": "output"
+        },
+        {
+          "text": "Mentions the count of other projects in the tip",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT show the --global tip when no other projects exist",
+          "type": "guard"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "happy-path",
+        "global-update"
+      ],
+      "checks": {
+        "type": "required_terms",
+        "terms": [
+          "--global",
+          "projects",
+          "reconcil"
+        ]
+      }
+    },
+    {
+      "id": 299,
+      "command": "update",
+      "prompt": "I just ran /fh:update and it said I have 5 other projects. What does --global actually do to each project?",
+      "expected_output": "The --global flag runs three reconciliation steps on each discovered project: (1) post-update-reconcile.sh for claude-mem patch, CLAUDE_MEM_PROJECT env var, and tracker registration, (2) changelog reconcile to detect env gaps (missing tools, hooks, env vars) using the fhhs-skills plugin changelog, and (3) health --repair to fix .planning/ directory issues. Projects without .planning/ skip the health step. The script discovers projects from two sources: the tracker registry and Conductor workspace scan.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Explains the three reconciliation steps per project",
+          "type": "output"
+        },
+        {
+          "text": "Mentions both discovery sources (tracker registry and Conductor scan)",
+          "type": "output"
+        },
+        {
+          "text": "Notes that health is skipped for projects without .planning/",
+          "type": "output"
+        }
+      ],
+      "tier": "full",
+      "tags": [
+        "happy-path",
+        "global-update"
+      ],
+      "checks": {
+        "type": "required_terms",
+        "terms": [
+          "reconcil",
+          "tracker",
+          "health"
+        ]
+      }
     }
   ]
 }
