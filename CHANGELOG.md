@@ -8,6 +8,11 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.47.1] - 2026-03-28
+
+### Fixed
+- **Auto decisions written to wrong phase folder** — `/fh:auto` planning wave used `normalizePhaseName()` (e.g., `04.5`) to construct `.decisions-pending.md` paths instead of `findPhaseDir()` (e.g., `04.5-pipeline-depth`), causing decisions to be written to orphan folders and silently lost during the merge step
+
 ## [1.47.0] - 2026-03-28
 
 ### Added
