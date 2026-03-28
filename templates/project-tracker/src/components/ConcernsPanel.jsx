@@ -44,34 +44,102 @@ const confidenceColor = {
   LOW: 'var(--color-status-error)',
 };
 
-// ── ConcernRow ──────────────────────────────────────────────────────────────────
+// ── Severity guesser based on category name ─────────────────────────────────────
 
-function ConcernRow({ name, count, severity }) {
-  const color = severityColor[severity] || severityColor.medium;
+function guessSeverity(categoryName) {
+  const lower = (categoryName || '').toLowerCase();
+  if (/security|critical|bug/.test(lower)) return 'high';
+  if (/performance|fragile|scaling/.test(lower)) return 'medium';
+  if (/test|missing|depend/.test(lower)) return 'medium';
+  return 'low';
+}
+
+// ── ConcernItem ─────────────────────────────────────────────────────────────────
+
+function ConcernItem({ item }) {
+  const details = (item.details || []).filter(d => d.trim());
+
   return (
     <div style={{
-      display: 'flex',
-      alignItems: 'baseline',
-      gap: '4px',
-      padding: '3px 0',
-      fontSize: '13px',
-      lineHeight: '1.4',
+      padding: '4px 0 4px 12px',
+      borderLeft: '2px solid var(--color-border-subtle)',
+      marginLeft: '4px',
+      marginBottom: '4px',
     }}>
-      <span style={{ color, flexShrink: 0 }}>{name}</span>
-      <span style={{
-        flex: 1,
-        borderBottom: '1px dotted var(--color-border-subtle)',
-        minWidth: '16px',
-        alignSelf: 'flex-end',
-        marginBottom: '3px',
-      }} />
-      <span style={{
-        fontFamily: 'var(--font-family-mono)',
+      <div style={{
         fontSize: '12px',
-        color,
-        flexShrink: 0,
-        fontVariantNumeric: 'tabular-nums',
-      }}>{count}</span>
+        color: 'var(--color-text-primary)',
+        fontWeight: 500,
+        marginBottom: details.length > 0 ? '2px' : '0',
+      }}>{item.title}</div>
+      {details.map((detail, i) => (
+        <div key={i} style={{
+          fontSize: '11px',
+          color: 'var(--color-text-secondary)',
+          lineHeight: '1.5',
+        }}>{detail}</div>
+      ))}
+    </div>
+  );
+}
+
+// ── ConcernRow ──────────────────────────────────────────────────────────────────
+
+function ConcernRow({ name, count, severity, items }) {
+  const [expanded, setExpanded] = useState(false);
+  const color = severityColor[severity] || severityColor[guessSeverity(name)] || severityColor.medium;
+  const hasItems = Array.isArray(items) && items.length > 0;
+
+  return (
+    <div>
+      <div
+        onClick={() => hasItems && setExpanded(!expanded)}
+        style={{
+          display: 'flex',
+          alignItems: 'baseline',
+          gap: '4px',
+          padding: '3px 0',
+          fontSize: '13px',
+          lineHeight: '1.4',
+          cursor: hasItems ? 'pointer' : 'default',
+          userSelect: 'none',
+        }}
+      >
+        {hasItems && (
+          <span style={{
+            color: 'var(--color-text-tertiary)',
+            fontSize: '10px',
+            width: '10px',
+            flexShrink: 0,
+            transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)',
+            transition: 'transform 150ms ease',
+            display: 'inline-block',
+          }}>{'\u25B8'}</span>
+        )}
+        <span style={{ color, flexShrink: 0 }}>{name}</span>
+        <span style={{
+          flex: 1,
+          borderBottom: '1px dotted var(--color-border-subtle)',
+          minWidth: '16px',
+          alignSelf: 'flex-end',
+          marginBottom: '3px',
+        }} />
+        <span style={{
+          fontFamily: 'var(--font-family-mono)',
+          fontSize: '12px',
+          color,
+          flexShrink: 0,
+          fontVariantNumeric: 'tabular-nums',
+        }}>{count}</span>
+      </div>
+
+      {expanded && hasItems && (
+        <div style={{ paddingLeft: hasItems ? '10px' : '0', paddingBottom: '4px' }}>
+          {items.map((item, i) => (
+            <ConcernItem key={i} item={item} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -284,6 +352,7 @@ export function ConcernsPanel({ concerns, decisions, pendingDecisions, showToast
                 name={cat.name}
                 count={cat.count}
                 severity={cat.severity}
+                items={cat.items}
               />
             ))}
           </div>

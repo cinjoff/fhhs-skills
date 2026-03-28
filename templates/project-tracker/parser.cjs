@@ -231,6 +231,76 @@ function parseRoadmap(planningDir) {
     phases.push(phase);
   }
 
+  // If no table-based phases found, try heading-based format:
+  // ## Phase N: Title [STATUS]  or  ## Phase N — Title
+  // **Goal:** ... on next line, **Status:** ... for status
+  if (phases.length === 0) {
+    let currentMilestoneName = '';
+
+    for (let i = 0; i < lines.length; i++) {
+      const trimmed = lines[i].trim();
+
+      // Track milestone headings: "# Milestone: Name" or standalone "# Name"
+      if (/^#\s+Milestone:\s+/i.test(trimmed)) {
+        currentMilestoneName = trimmed.replace(/^#\s+Milestone:\s+/i, '').trim();
+        continue;
+      }
+
+      // Match: ## Phase N: Title [STATUS]  or  ## Phase N — Title  or  ## Phase N.N: Title
+      const headingMatch = trimmed.match(
+        /^##\s+Phase\s+(\d+(?:\.\d+)?)\s*(?:[:—–-]\s*|\s+)(.+?)(?:\s*\[(\w[\w\s]*)\])?\s*$/i
+      );
+      if (!headingMatch) continue;
+
+      const rawNum = headingMatch[1];
+      const number = rawNum.includes('.') ? parseFloat(rawNum) : parseInt(rawNum, 10);
+      const name = headingMatch[2].trim();
+      let statusRaw = headingMatch[3] || '';
+
+      // Look ahead for **Goal:** and **Status:** lines within next 5 lines
+      let goal = '';
+      for (let j = i + 1; j < Math.min(i + 8, lines.length); j++) {
+        const ahead = lines[j].trim();
+        // Stop at next heading
+        if (/^##\s/.test(ahead)) break;
+
+        const goalMatch = ahead.match(/^\*\*Goal:\*\*\s*(.+)$/i);
+        if (goalMatch) {
+          goal = goalMatch[1].trim();
+        }
+        const statusMatch = ahead.match(/^\*\*Status:\*\*\s*(.+)$/i);
+        if (statusMatch && !statusRaw) {
+          statusRaw = statusMatch[1].trim();
+        }
+      }
+
+      // Assign milestone from range or current heading
+      let phaseMilestoneName = '';
+      for (const mr of milestoneRanges) {
+        if (number >= mr.startPhase && number <= mr.endPhase) {
+          phaseMilestoneName = mr.name;
+          break;
+        }
+      }
+      if (!phaseMilestoneName && currentMilestoneName) {
+        phaseMilestoneName = currentMilestoneName;
+      }
+
+      const phase = {
+        number,
+        name,
+        goal,
+        status: mapStatus(statusRaw),
+      };
+
+      if (phaseMilestoneName) {
+        phase.milestoneName = phaseMilestoneName;
+      }
+
+      phases.push(phase);
+    }
+  }
+
   return { milestone, phases };
 }
 
@@ -706,6 +776,7 @@ function parseConcerns(planningDir) {
   const lines = content.split('\n');
   const categories = [];
   let currentCategory = null;
+  let currentItem = null;
 
   for (const line of lines) {
     const trimmed = line.trim();
@@ -713,28 +784,59 @@ function parseConcerns(planningDir) {
     // Match ## heading (but not # top-level heading)
     const headingMatch = trimmed.match(/^##\s+(.+)$/);
     if (headingMatch) {
-      // Save previous category if it exists
+      // Save current item to category
+      if (currentItem && currentCategory) {
+        currentCategory.items.push(currentItem);
+        currentItem = null;
+      }
+      // Save previous category
       if (currentCategory) {
+        currentCategory.count = currentCategory.items.length;
         categories.push(currentCategory);
       }
-      currentCategory = { name: headingMatch[1].trim(), count: 0 };
+      currentCategory = { name: headingMatch[1].trim(), count: 0, items: [] };
       continue;
     }
 
-    // Count bold items (**Title:**) under current category — skip **Analysis Date:**
+    // Match bold items (**Title:**) — skip **Analysis Date:**
     if (currentCategory && /^\*\*[^*]/.test(trimmed) && !/^\*\*Analysis Date/i.test(trimmed)) {
-      currentCategory.count++;
+      // Save previous item
+      if (currentItem) {
+        currentCategory.items.push(currentItem);
+      }
+      // Extract title from **Title:** or **Title**
+      const titleMatch = trimmed.match(/^\*\*(.+?)(?::)?\*\*\s*(.*)$/);
+      currentItem = {
+        title: titleMatch ? titleMatch[1].trim() : trimmed.replace(/\*\*/g, '').trim(),
+        details: [],
+      };
+      // If there's inline text after the bold title, capture it
+      if (titleMatch && titleMatch[2]) {
+        currentItem.details.push(titleMatch[2].trim());
+      }
+      continue;
+    }
+
+    // Collect detail lines under current item (- Key: Value format or plain lines)
+    if (currentItem && trimmed && !trimmed.startsWith('#')) {
+      currentItem.details.push(trimmed);
     }
   }
 
-  // Don't forget the last category
+  // Save final item and category
+  if (currentItem && currentCategory) {
+    currentCategory.items.push(currentItem);
+  }
   if (currentCategory) {
+    currentCategory.count = currentCategory.items.length;
     categories.push(currentCategory);
   }
 
-  const totalCount = categories.reduce((sum, cat) => sum + cat.count, 0);
+  // Filter out empty categories
+  const nonEmpty = categories.filter(cat => cat.count > 0);
+  const totalCount = nonEmpty.reduce((sum, cat) => sum + cat.count, 0);
 
-  return { categories, totalCount };
+  return { categories: nonEmpty, totalCount };
 }
 
 /**
