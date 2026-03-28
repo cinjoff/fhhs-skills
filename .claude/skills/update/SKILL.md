@@ -282,105 +282,15 @@ else
 fi
 ```
 
-### 5a½: Re-apply claude-mem project-env patch
+### 5a½ + 5a¾ + 5a⅞: Run post-update reconciliation script
 
-claude-mem derives its project name from the process cwd basename, which causes misattribution in Conductor workspaces and worktrees. This unified patch adds a `CLAUDE_MEM_PROJECT` env var check as the first tier in `gp()`, covering both worktrees and headless sessions. It must be re-applied after every claude-mem update since the update overwrites the patched files.
-
-```bash
-# Find the patch script shipped with fhhs-skills
-PATCH=$(find "$HOME/.claude/plugins/cache/fhhs-skills" -name patch-claude-mem-project-env.cjs -print -quit 2>/dev/null)
-if [ -n "$PATCH" ]; then
-  node "$PATCH" 2>&1
-else
-  echo "⚠ Project-env patch not found (expected in fhhs-skills plugin cache)"
-fi
-```
-
-If the patch outputs "WARNING: gp() signature changed", claude-mem changed its internals and the patch needs updating — note this in the reconciliation table but don't fail the update.
-
-### 5a¾: Set CLAUDE_MEM_PROJECT env var
-
-For Conductor workspaces and git worktrees, the cwd basename often differs from the actual project name (e.g., "cairo" vs "fhhs-skills"). Set `CLAUDE_MEM_PROJECT` in the project-local `.claude/settings.json` so interactive sessions attribute observations correctly — not just auto-orchestrator spawned sessions.
+Steps 5a½ (claude-mem patch), 5a¾ (CLAUDE_MEM_PROJECT), and 5a⅞ (tracker refresh) are handled by a script in `bin/` which was just re-linked in Step 5a. This ensures the NEW version's logic runs even when the SKILL.md prompt was loaded from the old cached version.
 
 ```bash
-# Derive project name from git common dir (worktree-safe)
-# --git-common-dir returns .git (regular) or /abs/path/to/repo/.git/worktrees/name (worktree)
-# Resolve relative to cwd, then strip /.git* suffix to get the real repo root
-COMMON_DIR=$(git rev-parse --git-common-dir 2>/dev/null)
-if [ -n "$COMMON_DIR" ]; then
-  # Resolve to absolute path (handles relative ".git" case)
-  RESOLVED=$(cd "$COMMON_DIR" 2>/dev/null && pwd)
-  # Strip /.git/worktrees/xxx or /.git to get repo root
-  REPO_ROOT=$(echo "$RESOLVED" | sed 's|/\.git/worktrees/[^/]*$||; s|/\.git$||')
-  PROJECT_NAME=$(basename "$REPO_ROOT")
-else
-  PROJECT_NAME=""
-fi
-if [ -n "$PROJECT_NAME" ]; then
-  # Check if .claude/settings.json exists and already has CLAUDE_MEM_PROJECT
-  if [ -f ".claude/settings.json" ]; then
-    CURRENT=$(python3 -c "
-import json, sys
-try:
-    s = json.load(open('.claude/settings.json'))
-    print(s.get('env', {}).get('CLAUDE_MEM_PROJECT', ''))
-except: pass
-" 2>/dev/null)
-    if [ "$CURRENT" = "$PROJECT_NAME" ]; then
-      echo "✓ CLAUDE_MEM_PROJECT already set to $PROJECT_NAME"
-    else
-      python3 -c "
-import json
-f = '.claude/settings.json'
-try:
-    s = json.load(open(f))
-except: s = {}
-s.setdefault('env', {})['CLAUDE_MEM_PROJECT'] = '$PROJECT_NAME'
-with open(f, 'w') as fh: json.dump(s, fh, indent=2); fh.write('\n')
-print('✓ CLAUDE_MEM_PROJECT set to $PROJECT_NAME')
-" 2>/dev/null
-    fi
-  else
-    echo "⚠ No .claude/settings.json — skipping CLAUDE_MEM_PROJECT (run /fh:new-project first)"
-  fi
-else
-  echo "⚠ Not a git repo — skipping CLAUDE_MEM_PROJECT"
-fi
+sh "$HOME/.claude/get-shit-done/bin/post-update-reconcile.sh" --project-root "$PWD"
 ```
 
-### 5a⅞: Refresh global tracker
-
-The tracker is installed globally at `~/.claude/tracker/`. Refresh template files from the updated plugin cache so dashboard changes are picked up without requiring a manual `/fh:tracker` re-run.
-
-```bash
-TRACKER_DIR="$HOME/.claude/tracker"
-mkdir -p "$TRACKER_DIR"
-
-PLUGIN_ROOT=""
-LATEST="$(ls -d "$HOME/.claude/plugins/cache/fhhs-skills/fh"/*/ 2>/dev/null | sort | tail -1)"
-LATEST="${LATEST%/}"
-if [ -n "$LATEST" ] && [ -d "$LATEST/templates/project-tracker" ]; then
-  PLUGIN_ROOT="$LATEST"
-fi
-
-if [ -n "$PLUGIN_ROOT" ]; then
-  PLUGIN_VER=$(python3 -c "import json; print(json.load(open('$PLUGIN_ROOT/.claude-plugin/plugin.json'))['version'])" 2>/dev/null)
-  CURRENT_VER=$(cat "$TRACKER_DIR/.version" 2>/dev/null)
-
-  if [ "$PLUGIN_VER" = "$CURRENT_VER" ]; then
-    echo "✓ Tracker already at v$PLUGIN_VER"
-  else
-    # Copy all non-directory files from the template
-    for f in "$PLUGIN_ROOT/templates/project-tracker"/*; do
-      [ -f "$f" ] && cp "$f" "$TRACKER_DIR/$(basename "$f")"
-    done
-    echo "$PLUGIN_VER" > "$TRACKER_DIR/.version"
-    echo "✓ Tracker refreshed to v$PLUGIN_VER (was: ${CURRENT_VER:-none})"
-  fi
-else
-  echo "⚠ Could not find plugin templates for tracker refresh"
-fi
-```
+If the output includes "WARNING: gp() signature changed", claude-mem changed its internals and the patch needs updating — note this in the reconciliation table but don't fail the update.
 
 ### 5b: Changelog-driven reconciliation — auto-fix gaps
 

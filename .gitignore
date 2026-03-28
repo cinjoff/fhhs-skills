@@ -1,4 +1,5 @@
 .DS_Store
+.fallow/
 .firecrawl/
 .project-tracker/
 __pycache__/
