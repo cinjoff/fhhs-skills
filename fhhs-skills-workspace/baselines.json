@@ -1,0 +1,10 @@
+{
+  "created": "2026-03-28T00:00:00Z",
+  "grader": "keyword",
+  "thresholds": {
+    "pass_rate_drop": 0.05,
+    "token_increase": 0.20,
+    "duration_increase": 0.30
+  },
+  "commands": {}
+}

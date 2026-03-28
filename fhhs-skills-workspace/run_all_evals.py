@@ -28,7 +28,10 @@ sys.stderr.reconfigure(line_buffering=True)
 # --- Configuration ---
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 EVALS_FILE = PROJECT_ROOT / "evals" / "evals.json"
-FIXTURE_DIR = PROJECT_ROOT / "evals" / "fixtures" / "nextjs-app-deep"
+FIXTURES_DIR = PROJECT_ROOT / "evals" / "fixtures"
+DEFAULT_FIXTURE = FIXTURES_DIR / "nextjs-app-deep"
+# Keep backward-compat alias
+FIXTURE_DIR = DEFAULT_FIXTURE
 MAX_WORKERS = 6  # slightly conservative to avoid rate limits
 TIMEOUT_SECONDS = 180  # 3 minutes per eval
 LLM_GRADER_MODEL = "haiku"
@@ -105,15 +108,92 @@ def load_skill_content(command: str) -> str:
 
 
 def get_eval_cwd(eval_item: dict) -> str:
-    """Determine the working directory for an eval based on scenario_requires."""
+    """Determine the working directory for an eval based on scenario_requires and fixture."""
     scenario = eval_item.get("scenario_requires", [])
     if "no_gsd_project" in scenario:
         # Create a temp directory without .planning/ for evals that test the
         # "no GSD project" scenario (should trigger refusal / /new-project prompt)
         tmpdir = tempfile.mkdtemp(prefix=f"eval-no-gsd-{eval_item['id']}-")
         return tmpdir
+
+    # Support per-eval fixture selection via "fixture" field
+    fixture_name = eval_item.get("fixture")
+    if fixture_name:
+        fixture_path = FIXTURES_DIR / fixture_name
+        if fixture_path.exists():
+            return str(fixture_path)
+        # Warn but fall back to default rather than crashing
+        log(f"  WARNING: fixture '{fixture_name}' not found at {fixture_path}, using default")
+
     # Default: run from the fixture directory which has full GSD structure
-    return str(FIXTURE_DIR)
+    return str(DEFAULT_FIXTURE)
+
+
+def run_deterministic_checks(eval_item: dict, output: str) -> list:
+    """Run deterministic checks from the eval's checks array.
+
+    Returns list of {"check_type": str, "passed": bool, "detail": str}.
+    Returns empty list if no checks defined (backward compatible).
+    """
+    checks = eval_item.get("checks", [])
+    if not checks:
+        return []
+
+    results = []
+    output_lower = output.lower()
+
+    for check in checks:
+        check_type = check.get("type", "")
+
+        if check_type == "regex":
+            pattern = check.get("pattern", "")
+            try:
+                matched = bool(re.search(pattern, output, re.IGNORECASE))
+            except re.error as e:
+                matched = False
+                results.append({
+                    "check_type": check_type,
+                    "passed": False,
+                    "detail": f"Invalid regex pattern '{pattern}': {e}",
+                })
+                continue
+            results.append({
+                "check_type": check_type,
+                "passed": matched,
+                "detail": f"Pattern '{pattern}' {'found' if matched else 'not found'} in output",
+            })
+
+        elif check_type == "required_terms":
+            terms = check.get("terms", [])
+            missing = [t for t in terms if t.lower() not in output_lower]
+            passed = len(missing) == 0
+            results.append({
+                "check_type": check_type,
+                "passed": passed,
+                "detail": f"All {len(terms)} terms present" if passed
+                          else f"Missing terms: {missing}",
+            })
+
+        elif check_type == "forbidden_terms":
+            terms = check.get("terms", [])
+            found = [t for t in terms if t.lower() in output_lower]
+            passed = len(found) == 0
+            results.append({
+                "check_type": check_type,
+                "passed": passed,
+                "detail": f"No forbidden terms found" if passed
+                          else f"Forbidden terms present: {found}",
+            })
+
+        else:
+            # Unknown check type — skip with a warning entry
+            results.append({
+                "check_type": check_type,
+                "passed": True,
+                "detail": f"Unknown check type '{check_type}' — skipped",
+            })
+
+    return results
 
 
 def run_single_eval(eval_item: dict, skill_content: str, total: int) -> dict:
@@ -228,6 +308,8 @@ Provide a detailed behavioral trace, not actual tool execution."""
                 "output": output_text[:8000], "duration_ms": duration_ms,
                 "assertions": assertions, "expected": expected,
                 "tokens": token_info,
+                # Store checks for grading later
+                "checks": eval_item.get("checks", []),
             }
     except subprocess.TimeoutExpired:
         res = {
@@ -347,6 +429,7 @@ def grade_eval(eval_result: dict) -> dict:
             "status": eval_result["status"],
             "error": eval_result.get("error", ""),
             "grades": [],
+            "deterministic_grades": [],
             "pass_rate": 0.0,
             "passed": 0,
             "total": len(eval_result.get("assertions", [])),
@@ -355,8 +438,26 @@ def grade_eval(eval_result: dict) -> dict:
 
     output = eval_result["output"]
     assertions = eval_result.get("assertions", [])
-    grades = [grade_assertion(a, output) for a in assertions]
 
+    # Run deterministic checks FIRST — if any fail, short-circuit
+    # eval_result carries checks[] forwarded from run_single_eval
+    det_checks = run_deterministic_checks(eval_result, output)
+    det_failures = [c for c in det_checks if not c["passed"]]
+    if det_failures:
+        return {
+            "eval_id": eval_result["eval_id"],
+            "command": eval_result["command"],
+            "status": "check_failed",
+            "grades": [],
+            "deterministic_grades": det_checks,
+            "pass_rate": 0.0,
+            "passed": 0,
+            "total": len(assertions),
+            "duration_ms": eval_result.get("duration_ms", 0),
+            "grader": "deterministic",
+        }
+
+    grades = [grade_assertion(a, output) for a in assertions]
     passed = sum(1 for g in grades if g["passed"])
     total = len(grades) if grades else 1
 
@@ -365,6 +466,7 @@ def grade_eval(eval_result: dict) -> dict:
         "command": eval_result["command"],
         "status": "graded",
         "grades": grades,
+        "deterministic_grades": det_checks,
         "pass_rate": passed / total,
         "passed": passed,
         "total": total,
@@ -380,10 +482,134 @@ def grade_eval(eval_result: dict) -> dict:
 def grade_eval_llm(eval_result: dict, model: str = "haiku") -> dict:
     """Grade assertions using LLM with keyword fallback."""
     from llm_grader import grade_single_eval, grade_eval_keyword
+
+    # Run deterministic checks FIRST — same gate as keyword path
+    output = eval_result.get("output", "")
+    det_checks = run_deterministic_checks(eval_result, output)
+    det_failures = [c for c in det_checks if not c["passed"]]
+    if det_failures:
+        return {
+            "eval_id": eval_result["eval_id"],
+            "command": eval_result["command"],
+            "status": "check_failed",
+            "grades": [],
+            "deterministic_grades": det_checks,
+            "pass_rate": 0.0,
+            "passed": 0,
+            "total": len(eval_result.get("assertions", [])),
+            "duration_ms": eval_result.get("duration_ms", 0),
+            "grader": "deterministic",
+        }
+
     result = grade_single_eval(eval_result, model)
     if result is None:
         result = grade_eval_keyword(eval_result)
+
+    # Attach deterministic grades to LLM result too
+    result.setdefault("deterministic_grades", det_checks)
     return result
+
+
+# ---------------------------------------------------------------------------
+# Baselines helpers
+# ---------------------------------------------------------------------------
+
+BASELINES_PATH = Path(__file__).resolve().parent / "baselines.json"
+
+
+def load_baselines() -> dict:
+    """Load baselines.json if it exists; return empty dict otherwise."""
+    if BASELINES_PATH.exists():
+        try:
+            return json.loads(BASELINES_PATH.read_text())
+        except (json.JSONDecodeError, OSError):
+            return {}
+    return {}
+
+
+def write_baselines(by_command_stats: dict, grader: str) -> None:
+    """Write current per-command metrics to baselines.json."""
+    commands = {}
+    for cmd, stats in by_command_stats.items():
+        commands[cmd] = {
+            "pass_rate": stats.get("pass_rate", 0.0),
+            "avg_tokens": stats.get("avg_tokens", 0),
+            "avg_duration_ms": stats.get("avg_duration_ms", 0),
+        }
+    baselines = {
+        "created": datetime.now().isoformat(),
+        "grader": grader,
+        "thresholds": {
+            "pass_rate_drop": 0.05,
+            "token_increase": 0.20,
+            "duration_increase": 0.30,
+        },
+        "commands": commands,
+    }
+    BASELINES_PATH.write_text(json.dumps(baselines, indent=2))
+    log(f"Baselines written to {BASELINES_PATH}")
+
+
+def print_regression_report(by_command_stats: dict, baselines: dict) -> None:
+    """Compare current metrics against baselines and print regression report."""
+    if not baselines or "commands" not in baselines:
+        return
+
+    thresholds = baselines.get("thresholds", {
+        "pass_rate_drop": 0.05,
+        "token_increase": 0.20,
+        "duration_increase": 0.30,
+    })
+    baseline_cmds = baselines["commands"]
+
+    regressions = []
+    ok_cmds = []
+
+    for cmd, stats in sorted(by_command_stats.items()):
+        if cmd not in baseline_cmds:
+            continue
+        b = baseline_cmds[cmd]
+        issues = []
+
+        cur_rate = stats.get("pass_rate", 0.0)
+        base_rate = b.get("pass_rate", 0.0)
+        if base_rate > 0 and (base_rate - cur_rate) > thresholds["pass_rate_drop"]:
+            issues.append(f"pass_rate {base_rate:.1%} -> {cur_rate:.1%} (drop {base_rate - cur_rate:.1%})")
+
+        cur_tok = stats.get("avg_tokens", 0)
+        base_tok = b.get("avg_tokens", 0)
+        if base_tok > 0 and (cur_tok - base_tok) / base_tok > thresholds["token_increase"]:
+            issues.append(f"avg_tokens {base_tok:,} -> {cur_tok:,} (+{(cur_tok - base_tok) / base_tok:.0%})")
+
+        cur_dur = stats.get("avg_duration_ms", 0)
+        base_dur = b.get("avg_duration_ms", 0)
+        if base_dur > 0 and (cur_dur - base_dur) / base_dur > thresholds["duration_increase"]:
+            issues.append(f"avg_duration {base_dur}ms -> {cur_dur}ms (+{(cur_dur - base_dur) / base_dur:.0%})")
+
+        if issues:
+            regressions.append((cmd, issues))
+        else:
+            ok_cmds.append(cmd)
+
+    log(f"\n{'='*90}")
+    log(f"BASELINE COMPARISON (vs {baselines.get('created', 'unknown')})")
+    log(f"{'='*90}")
+    if regressions:
+        log(f"REGRESSIONS ({len(regressions)}):")
+        for cmd, issues in regressions:
+            log(f"  REGRESSION  {cmd}")
+            for iss in issues:
+                log(f"              {iss}")
+    else:
+        log("  No regressions detected.")
+
+    if ok_cmds:
+        log(f"\nOK ({len(ok_cmds)}): {', '.join(ok_cmds)}")
+
+    skipped = [cmd for cmd in by_command_stats if cmd not in baseline_cmds]
+    if skipped:
+        log(f"NEW (no baseline): {', '.join(sorted(skipped))}")
+    log(f"{'='*90}")
 
 
 def main():
@@ -398,6 +624,12 @@ def main():
                         help="Output directory (default: full-run-N)")
     parser.add_argument("--commands", type=str, default=None,
                         help="Comma-separated list of commands to filter evals (e.g., 'build,review,fix')")
+    parser.add_argument("--tier", choices=["smoke", "full", "all"], default="all",
+                        help="Eval tier to run: smoke (tier=smoke only), full/all (all evals, default: all)")
+    parser.add_argument("--tags", type=str, default=None,
+                        help="Comma-separated tags — only run evals that have ALL specified tags (AND logic)")
+    parser.add_argument("--update-baselines", action="store_true", default=False,
+                        help="After grading, write current per-command metrics to baselines.json")
     args = parser.parse_args()
 
     # Determine output dir
@@ -423,6 +655,7 @@ def main():
     log(f"Started: {datetime.now().isoformat()}")
     log(f"Workers: {args.workers}, Timeout: {TIMEOUT_SECONDS}s")
     log(f"Grader:  {args.grader}" + (f" ({args.grader_model})" if args.grader == "llm" else ""))
+    log(f"Tier:    {args.tier}")
     log(f"Output:  {workspace_dir}")
     log("")
 
@@ -431,6 +664,21 @@ def main():
         data = json.load(f)
     evals = data["evals"]
     log(f"Loaded {len(evals)} evals across {len(set(e['command'] for e in evals))} commands")
+
+    # Filter by --tier
+    if args.tier == "smoke":
+        evals = [e for e in evals if e.get("tier") == "smoke"]
+        log(f"Filtered to {len(evals)} smoke-tier evals")
+    # tier == "full" or "all" => keep all (same as current behavior)
+
+    # Filter by --tags if provided (AND logic — eval must have ALL tags)
+    if args.tags:
+        tags_filter = {t.strip() for t in args.tags.split(",")}
+        evals = [e for e in evals if tags_filter.issubset(set(e.get("tags", [])))]
+        log(f"Filtered to {len(evals)} evals matching tags: {', '.join(sorted(tags_filter))}")
+        if not evals:
+            log("WARNING: No evals match the specified tags. Exiting.")
+            sys.exit(0)
 
     # Filter by --commands if provided
     if args.commands:
@@ -501,9 +749,28 @@ def main():
         import llm_grader as _lg
         _lg.completed_count = 0
         _lg.fallback_count = 0
+
+        def llm_grade_with_det_gate(r, total, model):
+            """Run deterministic checks before LLM grading — same gate as keyword path."""
+            if r["status"] == "success":
+                output = r.get("output", "")
+                det_checks = run_deterministic_checks(r, output)
+                det_failures = [c for c in det_checks if not c["passed"]]
+                if det_failures:
+                    return {
+                        "eval_id": r["eval_id"], "command": r["command"],
+                        "status": "check_failed", "grades": [],
+                        "deterministic_grades": det_checks,
+                        "pass_rate": 0.0, "passed": 0,
+                        "total": len(r.get("assertions", [])),
+                        "duration_ms": r.get("duration_ms", 0),
+                        "grader": "deterministic",
+                    }
+            return llm_grade(r, total, model)
+
         with ThreadPoolExecutor(max_workers=min(args.workers, 6)) as grade_executor:
             futures = {
-                grade_executor.submit(llm_grade, r, len(results), args.grader_model): r
+                grade_executor.submit(llm_grade_with_det_gate, r, len(results), args.grader_model): r
                 for r in results
             }
             for future in as_completed(futures):
@@ -531,6 +798,7 @@ def main():
     graded_evals = [g for g in graded if g["status"] == "graded"]
     total_a = sum(g["total"] for g in graded_evals)
     passed_a = sum(g["passed"] for g in graded_evals)
+    check_failed_count = sum(1 for g in graded if g["status"] == "check_failed")
 
     # Aggregate token usage from raw results
     token_results = [r for r in results if r.get("tokens")]
@@ -547,6 +815,7 @@ def main():
         "successful": sum(1 for r in results if r["status"] == "success"),
         "errors": sum(1 for r in results if r["status"] == "error"),
         "timeouts": sum(1 for r in results if r["status"] == "timeout"),
+        "check_failures": check_failed_count,
         "total_assertions": total_a,
         "passed_assertions": passed_a,
         "overall_pass_rate": passed_a / total_a if total_a > 0 else 0.0,
@@ -571,6 +840,7 @@ def main():
         cmd_total = sum(g["total"] for g in cmd_g)
         cmd_passed = sum(g["passed"] for g in cmd_g)
         cmd_errors = sum(1 for g in cmd_graded if g["status"] in ("error", "timeout"))
+        cmd_check_failed = sum(1 for g in cmd_graded if g["status"] == "check_failed")
         avg_dur = sum(g.get("duration_ms", 0) for g in cmd_g) / max(len(cmd_g), 1)
 
         # Per-command token aggregation
@@ -584,6 +854,7 @@ def main():
             "passed": cmd_passed,
             "pass_rate": cmd_passed / cmd_total if cmd_total > 0 else 0.0,
             "errors": cmd_errors,
+            "check_failures": cmd_check_failed,
             "avg_duration_ms": int(avg_dur),
             "total_tokens": cmd_tokens,
             "avg_tokens": int(cmd_tokens / max(len(cmd_token_results), 1)),
@@ -603,6 +874,7 @@ def main():
     log(f"Successful runs: {summary['successful']}")
     log(f"Errors:          {summary['errors']}")
     log(f"Timeouts:        {summary['timeouts']}")
+    log(f"Check failures:  {summary['check_failures']}")
     log(f"")
     log(f"Total assertions:  {summary['total_assertions']}")
     log(f"Passed assertions: {summary['passed_assertions']}")
@@ -618,13 +890,14 @@ def main():
     log(f"  Avg tokens/eval:   {tu['avg_tokens_per_eval']:>12,}")
     log(f"  Avg cost/eval:     ${tu['avg_cost_per_eval']:>11,.4f}")
     log(f"")
-    log(f"{'Command':<20} {'Evals':>5} {'Assert':>6} {'Pass':>5} {'Rate':>6} {'Err':>3} {'Avg(s)':>6} {'AvgTok':>7} {'Cost$':>7}")
-    log(f"{'-'*20} {'-'*5} {'-'*6} {'-'*5} {'-'*6} {'-'*3} {'-'*6} {'-'*7} {'-'*7}")
+    log(f"{'Command':<20} {'Evals':>5} {'Assert':>6} {'Pass':>5} {'Rate':>6} {'Err':>3} {'ChkF':>4} {'Avg(s)':>6} {'AvgTok':>7} {'Cost$':>7}")
+    log(f"{'-'*20} {'-'*5} {'-'*6} {'-'*5} {'-'*6} {'-'*3} {'-'*4} {'-'*6} {'-'*7} {'-'*7}")
     for cmd, stats in sorted(summary["by_command"].items(), key=lambda x: x[1]["pass_rate"]):
         avg_s = stats['avg_duration_ms'] / 1000
         avg_tok = stats.get('avg_tokens', 0)
         cost = stats.get('total_cost_usd', 0)
-        log(f"{cmd:<20} {stats['evals']:>5} {stats['assertions']:>6} {stats['passed']:>5} {stats['pass_rate']:>5.0%} {stats['errors']:>3} {avg_s:>5.1f} {avg_tok:>7,} {cost:>6.2f}")
+        chkf = stats.get('check_failures', 0)
+        log(f"{cmd:<20} {stats['evals']:>5} {stats['assertions']:>6} {stats['passed']:>5} {stats['pass_rate']:>5.0%} {stats['errors']:>3} {chkf:>4} {avg_s:>5.1f} {avg_tok:>7,} {cost:>6.2f}")
     log(f"{'='*90}")
 
     # Failed assertions detail
@@ -635,6 +908,14 @@ def main():
     for g in graded:
         if fail_count >= 50:
             break
+        if g["status"] == "check_failed":
+            det = g.get("deterministic_grades", [])
+            failed_det = [c for c in det if not c["passed"]]
+            log(f"\n  Eval #{g['eval_id']} ({g['command']}): check_failed")
+            for fd in failed_det:
+                log(f"    CHECK FAIL [{fd['check_type']}]: {fd['detail']}")
+            fail_count += 1
+            continue
         if g["status"] != "graded":
             log(f"\n  Eval #{g['eval_id']} ({g['command']}): {g['status']} - {g.get('error', '')[:100]}")
             fail_count += 1
@@ -646,6 +927,17 @@ def main():
                 log(f"    FAIL: {fa['text']}")
                 log(f"          {fa['evidence']}")
             fail_count += 1
+
+    # Baselines comparison
+    baselines = load_baselines()
+    if baselines:
+        print_regression_report(summary["by_command"], baselines)
+    elif args.update_baselines:
+        log("\nNo existing baselines found — creating initial baselines.")
+
+    # Write baselines if requested
+    if args.update_baselines:
+        write_baselines(summary["by_command"], args.grader)
 
     log(f"\nDone. Results in {workspace_dir}")
 

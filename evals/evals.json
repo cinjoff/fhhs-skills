@@ -36,6 +36,39 @@
           "text": "Suggests /fh:ui-test or /fh:review for post-build checks",
           "type": "behavioral"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "guard",
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "wave",
+            "task"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "SUMMARY"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "verify"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "skip testing",
+            "no tests needed"
+          ]
+        }
       ]
     },
     {
@@ -56,6 +89,25 @@
       ],
       "scenario_requires": [
         "no_gsd_project"
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "PROJECT.md"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "wave",
+            "SUMMARY.md"
+          ]
+        }
       ]
     },
     {
@@ -80,6 +132,30 @@
         {
           "text": "Performs complexity assessment (Simple/Medium/Complex) before research decision",
           "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "task"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "must_haves"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "PLAN.md"
+          ]
         }
       ]
     },
@@ -106,6 +182,24 @@
           "text": "Performs complexity assessment (Simple/Medium/Complex) before research decision",
           "type": "behavioral"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "task"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "PLAN.md"
+          ]
+        }
       ]
     },
     {
@@ -127,6 +221,30 @@
           "text": "Uses TDD approach (failing test first)",
           "type": "behavioral"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "cause"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "test"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "quick fix"
+          ]
+        }
       ]
     },
     {
@@ -147,6 +265,30 @@
         {
           "text": "Verifies all fixes together",
           "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "cause"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "test"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "quick fix"
+          ]
         }
       ]
     },
@@ -185,7 +327,12 @@
           "text": "Suggests /new-project as next step",
           "type": "output"
         }
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "edge-case"
+      ],
+      "checks": []
     },
     {
       "id": 8,
@@ -205,6 +352,31 @@
         {
           "text": "Enforces iron law (tests never go red)",
           "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "test"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "PLAN"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "change behavior",
+            "new feature"
+          ]
         }
       ]
     },
@@ -235,7 +407,12 @@
           "text": "Generates CLAUDE.md under 40 lines",
           "type": "output"
         }
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "happy-path"
+      ],
+      "checks": []
     },
     {
       "id": 10,
@@ -259,6 +436,33 @@
         {
           "text": "Does NOT invoke finishing-a-development-branch directly",
           "type": "guard"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "guard",
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "wave",
+            "task"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "checkpoint"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "skip testing",
+            "no tests needed"
+          ]
         }
       ]
     },
@@ -285,6 +489,30 @@
           "text": "Performs complexity assessment (Simple/Medium/Complex) before research decision",
           "type": "behavioral"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "task"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "CONTEXT"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "PLAN.md"
+          ]
+        }
       ]
     },
     {
@@ -305,6 +533,31 @@
         {
           "text": "Does NOT attempt quick fix",
           "type": "guard"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case",
+        "guard"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "cause"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "hypothesis"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "quick fix"
+          ]
         }
       ]
     },
@@ -330,6 +583,32 @@
       ],
       "scenario_requires": [
         "gsd_project"
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "wave",
+            "task"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "SUMMARY"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "skip testing",
+            "no tests needed"
+          ]
+        }
       ]
     },
     {
@@ -355,6 +634,30 @@
           "text": "Performs complexity assessment (Simple/Medium/Complex) before research decision",
           "type": "behavioral"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "task"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "ROADMAP"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "PLAN.md"
+          ]
+        }
       ]
     },
     {
@@ -376,7 +679,12 @@
           "text": "Includes severity ratings",
           "type": "output"
         }
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "happy-path"
+      ],
+      "checks": []
     },
     {
       "id": 16,
@@ -405,7 +713,13 @@
           "text": "Updates STATE.md",
           "type": "output"
         }
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "guard",
+        "happy-path"
+      ],
+      "checks": []
     },
     {
       "id": 17,
@@ -426,7 +740,13 @@
           "text": "Recommends /new-project",
           "type": "output"
         }
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "edge-case",
+        "guard"
+      ],
+      "checks": []
     },
     {
       "id": 18,
@@ -455,7 +775,13 @@
           "text": "Produces severity-rated report",
           "type": "output"
         }
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "guard",
+        "happy-path"
+      ],
+      "checks": []
     },
     {
       "id": 19,
@@ -476,7 +802,13 @@
           "text": "Does NOT proceed without agent-browser",
           "type": "guard"
         }
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "guard",
+        "happy-path"
+      ],
+      "checks": []
     },
     {
       "id": 20,
@@ -509,7 +841,13 @@
           "text": "Shows completion summary with line count",
           "type": "output"
         }
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "guard",
+        "happy-path"
+      ],
+      "checks": []
     },
     {
       "id": 21,
@@ -534,7 +872,12 @@
           "text": "Waits for user choice",
           "type": "behavioral"
         }
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "edge-case"
+      ],
+      "checks": []
     },
     {
       "id": 22,
@@ -560,7 +903,13 @@
           "text": "Recommends simpler presentation focused on data clarity",
           "type": "output"
         }
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "fixture-required",
+        "happy-path"
+      ],
+      "checks": []
     },
     {
       "id": 23,
@@ -596,6 +945,38 @@
       ],
       "scenario_requires": [
         "gsd_project"
+      ],
+      "tier": "smoke",
+      "tags": [
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "wave",
+            "task"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "DESIGN"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "verify"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "skip testing",
+            "no tests needed"
+          ]
+        }
       ]
     },
     {
@@ -625,6 +1006,30 @@
           "text": "Runs verification gate before generating fix summary",
           "type": "behavioral"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "cause"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "test"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "quick fix"
+          ]
+        }
       ]
     },
     {
@@ -650,7 +1055,12 @@
           "text": "Confidence-tagged findings",
           "type": "output"
         }
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "happy-path"
+      ],
+      "checks": []
     },
     {
       "id": 26,
@@ -675,7 +1085,13 @@
           "text": "CLAUDE.md reflects CLI conventions",
           "type": "output"
         }
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "guard",
+        "happy-path"
+      ],
+      "checks": []
     },
     {
       "id": 27,
@@ -703,7 +1119,13 @@
       ],
       "scenario_requires": [
         "gsd_project"
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "guard",
+        "happy-path"
+      ],
+      "checks": []
     },
     {
       "id": 28,
@@ -762,6 +1184,40 @@
           "text": "Runs verification gate (tests, build, lint) before writing SUMMARY",
           "type": "behavioral"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "fixture-required",
+        "guard",
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "wave",
+            "task"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "SUMMARY"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "verify"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "skip testing",
+            "no tests needed"
+          ]
+        }
       ]
     },
     {
@@ -798,35 +1254,44 @@
       ],
       "scenario_requires": [
         "gsd_project"
+      ],
+      "tier": "smoke",
+      "tags": [
+        "fixture-required",
+        "guard",
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "wave",
+            "task"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "SUMMARY"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "verify"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "skip testing",
+            "no tests needed"
+          ]
+        }
       ]
     },
     {
       "id": 30,
-      "command": "build",
-      "prompt": "Build the dashboard plan at .planning/phases/02-dashboard/02-01-PLAN.md",
-      "expected_output": "Should identify 2 waves. Wave 1 is the component task (no Playwright involvement) \u2014 subagent prompt should NOT include Playwright guidance. Wave 2 is the Playwright test task \u2014 subagent detects *.spec.* files in task and loads Playwright guidance (Page Object Model, locator strategies, auto-waiting). /review --quick runs after both waves. Phase completion Gate 2 runs design quality gates for the component task (frontend). SUMMARY.md notes Playwright tests written.",
-      "files": [
-        "evals/fixtures/nextjs-app-deep/next.config.ts",
-        "evals/fixtures/nextjs-app-deep/tsconfig.json",
-        "evals/fixtures/nextjs-app-deep/playwright.config.ts",
-        "evals/fixtures/nextjs-app-deep/.planning/PROJECT.md",
-        "evals/fixtures/nextjs-app-deep/.planning/STATE.md",
-        "evals/fixtures/nextjs-app-deep/.planning/DESIGN.md",
-        "evals/fixtures/nextjs-app-deep/CLAUDE.md",
-        "evals/fixtures/nextjs-app-deep/.planning/phases/02-dashboard/02-01-PLAN.md"
-      ],
-      "assertions": [
-        {
-          "text": "Gate 2 runs design quality checks if visual ratio > 30%",
-          "type": "behavioral"
-        }
-      ],
-      "scenario_requires": [
-        "gsd_project"
-      ]
-    },
-    {
-      "id": 31,
       "command": "build",
       "prompt": "Build the auth plan at .planning/phases/01-auth/01-01-PLAN.md",
       "expected_output": "Should build the auth plan with subagents (model: sonnet). /review --quick runs after build. During spec verification (Step 1.8 of /review), the spec verification agent catches any usage in the diff (e.g., function params typed as any). This is flagged as BLOCKING. Spec verification also catches as any assertions. Suggests unknown or proper type guard as alternatives. Should run verification gate (tests, build check, lint) before writing SUMMARY.md.",
@@ -858,10 +1323,44 @@
       ],
       "scenario_requires": [
         "gsd_project"
+      ],
+      "tier": "smoke",
+      "tags": [
+        "fixture-required",
+        "guard",
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "wave",
+            "task"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "SUMMARY"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "verify"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "skip testing",
+            "no tests needed"
+          ]
+        }
       ]
     },
     {
-      "id": 32,
+      "id": 31,
       "command": "fix",
       "prompt": "The user profile page crashes when the user has no avatar \u2014 TypeError: Cannot read properties of null (reading 'url'). It's in src/components/profile.tsx",
       "expected_output": "Should triage as MODERATE (single component, one subsystem). Invokes systematic debugging to locate null reference in profile.tsx (accessing avatar.url when avatar is null). TDD approach: writes failing test first reproducing the null avatar case, then fixes with optional chaining or null check, confirms test passes. Frontend check reads DESIGN.md for fallback avatar styling. Simplify runs before /review. /review runs quality review and gap analysis on the fix diff. Fix commit uses fix(profile): prefix. Does NOT fix unrelated pre-existing issues. Should run verification gate before generating fix summary.",
@@ -921,10 +1420,36 @@
           "text": "Runs verification gate before generating fix summary",
           "type": "behavioral"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case",
+        "fixture-required",
+        "guard"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "cause"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "test"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "quick fix"
+          ]
+        }
       ]
     },
     {
-      "id": 33,
+      "id": 32,
       "command": "refactor",
       "prompt": "Refactor the auth module to extract token management into a separate service. src/lib/auth.ts currently handles JWT signing, verification, session management, and refresh token rotation \u2014 split token concerns out into src/lib/token-service.ts",
       "expected_output": "Should scope with LSP findReferences to map blast radius (all files importing from auth.ts). Captures baseline test suite (must be GREEN). Plans atomic steps ordered safest-first (create new file, move functions, update imports, remove old code). Executes with tests green at every step \u2014 reverts immediately if tests go red. Simplify pass after completion. /review runs quality review (behavior preservation focus) and gap analysis. If Next.js files touched, includes perf patterns. Atomic commits with refactor(auth): prefix.",
@@ -980,10 +1505,37 @@
           "text": "Tests remain green at every atomic step",
           "type": "behavioral"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case",
+        "fixture-required",
+        "guard"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "test"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "blast radius"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "change behavior",
+            "new feature"
+          ]
+        }
       ]
     },
     {
-      "id": 34,
+      "id": 33,
       "command": "secure",
       "prompt": "Scan the whole codebase for security issues",
       "expected_output": "Should scope the full codebase and dispatch exactly 4 parallel scanning agents. Agent findings: SQL injection via string concatenation in api/users/route.ts (CRITICAL), XSS via dangerouslySetInnerHTML in comment.tsx (CRITICAL), hardcoded JWT secret in auth.ts (CRITICAL), session stored in localStorage (HIGH), .env.example with real-looking API keys (CRITICAL), missing CORS on data route (MEDIUM), no auth check on data route (HIGH). Report has file:line references, findings grouped by severity then category. Overlapping findings from different agents are deduplicated.",
@@ -1039,10 +1591,16 @@
           "text": "Deduplicates overlapping findings from different agents",
           "type": "behavioral"
         }
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "edge-case",
+        "fixture-required"
+      ],
+      "checks": []
     },
     {
-      "id": 35,
+      "id": 34,
       "command": "review",
       "prompt": "Review my changes before creating a PR",
       "expected_output": "Should run the full /review pipeline: spec verification (Step 1.8, GSD projects), then 2 parallel agents \u2014 Agent 1 (code quality + architecture) and Agent 2 (gap analysis). Gate decision aggregates all findings. If Next.js project detected, includes perf patterns in review. Review report includes quality score, spec verification results, and gap analysis. Presents promotion options (PR/merge/keep/discard from finishing-a-development-branch). PR title enforces conventional commit format. Security scanning is handled by /fh:secure, not /review.",
@@ -1093,10 +1651,38 @@
           "text": "/review does NOT touch STATE.md (GSD state updates happen in /build)",
           "type": "guard"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "fixture-required",
+        "guard",
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "finding"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "recommendation"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "lgtm",
+            "looks good",
+            "no issues"
+          ]
+        }
       ]
     },
     {
-      "id": 36,
+      "id": 35,
       "command": "build",
       "prompt": "Build the plan at plan.md in the project root",
       "expected_output": "Should detect that .planning/PROJECT.md is missing (no GSD project initialized). Stops immediately and tells the user to run /fh:new-project first. Does NOT proceed with any execution \u2014 no subagent dispatch, no plan parsing, no wave analysis.",
@@ -1117,10 +1703,30 @@
       ],
       "scenario_requires": [
         "no_gsd_project"
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case",
+        "guard"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "PROJECT.md"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "wave",
+            "SUMMARY.md"
+          ]
+        }
       ]
     },
     {
-      "id": 37,
+      "id": 36,
       "command": "plan-work",
       "prompt": "Plan and build adding user settings page with a dark mode toggle. The project already has a ThemeProvider and uses Tailwind dark: prefix.",
       "expected_output": "Should run /plan-work first: skips research (dark mode toggle is well-known pattern), brainstorms design options (toggle placement, persistence strategy, system preference detection), discusses with user, derives must_haves with user-facing truths, creates PLAN.md with proper frontmatter. Then /build: dispatches subagents (model: sonnet) that self-discover Next.js perf rules and do NOT commit. Orchestrator makes single commit per plan. Verification (tests, build, lint) runs before SUMMARY.md. Phase completion gates include design quality gates (critique+harden, polish+adapt, normalize). User runs /review (quality + gap + spec verification) and /simplify on demand. Should perform complexity assessment before deciding research path.",
@@ -1198,10 +1804,61 @@
           "text": "Uses three-category decision locking (LOCKED/DISCRETION/DEFERRED)",
           "type": "output"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case",
+        "fixture-required",
+        "guard"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "task"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "must_haves"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "PLAN.md"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "wave"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "SUMMARY"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "verify"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "skip testing",
+            "no tests needed"
+          ]
+        }
       ]
     },
     {
-      "id": 38,
+      "id": 37,
       "command": "fix",
       "prompt": "API returns 500 on /api/users and /api/billing simultaneously, and the dashboard shows stale data. Three independent failures.",
       "expected_output": "Should triage as PARALLEL (3+ independent failures across different subsystems). Dispatches parallel gsd-debugger agents \u2014 one per failing subsystem (users API, billing API, dashboard staleness). Each debugger uses scientific method (hypothesis \u2192 test \u2192 conclude). TDD fix per root cause. Simplify after all fixes. /review runs quality and gap analysis on the fix diff. Security vulnerabilities in /api/users would be caught by /fh:secure (not /review). SUMMARY.md notes all three subsystem fixes. Should run verification gate before generating fix summary.",
@@ -1262,10 +1919,36 @@
           "text": "Runs verification gate before generating fix summary",
           "type": "behavioral"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case",
+        "fixture-required",
+        "guard"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "cause"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "test"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "quick fix"
+          ]
+        }
       ]
     },
     {
-      "id": 39,
+      "id": 38,
       "command": "refactor",
       "prompt": "refactor this codebase \u2014 there's a 180-line component and a kitchen sink utility file that need breaking up",
       "expected_output": "Should identify data-table.tsx as a god component (180+ lines mixing search, sort, pagination, rendering) and recommend splitting. Should identify utils.ts as kitchen-sink (cn() plus 5 unrelated functions) and recommend extracting. Should identify duplicated fetch pattern in api.ts and recommend shared wrapper.",
@@ -1291,10 +1974,30 @@
           "text": "Identifies duplicated validation in user-form and login page",
           "type": "behavioral"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case",
+        "fixture-required"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "test"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "change behavior",
+            "new feature"
+          ]
+        }
       ]
     },
     {
-      "id": 40,
+      "id": 39,
       "command": "fix",
       "prompt": "the data-table test is failing, can you fix it?",
       "expected_output": "Should diagnose the prop interface mismatch: data-table.test.tsx passes `columns` prop but the DataTable component expects `fields`. Should fix the test to use the correct prop name, not change the component interface. Should follow TDD discipline.",
@@ -1317,10 +2020,35 @@
           "text": "References or resolves todo-003 about this regression",
           "type": "behavioral"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case",
+        "fixture-required"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "cause"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "test"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "quick fix"
+          ]
+        }
       ]
     },
     {
-      "id": 41,
+      "id": 40,
       "command": "ui-critique",
       "prompt": "review the e2e tests and suggest improvements following Playwright best practices",
       "expected_output": "Should read the frontend-design skill for critique methodology, then produce a structured critique report. Should detect CSS selector anti-patterns (.email-input, .btn-primary, .text-red-600), recommend role-based or test-id locators, suggest Page Object Model pattern, identify missing error state test coverage, and rate each finding by severity.",
@@ -1355,10 +2083,17 @@
           "text": "Does not auto-apply fixes \u2014 critique is read-only analysis",
           "type": "guard"
         }
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "edge-case",
+        "fixture-required",
+        "guard"
+      ],
+      "checks": []
     },
     {
-      "id": 42,
+      "id": 41,
       "command": "secure",
       "prompt": "scan just the changed files for security issues (default scope, not --full)",
       "expected_output": "Should use default scoping (git diff from merge-base, not full codebase). Should compute merge-base, collect changed + staged + unstaged file list, filter to source files, deduplicate. Should still dispatch 4 parallel agents on the scoped file set. Report should note 'Scanning N files' with the scoped count, not the full codebase count.",
@@ -1387,10 +2122,15 @@
       ],
       "scenario_requires": [
         "gsd_project"
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "edge-case"
+      ],
+      "checks": []
     },
     {
-      "id": 43,
+      "id": 42,
       "command": "secure",
       "prompt": "security scan --full on just the auth module: src/lib/auth.ts and the login route",
       "expected_output": "Should detect hardcoded JWT secret 'acme-dashboard-secret-2024' (CRITICAL), localStorage for token storage (HIGH), 'as TokenPayload' type assertion bypassing type safety, error details leaked in login route catch (String(error) exposes internals), and hardcoded role 'viewer' in login. Gate output should be BLOCK due to CRITICAL (hardcoded secret).",
@@ -1423,10 +2163,16 @@
       ],
       "scenario_requires": [
         "gsd_project"
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "edge-case",
+        "fixture-required"
+      ],
+      "checks": []
     },
     {
-      "id": 44,
+      "id": 43,
       "command": "secure",
       "prompt": "run a security scan on the data route at src/app/api/data/route.ts",
       "expected_output": "Should detect user-controlled table name passed directly to supabase.from(table) \u2014 allows querying arbitrary tables (CRITICAL IDOR/injection). Should detect missing authentication check (HIGH). Should detect no CORS configuration (MEDIUM). Gate output should be BLOCK.",
@@ -1454,10 +2200,16 @@
       "scenario_requires": [
         "gsd_project",
         "vulnerable_fixtures"
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "edge-case",
+        "fixture-required"
+      ],
+      "checks": []
     },
     {
-      "id": 45,
+      "id": 44,
       "command": "secure",
       "prompt": "check the comment-card and comments API for XSS vulnerabilities",
       "expected_output": "Should detect dangerouslySetInnerHTML with user-provided content (comment.content) in comment-card.tsx as CRITICAL stored XSS. Should detect that comments POST route accepts raw body.content without sanitization. Gate output should be BLOCK. Fix should recommend sanitizing HTML (DOMPurify) or using text rendering instead of dangerouslySetInnerHTML.",
@@ -1485,10 +2237,16 @@
       ],
       "scenario_requires": [
         "gsd_project"
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "fixture-required",
+        "happy-path"
+      ],
+      "checks": []
     },
     {
-      "id": 46,
+      "id": 45,
       "command": "secure",
       "prompt": "scan the users API route for security issues",
       "expected_output": "Should detect POST accepting arbitrary body fields (mass assignment \u2014 user controls what gets inserted). Should detect DELETE exposed without authentication. Should detect no rate limiting on operations. Should note that error.message from Supabase is returned verbatim (information disclosure). Report should include file:line references.",
@@ -1516,10 +2274,16 @@
       "scenario_requires": [
         "gsd_project",
         "vulnerable_fixtures"
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "edge-case",
+        "fixture-required"
+      ],
+      "checks": []
     },
     {
-      "id": 47,
+      "id": 46,
       "command": "review",
       "prompt": "review my changes \u2014 I only touched CSS files (globals.css and a few component styles)",
       "expected_output": "Should run full review pipeline: quality review (code-reviewer), gap analysis, evidence verification (tests, build, lint). Spec verification (Step 1.8) skips silently since no PLAN.md in scope. Should detect frontend work and suggest /fh:ui-test for visual verification. Should NOT include Next.js perf patterns for CSS-only changes unless components were touched. Security scan is not part of /review pipeline.",
@@ -1545,10 +2309,31 @@
           "text": "Proceeds to promotion options (likely PASS)",
           "type": "behavioral"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case",
+        "guard"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "finding"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "lgtm",
+            "looks good",
+            "no issues"
+          ]
+        }
       ]
     },
     {
-      "id": 48,
+      "id": 47,
       "command": "review",
       "prompt": "review \u2014 the diff has several uses of 'any' type in the new service files",
       "expected_output": "Should run spec verification (Step 1.8) for GSD projects, which checks TypeScript strictness including 'any' usage in added lines. Should flag each instance with file and line. Should BLOCK promotion because 'any' in new code is a blocking finding. For non-GSD projects, spec verification skips but quality agent (Agent 1) may also flag 'any' usage as a code quality concern. Should recommend replacing with proper types (unknown + type guards or concrete interfaces).",
@@ -1574,10 +2359,43 @@
           "text": "Does NOT proceed to promotion while blocked",
           "type": "guard"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case",
+        "guard"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "finding"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "any"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "BLOCK"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "lgtm",
+            "looks good",
+            "no issues"
+          ]
+        }
       ]
     },
     {
-      "id": 49,
+      "id": 48,
       "command": "review",
       "prompt": "review my changes (tests are failing \u2014 3 out of 20 tests red)",
       "expected_output": "Should run evidence verification (Step 3) and detect failing tests from fresh test run output. Should report: '20 tests total, 17 passed, 3 failed' with exit code. Should BLOCK promotion because verification failures are blocking per gate table. Should diagnose which tests are failing. Should NOT proceed to promotion. Should suggest fixing tests before re-reviewing.",
@@ -1603,10 +2421,42 @@
           "text": "Suggests fixing tests then re-reviewing",
           "type": "output"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case",
+        "guard"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "finding"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "BLOCK"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "test"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "lgtm",
+            "looks good"
+          ]
+        }
       ]
     },
     {
-      "id": 50,
+      "id": 49,
       "command": "review",
       "prompt": "review \u2014 I think everything is clean, ready to create a PR",
       "expected_output": "Should run full pipeline: spec verification (Step 1.8, GSD projects), quality + gap analysis agents (Step 2), evidence verification (Step 3). If all pass: generate review report (quality score, spec verification results, gap analysis, verification evidence). Gate decision PASS. Invoke finishing-a-development-branch with promotion options (PR/merge/keep/discard). PR title should follow conventional commit format type(scope): summary. Should present the 4 options to user.",
@@ -1632,10 +2482,28 @@
           "text": "PR title enforces conventional commit format",
           "type": "output"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "finding"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "recommendation"
+          ]
+        }
       ]
     },
     {
-      "id": 51,
+      "id": 50,
       "command": "review",
       "prompt": "review the changes (gap analysis finds several untested code paths and one TODO left in the diff)",
       "expected_output": "Should run full pipeline. Gap analysis agent (Agent 2) returns WARN findings: untested code paths and a TODO/FIXME left in the diff. Code quality review passes. Evidence verification passes. Gate decision should be WARN \u2014 log gap findings in report, recommend fixing, but proceed to promotion unless user wants to fix first. Should present gap findings with file:line references. Should still allow promotion.",
@@ -1665,10 +2533,28 @@
           "text": "Recommends addressing gap findings but does not require it",
           "type": "output"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "finding"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "WARN"
+          ]
+        }
       ]
     },
     {
-      "id": 52,
+      "id": 51,
       "command": "review",
       "prompt": "review \u2014 this is a Next.js project and I changed several API routes and a page component",
       "expected_output": "Should detect Next.js project (checks for next.config.*). Should include nextjs-perf skill patterns in the code quality review criteria (client-side waterfalls, caching patterns, unnecessary client components, barrel import bundle bloat). Gap analysis agent covers API route completeness. Evidence verification should include build check. Review report should mention Next.js-specific findings if any. Security scan is not part of /review pipeline.",
@@ -1702,10 +2588,38 @@
           "text": "Review report generated with all sections",
           "type": "output"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "fixture-required",
+        "guard",
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "finding"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "Next.js"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "lgtm",
+            "looks good",
+            "no issues"
+          ]
+        }
       ]
     },
     {
-      "id": 53,
+      "id": 52,
       "command": "review",
       "prompt": "review (code quality review finds Critical issue: function silently swallows errors and returns undefined)",
       "expected_output": "Should run quality review and receive Critical finding. Gate decision should BLOCK on Critical code review finding (per gate table). Should report the Critical finding with file context. Should fix directly or dispatch fix agent. After fix, should re-run only the quality review step (not entire pipeline). Should proceed to promotion after re-check passes.",
@@ -1731,10 +2645,37 @@
           "text": "Proceeds to promotion after re-check passes",
           "type": "behavioral"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case",
+        "guard"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "finding"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "BLOCK"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "lgtm",
+            "looks good",
+            "no issues"
+          ]
+        }
       ]
     },
     {
-      "id": 54,
+      "id": 53,
       "command": "review",
       "prompt": "review (no changes on current branch \u2014 clean diff)",
       "expected_output": "Should detect empty diff (no changes from merge-base to HEAD). Should report there's nothing to review. Should NOT dispatch code-reviewer, gap analysis agents, or run verification. Should NOT offer promotion options.",
@@ -1756,10 +2697,32 @@
           "text": "Does NOT offer promotion options",
           "type": "guard"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case",
+        "guard"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "nothing",
+            "no changes"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "BLOCK",
+            "WARN",
+            "finding"
+          ]
+        }
       ]
     },
     {
-      "id": 55,
+      "id": 54,
       "command": "review",
       "prompt": "review \u2014 this is NOT a GSD project (no .planning/ directory)",
       "expected_output": "Should run the full review pipeline regardless of GSD status. /review is a pure quality gate \u2014 it does NOT require .planning/PROJECT.md. Should run quality review and gap analysis agents (Step 2), evidence verification (Step 3). Spec verification (Step 1.8) skips silently since no .planning/ directory. Should proceed to promotion options normally. Should NOT suggest /new-project or refuse to run.",
@@ -1781,10 +2744,30 @@
           "text": "Proceeds to promotion options normally",
           "type": "behavioral"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case",
+        "guard"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "finding"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "new-project",
+            "refuse"
+          ]
+        }
       ]
     },
     {
-      "id": 56,
+      "id": 55,
       "command": "secure",
       "prompt": "security scan on a project with no vulnerabilities found",
       "expected_output": "Should dispatch 4 parallel agents, collect results, find no findings. Should report 'Scanning N files for OWASP Top 10 vulnerabilities.' followed by clean report. Gate output should be 'PASS (clean)'. Should NOT fabricate findings.",
@@ -1809,10 +2792,16 @@
       ],
       "scenario_requires": [
         "gsd_project"
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "guard",
+        "happy-path"
+      ],
+      "checks": []
     },
     {
-      "id": 57,
+      "id": 56,
       "command": "fix",
       "prompt": "add a new button to the header for notifications",
       "expected_output": "Should recognize this is NOT a bug \u2014 it's a feature request. Should NOT proceed with TDD triage (no failing test to write, no bug to reproduce). Should redirect the user to /plan-work for a planned feature. Should explain why /fix is the wrong tool for this task.",
@@ -1838,10 +2827,30 @@
           "text": "Explains why /fix is not the right command",
           "type": "output"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case",
+        "guard"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "plan"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "triage",
+            "TDD fix"
+          ]
+        }
       ]
     },
     {
-      "id": 58,
+      "id": 57,
       "command": "build",
       "prompt": "build the plan at .planning/phases/03-dashboard/03-01-PLAN.md",
       "expected_output": "Should parse the plan and handle the edge case where no actionable tasks exist.",
@@ -1854,14 +2863,30 @@
         {
           "text": "Handles edge case of plan with no actionable tasks",
           "type": "behavioral"
+        },
+        {
+          "text": "Gate 2 runs design quality checks if visual ratio > 30%",
+          "type": "behavioral"
         }
       ],
       "scenario_requires": [
         "gsd_project"
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "task"
+          ]
+        }
       ]
     },
     {
-      "id": 59,
+      "id": 58,
       "command": "build",
       "prompt": "build the plan \u2014 it has 2 waves. wave 1 has 2 tasks and wave 2 has 1 task that depends on wave 1",
       "expected_output": "Should execute wave 1 (2 parallel tasks). After all waves complete, /review --quick runs spec verification (Step 1.8). If spec verification finds BLOCKING issues in the diff, /review reports them and blocks promotion. User must fix before proceeding to review completion. Should run verification gate (tests, build check, lint) before writing SUMMARY.md.",
@@ -1886,10 +2911,37 @@
       ],
       "scenario_requires": [
         "gsd_project"
+      ],
+      "tier": "smoke",
+      "tags": [
+        "guard",
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "wave",
+            "task"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "verify"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "skip testing",
+            "no tests needed"
+          ]
+        }
       ]
     },
     {
-      "id": 60,
+      "id": 59,
       "command": "build",
       "prompt": "build the plan \u2014 all waves completed, running /review now",
       "expected_output": "Should complete all waves and suggest /fh:review. When /review gate decision is BLOCK (e.g., test failures or spec verification failures), should NOT mark the phase as complete in STATE.md. Should report the block reason clearly. Should offer a fix-and-retry path (fix the issues, then re-run /review). Should NOT update STATE.md to mark phase done while review is blocked. Should run verification gate (tests, build check, lint) before writing SUMMARY.md.",
@@ -1914,10 +2966,42 @@
       ],
       "scenario_requires": [
         "gsd_project"
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "wave",
+            "task"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "SUMMARY"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "verify"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "skip testing",
+            "no tests needed"
+          ]
+        }
       ]
     },
     {
-      "id": 61,
+      "id": 60,
       "command": "build",
       "prompt": "build phase 3 \u2014 the plan is at .planning/phases/03-dashboard/03-01-PLAN.md",
       "expected_output": "Should detect that STATE.md doesn't match actual progress and report the discrepancy. Should not silently overwrite or proceed.",
@@ -1938,10 +3022,23 @@
       ],
       "scenario_requires": [
         "gsd_project"
+      ],
+      "tier": "smoke",
+      "tags": [
+        "guard",
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "STATE"
+          ]
+        }
       ]
     },
     {
-      "id": 62,
+      "id": 61,
       "command": "review",
       "prompt": "review these changed files \u2014 auth, API routes, and the comment card. check for security issues especially",
       "expected_output": "Should redirect user to /fh:secure for security scanning \u2014 /review does not run security scan. /review should run quality review (Agent 1) and gap analysis (Agent 2). Gap analysis may surface incomplete error handling or unguarded inputs as code quality concerns. The user should be informed that /fh:secure is the right tool for security vulnerability detection.",
@@ -1972,10 +3069,38 @@
           "text": "Generates review report with quality findings",
           "type": "output"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case",
+        "fixture-required",
+        "guard"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "finding"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "secure"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "lgtm",
+            "looks good",
+            "no issues"
+          ]
+        }
       ]
     },
     {
-      "id": 63,
+      "id": 62,
       "command": "review",
       "prompt": "review these frontend component changes \u2014 sidebar, metric card, and user form",
       "expected_output": "Should run quality review and gap analysis. Quality review should catch design anti-patterns: sidebar uses hardcoded colors instead of CSS variables, user-form uses raw HTML inputs instead of shadcn components, metric-card may lack responsive handling. Should suggest /fh:ui-test for visual verification of component changes. Should reference DESIGN.md conventions. Does not run security scan (/fh:secure handles that).",
@@ -2007,10 +3132,38 @@
           "text": "Does NOT block on security for pure frontend components",
           "type": "guard"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "fixture-required",
+        "guard",
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "finding"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "DESIGN"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "lgtm",
+            "looks good",
+            "no issues"
+          ]
+        }
       ]
     },
     {
-      "id": 64,
+      "id": 63,
       "command": "build",
       "prompt": "I just finished planning phase 2, build it, then verify and tell me progress",
       "expected_output": "Should execute a lifecycle chain: first invoke /build for 02-01-PLAN.md, then on completion invoke /verify for phase 2 deliverables, then invoke /progress showing updated state. Each step must complete before the next starts. /build should suggest /fh:review as post-build quality check. Final /progress output should show Phase 02 further along than before (plan executed, summary generated). Should run verification gate (tests, build check, lint) before writing SUMMARY.md.",
@@ -2061,10 +3214,44 @@
       ],
       "scenario_requires": [
         "gsd_project"
+      ],
+      "tier": "smoke",
+      "tags": [
+        "fixture-required",
+        "guard",
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "wave",
+            "task"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "SUMMARY"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "verify"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "skip testing",
+            "no tests needed"
+          ]
+        }
       ]
     },
     {
-      "id": 65,
+      "id": 64,
       "command": "plan-review",
       "prompt": "Review this plan \u2014 I just finished /plan-work and have a PLAN.md at .planning/phases/03-billing/03-01-PLAN.md for adding Stripe subscription billing. It has 4 tasks across backend and frontend.",
       "expected_output": "Should run pre-review system audit (git log, git diff main, stash list), then enter Step 0 Nuclear Scope Challenge \u2014 challenge whether this is the right problem, check must_haves truths, map existing code leverage, produce dream state mapping. Must present three mode options: SCOPE EXPANSION, HOLD SCOPE, SCOPE REDUCTION with context-dependent default. Must AskUserQuestion for mode selection before proceeding to review sections. Should include engineering review sections (Architecture, Code Quality, Test Coverage with diagram, Performance).",
@@ -2101,10 +3288,16 @@
       ],
       "scenario_requires": [
         "gsd_project"
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "guard",
+        "happy-path"
+      ],
+      "checks": []
     },
     {
-      "id": 66,
+      "id": 65,
       "command": "plan-review",
       "prompt": "I chose HOLD SCOPE for the billing plan review. Proceed with the review sections.",
       "expected_output": "Should commit to HOLD SCOPE mode and proceed through review sections in order: Architecture Review (Section 1), then Error & Rescue Map (Section 2) with a complete table naming specific error types (TimeoutError, RateLimitError, ParseError, etc.), rescue status, rescue action, and user-visible impact for every method/codepath that can fail. Must produce the Error/Rescue Map table with named exceptions \u2014 not generic 'handle errors'. Must AskUserQuestion after each section before proceeding. Should include engineering review sections (Architecture, Code Quality, Test Coverage with diagram, Performance).",
@@ -2141,10 +3334,15 @@
       ],
       "scenario_requires": [
         "gsd_project"
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "edge-case"
+      ],
+      "checks": []
     },
     {
-      "id": 67,
+      "id": 66,
       "command": "plan-review",
       "prompt": "Review the auth plan at .planning/phases/04-auth/04-01-PLAN.md \u2014 it adds JWT auth, refresh tokens, and a login form. Three architectural issues and a security concern need to be raised.",
       "expected_output": "Should raise each issue as a separate AskUserQuestion call \u2014 one issue per question, never batched. Each question must present 2-3 concrete lettered options (A, B, C), state the recommended option FIRST with a directive ('Do B. Here's why:'), and explain why that option over others. Must use numbered issues with lettered options (e.g., '1A', '1B'). No yes/no questions. No batching multiple issues into one question. Should include engineering review sections (Architecture, Code Quality, Test Coverage with diagram, Performance).",
@@ -2181,10 +3379,16 @@
       ],
       "scenario_requires": [
         "gsd_project"
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "guard",
+        "happy-path"
+      ],
+      "checks": []
     },
     {
-      "id": 68,
+      "id": 67,
       "command": "review",
       "prompt": "review my changes \u2014 I touched auth middleware, two API routes, and the user settings page",
       "expected_output": "Should run the full /review pipeline including the production safety checklist. Code quality agent (Agent 1) must reference skills/review/references/production-safety-checklist.md for the two-pass safety review. The agent must honor the checklist's explicit suppressions section to reduce noise on known-safe patterns. Gap analysis (Agent 2) runs separately. Gate decision aggregates all findings including production safety results.",
@@ -2210,10 +3414,37 @@
           "text": "Review report surfaces production safety findings in the output",
           "type": "output"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "guard",
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "finding"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "production-safety"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "lgtm",
+            "looks good",
+            "no issues"
+          ]
+        }
       ]
     },
     {
-      "id": 69,
+      "id": 68,
       "command": "plan-work",
       "prompt": "plan adding WebSocket real-time notifications to the dashboard. Users should see live updates when team members post comments or complete tasks. We use Next.js with a Node backend.",
       "expected_output": "Should reach Step 3 (Discuss Implementation) and produce a Failure Modes Registry table with columns: CODEPATH, FAILURE MODE, RESCUED?, TEST?, USER SEES?, LOGGED?. Must map failure modes for WebSocket-specific concerns (connection drop, reconnection, stale state, message ordering, backpressure). Any row with RESCUED=N, TEST=N, USER SEES=Silent must be flagged as CRITICAL GAP. Failure modes from the registry should be included as must_haves.truths in Step 4. Should perform complexity assessment before deciding research path.",
@@ -2243,10 +3474,40 @@
           "text": "Performs complexity assessment (Simple/Medium/Complex) before research decision",
           "type": "behavioral"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "task"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "must_haves"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "failure"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "PLAN.md"
+          ]
+        }
       ]
     },
     {
-      "id": 70,
+      "id": 69,
       "command": "plan-work",
       "prompt": "plan adding a user preferences API endpoint. well-known REST patterns, no research needed",
       "expected_output": "Should create native tasks for all planning steps (Phase matching, Research, Brainstorm, Discuss implementation, Derive must_haves, Create plan, Plan-check) using TaskCreate at the start. Should update tasks to in_progress/completed as each step progresses. Should mark Research as completed with skipped metadata since well-known patterns. Should include graceful degradation (TASKS_AVAILABLE flag). Should perform complexity assessment before deciding research path.",
@@ -2275,10 +3536,28 @@
       ],
       "scenario_requires": [
         "gsd_project"
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "task"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "PLAN.md"
+          ]
+        }
       ]
     },
     {
-      "id": 71,
+      "id": 70,
       "command": "build",
       "prompt": "execute the plan at .planning/phases/05-api/05-01-PLAN.md. it has 3 tasks in 2 waves \u2014 task 1 and 2 are wave 1, task 3 is wave 2",
       "expected_output": "Should dispatch one subagent per task using the Agent tool. Tasks within a wave dispatch in parallel; waves run sequentially. Task tracking via TaskCreate is optional (try, skip silently if unavailable). Should run phase completion gates (fallow, goal verification, design quality, verification-before-completion) before writing SUMMARY.md.",
@@ -2303,10 +3582,36 @@
       ],
       "scenario_requires": [
         "gsd_project"
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "wave",
+            "task"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "SUMMARY"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "skip testing",
+            "no tests needed"
+          ]
+        }
       ]
     },
     {
-      "id": 72,
+      "id": 71,
       "command": "plan-work",
       "prompt": "plan adding role-based access control to the API routes. this touches auth middleware, 3 route handlers, and a new permissions table",
       "expected_output": "After plan creation and plan-check, Step 7 handoff should recommend /fh:plan-review as the default for ALL plans. Should present three options: (1) /fh:plan-review as default, (2) /fh:build only for trivially obvious work (single-file rename, typo fix, config-only), (3) continue planning. Review is the default \u2014 only skip for trivially obvious work where risk of missed edge case is near zero. Should perform complexity assessment before deciding research path.",
@@ -2339,10 +3644,34 @@
       ],
       "scenario_requires": [
         "gsd_project"
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "task"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "plan-review"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "PLAN.md"
+          ]
+        }
       ]
     },
     {
-      "id": 73,
+      "id": 72,
       "command": "plan-work",
       "prompt": "plan adding a discount calculation engine and a coupon validation service. pure business logic, no frontend",
       "expected_output": "During plan-check (Step 6), should detect that business-logic tasks (discount calculation, coupon validation) involve state/logic and WARN if they lack tdd=true. Should ask the planner to confirm or add tdd=true. Should NOT block \u2014 only warn. Should perform complexity assessment before deciding research path.",
@@ -2371,10 +3700,35 @@
       ],
       "scenario_requires": [
         "gsd_project"
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case",
+        "guard"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "task"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "tdd"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "PLAN.md"
+          ]
+        }
       ]
     },
     {
-      "id": 74,
+      "id": 73,
       "command": "plan-work",
       "prompt": "plan adding a user settings page with profile editing form, password change, and notification preferences toggles",
       "expected_output": "During plan-check (Step 6), should detect interactive frontend features (forms, toggles) and check for playwright.config in the project. Should WARN that no E2E test task exists and suggest adding a Playwright test task. Should offer to create the test task referencing .claude/skills/playwright-testing/PROMPT.md. Should NOT block. Should perform complexity assessment before deciding research path.",
@@ -2407,10 +3761,29 @@
       ],
       "scenario_requires": [
         "gsd_project"
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case",
+        "guard"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "task"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "PLAN.md"
+          ]
+        }
       ]
     },
     {
-      "id": 75,
+      "id": 74,
       "command": "build",
       "prompt": "execute the plan. task 1 is marked tdd=true for implementing a rate limiter. after the subagent finishes, the git log shows: 'feat(01-01): implement rate limiter' then 'test(01-01): add rate limiter tests' \u2014 feat before test",
       "expected_output": "During spec gate (Step 3b), should detect that the tdd=true task has feat commit before test commit. Should emit a WARN (not blocking) about TDD discipline violation \u2014 expected test commit before feat commit (RED before GREEN). Should NOT change the PASS/BLOCKING verdict based on this warning alone. Should run verification gate (tests, build check, lint) before writing SUMMARY.md.",
@@ -2427,10 +3800,42 @@
       ],
       "scenario_requires": [
         "gsd_project"
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "wave",
+            "task"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "SUMMARY"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "verify"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "skip testing",
+            "no tests needed"
+          ]
+        }
       ]
     },
     {
-      "id": 76,
+      "id": 75,
       "command": "observability",
       "prompt": "Check if there are any runtime errors in my app",
       "expected_output": "Should look for local error store like .sentry-local/events.db, query the error database for recent events, report findings in structured format, and if no error store exists, report that no local error tracking is configured.",
@@ -2453,10 +3858,15 @@
           "type": "behavioral"
         }
       ],
-      "scenario_requires": []
+      "scenario_requires": [],
+      "tier": "full",
+      "tags": [
+        "edge-case"
+      ],
+      "checks": []
     },
     {
-      "id": 77,
+      "id": 76,
       "command": "observability",
       "prompt": "What errors happened in the last hour?",
       "expected_output": "Should query error store with time-based filter, group errors by type or source file, present errors with timestamps and stack traces, and NOT attempt to fix errors automatically.",
@@ -2479,10 +3889,16 @@
           "type": "guard"
         }
       ],
-      "scenario_requires": []
+      "scenario_requires": [],
+      "tier": "full",
+      "tags": [
+        "edge-case",
+        "guard"
+      ],
+      "checks": []
     },
     {
-      "id": 78,
+      "id": 77,
       "command": "observability",
       "prompt": "Are there any errors related to the login flow?",
       "expected_output": "Should query error store filtering by auth-related source files, correlate errors with source code, report login-specific errors with context, NOT attempt to fix errors, and clearly report if no login errors found.",
@@ -2509,10 +3925,16 @@
           "type": "behavioral"
         }
       ],
-      "scenario_requires": []
+      "scenario_requires": [],
+      "tier": "full",
+      "tags": [
+        "edge-case",
+        "guard"
+      ],
+      "checks": []
     },
     {
-      "id": 79,
+      "id": 78,
       "command": "update",
       "prompt": "Check if there's a newer version of fhhs-skills available",
       "expected_output": "Should check current installed version, query for latest available version, report comparison, and if already up to date, report that clearly.",
@@ -2537,10 +3959,15 @@
       ],
       "scenario_requires": [
         "gsd_project"
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "edge-case"
+      ],
+      "checks": []
     },
     {
-      "id": 80,
+      "id": 79,
       "command": "update",
       "prompt": "Update fhhs-skills to the latest version",
       "expected_output": "Should check current version before updating, use claude plugin install or marketplace update mechanism, report update result with version numbers, and NOT skip version check.",
@@ -2565,10 +3992,16 @@
       ],
       "scenario_requires": [
         "gsd_project"
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "edge-case",
+        "guard"
+      ],
+      "checks": []
     },
     {
-      "id": 81,
+      "id": 80,
       "command": "refactor",
       "prompt": "The auth module in src/lib/auth.ts is getting complex, refactor it into smaller focused modules",
       "expected_output": "Should capture baseline by running existing tests, scope blast radius by identifying importers, plan atomic refactoring steps, run tests before making changes, and NOT let tests go red at any intermediate step.",
@@ -2597,10 +4030,30 @@
       ],
       "scenario_requires": [
         "gsd_project"
+      ],
+      "tier": "smoke",
+      "tags": [
+        "guard",
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "test"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "change behavior",
+            "new feature"
+          ]
+        }
       ]
     },
     {
-      "id": 82,
+      "id": 81,
       "command": "refactor",
       "prompt": "Extract the data fetching logic from the dashboard page into a custom hook",
       "expected_output": "Should read dashboard page to identify data fetching patterns, create a custom hook, update dashboard to use the hook, write tests before extracting, and NOT change external behavior.",
@@ -2629,10 +4082,30 @@
       ],
       "scenario_requires": [
         "gsd_project"
+      ],
+      "tier": "smoke",
+      "tags": [
+        "guard",
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "test"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "change behavior",
+            "new feature"
+          ]
+        }
       ]
     },
     {
-      "id": 83,
+      "id": 82,
       "command": "plan-review",
       "prompt": "Review my plan for adding user roles and permissions to the dashboard",
       "expected_output": "Should read the plan and challenge assumptions (business alignment), identify failure modes and edge cases, produce an error and rescue map, AND run engineering rigor sections (architecture review, code quality, test coverage analysis, performance). Should produce structured review with numbered issues and lettered options covering both business and engineering lenses. Should ask user to select review mode before proceeding.",
@@ -2673,10 +4146,15 @@
       ],
       "scenario_requires": [
         "gsd_project"
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "edge-case"
+      ],
+      "checks": []
     },
     {
-      "id": 84,
+      "id": 83,
       "command": "plan-review",
       "prompt": "Stress test this plan but don't expand scope \u2014 hold scope mode",
       "expected_output": "Should operate in HOLD SCOPE mode without suggesting new features, focus on rigor within existing plan scope, map error paths and failure modes, NOT suggest expanding scope, and produce failure modes registry with CRITICAL GAP identification. Should include engineering review sections (Architecture, Code Quality, Test Coverage with diagram, Performance).",
@@ -2713,10 +4191,16 @@
       ],
       "scenario_requires": [
         "gsd_project"
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "edge-case",
+        "guard"
+      ],
+      "checks": []
     },
     {
-      "id": 85,
+      "id": 84,
       "command": "map-codebase",
       "prompt": "Map this entire codebase for me",
       "expected_output": "Should spawn a single gsd-codebase-mapper agent that produces a consolidated CODEBASE.md in .planning/codebase/ with three sections: Structure (where to put new code), Conventions (patterns to follow), and Architecture (how layers connect).",
@@ -2741,10 +4225,15 @@
       ],
       "scenario_requires": [
         "gsd_project"
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "happy-path"
+      ],
+      "checks": []
     },
     {
-      "id": 86,
+      "id": 85,
       "command": "map-codebase",
       "prompt": "I'm new to this project, help me understand the architecture and how things are organized",
       "expected_output": "Should explore project structure and key directories, identify framework and architectural decisions, produce documentation focused on architecture, and explain the codebase in newcomer-friendly terms.",
@@ -2769,10 +4258,15 @@
       ],
       "scenario_requires": [
         "gsd_project"
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "happy-path"
+      ],
+      "checks": []
     },
     {
-      "id": 87,
+      "id": 86,
       "command": "new-project",
       "prompt": "I have an existing Next.js app at ./my-app, set up GSD tracking for it",
       "expected_output": "Should detect existing codebase, read package.json and project structure, adapt .planning/ setup to existing project rather than scaffolding new, preserve existing files.",
@@ -2794,10 +4288,16 @@
           "text": "Does NOT scaffold new project files that would overwrite existing code",
           "type": "guard"
         }
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "guard",
+        "happy-path"
+      ],
+      "checks": []
     },
     {
-      "id": 88,
+      "id": 87,
       "command": "new-project",
       "prompt": "I want to build a rust CLI for parsing log files, no web stuff",
       "expected_output": "Should adapt stack for CLI project, skip web-specific setup (React, Tailwind, Vercel), skip /fh:ui-branding since no frontend.",
@@ -2819,10 +4319,16 @@
           "text": "Creates .planning/ structure appropriate for CLI project",
           "type": "output"
         }
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "edge-case",
+        "guard"
+      ],
+      "checks": []
     },
     {
-      "id": 89,
+      "id": 88,
       "command": "research",
       "prompt": "research: should we use Drizzle or Prisma for our ORM?",
       "expected_output": "Should compare both ORMs with trade-offs, tag findings with confidence levels (HIGH from official docs, MEDIUM from web, LOW from inference), include source attribution, produce prescriptive recommendation.",
@@ -2847,10 +4353,15 @@
       ],
       "scenario_requires": [
         "gsd_project"
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "happy-path"
+      ],
+      "checks": []
     },
     {
-      "id": 90,
+      "id": 89,
       "command": "research",
       "prompt": "research: can we implement real-time collaboration with yjs in our Next.js app?",
       "expected_output": "Should investigate technical feasibility, identify constraints and requirements, include code examples, tag uncertain items as LOW confidence needing validation.",
@@ -2875,10 +4386,15 @@
       ],
       "scenario_requires": [
         "gsd_project"
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "happy-path"
+      ],
+      "checks": []
     },
     {
-      "id": 91,
+      "id": 90,
       "command": "observability",
       "prompt": "check sentry for any auth-related errors in the last hour",
       "expected_output": "Should search local Sentry store for auth-related errors with time filter, present structured results grouped by error type, not raw JSON.",
@@ -2900,10 +4416,15 @@
           "text": "Handles gracefully if no matching errors found",
           "type": "behavioral"
         }
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "edge-case"
+      ],
+      "checks": []
     },
     {
-      "id": 92,
+      "id": 91,
       "command": "observability",
       "prompt": "what are the most common errors this week? show me details on the top one",
       "expected_output": "Should run stats query first for error frequency, then detail query on the top event_id, include breadcrumbs and stack trace in detail.",
@@ -2925,10 +4446,15 @@
           "text": "Presents both summary and detail in readable format",
           "type": "output"
         }
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "edge-case"
+      ],
+      "checks": []
     },
     {
-      "id": 93,
+      "id": 92,
       "command": "map-codebase",
       "prompt": "map the codebase and help me understand the data flow",
       "expected_output": "Should produce CODEBASE.md with an Architecture section explaining data flow patterns, identifying entry points and key abstractions, and describing how data moves through the system layers.",
@@ -2950,10 +4476,15 @@
           "text": "Architecture section describes how layers connect and data moves",
           "type": "output"
         }
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "happy-path"
+      ],
+      "checks": []
     },
     {
-      "id": 94,
+      "id": 93,
       "command": "setup",
       "prompt": "setup \u2014 I don't have node installed",
       "expected_output": "Should detect missing Node.js, provide platform-appropriate install instructions (Homebrew on macOS), halt further setup steps that depend on Node.js.",
@@ -2975,10 +4506,16 @@
           "text": "Offers to continue after user installs Node.js",
           "type": "behavioral"
         }
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "edge-case",
+        "guard"
+      ],
+      "checks": []
     },
     {
-      "id": 95,
+      "id": 94,
       "command": "setup",
       "prompt": "setup \u2014 I already ran this before, everything should be configured",
       "expected_output": "Should detect existing configuration (symlinks, settings.json hooks, TypeScript LSP), report current status, offer to re-run specific steps rather than repeating full setup.",
@@ -3000,10 +4537,16 @@
           "text": "Does NOT overwrite existing configuration without asking",
           "type": "guard"
         }
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "edge-case",
+        "guard"
+      ],
+      "checks": []
     },
     {
-      "id": 96,
+      "id": 95,
       "command": "update",
       "prompt": "check for updates",
       "expected_output": "Should compare installed version against latest marketplace version, when versions match report already up to date, not prompt for reinstallation.",
@@ -3021,10 +4564,16 @@
           "text": "Does NOT offer to reinstall when already current",
           "type": "guard"
         }
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "edge-case",
+        "guard"
+      ],
+      "checks": []
     },
     {
-      "id": 97,
+      "id": 96,
       "command": "plan-review",
       "prompt": "review the plan but keep it minimal \u2014 we're on a tight deadline",
       "expected_output": "Should detect tight deadline signal and select SCOPE REDUCTION mode, identify cuttable scope, find minimum viable version, not add new features or expand scope. Should include engineering review sections (Architecture, Code Quality, Test Coverage with diagram, Performance).",
@@ -3061,10 +4610,16 @@
       ],
       "scenario_requires": [
         "gsd_project"
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "guard",
+        "happy-path"
+      ],
+      "checks": []
     },
     {
-      "id": 98,
+      "id": 97,
       "command": "plan-review",
       "prompt": "stress test this plan, especially the error handling",
       "expected_output": "Should produce Error and Rescue Registry table (operation, error, exception, rescue, user-sees), produce Failure Modes Registry, identify CRITICAL GAPs, feed gaps back as [review] truths in PLAN.md. Should include engineering review sections (Architecture, Code Quality, Test Coverage with diagram, Performance).",
@@ -3097,10 +4652,15 @@
       ],
       "scenario_requires": [
         "gsd_project"
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "edge-case"
+      ],
+      "checks": []
     },
     {
-      "id": 99,
+      "id": 98,
       "command": "refactor",
       "prompt": "refactor the auth module to use the new token format, but tests are currently failing on 2 specs",
       "expected_output": "Should detect failing tests, refuse to start refactoring without GREEN baseline, explain iron law (tests must never go red during refactor), require fixing tests first.",
@@ -3122,10 +4682,30 @@
           "text": "Does NOT proceed with refactoring when tests are failing",
           "type": "guard"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case",
+        "guard"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "test"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "change behavior",
+            "new feature"
+          ]
+        }
       ]
     },
     {
-      "id": 100,
+      "id": 99,
       "command": "refactor",
       "prompt": "refactor all 15 API route handlers to use the new middleware pattern",
       "expected_output": "Should detect large scope (15 files, 10+ threshold), recommend /fh:plan-work for structured multi-file refactoring, not attempt all 15 in single context.",
@@ -3147,10 +4727,30 @@
           "text": "Explains why large refactors need structured planning",
           "type": "output"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "guard",
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "plan"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "change behavior",
+            "new feature"
+          ]
+        }
       ]
     },
     {
-      "id": 101,
+      "id": 100,
       "command": "review",
       "prompt": "review my changes before creating a PR. fallow is available on this machine",
       "expected_output": "Should run Step 1.7 (static analysis) with fallow check --changed-since, dupes, and health. Should post-filter to diff files and cap at 200 lines. Should include fallow output in Agent 1 (code quality + architecture) and Agent 2 (gap analysis) prompts. Agent 1 receives all three outputs. Agent 2 receives FALLOW_CHECK for unwired code detection.",
@@ -3176,10 +4776,36 @@
           "text": "Post-filters and caps output at 200 lines",
           "type": "behavioral"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "finding"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "fallow"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "lgtm",
+            "looks good",
+            "no issues"
+          ]
+        }
       ]
     },
     {
-      "id": 102,
+      "id": 101,
       "command": "review",
       "prompt": "review --quick. fallow is installed",
       "expected_output": "Should include Step 1.7 in quick mode (mode table lists Steps 1, 1.5, 1.7, 2, 3, 4, 5, 6, 7, 8). Should run fallow analysis and feed results to the quick-mode Agent 1.",
@@ -3193,10 +4819,28 @@
           "text": "Feeds fallow data to quick-mode Agent 1",
           "type": "behavioral"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "finding"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "fallow"
+          ]
+        }
       ]
     },
     {
-      "id": 103,
+      "id": 102,
       "command": "build",
       "prompt": "build the plan. fallow is installed. the plan has 1 wave with 2 tasks",
       "expected_output": "Should execute the 2 tasks in 1 wave using Agent subagents. At phase completion (Step 6), Gate 0 runs fallow check --changed-since on the phase diff. Fallow output is used for integration/coupling analysis (fan_in thresholds), not as a spec-gate agent prompt. Verification gate (tests, build, lint) runs as Gate 3.",
@@ -3218,10 +4862,36 @@
           "text": "Verification gate (tests, build, lint) runs as Gate 3",
           "type": "behavioral"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "wave",
+            "task"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "SUMMARY"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "skip testing",
+            "no tests needed"
+          ]
+        }
       ]
     },
     {
-      "id": 104,
+      "id": 103,
       "command": "review",
       "prompt": "review my changes. fallow is installed but crashes when running fallow check",
       "expected_output": "Should detect fallow is available, attempt to run commands, handle the crash gracefully (|| FALLOW_CHECK=\"\" pattern sets empty string). Should skip injecting empty outputs. Should proceed with review normally without fallow data. Should NOT error out or mention the fallow failure to the user.",
@@ -3243,10 +4913,31 @@
           "text": "Does NOT surface fallow failure to user",
           "type": "guard"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case",
+        "guard"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "finding"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "error",
+            "crash",
+            "failed"
+          ]
+        }
       ]
     },
     {
-      "id": 105,
+      "id": 104,
       "command": "update",
       "prompt": "update the plugin to latest version",
       "expected_output": "Should trigger update, NOT audit-upstream. Should check for and apply plugin updates.",
@@ -3260,10 +4951,16 @@
           "text": "Does NOT trigger audit-upstream",
           "type": "guard"
         }
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "guard",
+        "happy-path"
+      ],
+      "checks": []
     },
     {
-      "id": 106,
+      "id": 105,
       "command": "review",
       "prompt": "review my code changes",
       "expected_output": "Should trigger review, NOT audit-upstream. Should review code changes on the current branch.",
@@ -3277,10 +4974,29 @@
           "text": "Does NOT trigger audit-upstream",
           "type": "guard"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "guard",
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "finding"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "audit-upstream"
+          ]
+        }
       ]
     },
     {
-      "id": 107,
+      "id": 106,
       "command": "plan-work",
       "prompt": "Plan building a real-time collaboration system with WebSocket, CRDT, and presence indicators",
       "expected_output": "Should trigger complexity assessment for unfamiliar domain (CRDT, real-time collaboration). Should suggest deep research before planning, flag multiple unfamiliar technologies (WebSocket orchestration, CRDT conflict resolution, presence protocol). Should NOT skip research or treat as a well-known pattern.",
@@ -3302,10 +5018,29 @@
           "text": "Does NOT skip research or treat as well-known pattern",
           "type": "guard"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case",
+        "guard"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "task"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "research"
+          ]
+        }
       ]
     },
     {
-      "id": 108,
+      "id": 107,
       "command": "plan-work",
       "prompt": "Plan renaming the /fh:tracker command to /fh:dashboard",
       "expected_output": "Should treat as a simple, well-known task (file rename + cross-reference update). Should NOT trigger deep research or complexity assessment. Should proceed directly to planning without research step. Plan should be small (few tasks, grep for old references, update paths).",
@@ -3327,10 +5062,36 @@
           "text": "Produces appropriately small plan for a rename operation",
           "type": "output"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "guard",
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "task"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "PLAN.md"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "research needed",
+            "deep research"
+          ]
+        }
       ]
     },
     {
-      "id": 109,
+      "id": 108,
       "command": "plan-work",
       "prompt": "Plan a new authentication system with JWT tokens, refresh token rotation, and role-based access control",
       "expected_output": "Should produce decision-locking output in CONTEXT.md format. Should categorize decisions as locked (firm commitments), discretion (implementer can choose), or deferred (decide later). Locked decisions should include key architectural choices. Discretion items should cover implementation details. Deferred items should note what needs more info.",
@@ -3355,10 +5116,32 @@
       ],
       "scenario_requires": [
         "gsd_project"
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "task"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "CONTEXT"
+          ]
+        },
+        {
+          "type": "regex",
+          "pattern": "[Dd]ecision"
+        }
       ]
     },
     {
-      "id": 110,
+      "id": 109,
       "command": "plan-work",
       "prompt": "Plan adding a notification preferences API with email and push notification channels. Standard REST patterns, 3-4 tasks.",
       "expected_output": "Should default handoff to /fh:plan-review after planning completes. Should present /fh:plan-review as the default next step. Should only present /fh:build as a skip-review option for trivial work, not as the default. The notification preferences API is non-trivial enough to warrant review.",
@@ -3379,10 +5162,35 @@
       ],
       "scenario_requires": [
         "gsd_project"
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case",
+        "guard"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "task"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "plan-review"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "PLAN.md"
+          ]
+        }
       ]
     },
     {
-      "id": 111,
+      "id": 110,
       "command": "plan-review",
       "prompt": "Review the plan at .planning/phases/06-search/06-01-PLAN.md for adding full-text search with Elasticsearch integration, query parsing, and result ranking. The plan has 5 tasks across indexing, querying, and UI.",
       "expected_output": "Should cover BOTH business alignment (scope challenge, strategic fit, whether search is the right investment) AND engineering rigor (architecture review, code quality assessment, test coverage analysis, performance considerations). Must not limit review to only business/scope questions \u2014 engineering sections must appear with concrete technical analysis.",
@@ -3415,10 +5223,16 @@
       ],
       "scenario_requires": [
         "gsd_project"
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "guard",
+        "happy-path"
+      ],
+      "checks": []
     },
     {
-      "id": 112,
+      "id": 111,
       "command": "plan-review",
       "prompt": "Review the plan for adding a new payment webhook handler with Stripe event processing, idempotency checks, and retry logic. The plan introduces 4 new codepaths across webhook receiver, event processor, payment state machine, and notification dispatcher.",
       "expected_output": "Should produce engineering review sections that include an ASCII test diagram showing coverage status for the new codepaths. The test diagram should map each codepath (webhook receiver, event processor, payment state machine, notification dispatcher) and indicate test coverage status (covered, missing, partial). Must visualize coverage gaps, not just list them.",
@@ -3443,10 +5257,15 @@
       ],
       "scenario_requires": [
         "gsd_project"
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "edge-case"
+      ],
+      "checks": []
     },
     {
-      "id": 113,
+      "id": 112,
       "command": "build",
       "prompt": "Build the user profile settings page. It has 3 tasks: settings form component, API integration, and validation logic. Execute the plan at .planning/phases/09-settings/09-01-PLAN.md",
       "expected_output": "Should run verification gate (tests, lint, build) BEFORE writing SUMMARY.md. Phase completion runs Gate 3 (Verification-Before-Completion) with fresh evidence before marking phase done. The verification gate ensures claimed success is backed by actual proof, not just completing task steps.",
@@ -3471,10 +5290,43 @@
       ],
       "scenario_requires": [
         "gsd_project"
+      ],
+      "tier": "smoke",
+      "tags": [
+        "guard",
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "wave",
+            "task"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "SUMMARY"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "verify"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "skip testing",
+            "no tests needed"
+          ]
+        }
       ]
     },
     {
-      "id": 114,
+      "id": 113,
       "command": "fix",
       "prompt": "Fix the broken pagination in the search results page. Users report that clicking page 2 reloads page 1 instead.",
       "expected_output": "Should run a verification gate confirming the fix actually resolves the issue before generating the summary. Verification should include running relevant tests or demonstrating the fix with fresh evidence, not just applying the code change.",
@@ -3496,10 +5348,41 @@
           "text": "Does NOT generate summary without verification gate",
           "type": "guard"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case",
+        "guard"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "cause"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "test"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "verify"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "quick fix"
+          ]
+        }
       ]
     },
     {
-      "id": 115,
+      "id": 114,
       "command": "build",
       "prompt": "Build the new dashboard landing page. It has 4 tasks: hero section with animated charts, responsive nav bar, data visualization widgets, and accessibility audit. Execute the plan at .planning/phases/11-dashboard/11-01-PLAN.md",
       "expected_output": "Should execute the 4 frontend tasks. After completion, should suggest /fh:ui-test for visual verification of the frontend-heavy work. Gate 2 (design quality) triggers when visual ratio > 30% or phase targets UI, running critique/polish/normalize checks.",
@@ -3520,10 +5403,42 @@
       ],
       "scenario_requires": [
         "gsd_project"
+      ],
+      "tier": "smoke",
+      "tags": [
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "wave",
+            "task"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "SUMMARY"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "verify"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "skip testing",
+            "no tests needed"
+          ]
+        }
       ]
     },
     {
-      "id": 116,
+      "id": 115,
       "command": "build",
       "prompt": "Build the production checkout flow. It has 5 tasks: payment form, order confirmation page, error handling with retry logic, production error boundaries, and deployment configuration. Execute the plan at .planning/phases/12-checkout/12-01-PLAN.md",
       "expected_output": "Should execute the 5 production checkout tasks. After completion, should suggest /fh:review for deeper scrutiny. Production safety is handled by Gate 1 (goal verification) and Gate 3 (tests/build/lint), not by a separate /fh:harden suggestion.",
@@ -3544,10 +5459,42 @@
       ],
       "scenario_requires": [
         "gsd_project"
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "wave",
+            "task"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "SUMMARY"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "verify"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "skip testing",
+            "no tests needed"
+          ]
+        }
       ]
     },
     {
-      "id": 117,
+      "id": 116,
       "command": "plan-work",
       "prompt": "Read .claude/skills/plan-work/SKILL.md and confirm it integrates the phase researcher agent and research output template. Does it reference gsd-phase-researcher and XX-RESEARCH.md?",
       "expected_output": "Should confirm that plan-work/SKILL.md references gsd-phase-researcher as the research agent and XX-RESEARCH.md as the research output filename template. These are required for the research-first planning pipeline.",
@@ -3561,10 +5508,23 @@
           "text": "plan-work SKILL.md contains XX-RESEARCH.md filename template",
           "type": "output"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "gsd-phase-researcher",
+            "RESEARCH.md"
+          ]
+        }
       ]
     },
     {
-      "id": 118,
+      "id": 117,
       "command": "plan-work",
       "prompt": "Read .claude/skills/plan-work/SKILL.md and check whether it includes the CONTEXT.md contract block that defines what CONTEXT.md must contain for each phase.",
       "expected_output": "Should confirm that plan-work/SKILL.md includes a CONTEXT.md Contract section that specifies the required structure and contents of CONTEXT.md files produced during planning.",
@@ -3574,10 +5534,22 @@
           "text": "plan-work SKILL.md contains CONTEXT.md Contract section",
           "type": "output"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "CONTEXT.md"
+          ]
+        }
       ]
     },
     {
-      "id": 119,
+      "id": 118,
       "command": "new-project",
       "prompt": "Read .claude/skills/new-project/SKILL.md and verify it integrates both gsd-project-researcher and gsd-research-synthesizer agents for the project bootstrap research pipeline.",
       "expected_output": "Should confirm that new-project/SKILL.md references gsd-project-researcher for conducting project-level research and gsd-research-synthesizer for consolidating research findings into actionable project context.",
@@ -3591,10 +5563,15 @@
           "text": "new-project SKILL.md contains gsd-research-synthesizer reference",
           "type": "output"
         }
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "happy-path"
+      ],
+      "checks": []
     },
     {
-      "id": 120,
+      "id": 119,
       "command": "plan-review",
       "prompt": "Read .claude/skills/plan-review/SKILL.md and check whether the PRE-REVIEW section (before Step 0) references RESEARCH.md so reviewers are aware of research context.",
       "expected_output": "Should confirm that plan-review/SKILL.md mentions RESEARCH.md in the pre-review section before Step 0, ensuring reviewers consider research findings when evaluating plans.",
@@ -3604,10 +5581,15 @@
           "text": "plan-review SKILL.md references RESEARCH.md in pre-review section",
           "type": "output"
         }
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "happy-path"
+      ],
+      "checks": []
     },
     {
-      "id": 121,
+      "id": 120,
       "command": "plan-review",
       "prompt": "Read .claude/skills/plan-review/SKILL.md and verify it uses unified [review] tag in Step B decisions and does NOT contain legacy section names 'Review Decisions' or 'NOT in scope'.",
       "expected_output": "Should confirm that plan-review/SKILL.md uses [review] tag for decisions in Step B, and does NOT contain the legacy 'Review Decisions' section name or the legacy 'NOT in scope' label. These were replaced with unified decision formatting.",
@@ -3625,10 +5607,16 @@
           "text": "Does NOT contain legacy NOT in scope label",
           "type": "guard"
         }
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "guard",
+        "happy-path"
+      ],
+      "checks": []
     },
     {
-      "id": 122,
+      "id": 121,
       "command": "build",
       "prompt": "Verify that the build skill references the canonical CONTEXT.md section names. Read .claude/skills/build/SKILL.md and check for 'Decisions', 'Discretion Areas', and 'Deferred Ideas'. Confirm it does NOT use legacy names like 'Design Decisions' or 'NOT in scope'.",
       "expected_output": "Should confirm that build/SKILL.md references the canonical section names 'Decisions', 'Discretion Areas', and 'Deferred Ideas' from CONTEXT.md. Should NOT contain the legacy 'Design Decisions' or 'NOT in scope' labels which were replaced with unified naming.",
@@ -3654,10 +5642,31 @@
           "text": "Does NOT contain legacy NOT in scope label",
           "type": "guard"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "guard",
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "Decisions",
+            "Discretion"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "Design Decisions",
+            "NOT in scope"
+          ]
+        }
       ]
     },
     {
-      "id": 123,
+      "id": 122,
       "command": "plan-work",
       "prompt": "I have workflow.auto_advance=true set in my GSD config. I'm planning a new feature (user notifications) for phase 09. Run /fh:plan-work to plan this phase. There are gray areas around notification delivery timing and retry strategy.",
       "expected_output": "Should auto-decide gray areas without interactive discussion since AUTO_MODE is true, log decisions to DECISIONS.md with rationale and confidence, create CONTEXT.md, and skip interactive gray-area discussion with the user.",
@@ -3679,10 +5688,35 @@
           "text": "Skips interactive discussion of gray areas",
           "type": "behavioral"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "task"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "DECISIONS",
+            "auto"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "PLAN.md"
+          ]
+        }
       ]
     },
     {
-      "id": 124,
+      "id": 123,
       "command": "plan-work",
       "prompt": "Plan phase 05 for my project (search feature). There are gray areas around fuzzy matching vs exact matching and result ranking. Use default config with no auto_advance setting.",
       "expected_output": "Should present gray areas to the user interactively and ask for input on each decision. Should NOT mention auto-deciding or DECISIONS.md auto-logging since AUTO_MODE is not enabled.",
@@ -3696,10 +5730,36 @@
           "text": "Asks user about gray areas or discusses them interactively",
           "type": "behavioral"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "guard",
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "task"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "PLAN.md"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "DECISIONS.md",
+            "auto-deciding"
+          ]
+        }
       ]
     },
     {
-      "id": 125,
+      "id": 124,
       "command": "build",
       "prompt": "Run /fh:build for phase 07 with AUTO_MODE=true. There is a DECISIONS.md at .planning/DECISIONS.md with 3 decisions from planning (Phase: 07-auto-mode). Execute the plan.",
       "expected_output": "Should read DECISIONS.md from .planning/DECISIONS.md, filter decisions relevant to the current phase, and inject them into the build context via DECISIONS_CONTEXT so subagents respect prior auto-decisions.",
@@ -3713,10 +5773,36 @@
           "text": "References DECISIONS_CONTEXT or phase-filtered decision injection",
           "type": "output"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "wave",
+            "task"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "DECISIONS"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "skip testing",
+            "no tests needed"
+          ]
+        }
       ]
     },
     {
-      "id": 126,
+      "id": 125,
       "command": "build",
       "prompt": "During /fh:build in auto mode, a checkpoint:human-verify gate is reached for a database migration task. AUTO_MODE is true. How should this checkpoint be handled?",
       "expected_output": "Should auto-approve the checkpoint and log the auto-approval to DECISIONS.md with confidence HIGH, recording what was approved and why auto-approval was applied.",
@@ -3730,10 +5816,23 @@
           "text": "Records confidence level for auto-approval",
           "type": "output"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "DECISIONS",
+            "checkpoint"
+          ]
+        }
       ]
     },
     {
-      "id": 127,
+      "id": 126,
       "command": "auto",
       "prompt": "I want to run my project autonomously. The project has a .planning/ directory with ROADMAP.md showing 3 remaining phases and STATE.md indicating current position at phase 04. Run autonomously through all remaining phases.",
       "expected_output": "Should trigger the auto skill, validate that .planning/ state is consistent (ROADMAP.md and STATE.md exist and agree), set AUTO_MODE=true, and orchestrate by shelling out to /fh:plan-work and /fh:build for each phase in sequence.",
@@ -3751,10 +5850,27 @@
           "text": "Shells out to plan-work and build skills for orchestration",
           "type": "behavioral"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "plan-work",
+            "build"
+          ]
+        },
+        {
+          "type": "regex",
+          "pattern": "[Pp]hase"
+        }
       ]
     },
     {
-      "id": 128,
+      "id": 127,
       "command": "auto",
       "prompt": "I'd like to do a dry run of /fh:auto for my project. Show me what would happen without actually executing anything. The project has phases 05 through 08 remaining.",
       "expected_output": "Should list each remaining phase with its planned steps (plan-work then build) without executing any of them. Should show the execution order and any dependencies between phases.",
@@ -3772,10 +5888,27 @@
           "text": "Does NOT invoke plan-work or build during dry run",
           "type": "guard"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "guard",
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "plan"
+          ]
+        },
+        {
+          "type": "regex",
+          "pattern": "[Pp]hase"
+        }
       ]
     },
     {
-      "id": 129,
+      "id": 128,
       "command": "auto",
       "prompt": "My /fh:auto run crashed midway through phase 06. There's an .auto-state.json file recording that phases 04 and 05 completed successfully and phase 06 was in progress at the build step. Resume from where it left off.",
       "expected_output": "Should read .auto-state.json, identify completed phases (04, 05), skip them, and resume phase 06 from the build step rather than re-running plan-work for that phase.",
@@ -3793,10 +5926,26 @@
           "text": "Resumes phase 06 from build step, not from the beginning",
           "type": "behavioral"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "plan"
+          ]
+        },
+        {
+          "type": "regex",
+          "pattern": "[Pp]hase"
+        }
       ]
     },
     {
-      "id": 130,
+      "id": 129,
       "command": "auto",
       "prompt": "The /fh:auto run has completed all remaining phases (05 through 08) successfully. What cleanup should happen after the auto run finishes?",
       "expected_output": "Should reset workflow.auto_advance to false via gsd-tools config-set. Should update STATE.md to reflect completed position via gsd-tools state commands. Should clear .auto-state.json to prevent stale resume.",
@@ -3810,10 +5959,28 @@
           "text": "Updates STATE.md to reflect completed position",
           "type": "behavioral"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "auto_advance"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "STATE"
+          ]
+        }
       ]
     },
     {
-      "id": 131,
+      "id": 130,
       "command": "plan-review",
       "prompt": "Run /fh:plan-review on phase 08 (payments feature). There is a .planning/DECISIONS.md with auto-decisions including D-005 which says 'Selected: a) Use Stripe SDK' with Phase: 08-payments. However, CONTEXT.md for this phase has a locked decision saying 'Use PayPal API for payments'. How should plan-review handle this inconsistency?",
       "expected_output": "Should flag the inconsistency between DECISIONS.md (Stripe SDK) and CONTEXT.md (PayPal API) as BLOCKING in the PRE-REVIEW cross-check, since they contradict each other.",
@@ -3827,10 +5994,15 @@
           "text": "Cross-references both files during PRE-REVIEW",
           "type": "behavioral"
         }
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "edge-case"
+      ],
+      "checks": []
     },
     {
-      "id": 132,
+      "id": 131,
       "command": "build",
       "prompt": "During /fh:build spec gate for wave 2, the DECISIONS_CONTEXT includes a decision D-012 with 'Affects: src/lib/date-utils.ts' and 'Selected: a) Use date-fns library'. The wave 2 diff shows src/lib/date-utils.ts was modified but contains hand-rolled date parsing instead of date-fns. What should the spec gate report?",
       "expected_output": "Should flag decision inconsistency \u2014 the implementation differs from the selected alternative in decision D-012. Decision checks use confidence levels (HIGH/MEDIUM/LOW), not WARNING/BLOCKING severity. A contradiction would be flagged with confidence: LOW and NEEDS REVIEW status.",
@@ -3844,10 +6016,28 @@
           "text": "Flags decision violation as blocking or significant issue",
           "type": "behavioral"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "decision"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "confidence"
+          ]
+        }
       ]
     },
     {
-      "id": 133,
+      "id": 132,
       "command": "fix",
       "prompt": "A bug in the date formatting was caused by an auto-decided pattern (D-012: use date-fns for all date operations). The fix replaces date-fns usage with Intl.DateTimeFormat for locale-aware formatting. .planning/DECISIONS.md exists with D-012 active. What should /fh:fix Step 4 do regarding DECISIONS.md?",
       "expected_output": "Should log a CORRECTED entry to DECISIONS.md referencing D-012 as the original, with step='fix Step 4', corrected_by='agent', explaining that date-fns caused the locale bug and Intl.DateTimeFormat is the correction.",
@@ -3861,10 +6051,28 @@
           "text": "References the original decision ID",
           "type": "output"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "cause"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "DECISIONS"
+          ]
+        }
       ]
     },
     {
-      "id": 134,
+      "id": 133,
       "command": "build",
       "prompt": "Running /fh:build for phase 05-dashboard with AUTO_MODE=true. Phase 02-auth has decision D-003 with 'Affects: src/middleware/auth.ts, src/lib/session.ts'. Phase 05's plan modifies src/middleware/auth.ts. How should build Step 2 handle this cross-phase decision?",
       "expected_output": "Build reads decisions from the current phase's CONTEXT.md and from .planning/DECISIONS.md (in auto-mode). It does NOT independently discover cross-phase decisions via an Affects field \u2014 decisions must be pre-captured in CONTEXT.md or DECISIONS.md. Subagents receive decisions via the {DESIGN_DECISIONS} placeholder.",
@@ -3882,10 +6090,29 @@
           "text": "Injects decisions into subagent prompts via {DESIGN_DECISIONS} placeholder",
           "type": "behavioral"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "wave",
+            "task"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "DECISIONS"
+          ]
+        }
       ]
     },
     {
-      "id": 135,
+      "id": 134,
       "command": "auto",
       "prompt": "A claude -p session dispatched by auto-orchestrator.cjs for phase 03 task 2 has been running for 18 minutes with no output. The soft timeout is 15 minutes and hard timeout is 20 minutes. How should the auto orchestrator handle this stuck session?",
       "expected_output": "Auto-orchestrator detects stuck sessions via STUCK_SILENCE_MS (3 min no output \u2192 warn) and STUCK_KILL_MS (8 min no output \u2192 kill). Kill sequence sends SIGTERM first, waits 5 seconds, then SIGKILL. Logs decision with confidence: LOW and status: ACTIVE - NEEDS REVIEW.",
@@ -3907,10 +6134,22 @@
           "text": "Flags decision as NEEDS REVIEW",
           "type": "output"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "timeout"
+          ]
+        }
       ]
     },
     {
-      "id": 136,
+      "id": 135,
       "command": "auto",
       "prompt": "Running auto-orchestrator.cjs with --budget 5 (dollars). After completing phase 02 tasks 1-3, the cumulative cost estimate is $4.20. Phase 02 task 4 is estimated at $1.50. How should the auto orchestrator handle this budget situation?",
       "expected_output": "Should track cost per session and cumulative total. When cumulative estimate ($4.20 + $1.50 = $5.70) exceeds the --budget 5 ceiling, gracefully stop before dispatching task 4. Log a decision explaining the budget ceiling was reached and remaining tasks were deferred.",
@@ -3928,10 +6167,22 @@
           "text": "Logs decision about budget ceiling reached",
           "type": "output"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "budget"
+          ]
+        }
       ]
     },
     {
-      "id": 137,
+      "id": 136,
       "command": "build",
       "prompt": "A decision D-015 was just CORRECTED from 'use Redux for state management' to 'use Zustand for state management'. The Affects field lists: src/store/index.ts, src/components/Dashboard.tsx, src/hooks/useAuth.ts. How should the decision correction cascade handle downstream impact?",
       "expected_output": "Decision corrections are handled by updating the decision in CONTEXT.md or DECISIONS.md. The build skill reads decisions from these files and injects them into subagent prompts. Downstream impact analysis is guided by the Affects field if present, but the build skill does not perform automated cascade analysis \u2014 it relies on the decision context being available to subagents.",
@@ -3949,10 +6200,28 @@
           "text": "Provides guidance on what needs to change",
           "type": "output"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "decision"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "DECISIONS"
+          ]
+        }
       ]
     },
     {
-      "id": 138,
+      "id": 137,
       "command": "new-project",
       "prompt": "Run /fh:new-project --auto \"A marketplace for artisan crafts\" in an empty directory. How should new-project handle the --auto flag with the provided description?",
       "expected_output": "Should detect AUTO_PROJECT mode from --auto flag. Derive answers to vision questions (target users, core value prop, key features) from the description 'A marketplace for artisan crafts' instead of asking the user interactively. Generate a scope expansion roadmap based on the derived vision. Should not prompt the user for any interactive input.",
@@ -3974,10 +6243,16 @@
           "text": "Does not prompt user for interactive input",
           "type": "guard"
         }
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "edge-case",
+        "guard"
+      ],
+      "checks": []
     },
     {
-      "id": 139,
+      "id": 138,
       "command": "new-project",
       "prompt": "After /fh:new-project --auto completes all setup steps (PROJECT.md, ROADMAP.md, STATE.md created), what should happen next to continue the auto workflow?",
       "expected_output": "Should chain to auto-orchestrator.cjs after setup completes. Set workflow.auto_advance=true so the orchestrator knows to proceed without user confirmation. The transition should be seamless \u2014 new-project finishes setup then hands off to auto mode for plan-and-build execution.",
@@ -3995,10 +6270,15 @@
           "text": "Transitions seamlessly from setup to auto execution",
           "type": "behavioral"
         }
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "happy-path"
+      ],
+      "checks": []
     },
     {
-      "id": 140,
+      "id": 139,
       "command": "build",
       "prompt": "execute the plan at .planning/phases/03-billing/03-01-PLAN.md",
       "expected_output": "Should dispatch general-purpose subagents with model: sonnet for all task execution. Haiku model is used only for GSD state updates (Step 5). Subagents should not be dispatched with haiku or opus \u2014 sonnet is the implementer model.",
@@ -4019,10 +6299,43 @@
       ],
       "scenario_requires": [
         "gsd_project"
+      ],
+      "tier": "smoke",
+      "tags": [
+        "guard",
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "wave",
+            "task"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "SUMMARY"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "haiku"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "skip testing",
+            "no tests needed"
+          ]
+        }
       ]
     },
     {
-      "id": 141,
+      "id": 140,
       "command": "review",
       "prompt": "review my changes before creating a PR. this is a GSD project with a PLAN.md at .planning/phases/04-payments/04-01-PLAN.md",
       "expected_output": "Should run spec verification (Step 1.8) since .planning/ directory exists with PLAN.md files. Spec verification dispatches one code-reviewer agent using spec-gate-prompt.md. Agent checks: missing requirements, stubs/placeholders, unwired code, TypeScript strictness (any usage), wrong behavior. Results feed into Step 5 aggregation. A BLOCKING result from spec verification blocks the gate decision.",
@@ -4054,10 +6367,38 @@
       ],
       "scenario_requires": [
         "gsd_project"
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case",
+        "fixture-required",
+        "guard"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "finding"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "spec"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "lgtm",
+            "looks good",
+            "no issues"
+          ]
+        }
       ]
     },
     {
-      "id": 142,
+      "id": 141,
       "command": "build",
       "prompt": "all plans in phase 05 are complete. check phase completion",
       "expected_output": "Phase completion detection (Step 6): Gate 0 (fallow integration check) runs first. Then Gates 1 (goal verification) and Gate 2 (design quality) run in parallel. Gate 3 (Verification-Before-Completion) runs tests/build/lint conditionally \u2014 only if Gate 2 made changes, otherwise uses existing results. All gates must pass before gsd-tools.cjs phase complete.",
@@ -4086,10 +6427,29 @@
       ],
       "scenario_requires": [
         "gsd_project"
+      ],
+      "tier": "smoke",
+      "tags": [
+        "guard",
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "Gate"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "verify"
+          ]
+        }
       ]
     },
     {
-      "id": 143,
+      "id": 142,
       "command": "plan-work",
       "prompt": "plan fixing the button label typo on the settings page from 'Subbmit' to 'Submit'",
       "expected_output": "Should assess complexity as Simple (1 task, single file, trivial pattern). Should skip brainstorm (Step 2) entirely \u2014 Simple complexity skips brainstorming. Should jump directly to Step 3 (Discuss Implementation) with abbreviated scope: identify 1-2 gray areas only. Handoff should still recommend /fh:plan-review, but note this is trivially obvious work where /fh:build directly is acceptable.",
@@ -4115,10 +6475,29 @@
           "text": "Does NOT run a full brainstorm session for trivial work",
           "type": "guard"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case",
+        "guard"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "task"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "PLAN.md"
+          ]
+        }
       ]
     },
     {
-      "id": 144,
+      "id": 143,
       "command": "learnings",
       "prompt": "check my recent sessions for any skill issues or improvement ideas",
       "expected_output": "Should check claude-mem prerequisites, query observations cross-project for last 14 days, present insights dashboard (positive patterns first, then usage stats, then issues), cluster similar problems, search existing GitHub issues for duplicates, auto-file new issues on cinjoff/fhhs-skills, suggest claude-mem dashboard for deeper exploration",
@@ -4152,10 +6531,15 @@
           "text": "Suggests claude-mem dashboard for deeper exploration",
           "type": "output"
         }
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "edge-case"
+      ],
+      "checks": []
     },
     {
-      "id": 145,
+      "id": 144,
       "command": "learnings",
       "prompt": "run learnings analysis",
       "expected_output": "Should detect claude-mem is not available, tell the user to install it from the Claude Code marketplace, and NOT proceed with analysis",
@@ -4176,10 +6560,16 @@
       ],
       "scenario_requires": [
         "no_claude_mem"
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "guard",
+        "happy-path"
+      ],
+      "checks": []
     },
     {
-      "id": 146,
+      "id": 145,
       "command": "learnings",
       "prompt": "/fh:learnings --dry-run",
       "expected_output": "Should analyze observations and present findings but NOT create any GitHub issues. Should show what would be filed.",
@@ -4197,10 +6587,16 @@
           "text": "Does NOT create GitHub issues in dry-run mode",
           "type": "guard"
         }
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "guard",
+        "happy-path"
+      ],
+      "checks": []
     },
     {
-      "id": 147,
+      "id": 146,
       "command": "learnings",
       "prompt": "analyze learnings from the last 30 days",
       "expected_output": "Should use 30-day window instead of default 14 days",
@@ -4214,10 +6610,16 @@
           "text": "Does NOT use default 14-day window",
           "type": "guard"
         }
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "guard",
+        "happy-path"
+      ],
+      "checks": []
     },
     {
-      "id": 148,
+      "id": 147,
       "command": "map-codebase",
       "prompt": "map this codebase",
       "expected_output": "Should spawn 1 gsd-codebase-mapper agent with mode=bypassPermissions. Should create .planning/codebase/ directory first, wait for agent completion notification (no polling), verify CODEBASE.md exists with 3 sections (Structure, Conventions, Architecture), create .claude/rules/ files, and present summary.",
@@ -4250,41 +6652,7 @@
         {
           "text": "Presents completion summary with line count",
           "type": "output"
-        }
-      ]
-    },
-    {
-      "id": 149,
-      "command": "map-codebase",
-      "prompt": "map this codebase. .planning/codebase/CODEBASE.md already exists from a previous run",
-      "expected_output": "Should detect existing codebase map, show staleness (commits since last map), present refresh/skip options, and default to skip if recent. Should NOT overwrite without asking.",
-      "files": [],
-      "assertions": [
-        {
-          "text": "Detects existing .planning/codebase/ directory",
-          "type": "behavioral"
         },
-        {
-          "text": "Shows commits since last mapping for staleness context",
-          "type": "behavioral"
-        },
-        {
-          "text": "Presents refresh/skip options",
-          "type": "behavioral"
-        },
-        {
-          "text": "Does NOT immediately overwrite existing CODEBASE.md",
-          "type": "guard"
-        }
-      ]
-    },
-    {
-      "id": 150,
-      "command": "map-codebase",
-      "prompt": "map this codebase",
-      "expected_output": "The gsd-codebase-mapper agent should discover source directories first using find with exclusions, exclude .planning/, .claude/, node_modules/, agents/, hooks/, bin/ from all searches, and produce a single CODEBASE.md with 3 sections: Structure, Conventions, Architecture. Target ~150-200 lines with actual file paths.",
-      "files": [],
-      "assertions": [
         {
           "text": "Agent discovers source directories before hardcoding src/",
           "type": "behavioral"
@@ -4316,16 +6684,7 @@
         {
           "text": "CODEBASE.md is under 250 lines (not bloated)",
           "type": "output"
-        }
-      ]
-    },
-    {
-      "id": 151,
-      "command": "map-codebase",
-      "prompt": "map this codebase",
-      "expected_output": "When the agent fails silently (no output file), the orchestrator should re-spawn once. If the retry also fails, the orchestrator should have the agent return content in its response and write CODEBASE.md itself.",
-      "files": [],
-      "assertions": [
+        },
         {
           "text": "On agent failure, re-spawns once (not immediately giving up)",
           "type": "behavioral"
@@ -4334,10 +6693,47 @@
           "text": "On second failure, falls back to writing CODEBASE.md from agent response",
           "type": "behavioral"
         }
-      ]
+      ],
+      "tier": "full",
+      "tags": [
+        "guard",
+        "happy-path"
+      ],
+      "checks": []
     },
     {
-      "id": 152,
+      "id": 148,
+      "command": "map-codebase",
+      "prompt": "map this codebase. .planning/codebase/CODEBASE.md already exists from a previous run",
+      "expected_output": "Should detect existing codebase map, show staleness (commits since last map), present refresh/skip options, and default to skip if recent. Should NOT overwrite without asking.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects existing .planning/codebase/ directory",
+          "type": "behavioral"
+        },
+        {
+          "text": "Shows commits since last mapping for staleness context",
+          "type": "behavioral"
+        },
+        {
+          "text": "Presents refresh/skip options",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT immediately overwrite existing CODEBASE.md",
+          "type": "guard"
+        }
+      ],
+      "tier": "full",
+      "tags": [
+        "edge-case",
+        "guard"
+      ],
+      "checks": []
+    },
+    {
+      "id": 149,
       "command": "auto",
       "prompt": "Auto-orchestrator completes phase 1 plan-work step and writes enriched state.",
       "expected_output": ".auto-state.json should contain a stepHistory array with entries for each completed step. Each entry includes elapsed_ms (duration) and cost_estimate (token cost) fields, along with phase, step, and completion timestamp.",
@@ -4355,10 +6751,28 @@
           "text": "Tracks timing or duration per step",
           "type": "output"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "stepHistory"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "elapsed_ms"
+          ]
+        }
       ]
     },
     {
-      "id": 153,
+      "id": 150,
       "command": "auto",
       "prompt": "User has a project with 4 remaining phases. They run /fh:auto.",
       "expected_output": "Orchestrator plans all 4 phases concurrently in the planning wave.",
@@ -4372,10 +6786,26 @@
           "text": "mentions 'plan'",
           "type": "behavioral"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "plan"
+          ]
+        },
+        {
+          "type": "regex",
+          "pattern": "[Pp]hase"
+        }
       ]
     },
     {
-      "id": 154,
+      "id": 151,
       "command": "auto",
       "prompt": "Phase 3 and Phase 4 plans both modify shared files. Auto mode enters the build wave.",
       "expected_output": "Validation checks file overlap and adjusts or replans Phase 4.",
@@ -4389,10 +6819,20 @@
           "text": "mentions 'overlap' or 'adjust' or 'replan'",
           "type": "behavioral"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "[Pp]hase"
+        }
       ]
     },
     {
-      "id": 155,
+      "id": 152,
       "command": "auto",
       "prompt": "Auto mode completed building 3 phases. Quick review is due.",
       "expected_output": "Single batched review covering all 3 phases.",
@@ -4406,10 +6846,26 @@
           "text": "mentions 'review'",
           "type": "behavioral"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "review"
+          ]
+        },
+        {
+          "type": "regex",
+          "pattern": "[Pp]hase"
+        }
       ]
     },
     {
-      "id": 156,
+      "id": 153,
       "command": "auto",
       "prompt": "User runs /fh:auto --concurrency 3 on a project.",
       "expected_output": "Orchestrator runs max 3 concurrent sessions.",
@@ -4423,10 +6879,22 @@
           "text": "mentions '3'",
           "type": "behavioral"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "concurrency"
+          ]
+        }
       ]
     },
     {
-      "id": 157,
+      "id": 154,
       "command": "auto",
       "prompt": "Phase 2 build fails. Phase 3's plan has no overlapping files.",
       "expected_output": "Phase 3's plan is retained, not discarded.",
@@ -4435,11 +6903,33 @@
         {
           "text": "mentions 'retain' or 'keep' or 'valid'",
           "type": "behavioral"
+        },
+        {
+          "text": "Identifies task dependencies and wave structure before dispatching",
+          "type": "behavioral"
+        },
+        {
+          "text": "Dispatches subagents with appropriate skill context (TDD, frontend-design)",
+          "type": "behavioral"
+        },
+        {
+          "text": "Writes SUMMARY.md and updates GSD state after completion",
+          "type": "output"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "[Pp]hase"
         }
       ]
     },
     {
-      "id": 158,
+      "id": 155,
       "command": "auto",
       "prompt": "User runs /fh:auto --no-speculative on a project.",
       "expected_output": "Orchestrator runs phases sequentially (plan \u2192 review \u2192 build per phase).",
@@ -4453,10 +6943,27 @@
           "text": "mentions 'no-speculative' or 'fallback'",
           "type": "behavioral"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "plan",
+            "build"
+          ]
+        },
+        {
+          "type": "regex",
+          "pattern": "[Pp]hase"
+        }
       ]
     },
     {
-      "id": 159,
+      "id": 156,
       "command": "auto",
       "prompt": "After planning wave, two phases modify completely different files.",
       "expected_output": "Dependency graph shows them as independent, in the same build wave.",
@@ -4465,11 +6972,39 @@
         {
           "text": "mentions 'independent' or 'no overlap' or 'same wave'",
           "type": "behavioral"
+        },
+        {
+          "text": "Selects correct workflow path without requiring clarification",
+          "type": "behavioral"
+        },
+        {
+          "text": "Output follows GSD conventions (PLAN.md, SUMMARY.md as appropriate)",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does not skip required GSD gates",
+          "type": "guard"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "[Pp]hase"
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "wave"
+          ]
         }
       ]
     },
     {
-      "id": 160,
+      "id": 157,
       "command": "auto",
       "prompt": "All 4 phase plans modify the same core file.",
       "expected_output": "All phases in different build waves, effectively sequential.",
@@ -4478,11 +7013,39 @@
         {
           "text": "mentions 'sequential' or 'dependent' or 'overlap'",
           "type": "behavioral"
+        },
+        {
+          "text": "Selects correct workflow path without requiring clarification",
+          "type": "behavioral"
+        },
+        {
+          "text": "Output follows GSD conventions (PLAN.md, SUMMARY.md as appropriate)",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does not skip required GSD gates",
+          "type": "guard"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "[Pp]hase"
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "wave"
+          ]
         }
       ]
     },
     {
-      "id": 161,
+      "id": 158,
       "command": "auto",
       "prompt": "Auto mode crashed after planning wave completed but during build wave. User runs /fh:auto --resume.",
       "expected_output": "Resumes from build wave, skips planning and review.",
@@ -4496,10 +7059,26 @@
           "text": "mentions 'build' or 'skip.*plan'",
           "type": "behavioral"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "build"
+          ]
+        },
+        {
+          "type": "regex",
+          "pattern": "[Pp]hase"
+        }
       ]
     },
     {
-      "id": 162,
+      "id": 159,
       "command": "auto",
       "prompt": "During planning wave, Phase 3 plan-work fails. Phase 4 depends on Phase 3 (file overlap).",
       "expected_output": "Phase 4 rescheduled to sequential after parallel phases complete.",
@@ -4508,11 +7087,33 @@
         {
           "text": "mentions 'reschedule' or 'sequential' or 'fail'",
           "type": "behavioral"
+        },
+        {
+          "text": "Selects correct workflow path without requiring clarification",
+          "type": "behavioral"
+        },
+        {
+          "text": "Output follows GSD conventions (PLAN.md, SUMMARY.md as appropriate)",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does not skip required GSD gates",
+          "type": "guard"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "[Pp]hase"
         }
       ]
     },
     {
-      "id": 163,
+      "id": 160,
       "command": "auto",
       "prompt": "Auto-orchestrator completes the plan-work step for phase 1. User checks .planning/.auto-state.json.",
       "expected_output": ".auto-state.json contains a stepHistory array with per-step timing (elapsed_ms) and cost (cost_estimate) data.",
@@ -4526,10 +7127,28 @@
           "text": "Mentions cost or timing tracking for steps",
           "type": "behavioral"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "stepHistory"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "elapsed_ms"
+          ]
+        }
       ]
     },
     {
-      "id": 164,
+      "id": 161,
       "command": "build",
       "prompt": "Execute the plan at .planning/phases/05-payments/05-01-PLAN.md. It has 2 backend tasks: implement Stripe webhook handler and write charge reconciliation logic.",
       "expected_output": "Should detect business logic tasks with must_haves.truths, dispatch a test-spec subagent in Step 2.5 before implementation subagents, generate test skeletons or spec files in parallel with the main build wave.",
@@ -4547,10 +7166,36 @@
           "text": "Generates test skeletons or spec files before or alongside implementation",
           "type": "ordering"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "wave",
+            "task"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "test"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "skip testing",
+            "no tests needed"
+          ]
+        }
       ]
     },
     {
-      "id": 165,
+      "id": 162,
       "command": "build",
       "prompt": "Execute the plan at .planning/phases/02-config/02-01-PLAN.md. All 3 tasks are config-only: update tsconfig.json strict settings, add .env.example entries, and configure tailwind.config.ts theme tokens.",
       "expected_output": "Should NOT dispatch a test-spec subagent because all tasks are config-only (no business logic). Should proceed directly to implementation wave without test skeleton generation.",
@@ -4564,10 +7209,30 @@
           "text": "Proceeds directly to implementation without test skeleton step",
           "type": "behavioral"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "guard",
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "wave",
+            "task"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "test-spec"
+          ]
+        }
       ]
     },
     {
-      "id": 166,
+      "id": 163,
       "command": "plan-work",
       "prompt": "I need to add a discount code redemption feature. Users enter a promo code at checkout, the system validates it against the database, applies the percentage discount, and records the redemption.",
       "expected_output": "Should run plan-check verification. Check 7 (test coverage) should FAIL with 'FAIL' or 'rejected' because business logic tasks lack TDD coverage. Should auto-revise the plan to add test coverage before re-checking.",
@@ -4585,10 +7250,35 @@
           "text": "Does not silently warn \u2014 hard fails and blocks plan acceptance",
           "type": "guard"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case",
+        "guard"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "task"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "tdd"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "PLAN.md"
+          ]
+        }
       ]
     },
     {
-      "id": 167,
+      "id": 164,
       "command": "plan-work",
       "prompt": "Plan a user notification preferences feature. Tasks should have tdd=true set so check 7 passes.",
       "expected_output": "Should pass check 7 (test coverage gate) because tasks have tdd='true' in frontmatter. Plan should be accepted without auto-revision for test coverage.",
@@ -4606,10 +7296,35 @@
           "text": "Plan is accepted or moves to next check without test coverage failure",
           "type": "behavioral"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "guard",
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "task"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "tdd"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "PLAN.md"
+          ]
+        }
       ]
     },
     {
-      "id": 168,
+      "id": 165,
       "command": "build",
       "prompt": "Execute the plan at .planning/phases/09-search/09-02-PLAN.md with 2 tasks: implement full-text search indexing and add search result ranking.",
       "expected_output": "Should generate a SUMMARY.md that includes test_metrics in its frontmatter with fields like tests_passed, tests_total, coverage_line, coverage_branch, test_files_created, spec_tests_count.",
@@ -4623,10 +7338,32 @@
           "text": "test_metrics contains at least one of: tests_passed, tests_total, coverage_line, coverage_branch, spec_tests_count",
           "type": "output"
         }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "SUMMARY"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "test"
+          ]
+        },
+        {
+          "type": "regex",
+          "pattern": "test_metrics|tests_passed|tests_total"
+        }
       ]
     },
     {
-      "id": 169,
+      "id": 166,
       "command": "plan-work",
       "prompt": "I want to add E2E tests for the checkout flow using Playwright. Reference the Playwright skill for best practices.",
       "expected_output": "Should resolve the Playwright skill reference from the plugin cache path (e.g., ~/.claude/plugins/fh/.claude/skills/playwright-best-practices/ or equivalent). Should not fail with 'File does not exist' \u2014 the skill path should resolve correctly from the plugin cache.",
@@ -4643,6 +7380,24 @@
         {
           "text": "Successfully loads or cites Playwright best practices content",
           "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "task"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "PLAN.md"
+          ]
         }
       ]
     }
