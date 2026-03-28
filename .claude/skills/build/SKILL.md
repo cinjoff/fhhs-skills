@@ -252,6 +252,7 @@ Run verification commands directly:
 4. **Coverage report** (if Vitest/Jest config exists): `pnpm test --run --coverage 2>/dev/null || npx vitest run --coverage 2>/dev/null`
    Parse output for line/branch percentages. Include in SUMMARY.md `test_metrics` frontmatter.
    If coverage isn't configured or command fails, skip with note "Coverage not configured — consider adding vitest coverage."
+5. **Spec test count:** If Step 2.5 ran, capture the test-spec subagent's reported test count as `spec_tests_count` in `test_metrics`. If Step 2.5 was skipped, set to 0.
 
 If any fail: flag in SUMMARY under "Issues Encountered". Do NOT claim success if verification failed.
 
