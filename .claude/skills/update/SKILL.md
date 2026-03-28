@@ -615,17 +615,36 @@ Check if the user has an existing `.planning/` directory in the current project:
 
 **If HAS_PLANNING:**
 
+Run health repair automatically:
+
+```bash
+node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" validate health --repair
+```
+
+Parse the JSON output and display results:
+
 ```
 ### .planning/ health check
 
-Your project has a .planning/ directory. If it was created with an
-older version of this plugin (or plain GSD), it may have structural
-issues. Run:
+Status: HEALTHY | DEGRADED | BROKEN
+Errors: N | Warnings: N
+```
 
-  /fh:health --repair
+**If repairs were performed**, list them:
 
-This will detect and auto-fix common problems like missing config,
-invalid state references, or outdated directory layouts.
+```
+Repairs performed:
+  ✓ config.json: Created with defaults
+  ✓ STATE.md: Regenerated from roadmap
+  ✓ workflow.nyquist_validation: Added to config
+```
+
+**If errors remain that couldn't be auto-fixed:**
+
+```
+Remaining issues (manual fix needed):
+  [E002] PROJECT.md not found — run /fh:new-project
+  [W005] Phase directory "setup" doesn't follow NN-name format
 ```
 
 **If NO_PLANNING:** Skip silently.
@@ -674,23 +693,93 @@ If `--global` flag IS set, proceed to Step 6.
 
 Discover and reconcile ALL projects using fhhs-skills across the filesystem. This step runs the same reconciliation logic (Steps 5a through 5c) on every discovered project, not just the current one.
 
-### 6a: Run global reconcile
+### 6a: Pre-update scan
 
-The global reconcile uses the **fhhs-skills plugin changelog** (not each project's own changelog) to check environment requirements. The plugin changelog contains reconciliation tags like `[setup:tool:fallow]` and `[setup:hook:fhhs-statusline]` that verify whether each project's environment has the required tools, hooks, and env vars installed. User projects don't need their own changelogs — this is purely about plugin environment sync.
+Before making any changes, scan all projects to show their current state:
 
 ```bash
 # Fetch the fhhs-skills plugin changelog (used for env gap detection across all projects)
-# This was likely already fetched in Step 2, but re-fetch if missing
 if [ ! -f /tmp/fhhs-changelog.md ] || [ ! -s /tmp/fhhs-changelog.md ]; then
   curl -sL "https://raw.githubusercontent.com/cinjoff/fhhs-skills/main/CHANGELOG.md" > /tmp/fhhs-changelog.md 2>/dev/null
 fi
 
-# Build the changelog flag — omit entirely if fetch failed (reconcile still works without it)
 CHANGELOG_FLAG=""
 if [ -s /tmp/fhhs-changelog.md ]; then
   CHANGELOG_FLAG="--changelog-file /tmp/fhhs-changelog.md"
 fi
 
+# Scan without making changes
+node "$HOME/.claude/get-shit-done/bin/global-reconcile.cjs" \
+  --scan-only --from "$PREV_VERSION" --to "$LATEST_VERSION" \
+  $CHANGELOG_FLAG
+```
+
+Parse the JSON and display an ASCII project status map. Group projects by Conductor workspace:
+
+```
+## Projects to reconcile
+
+  fh-starter-project
+  ├─ havana         ■■■■■■■□□□  health: degraded  4 env gaps
+  └─ kyoto          □□□□□□□□□□  no .planning      4 env gaps  ⚠ no settings.json
+
+  nerve-os
+  ├─ toronto        ■■■■■■□□□□  health: degraded  4 env gaps
+  └─ quito          □□□□□□□□□□  no .planning      4 env gaps  ⚠ no settings.json
+
+  fhhs-skills
+  ├─ san-francisco  ■■■■■■□□□□  health: degraded  2 env gaps
+  ├─ casablanca     ■■■■■■□□□□  health: degraded  2 env gaps
+  └─ dallas         ■■■□□□□□□□  health: broken    4 env gaps  ⚠ no settings.json
+
+  (standalone)
+  └─ san-juan       ■■■■■■■■■■  health: healthy   0 env gaps
+
+  Legend: ■ = ok  □ = needs attention  ⚠ = missing .claude/settings.json
+```
+
+**Build the progress bar** from the scan data:
+- `health: healthy` + 0 env gaps + has settings.json = full bar (10 filled)
+- `health: degraded` = 6 filled
+- `health: broken` = 3 filled
+- No `.planning/` = 0 filled
+- Each env gap subtracts 1 from the bar
+- Missing settings.json gets a `⚠` flag
+
+After showing the scan, display:
+
+```
+## How global update works
+
+Plugin skills are read from the global cache (~/.claude/plugins/cache/)
+and update automatically — no project changes needed.
+
+Per-project files fall into two categories:
+
+  Gitignored (updated in-place, per-worktree):
+    .claude/settings.json     env vars like CLAUDE_MEM_PROJECT
+    .planning/config.json     runtime defaults cover new keys
+
+  Git-tracked (shared across worktrees):
+    CLAUDE.md                 may need /fh:revise-claude-md
+    conductor.json            may need setup script updates
+
+Gitignored files are updated directly in each project directory.
+Git-tracked files are checked for staleness but NOT auto-modified
+(they contain user content). If stale files are found, you'll see
+warnings with suggested fixes below.
+
+If you use Conductor: all worktrees get their own reconciliation
+pass. Gitignored files update independently per-worktree. For
+git-tracked file fixes, commit the change in any worktree — other
+worktrees pick it up when they pull or rebase.
+```
+
+### 6b: Run global reconcile
+
+The global reconcile uses the **fhhs-skills plugin changelog** (not each project's own changelog) to check environment requirements. The plugin changelog contains reconciliation tags like `[setup:tool:fallow]` and `[setup:hook:fhhs-statusline]` that verify whether each project's environment has the required tools, hooks, and env vars installed. User projects don't need their own changelogs — this is purely about plugin environment sync.
+
+```bash
 # Run global reconcile — discovers projects from tracker registry + Conductor scan
 node "$HOME/.claude/get-shit-done/bin/global-reconcile.cjs" \
   --from "$PREV_VERSION" --to "$LATEST_VERSION" \
@@ -706,7 +795,7 @@ For each project, it runs:
 - `changelog reconcile` (env gap detection using the fhhs-skills plugin changelog — skipped if changelog unavailable)
 - `validate health --repair` (planning directory health)
 
-### 6b: Display aggregate results
+### 6c: Display aggregate results
 
 Format the JSON report into a human-readable summary:
 
@@ -742,7 +831,53 @@ Run /fh:update in each project individually to apply the full remediation
 
 The global reconcile script handles env *detection* but not remediation (tool installs, hook additions need the full SKILL.md logic). The per-project `/fh:update` handles the actual fixes.
 
-### 6c: Stale project cleanup
+**If any projects had health repairs:**
+
+Show what was actually fixed across all projects:
+
+```
+### Health repairs performed
+
+  havana:
+    ✓ config.json: Created with defaults
+    ✓ workflow.nyquist_validation: Added to config
+
+  toronto:
+    ✓ STATE.md: Regenerated from roadmap
+
+  Total: 3 repairs across 2 projects
+```
+
+**If any projects still have health issues after repair:**
+
+```
+### Remaining health issues (manual fix needed)
+
+  chicago-v1: BROKEN
+    [E002] PROJECT.md not found — run /fh:new-project
+
+  dallas: BROKEN
+    [E003] ROADMAP.md not found — run /fh:new-project
+```
+
+**If any projects have stale git-tracked files:**
+
+The reconcile also checks git-tracked files like `conductor.json` and `CLAUDE.md` for staleness. These can't be auto-modified (they contain user content), so show warnings with fix commands:
+
+```
+### Stale git-tracked files
+
+These files may need manual updating. Commit the fix in any worktree —
+other worktrees pick it up on pull/rebase.
+
+  havana: conductor.json — setup script missing post-update-reconcile step
+    Fix: Run /fh:new-project setup or manually add the reconcile step
+
+  dallas: CLAUDE.md — missing (project created with older plugin version)
+    Fix: Run /fh:revise-claude-md to generate
+```
+
+### 6d: Stale project cleanup
 
 If any projects from the tracker registry no longer exist on disk (paths that 404'd during discovery), offer to clean them up:
 
@@ -788,7 +923,7 @@ print(f'Removed {removed} stale entries')
 "
 ```
 
-### 6d: Final summary
+### 6e: Final summary
 
 ```
 ## Summary

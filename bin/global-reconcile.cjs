@@ -31,16 +31,19 @@ const args = process.argv.slice(2);
 let fromVersion = '0.0.0';
 let toVersion = '';
 let changelogFile = '';
+let scanOnly = false;
 for (let i = 0; i < args.length; i++) {
   switch (args[i]) {
     case '--from': fromVersion = args[++i]; break;
     case '--to': toVersion = args[++i]; break;
     case '--changelog-file': changelogFile = args[++i]; break;
+    case '--scan-only': scanOnly = true; break;
   }
 }
 
-if (!toVersion) {
+if (!scanOnly && !toVersion) {
   console.error('Usage: global-reconcile.cjs --from <ver> --to <ver> --changelog-file <path>');
+  console.error('       global-reconcile.cjs --scan-only');
   process.exit(1);
 }
 
@@ -206,6 +209,8 @@ function reconcileProject(project) {
           errors: (parsed.errors || []).length,
           warnings: (parsed.warnings || []).length,
           repairsPerformed: parsed.repairs_performed || [],
+          errorDetails: (parsed.errors || []).map(e => ({ code: e.code, message: e.message })),
+          warningDetails: (parsed.warnings || []).map(w => ({ code: w.code, message: w.message })),
         };
       } catch (e) {
         // Health check may output non-JSON on some errors
@@ -220,12 +225,112 @@ function reconcileProject(project) {
     result.steps.healthRepair = { status: 'skipped', reason: 'no .planning/ directory' };
   }
 
+  // Step 4: Check git-tracked files that may be stale
+  // These files live in the repo and are shared across worktrees via git.
+  // We can't auto-modify them (user content), but we can flag staleness.
+  const staleFiles = [];
+
+  // Check conductor.json setup script for outdated patterns
+  const conductorJson = path.join(project.path, 'conductor.json');
+  if (fs.existsSync(conductorJson)) {
+    try {
+      const content = fs.readFileSync(conductorJson, 'utf8');
+      // Check if setup script includes post-update-reconcile
+      if (!content.includes('post-update-reconcile') && !content.includes('patch-claude-mem')) {
+        staleFiles.push({
+          file: 'conductor.json',
+          reason: 'setup script missing post-update-reconcile step',
+          fix: 'Re-run /fh:new-project setup or manually add the reconcile step',
+        });
+      }
+    } catch { /* ignore read errors */ }
+  }
+
+  // Check CLAUDE.md exists (projects created before CLAUDE.md was standard)
+  const claudeMd = path.join(project.path, 'CLAUDE.md');
+  if (project.hasPlanning && !fs.existsSync(claudeMd)) {
+    staleFiles.push({
+      file: 'CLAUDE.md',
+      reason: 'missing — project may have been created with an older plugin version',
+      fix: 'Run /fh:revise-claude-md to generate',
+    });
+  }
+
+  if (staleFiles.length > 0) {
+    result.steps.staleFileCheck = {
+      status: 'warn',
+      files: staleFiles,
+    };
+  } else {
+    result.steps.staleFileCheck = { status: 'ok' };
+  }
+
   // Determine overall status
   if (result.errors.length > 0) {
     result.status = 'partial';
   }
 
   return result;
+}
+
+// ─── Scan (pre-update preview) ───────────────────────────────────────────────
+
+function scanProject(project) {
+  const scan = {
+    path: project.path,
+    name: project.name,
+    isConductor: project.isConductor,
+    conductorWorkspace: project.conductorWorkspace,
+    hasPlanning: project.hasPlanning,
+    hasClaudeSettings: project.hasClaudeSettings,
+    health: null,
+    envGaps: 0,
+  };
+
+  // Check health status (read-only, no --repair)
+  if (project.hasPlanning) {
+    const gsdTools = path.join(os.homedir(), '.claude', 'get-shit-done', 'bin', 'gsd-tools.cjs');
+    if (fs.existsSync(gsdTools)) {
+      try {
+        const out = execFileSync('node', [gsdTools, 'validate', 'health'], {
+          cwd: project.path, timeout: 15000, stdio: ['pipe', 'pipe', 'pipe'],
+        });
+        const parsed = JSON.parse(out.toString().trim());
+        scan.health = {
+          status: parsed.status || 'unknown',
+          errors: (parsed.errors || []).length,
+          warnings: (parsed.warnings || []).length,
+          repairable: parsed.repairable_count || 0,
+        };
+      } catch {
+        scan.health = { status: 'error', errors: 0, warnings: 0, repairable: 0 };
+      }
+    }
+  }
+
+  // Check env gaps (read-only)
+  if (changelogFile && fs.existsSync(changelogFile)) {
+    const gsdTools = path.join(os.homedir(), '.claude', 'get-shit-done', 'bin', 'gsd-tools.cjs');
+    if (fs.existsSync(gsdTools)) {
+      try {
+        const out = execFileSync('node', [
+          gsdTools, 'changelog', 'reconcile',
+          '--from', fromVersion, '--to', toVersion || '99.99.99',
+          '--changelog-file', changelogFile,
+          '--project-root', project.path,
+        ], { cwd: project.path, timeout: 15000, stdio: ['pipe', 'pipe', 'pipe'] });
+        const parsed = JSON.parse(out.toString().trim());
+        scan.envGaps = parsed.missing ? parsed.missing.length : 0;
+      } catch {
+        // ignore
+      }
+    }
+  }
+
+  // Check if .claude/settings.json is missing
+  scan.missingSettings = !project.hasClaudeSettings;
+
+  return scan;
 }
 
 // ─── Main ────────────────────────────────────────────────────────────────────
@@ -239,9 +344,34 @@ function main() {
     process.exit(0);
   }
 
+  // Scan-only mode: preview without changes
+  if (scanOnly) {
+    const scans = projects.map(p => scanProject(p));
+    const report = {
+      mode: 'scan',
+      discovery: {
+        total: projects.length,
+        fromTracker: projects.filter(p => p.source === 'tracker').length,
+        fromScan: projects.filter(p => p.source === 'conductor-scan').length,
+        withPlanning: projects.filter(p => p.hasPlanning).length,
+      },
+      projects: scans,
+    };
+    console.log(JSON.stringify(report, null, 2));
+    process.exit(0);
+  }
+
   const results = [];
-  for (const project of projects) {
-    results.push(reconcileProject(project));
+  for (let i = 0; i < projects.length; i++) {
+    const project = projects[i];
+    // Progress to stderr (not captured in JSON stdout)
+    process.stderr.write(`[${i + 1}/${projects.length}] ${project.name}...`);
+    const result = reconcileProject(project);
+    const healthStatus = result.steps.healthRepair?.status || 'skip';
+    const repairs = result.steps.healthRepair?.repairsPerformed?.length || 0;
+    const stale = result.steps.staleFileCheck?.files?.length || 0;
+    process.stderr.write(` ${result.status === 'ok' ? 'ok' : 'partial'} (health: ${healthStatus}${repairs > 0 ? `, ${repairs} repaired` : ''}${stale > 0 ? `, ${stale} stale` : ''})\n`);
+    results.push(result);
   }
 
   // Build summary

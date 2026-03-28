@@ -8,6 +8,30 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.51.0] - 2026-03-28
+
+### Added
+- **Auto health repair** — `/fh:update` now runs `health --repair` automatically on the current project (was only suggesting it); `--global` mode runs it on all discovered projects
+- **Progress reporting** — global update shows per-project progress as each completes: `[1/13] kyoto... ok (health: degraded, 1 repaired)`
+- **Detailed repair report** — shows what was fixed per-project and what still needs manual attention, with error codes and fix commands
+
+## [1.50.1] - 2026-03-28
+
+### Added
+- **Stale file detection** — global update checks git-tracked files (conductor.json, CLAUDE.md) for staleness and reports fix commands
+- **File taxonomy docs** — explains gitignored vs git-tracked file update strategy in the global update output
+
+## [1.50.0] - 2026-03-28
+
+### Added
+- **Pre-scan visualization** — `/fh:update --global` shows an ASCII tree of all projects grouped by workspace before making changes, with progress bars showing health status, env gaps, and missing settings flags
+- **No-merge messaging** — clarifies that global update runs scripts directly in each project directory with no git merge or branch changes; plugin skills come from the global cache
+
+## [1.49.1] - 2026-03-28
+
+### Added
+- **Global update tip** — after a regular `/fh:update`, suggests `--global` when other projects exist in the tracker registry, shown on both fresh-update and already-current paths
+
 ## [1.49.0] - 2026-03-28
 
 ### Added
