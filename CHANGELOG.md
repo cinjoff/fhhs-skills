@@ -8,6 +8,19 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.43.0] - 2026-03-28
+
+### Fixed
+- **Auto-orchestrator project name resolution** — `resolveProjectName()` now uses `git rev-parse --git-common-dir` instead of `--show-toplevel`, fixing claude-mem observation misattribution in Conductor worktrees (e.g., "havana" → "fh-starter-project")
+- **Auto-orchestrator error capture** — on session failure, writes `{step}-error.log` to the phase directory with full stdout/stderr tail; decision entries now include last 20 lines of stdout instead of just empty stderr
+- **Auto-orchestrator partial SUMMARY** — when builds are killed (stuck/timeout), writes `PARTIAL-SUMMARY.md` preserving last output for post-mortem
+- **Auto-orchestrator stuck classification** — orchestrator-initiated kills (stuck/timeout) no longer classified as API errors, preventing unnecessary health check backoff before retry
+- **Auto-orchestrator stdout capture** — all non-zero exit codes now capture stdout (previously only signal kills did)
+- **claude-mem missing warning** — orchestrator logs a clear warning when claude-mem is not found, instead of silently proceeding without observation capture
+
+### Added
+- **5 new auto evals** (IDs 267-271) covering worktree project resolution, stuck session handling, out-of-order phase completion, claude-mem detection, and error classification
+
 ## [1.42.0] - 2026-03-28
 
 ### Added
