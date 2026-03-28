@@ -615,17 +615,36 @@ Check if the user has an existing `.planning/` directory in the current project:
 
 **If HAS_PLANNING:**
 
+Run health repair automatically:
+
+```bash
+node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" validate health --repair
+```
+
+Parse the JSON output and display results:
+
 ```
 ### .planning/ health check
 
-Your project has a .planning/ directory. If it was created with an
-older version of this plugin (or plain GSD), it may have structural
-issues. Run:
+Status: HEALTHY | DEGRADED | BROKEN
+Errors: N | Warnings: N
+```
 
-  /fh:health --repair
+**If repairs were performed**, list them:
 
-This will detect and auto-fix common problems like missing config,
-invalid state references, or outdated directory layouts.
+```
+Repairs performed:
+  ✓ config.json: Created with defaults
+  ✓ STATE.md: Regenerated from roadmap
+  ✓ workflow.nyquist_validation: Added to config
+```
+
+**If errors remain that couldn't be auto-fixed:**
+
+```
+Remaining issues (manual fix needed):
+  [E002] PROJECT.md not found — run /fh:new-project
+  [W005] Phase directory "setup" doesn't follow NN-name format
 ```
 
 **If NO_PLANNING:** Skip silently.
@@ -811,6 +830,35 @@ Run /fh:update in each project individually to apply the full remediation
 ```
 
 The global reconcile script handles env *detection* but not remediation (tool installs, hook additions need the full SKILL.md logic). The per-project `/fh:update` handles the actual fixes.
+
+**If any projects had health repairs:**
+
+Show what was actually fixed across all projects:
+
+```
+### Health repairs performed
+
+  havana:
+    ✓ config.json: Created with defaults
+    ✓ workflow.nyquist_validation: Added to config
+
+  toronto:
+    ✓ STATE.md: Regenerated from roadmap
+
+  Total: 3 repairs across 2 projects
+```
+
+**If any projects still have health issues after repair:**
+
+```
+### Remaining health issues (manual fix needed)
+
+  chicago-v1: BROKEN
+    [E002] PROJECT.md not found — run /fh:new-project
+
+  dallas: BROKEN
+    [E003] ROADMAP.md not found — run /fh:new-project
+```
 
 **If any projects have stale git-tracked files:**
 
