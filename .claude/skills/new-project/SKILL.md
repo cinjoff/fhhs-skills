@@ -508,10 +508,23 @@ rsync -a --exclude='.git' "$TMPDIR/starter/" ./
 rm -rf "$TMPDIR"
 ```
 
+Pin Node version so all environments (shell, Conductor, CI) agree. This prevents native module version mismatches:
+
+```bash
+# Use the current major version — .node-version is respected by nvm, fnm, and Conductor
+node -e "console.log(process.versions.node.split('.')[0])" > .node-version
+```
+
 Install dependencies using the detected package manager (`$PM`):
 
 ```bash
 $PM install
+```
+
+Rebuild native modules (better-sqlite3 needs compiled bindings for the local platform):
+
+```bash
+cd node_modules/better-sqlite3 && npx --yes prebuild-install && cd ../.. || $PM rebuild better-sqlite3 || true
 ```
 
 ### 3b: Install shadcn skills globally (if needed)
@@ -1619,7 +1632,7 @@ If Conductor is detected, create `conductor.json` in the project root with scrip
 ```json
 {
   "scripts": {
-    "setup": "$PM install && [ -f \"$CONDUCTOR_ROOT_PATH/.env.local\" ] && ln -sf \"$CONDUCTOR_ROOT_PATH/.env.local\" .env.local || true; [ -d \"$CONDUCTOR_ROOT_PATH/.vercel\" ] && ln -sf \"$CONDUCTOR_ROOT_PATH/.vercel\" .vercel || true; node -e \"var fs=require('fs'),p=require('path'),cp=require('child_process'),f='.claude/settings.json',s={};try{s=JSON.parse(fs.readFileSync(f,'utf8'))}catch{}var pn='';try{var cd=cp.execSync('git rev-parse --git-common-dir',{encoding:'utf8'}).trim();var r=p.resolve(cd);pn=p.basename(r.replace(/\\/\\.git(\\/worktrees\\/[^/]+)?$/,''))}catch{pn=p.basename(process.cwd())}s.env=Object.assign(s.env||{},{CLAUDE_CODE_TASK_LIST_ID:process.env.CONDUCTOR_WORKSPACE_NAME||'default',CLAUDE_CWD:process.env.CONDUCTOR_ROOT_PATH||process.cwd(),CLAUDE_MEM_PROJECT:pn});fs.writeFileSync(f,JSON.stringify(s,null,2)+'\\n')\"; PATCH=$(find \"$HOME/.claude/plugins/cache/fhhs-skills\" -name patch-claude-mem-project-env.cjs -print -quit 2>/dev/null); [ -n \"$PATCH\" ] && node \"$PATCH\" || true; [ -f supabase/config.toml ] && command -v supabase >/dev/null 2>&1 && supabase start 2>/dev/null || true",
+    "setup": "$PM install && (node -e \"require('better-sqlite3')\" 2>/dev/null || (cd node_modules/better-sqlite3 && npx --yes prebuild-install 2>/dev/null || $PM rebuild better-sqlite3 2>/dev/null || true)) && [ -f \"$CONDUCTOR_ROOT_PATH/.env.local\" ] && ln -sf \"$CONDUCTOR_ROOT_PATH/.env.local\" .env.local || true; [ -d \"$CONDUCTOR_ROOT_PATH/.vercel\" ] && ln -sf \"$CONDUCTOR_ROOT_PATH/.vercel\" .vercel || true; node -e \"var fs=require('fs'),p=require('path'),cp=require('child_process'),f='.claude/settings.json',s={};try{s=JSON.parse(fs.readFileSync(f,'utf8'))}catch{}var pn='';try{var cd=cp.execSync('git rev-parse --git-common-dir',{encoding:'utf8'}).trim();var r=p.resolve(cd);pn=p.basename(r.replace(/\\/\\.git(\\/worktrees\\/[^/]+)?$/,''))}catch{pn=p.basename(process.cwd())}s.env=Object.assign(s.env||{},{CLAUDE_CODE_TASK_LIST_ID:process.env.CONDUCTOR_WORKSPACE_NAME||'default',CLAUDE_CWD:process.env.CONDUCTOR_ROOT_PATH||process.cwd(),CLAUDE_MEM_PROJECT:pn});fs.writeFileSync(f,JSON.stringify(s,null,2)+'\\n')\"; PATCH=$(find \"$HOME/.claude/plugins/cache/fhhs-skills\" -name patch-claude-mem-project-env.cjs -print -quit 2>/dev/null); [ -n \"$PATCH\" ] && node \"$PATCH\" || true; [ -f supabase/config.toml ] && command -v supabase >/dev/null 2>&1 && supabase start 2>/dev/null || true",
     "run": "$PM run dev -- --port $CONDUCTOR_PORT",
     "archive": "rm -rf \"$HOME/.claude/tasks/${CONDUCTOR_WORKSPACE_NAME}\" 2>/dev/null; true"
   },
@@ -1653,7 +1666,8 @@ If Conductor is detected, create `conductor.json` in the project root with scrip
 
 The setup script should:
 1. Install dependencies (`$PM install` handles per-worktree `node_modules` correctly)
-2. Copy `.env` (or `.env.local`) from `$CONDUCTOR_ROOT_PATH` if it exists
+2. Rebuild native modules if needed — pnpm worktrees may not trigger postinstall scripts. Check `require('better-sqlite3')` and run `prebuild-install` if it fails: `node -e "require('better-sqlite3')" 2>/dev/null || (cd node_modules/better-sqlite3 && npx --yes prebuild-install 2>/dev/null || $PM rebuild better-sqlite3 2>/dev/null || true)`
+3. Copy `.env` (or `.env.local`) from `$CONDUCTOR_ROOT_PATH` if it exists
 
 The run script should:
 1. Start the dev server using `$CONDUCTOR_PORT` for port assignment (each Conductor workspace gets a unique port range of 10)
