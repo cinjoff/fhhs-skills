@@ -8,6 +8,11 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.48.1] - 2026-03-28
+
+### Fixed
+- **SSE refresh leaks inactive projects** — `refreshAllSummaries()` now applies the same `.planning/` filter as `refreshProjectsList()`, preventing projects without `.planning/` from reappearing in the sidebar after file-change events
+
 ## [1.48.0] - 2026-03-28
 
 ### Added
