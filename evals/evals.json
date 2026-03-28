@@ -4612,7 +4612,7 @@
       "id": 168,
       "command": "build",
       "prompt": "Execute the plan at .planning/phases/09-search/09-02-PLAN.md with 2 tasks: implement full-text search indexing and add search result ranking.",
-      "expected_output": "Should generate a SUMMARY.md that includes test_metrics in its frontmatter (e.g., tests_added, tests_passing, coverage_delta).",
+      "expected_output": "Should generate a SUMMARY.md that includes test_metrics in its frontmatter with fields like tests_passed, tests_total, coverage_line, coverage_branch, test_files_created, spec_tests_count.",
       "files": [],
       "assertions": [
         {
@@ -4620,7 +4620,7 @@
           "type": "output"
         },
         {
-          "text": "test_metrics contains at least one of: tests_added, tests_passing, coverage_delta",
+          "text": "test_metrics contains at least one of: tests_passed, tests_total, coverage_line, coverage_branch, spec_tests_count",
           "type": "output"
         }
       ]
