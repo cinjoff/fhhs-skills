@@ -303,8 +303,19 @@ If the patch outputs "WARNING: gp() signature changed", claude-mem changed its i
 For Conductor workspaces and git worktrees, the cwd basename often differs from the actual project name (e.g., "cairo" vs "fhhs-skills"). Set `CLAUDE_MEM_PROJECT` in the project-local `.claude/settings.json` so interactive sessions attribute observations correctly — not just auto-orchestrator spawned sessions.
 
 ```bash
-# Derive project name from git toplevel basename
-PROJECT_NAME=$(basename "$(git rev-parse --show-toplevel 2>/dev/null)" 2>/dev/null)
+# Derive project name from git common dir (worktree-safe)
+# --git-common-dir returns .git (regular) or /abs/path/to/repo/.git/worktrees/name (worktree)
+# Resolve relative to cwd, then strip /.git* suffix to get the real repo root
+COMMON_DIR=$(git rev-parse --git-common-dir 2>/dev/null)
+if [ -n "$COMMON_DIR" ]; then
+  # Resolve to absolute path (handles relative ".git" case)
+  RESOLVED=$(cd "$COMMON_DIR" 2>/dev/null && pwd)
+  # Strip /.git/worktrees/xxx or /.git to get repo root
+  REPO_ROOT=$(echo "$RESOLVED" | sed 's|/\.git/worktrees/[^/]*$||; s|/\.git$||')
+  PROJECT_NAME=$(basename "$REPO_ROOT")
+else
+  PROJECT_NAME=""
+fi
 if [ -n "$PROJECT_NAME" ]; then
   # Check if .claude/settings.json exists and already has CLAUDE_MEM_PROJECT
   if [ -f ".claude/settings.json" ]; then
@@ -435,7 +446,7 @@ Use the **Read tool** to load `~/.claude/settings.json`, then use the **Edit too
 | `CLAUDE_CODE_ENABLE_LSP` | `"1"` |
 | `CLAUDE_CODE_ENABLE_TASKS` | `"true"` |
 | `CLAUDE_CWD` | `"true"` |
-| `CLAUDE_MEM_PROJECT` | Derive from `basename $(git rev-parse --show-toplevel)` — NOT a static value |
+| `CLAUDE_MEM_PROJECT` | Derive from `git rev-parse --git-common-dir` (worktree-safe) — NOT a static value |
 | Any other env | `"true"` (safe default) |
 
 Do NOT overwrite existing keys. Merge carefully.
