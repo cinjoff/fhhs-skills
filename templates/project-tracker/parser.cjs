@@ -55,6 +55,22 @@ function stripXml(content) {
 }
 
 /**
+ * Strip trailing status suffixes from phase names.
+ * E.g. "Infrastructure Foundation (COMPLETE)" → { cleanName: "Infrastructure Foundation", extractedStatus: "COMPLETE" }
+ */
+function stripStatusSuffix(name) {
+  if (!name) return { cleanName: name || '', extractedStatus: null };
+  const suffixMatch = name.match(/\s*\((COMPLETE|COMPLETED|NOT STARTED|IN PROGRESS|DEFERRED|CODE COMPLETE)\)\s*$/i);
+  if (suffixMatch) {
+    return {
+      cleanName: name.slice(0, suffixMatch.index).trim(),
+      extractedStatus: suffixMatch[1],
+    };
+  }
+  return { cleanName: name.trim(), extractedStatus: null };
+}
+
+/**
  * Map technical status terms to product-friendly language.
  */
 function mapStatus(raw) {
@@ -190,10 +206,14 @@ function parseRoadmap(planningDir) {
     const phaseCell = cells[phaseIdx] || '';
     const phaseMatch = phaseCell.match(/^(\d+)\.\s+(.+)$/);
     const number = phaseMatch ? parseInt(phaseMatch[1], 10) : (parseInt(phaseCell, 10) || phases.length + 1);
-    const name = phaseMatch ? phaseMatch[2] : (cells[1] || '');
+    const rawName = phaseMatch ? phaseMatch[2] : (cells[1] || '');
 
-    // Status column
-    const statusRaw = statusIdx >= 0 ? (cells[statusIdx] || '') : (cells[cells.length - 2] || '');
+    // Strip status suffixes from phase name (e.g. "Foundation (COMPLETE)" → "Foundation")
+    const { cleanName: name, extractedStatus } = stripStatusSuffix(rawName);
+
+    // Status column — fall back to status extracted from name suffix
+    const statusColRaw = statusIdx >= 0 ? (cells[statusIdx] || '') : (cells[cells.length - 2] || '');
+    const statusRaw = statusColRaw || extractedStatus || '';
 
     // Goal: look for a dedicated goal column, or use milestone column as context
     const goalIdx = headerCols.indexOf('goal');
@@ -254,8 +274,8 @@ function parseRoadmap(planningDir) {
 
       const rawNum = headingMatch[1];
       const number = rawNum.includes('.') ? parseFloat(rawNum) : parseInt(rawNum, 10);
-      const name = headingMatch[2].trim();
-      let statusRaw = headingMatch[3] || '';
+      const { cleanName: name, extractedStatus: nameStatus } = stripStatusSuffix(headingMatch[2].trim());
+      let statusRaw = headingMatch[3] || nameStatus || '';
 
       // Look ahead for **Goal:** and **Status:** lines within next 5 lines
       let goal = '';
@@ -926,6 +946,7 @@ module.exports = {
   parseSummaryFile,
   parseFrontmatter,
   mapStatus,
+  stripStatusSuffix,
   extractObjective,
   extractBody,
   stripXml,

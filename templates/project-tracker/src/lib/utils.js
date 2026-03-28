@@ -25,6 +25,7 @@ export function mapStatus(s) {
   const l = s.toLowerCase();
   if (l === 'complete' || l === 'completed' || l === 'done' || l === 'code_complete' || l === 'code-complete') return 'done';
   if (l === 'active' || l === 'in_progress') return 'active';
+  if (l === 'up next' || l === 'not started' || l === 'not_started' || l === 'planned') return 'pending';
   if (l === 'deferred' || l === 'superseded') return 'deferred';
   if (l === 'failed' || l === 'blocked') return 'failed';
   return 'pending';
