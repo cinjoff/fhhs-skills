@@ -8,6 +8,13 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.46.0] - 2026-03-28
+
+### Fixed
+- **Tracker port changed to 4111** — default port moved from 3847 to 4111; README updated to match
+- **Stale tracker process cleanup** — `/fh:tracker` now kills any existing process on port 4111 before starting, preventing "address in use" errors
+- **Tracker server path resolution** — skill now requires full absolute path (`~/.claude/tracker/server.cjs`) instead of relative `node server.cjs`, fixing "index.html not found" errors when launched from a repo directory
+
 ## [1.45.2] - 2026-03-28
 
 ### Fixed
