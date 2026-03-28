@@ -80,7 +80,27 @@ req.on('timeout', () => { req.destroy(); console.log('TRACKER_NOT_RUNNING'); });
 ```
 
 - If output is `TRACKER_RUNNING`: print `Live dashboard running at http://localhost:4111 — open it to watch progress`
-- If output is `TRACKER_NOT_RUNNING`: print `Tip: Run \`/fh:tracker\` in another terminal to watch progress live`
+- If output is `TRACKER_NOT_RUNNING`: check if tracker files exist and auto-start:
+
+```bash
+[ -f "$HOME/.claude/tracker/server.cjs" ] && echo "TRACKER_FILES_EXIST" || echo "TRACKER_NO_FILES"
+```
+
+  - If `TRACKER_FILES_EXIST`: kill any stale process and start the server:
+
+    ```bash
+    lsof -ti :4111 -s TCP:LISTEN | xargs kill 2>/dev/null; echo "port cleared"
+    ```
+
+    Then start the server with `run_in_background: true`:
+
+    ```bash
+    TRACKER_REGISTRY=~/.claude/tracker/projects.json node ~/.claude/tracker/server.cjs
+    ```
+
+    Print `Live dashboard started at http://localhost:4111 — open it to watch progress`
+
+  - If `TRACKER_NO_FILES`: print `Tip: Run \`/fh:tracker\` to set up the live dashboard`
 
 This step always succeeds — tracker errors are non-fatal.
 

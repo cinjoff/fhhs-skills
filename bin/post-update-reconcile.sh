@@ -75,10 +75,72 @@ else
   echo "⚠ Not a git repo — skipping CLAUDE_MEM_PROJECT"
 fi
 
-# --- 5a⅞: Refresh global tracker ---
+# --- 5a⅞: Register project in tracker + refresh global tracker ---
 
 TRACKER_DIR="$HOME/.claude/tracker"
 mkdir -p "$TRACKER_DIR"
+
+# Register current project in the global tracker registry
+REGISTRY_FILE="$TRACKER_DIR/projects.json"
+if [ -d "$PROJECT_ROOT/.planning" ]; then
+  PROJ_NAME=$(basename "$PROJECT_ROOT")
+  # Detect Conductor workspace pattern
+  IS_CONDUCTOR="false"
+  CONDUCTOR_WS=""
+  case "$PROJECT_ROOT" in
+    */conductor/workspaces/*/*)
+      IS_CONDUCTOR="true"
+      CONDUCTOR_WS=$(echo "$PROJECT_ROOT" | sed 's|.*/conductor/workspaces/\([^/]*\)/.*|\1|')
+      ;;
+  esac
+
+  python3 -c "
+import json, os, sys
+from datetime import datetime
+
+registry_file = '$REGISTRY_FILE'
+project_root = '$PROJECT_ROOT'
+proj_name = '$PROJ_NAME'
+is_conductor = '$IS_CONDUCTOR' == 'true'
+conductor_ws = '$CONDUCTOR_WS'
+
+# Read existing registry
+try:
+    with open(registry_file) as f:
+        registry = json.load(f)
+    if not isinstance(registry, list):
+        registry = []
+except:
+    registry = []
+
+now = datetime.utcnow().isoformat() + 'Z'
+
+# Find existing entry
+found = False
+for entry in registry:
+    if entry.get('path') == project_root:
+        entry['name'] = proj_name
+        entry['lastSeen'] = now
+        if is_conductor:
+            entry['conductorWorkspace'] = conductor_ws
+        found = True
+        break
+
+if not found:
+    entry = {'path': project_root, 'name': proj_name, 'addedAt': now, 'lastSeen': now}
+    if is_conductor:
+        entry['conductorWorkspace'] = conductor_ws
+    registry.append(entry)
+
+with open(registry_file, 'w') as f:
+    json.dump(registry, f, indent=2)
+    f.write('\n')
+
+print('✓ Project registered in tracker: ' + proj_name + (' (conductor: ' + conductor_ws + ')' if is_conductor else ''))
+" 2>/dev/null || echo "⚠ Could not register project in tracker"
+else
+  echo "⊘ No .planning/ — skipping tracker registration (run /fh:new-project first)"
+fi
 
 PLUGIN_ROOT=""
 LATEST="$(ls -d "$HOME/.claude/plugins/cache/fhhs-skills/fh"/*/ 2>/dev/null | sort | tail -1)"

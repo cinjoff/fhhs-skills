@@ -8,6 +8,16 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.47.0] - 2026-03-28
+
+### Added
+- **Tracker auto-registration** — server auto-registers the CWD project in the global registry at startup if it has `.planning/` but isn't registered yet, fixing the empty "No projects registered" screen on first launch
+- **Auto-start tracker from `/fh:auto`** — `/fh:auto` now starts the tracker server automatically if files exist at `~/.claude/tracker/`, instead of just suggesting `/fh:tracker` manually
+- **Project registration during `/fh:update`** — `post-update-reconcile.sh` now registers the current project in the tracker registry, with Conductor workspace detection
+
+### Changed
+- **Multi-project tracker server** — server rewritten to support multiple registered projects via `~/.claude/tracker/projects.json` registry, with project sidebar, per-project state caching, and SSE broadcast to all connected clients
+
 ## [1.46.2] - 2026-03-28
 
 ### Changed
