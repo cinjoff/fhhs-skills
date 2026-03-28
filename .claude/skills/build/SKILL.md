@@ -292,6 +292,17 @@ If any fail: flag in SUMMARY under "Issues Encountered". Do NOT claim success if
 
 Read `references/summary-template.md` for the template. Write SUMMARY.md. Commit: `docs({phase}-{plan}): complete {description}`
 
+### Concerns Review (after SUMMARY.md)
+
+If `.planning/codebase/CONCERNS.md` exists, do a quick scan:
+1. Read CONCERNS.md categories and items
+2. Check if this build addressed any listed concerns (compare files modified against concern file paths)
+3. If a concern was addressed: add a note to SUMMARY.md under "Concerns Addressed" with the concern title and what was done
+4. If this build introduced patterns matching known concern categories (new tech debt, missing tests, security gaps): note in SUMMARY.md under "New Concerns" as advisory
+5. If CONCERNS.md is stale (`.last-mapped` > 50 commits behind HEAD): note in SUMMARY.md: "Codebase concerns may be outdated — consider `/fh:map-codebase`"
+
+This is advisory only — never block completion. Budget: <1% context.
+
 ### Learnings Digest (after SUMMARY.md)
 
 If claude-mem is available, generate a learnings digest:

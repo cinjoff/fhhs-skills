@@ -45,7 +45,7 @@ const BASE_PORT = 4111;
 const MAX_PORT_ATTEMPTS = 3;
 const DEBOUNCE_MS = 300;
 const CACHE_VERSION = 1;
-const HOME = process.env.HOME || '';
+const HOME = process.env.HOME || require('os').homedir() || '';
 
 // Registry path — from TRACKER_REGISTRY env var or default location
 const registryPath = process.env.TRACKER_REGISTRY
@@ -168,6 +168,56 @@ function buildProjectSummary(entry) {
   }
 }
 
+// Clean registry: remove entries with non-existent paths, fix malformed fields.
+function cleanRegistry() {
+  const entries = readRegistry();
+  if (entries.length === 0) return;
+
+  let changed = false;
+  const cleaned = [];
+
+  for (const entry of entries) {
+    // Remove entries where the directory no longer exists
+    if (!fs.existsSync(entry.path)) {
+      console.log(`  [registry] Pruning dead entry: ${entry.name || entry.path}`);
+      changed = true;
+      continue;
+    }
+
+    // Fix malformed conductorWorkspace (boolean instead of string)
+    if (typeof entry.conductorWorkspace !== 'string' && entry.conductorWorkspace != null) {
+      const conductorMatch = entry.path.match(/\/conductor\/workspaces\/([^/]+)\//);
+      if (conductorMatch) {
+        entry.conductorWorkspace = conductorMatch[1];
+      } else {
+        delete entry.conductorWorkspace;
+      }
+      changed = true;
+    }
+
+    // Fix auto-generated name that's missing workspace prefix
+    if (entry.conductorWorkspace && entry.name && !entry.name.includes('/')) {
+      const dirName = path.basename(entry.path);
+      // Only reformat if name is the auto-generated default (just dirname)
+      if (entry.name === dirName) {
+        entry.name = `${entry.conductorWorkspace}/${dirName}`;
+        changed = true;
+      }
+    }
+
+    cleaned.push(entry);
+  }
+
+  if (changed) {
+    try {
+      fs.writeFileSync(registryPath, JSON.stringify(cleaned, null, 2) + '\n', 'utf8');
+      console.log(`  [registry] Cleaned: ${entries.length - cleaned.length} removed, ${cleaned.length} remaining`);
+    } catch (err) {
+      console.error(`  Warning: Could not write cleaned registry: ${err.message}`);
+    }
+  }
+}
+
 // Refresh the projects list from the registry (only re-reads if file changed).
 function refreshProjectsList() {
   let changed = false;
@@ -188,8 +238,14 @@ function refreshProjectsList() {
 
   if (changed) {
     const entries = readRegistry();
-    projectsList = entries.map(e => buildProjectSummary(e));
-    console.log(`  [registry] ${projectsList.length} project(s) loaded`);
+    // Filter: only show projects that have .planning/ (active work)
+    const activeEntries = entries.filter(e => {
+      const planDir = path.join(e.path, '.planning');
+      return fs.existsSync(planDir);
+    });
+    projectsList = activeEntries.map(e => buildProjectSummary(e));
+    const skipped = entries.length - activeEntries.length;
+    console.log(`  [registry] ${activeEntries.length} project(s) loaded${skipped > 0 ? ` (${skipped} without .planning/ hidden)` : ''}`);
   }
   return changed;
 }
@@ -197,7 +253,8 @@ function refreshProjectsList() {
 // Force-refresh summaries for all projects (e.g. when .planning/ files change)
 function refreshAllSummaries() {
   const entries = readRegistry();
-  projectsList = entries.map(e => buildProjectSummary(e));
+  const activeEntries = entries.filter(e => fs.existsSync(path.join(e.path, '.planning')));
+  projectsList = activeEntries.map(e => buildProjectSummary(e));
 }
 
 // ---------------------------------------------------------------------------
@@ -362,6 +419,8 @@ function categorizeChanges(changedFiles) {
       needs.changedPhaseDirs.add(parts[1]);
     } else if (parts[0] === 'milestones' && parts.length >= 3) {
       needs.changedPhaseDirs.add(parts[2]);
+    } else if (parts[0] === 'plans') {
+      needs.changedPhaseDirs.add('__ALL__');
     }
   }
 
@@ -744,6 +803,34 @@ const server = http.createServer((req, res) => {
     return serveEvents(req, res);
   }
 
+  // POST /api/register — register a project from auto skill or external tools
+  if (req.method === 'POST' && pathname === '/api/register') {
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk;
+      if (body.length > 8192) { req.destroy(); return; } // Prevent unbounded payloads
+    });
+    req.on('end', () => {
+      try {
+        const data = JSON.parse(body);
+        // Validate: path must be absolute and the directory must exist
+        if (!data.path || !path.isAbsolute(data.path) || !fs.existsSync(data.path)) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'path must be an absolute path to an existing directory' }));
+          return;
+        }
+        autoRegisterProject(data.path);
+        refreshProjectsList();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true }));
+      } catch {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'invalid JSON' }));
+      }
+    });
+    return;
+  }
+
   // 404 for everything else
   res.writeHead(404, { 'Content-Type': 'text/plain' });
   res.end('Not found');
@@ -772,6 +859,9 @@ function tryListen(port, attempt) {
   });
 
   server.listen(port, '127.0.0.1', () => {
+    // Clean dead entries before loading
+    cleanRegistry();
+
     // Load registry and build projects list
     refreshProjectsList();
 

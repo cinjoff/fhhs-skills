@@ -8,15 +8,42 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.48.2] - 2026-03-28
+
+### Fixed
+- **Cross-platform temp directory** — auto-orchestrator uses `os.tmpdir()` instead of hardcoded `/private/tmp`, fixing Linux compatibility
+- **Conductor project name fragmentation** — `resolveProjectName()` now detects Conductor workspace paths and extracts the project name, preventing memory fragmentation across branches
+- **Auto-state write races** — unified `writeAutoStatus`, `saveAutoState`, and `log()` through a single serialized write queue, preventing data corruption from concurrent writes
+- **Dead `/api/register` endpoint** — tracker server now implements the `POST /api/register` endpoint that auto skill was already calling, with body size limit (8KB) and path validation
+- **CLAUDE_MEM_PROJECT not set on project init** — `/fh:new-project` setup script now derives and sets `CLAUDE_MEM_PROJECT` via `git rev-parse --git-common-dir`, fixing observation misattribution in Conductor workspaces
+- **Tracker registration uses wrong name** — `post-update-reconcile.sh` now uses the worktree-safe project name for tracker registration instead of `basename`
+- **localhost vs 127.0.0.1 mismatch** — auto SKILL.md standardized to `127.0.0.1` to match server bind address, preventing health check failures on IPv6 systems
+- **Auto skill tracker registration** — now includes `conductorWorkspace` field for proper sidebar grouping
+- **Cross-platform dashboard open** — uses `xdg-open` on Linux, `start` on Windows instead of macOS-only `open`
+- **CLAUDE_CWD value in update skill** — fixed from nonsensical `"true"` to actual derivation instruction
+- **Silent error swallowing** — `saveAutoState` now logs failures to stderr instead of silently catching
+
+## [1.48.1] - 2026-03-28
+
+### Fixed
+- **SSE refresh leaks inactive projects** — `refreshAllSummaries()` now applies the same `.planning/` filter as `refreshProjectsList()`, preventing projects without `.planning/` from reappearing in the sidebar after file-change events
+
 ## [1.48.0] - 2026-03-28
 
 ### Added
+- **Expandable concerns in tracker** — ConcernsPanel now shows individual concern items with titles and detail lines when expanded, not just category counts
+- **Heading-based roadmap parsing** — tracker parser falls back to `## Phase N: Title` heading format when no progress table found, fixing blank phase names for most projects
+- **Registry auto-cleanup** — tracker server prunes dead worktrees and fixes malformed entries on startup, hides projects without `.planning/` from sidebar
+- **Flat plans/ change detection** — tracker now detects changes in `plans/` directory for live updates in flat-layout projects
+- **Concerns lifecycle in build** — post-build step reviews CONCERNS.md, notes resolved/new concerns in SUMMARY.md, flags stale codebase mapping
 - **Auto-orchestrator crash recovery** — persists phase state at wave boundaries (planning-wave-complete, review-wave-complete) so `--resume` can restart from the last completed wave after a crash
 - **Atomic auto-state writes** — all `.auto-state.json` writes use tmp+rename for POSIX-atomic updates, preventing half-read corruption by the tracker server
 - **Tracker auto-state integration** — tracker server reads `.auto-state.json` into project summaries, showing live auto-execution status and completed state in the sidebar
 - **AutoPipeline step display** — frontend pipeline component maps orchestrator step names to display tokens with correct disambiguation between pre-build review and post-build verify
 
 ### Changed
+- **Health checks support multiple layouts** — `verify.cjs` now scans `plans/`, `phases/`, and `milestones/` directories; accepts flexible PROJECT.md section formats
+- **All `/gsd:` references migrated to `/fh:`** — health check messages, repair actions, and state regeneration use correct skill prefix
 - **STATE.md phase parsing** — `parseCurrentPhase()` now matches both "Current Phase" and "Active Phase" field names for compatibility with different writers
 - **SUMMARY.md skip logic** — completed phases with existing SUMMARY.md are skipped on `--resume` instead of re-executing
 

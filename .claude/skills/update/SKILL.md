@@ -362,7 +362,7 @@ Use the **Read tool** to load `~/.claude/settings.json`, then use the **Edit too
 |----|-------|
 | `CLAUDE_CODE_ENABLE_LSP` | `"1"` |
 | `CLAUDE_CODE_ENABLE_TASKS` | `"true"` |
-| `CLAUDE_CWD` | `"true"` |
+| `CLAUDE_CWD` | Derive from `process.cwd()` or `$CONDUCTOR_ROOT_PATH` — NOT a static value |
 | `CLAUDE_MEM_PROJECT` | Derive from `git rev-parse --git-common-dir` (worktree-safe) — NOT a static value |
 | Any other env | `"true"` (safe default) |
 

@@ -19,6 +19,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const { spawn } = require('child_process');
 
 // ─── Enriched Auto-Status ─────────────────────────────────────────────────────
@@ -50,20 +51,24 @@ const _optimizations = {
 };
 
 function getClaudeTmpBase(projectDir) {
-  const uid = process.getuid ? process.getuid() : 501;
+  const uid = process.getuid ? process.getuid() : (process.env.UID || 501);
   const dirName = '-' + projectDir.replace(/\//g, '-').slice(1);
-  return path.join('/private/tmp', `claude-${uid}`, dirName);
+  // Use os.tmpdir() for cross-platform support (macOS: /private/tmp, Linux: /tmp)
+  return path.join(os.tmpdir(), `claude-${uid}`, dirName);
 }
 
 function writeAutoStatus(projectDir, status) {
-  try {
-    const p = path.join(projectDir, '.planning', '.auto-state.json');
-    const tmp = p + '.tmp';
-    fs.writeFileSync(tmp, JSON.stringify(status, null, 2), 'utf-8');
-    fs.renameSync(tmp, p); // Atomic on POSIX — prevents half-read by tracker
-  } catch {
-    // Non-fatal — dashboard reads are best-effort
-  }
+  // Route through _stateWriteQueue to prevent races with saveAutoState and log()
+  _stateWriteQueue = _stateWriteQueue.then(() => {
+    try {
+      const p = path.join(projectDir, '.planning', '.auto-state.json');
+      const tmp = p + '.tmp';
+      fs.writeFileSync(tmp, JSON.stringify(status, null, 2), 'utf-8');
+      fs.renameSync(tmp, p); // Atomic on POSIX — prevents half-read by tracker
+    } catch {
+      // Non-fatal — dashboard reads are best-effort
+    }
+  }).catch(() => {});
 }
 
 function buildAutoStatus(_projectDir, overrides) {
@@ -217,22 +222,24 @@ function timestamp() {
 function log(msg) {
   process.stdout.write(`[${timestamp()}] ${msg}\n`);
   _autoStatus.lastLogLine = msg;
-  // Debounced last_log_line update: max once per 2 seconds
+  // Debounced last_log_line update: max once per 2 seconds, routed through _stateWriteQueue
   const now = Date.now();
   if (_autoStatus.projectDir && (now - _autoStatus.lastLogWriteMs) >= 2000) {
     _autoStatus.lastLogWriteMs = now;
-    try {
-      const p = path.join(_autoStatus.projectDir, '.planning', '.auto-state.json');
-      if (fs.existsSync(p)) {
-        const existing = JSON.parse(fs.readFileSync(p, 'utf-8'));
-        existing.last_log_line = msg;
-        const tmp = p + '.tmp';
-        fs.writeFileSync(tmp, JSON.stringify(existing, null, 2), 'utf-8');
-        fs.renameSync(tmp, p);
+    _stateWriteQueue = _stateWriteQueue.then(() => {
+      try {
+        const p = path.join(_autoStatus.projectDir, '.planning', '.auto-state.json');
+        if (fs.existsSync(p)) {
+          const existing = JSON.parse(fs.readFileSync(p, 'utf-8'));
+          existing.last_log_line = msg;
+          const tmp = p + '.tmp';
+          fs.writeFileSync(tmp, JSON.stringify(existing, null, 2), 'utf-8');
+          fs.renameSync(tmp, p);
+        }
+      } catch {
+        // Non-fatal
       }
-    } catch {
-      // Non-fatal
-    }
+    }).catch(() => {});
   }
 }
 
@@ -360,14 +367,20 @@ function loadAutoState(projectDir) {
   }
 }
 
-let _saveQueue = Promise.resolve();
+// Unified write queue for .auto-state.json — all writers must go through this
+// to prevent race conditions between writeAutoStatus(), saveAutoState(), and log()
+let _stateWriteQueue = Promise.resolve();
+
 function saveAutoState(projectDir, state) {
-  _saveQueue = _saveQueue.then(() => {
+  _stateWriteQueue = _stateWriteQueue.then(() => {
     const p = autoStatePath(projectDir);
     const tmp = p + '.tmp';
     fs.writeFileSync(tmp, JSON.stringify(state, null, 2), 'utf-8');
     fs.renameSync(tmp, p);
-  }).catch(() => {});
+  }).catch((err) => {
+    // Log to stderr instead of silently swallowing — helps diagnose disk/perm issues
+    process.stderr.write(`Warning: saveAutoState failed: ${err.message}\n`);
+  });
 }
 
 function clearAutoState(projectDir) {
@@ -539,8 +552,20 @@ function parseSessionMetrics(stdout) {
 function resolveProjectName(cwd) {
   try {
     const { execSync } = require('child_process');
-    // Use --git-common-dir for worktree support (returns /path/to/repo/.git)
-    // This resolves the actual repo name, not the worktree directory name
+
+    // Tier 1: Check for CLAUDE_MEM_PROJECT already set (e.g., via .claude/settings.json)
+    if (process.env.CLAUDE_MEM_PROJECT && process.env.CLAUDE_MEM_PROJECT.trim()) {
+      return process.env.CLAUDE_MEM_PROJECT.trim();
+    }
+
+    // Tier 2: Conductor workspace detection — extract project name from path pattern
+    // /Users/x/conductor/workspaces/{project-name}/{branch-name}/
+    const conductorMatch = cwd.match(/\/conductor\/workspaces\/([^/]+)\//);
+    if (conductorMatch) {
+      return conductorMatch[1];
+    }
+
+    // Tier 3: Git common dir for worktree support (returns /path/to/repo/.git)
     const commonDir = execSync('git rev-parse --git-common-dir', {
       cwd,
       timeout: 5000,
@@ -1489,11 +1514,12 @@ async function main() {
   _autoStatus.phasesTotal = phasesToRun.length;
   _autoStatus.stepsTotal = phasesToRun.length * PHASE_STEPS.length;
 
-  // Auto-open tracker dashboard
+  // Auto-open tracker dashboard (cross-platform)
   const { exec } = require('child_process');
   const dashboardPort = 4111;
   log('Opening dashboard...');
-  exec(`open http://127.0.0.1:${dashboardPort}`);
+  const openCmd = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open';
+  exec(`${openCmd} http://127.0.0.1:${dashboardPort}`);
 
   // Write initial active status
   writeAutoStatus(projectDir, buildAutoStatus(projectDir, {

@@ -44,7 +44,7 @@ Parse JSON output:
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- GSD Health Check
+ Health Check
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Status: HEALTHY | DEGRADED | BROKEN
@@ -127,7 +127,7 @@ Report final status.
 | Code | Severity | Description | Repairable |
 |------|----------|-------------|------------|
 | E001 | error | .planning/ directory not found | No |
-| E002 | error | PROJECT.md not found | No |
+| E002 | error | PROJECT.md not found or has no recognizable structure | No |
 | E003 | error | ROADMAP.md not found | No |
 | E004 | error | STATE.md not found | Yes |
 | E005 | error | config.json parse error | Yes |
