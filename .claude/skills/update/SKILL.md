@@ -257,17 +257,17 @@ else
 fi
 ```
 
-### 5a½: Re-apply claude-mem worktree patch
+### 5a½: Re-apply claude-mem project-env patch
 
-claude-mem stores observations under the worktree directory basename instead of the parent repo name. This patch makes it worktree-aware. It must be re-applied after every claude-mem update since the update overwrites the patched files.
+claude-mem derives its project name from the process cwd basename, which causes misattribution in Conductor workspaces and worktrees. This unified patch adds a `CLAUDE_MEM_PROJECT` env var check as the first tier in `gp()`, covering both worktrees and headless sessions. It must be re-applied after every claude-mem update since the update overwrites the patched files.
 
 ```bash
 # Find the patch script shipped with fhhs-skills
-PATCH=$(find "$HOME/.claude/plugins/cache/fhhs-skills" -name patch-claude-mem-worktree.cjs -print -quit 2>/dev/null)
+PATCH=$(find "$HOME/.claude/plugins/cache/fhhs-skills" -name patch-claude-mem-project-env.cjs -print -quit 2>/dev/null)
 if [ -n "$PATCH" ]; then
   node "$PATCH" 2>&1
 else
-  echo "⚠ Worktree patch not found (expected in fhhs-skills plugin cache)"
+  echo "⚠ Project-env patch not found (expected in fhhs-skills plugin cache)"
 fi
 ```
 

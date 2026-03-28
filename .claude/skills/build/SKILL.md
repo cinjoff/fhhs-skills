@@ -72,25 +72,48 @@ AUTO_MODE=$(node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs config-get workfl
 
 If `AUTO_MODE` is `"true"` AND `.planning/DECISIONS.md` exists, include the last 10 entries for this phase as `{DECISIONS_CONTEXT}`. Otherwise empty string.
 
-### Pre-Index Source Files
+### Pre-Index Source Files + Test Files
 
-If ctx_batch_execute is available, index all source files listed in the plan's `files_modified` frontmatter field. These are the files agents will need to read for context.
+If ctx_batch_execute is available, build a comprehensive file manifest for pre-indexing:
+
+1. **Source files:** All files from `files_modified` frontmatter
+2. **Per-task files:** All files from each task's `<files>` element (may include read-only context files not in files_modified)
+3. **Test file discovery:** For each source file, find its test counterpart:
+   - `{name}.test.{ext}` in the same directory
+   - `__tests__/{name}.test.{ext}` in parent directory
+   - `tests/{name}.test.{ext}` in project root
+   - `e2e/{name}.spec.{ext}` for page/route files
+4. **Test-spec skeletons:** If Step 2.5 ran, include all files it created (test skeletons from plan specification)
+5. **Deduplicate** the combined list
+6. Index all unique files plus planning docs:
 
 ```
 ctx_batch_execute([
-  // For each file in files_modified:
+  // For each file in the deduplicated manifest:
   { label: "{filename}", cmd: "cat {filepath}" },
-  // Also index the PLAN.md itself and CONTEXT.md
+  // Planning docs:
   { label: "PLAN", cmd: "cat {planPath}" },
   { label: "CONTEXT", cmd: "cat .planning/phases/{phase}/{phase}-CONTEXT.md" },
 ], queries: [
   "existing patterns in modified files",
+  "existing test patterns and assertions",
   "locked decisions for this phase",
   "plan tasks and requirements"
 ])
 ```
 
-If the Phase Context Bootstrap ran in a prior step (plan-work or plan-review), the stable docs (ARCHITECTURE, CONVENTIONS, etc.) are already in the index. Only source files and mutable planning docs need fresh indexing.
+If the Phase Context Bootstrap ran in a prior step, stable docs (ARCHITECTURE, CONVENTIONS, etc.) are already indexed. Only source files, test files, and mutable planning docs need fresh indexing.
+
+### Conditional Context Injection
+
+If pre-indexing succeeded (ctx_batch_execute returned without error):
+- Leave `{CLAUDE_MD_SECTIONS}` **empty** when filling the implementer-prompt template
+- Leave `{DESIGN_DECISIONS}` **empty** when filling the template
+- Agents will fetch this context via ctx_search (pre-indexed and compact)
+
+If pre-indexing was skipped (context-mode unavailable):
+- Populate `{CLAUDE_MD_SECTIONS}` and `{DESIGN_DECISIONS}` as today
+- Zero behavioral change for systems without context-mode
 
 If ctx_batch_execute is not available, skip silently.
 
@@ -155,8 +178,8 @@ For each wave, dispatch **one subagent per task** using the Agent tool with **`s
 Use the structured template at `references/implementer-prompt.md`. Fill its placeholders:
 
 - `{TASK_TEXT}` — Full task content (files, action, verify, done). Copy the text, don't reference the plan file.
-- `{CLAUDE_MD_SECTIONS}` — Relevant sections from CLAUDE.md for this task type, plus `.planning/codebase/CODEBASE.md` sections (fall back to individual files in `.planning/codebase/` if CODEBASE.md doesn't exist) (UI work → Conventions + Design; new files → Structure guidance; API work → Architecture patterns). **Always populate** — agents with ctx_search may skip it, agents without rely on it.
-- `{DESIGN_DECISIONS}` — If `.planning/phases/{phase}/{phase}-CONTEXT.md` exists, include the "Decisions", "Discretion Areas", and "Deferred Ideas" sections. **Always populate** — agents with ctx_search may prefer the index, but agents without plugins need this content injected.
+- `{CLAUDE_MD_SECTIONS}` — Relevant sections from CLAUDE.md for this task type, plus `.planning/codebase/CODEBASE.md` sections (fall back to individual files in `.planning/codebase/` if CODEBASE.md doesn't exist) (UI work → Conventions + Design; new files → Structure guidance; API work → Architecture patterns). **Follow Conditional Context Injection** (Step 2): empty when pre-indexed, populated when context-mode unavailable.
+- `{DESIGN_DECISIONS}` — If `.planning/phases/{phase}/{phase}-CONTEXT.md` exists, include the "Decisions", "Discretion Areas", and "Deferred Ideas" sections. **Follow Conditional Context Injection** (Step 2): empty when pre-indexed, populated when context-mode unavailable.
 - `{PHASE_DIR}` — Path to `.planning/phases/{phase}/` for deferred items logging.
 - `{PHASE_NAME}` — Phase directory name for ctx_search queries (e.g. "13-pending-payments-invoicing").
 - `{FILE_TYPES}` — Comma-separated file type descriptions for convention queries (e.g. "tsx components", "test files").
@@ -206,6 +229,14 @@ ctx_batch_execute([
 ```
 
 This ensures the next wave sees fresh content when using ctx_search. Skip silently if ctx_batch_execute is not available.
+
+### Post-Wave Cache Lifecycle
+
+After a wave completes, the re-index step serves as cache invalidation:
+- Files modified by wave agents are re-indexed with fresh content
+- Files NOT modified remain in the index unchanged (still valid cache)
+- Test files created by wave agents are added to the index
+- Next wave agents see up-to-date content via ctx_search
 
 Triage subagent outcomes:
 

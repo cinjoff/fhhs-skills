@@ -181,21 +181,34 @@ How context-mode and claude-mem are wired across the plan-work → plan-review �
 BEFORE (per build agent):                AFTER (per build agent):
 ┌────────────────────────────┐          ┌────────────────────────────┐
 │ {TASK_TEXT}       ~1.2 KB  │          │ {TASK_TEXT}       ~1.2 KB  │
-│ {DESIGN_DECISIONS} ~1.5 KB │          │ ctx_search inst.  ~0.2 KB │
-│ {CLAUDE_MD_SECTIONS} ~2 KB │          │ fallback inst.    ~0.2 KB │
-│ {DECISIONS_CONTEXT} ~1 KB  │          │                            │
-│ Template          ~2 KB    │          │ Template          ~2.2 KB │
+│ {DESIGN_DECISIONS} ~1.5 KB │          │ {DESIGN_DECISIONS}  0 KB   │
+│ {CLAUDE_MD_SECTIONS} ~2 KB │          │  (empty — pre-indexed)     │
+│ {DECISIONS_CONTEXT} ~1 KB  │          │ {CLAUDE_MD_SECTIONS} 0 KB  │
+│ Template          ~2 KB    │          │  (empty — pre-indexed)     │
+│                            │          │ ctx_search inst.  ~0.2 KB  │
+│                            │          │ fallback inst.    ~0.2 KB  │
+│                            │          │ Template          ~2.2 KB  │
 ├────────────────────────────┤          ├────────────────────────────┤
 │ TOTAL: ~7.7 KB per agent   │          │ TOTAL: ~3.8 KB per agent   │
 │ × 5 agents = 38.5 KB       │          │ × 5 agents = 19 KB         │
 └────────────────────────────┘          └────────────────────────────┘
 
                                          50% prompt size reduction
-                                         Context fetched on-demand
-                                         from shared FTS5 index
-                                         Researcher agents now use
-                                         ctx_search + smart_search
-                                         for pre-existing context
+                                         {CLAUDE_MD_SECTIONS} and
+                                         {DESIGN_DECISIONS} are empty
+                                         when pre-indexing succeeded —
+                                         agent fetches via ctx_search
+                                         Falls back to Read/inject
+                                         when ctx_search unavailable
+
+Pre-indexed content (Step 3 manifest):
+  - 9 stable planning docs (PROJECT, ROADMAP, etc.)
+  - Source files from files_modified frontmatter
+  - Per-task files from <files> elements
+  - Test files discovered by convention matching
+    (auth.test.ts, page.test.tsx, e2e/*.spec.ts)
+  - Test-spec skeletons from Step 2.5 (if run)
+  - All deduplicated before indexing
 ```
 
 ## Plugin Data Flow
@@ -264,3 +277,33 @@ BEFORE (per build agent):                AFTER (per build agent):
    (FEATURES.md, PITFALLS.md, STACK.md, ARCHITECTURE.md, SUMMARY.md) is valuable
    context for all phase planning — not just the roadmap creation that originally
    consumed it. Indexing it once makes it searchable across all pipeline steps.
+
+7. **CLAUDE_MEM_PROJECT env var** — claude-mem's `gp()` function derives a project name
+   from the process working directory. In headless `claude -p` sessions spawned by the
+   orchestrator, the cwd basename is often the Conductor workspace name (e.g., "cairo"),
+   not the project name (e.g., "fhhs-skills"). This caused 79% misattribution of
+   observations to the wrong project pool.
+
+   Fix: the orchestrator calls `git rev-parse --show-toplevel` (with a 5s timeout, falls
+   back to `path.basename`) before spawning any `claude -p` session, derives the project
+   name from the top-level directory basename, and injects `CLAUDE_MEM_PROJECT=<name>`
+   into the spawn environment. The unified patch (replacing the old worktree-only patch)
+   adds an env var check as the first tier in `gp()` — before worktree detection and
+   before basename — so it works correctly in all workspace layouts.
+
+   Measurement: per-session metrics stored in `.auto-state.json` stepHistory enable
+   before/after comparison of misattribution rate across pipeline runs.
+
+8. **Performance Baseline** — observed metrics from Phase 14 execution:
+
+   | Metric | Observed | Target (post-fix) |
+   |--------|----------|-------------------|
+   | Total duration | 24 min | < 15 min |
+   | Agent sessions | 9 | 6 (batched review) |
+   | Read tool calls | 41 | < 10 (ctx_search first) |
+   | Redundant reads (same file) | page.tsx ×10 | 0 |
+
+   After fixes: build agents use `ctx_search` for all context reads; `Read` tool reserved
+   for files being actively edited. Pre-indexed manifest includes source files,
+   per-task files from `<files>` elements, and test files discovered by convention
+   matching. Metrics tracked per-session in stepHistory enable before/after comparison.

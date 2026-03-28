@@ -7400,6 +7400,126 @@
           ]
         }
       ]
+    },
+    {
+      "id": 167,
+      "command": "auto",
+      "prompt": "The auto-orchestrator spawns claude -p sessions for each phase. How does it ensure claude-mem attributes observations to the correct project, especially in Conductor workspaces?",
+      "expected_output": "Orchestrator resolves project name via git rev-parse --show-toplevel (with 5s timeout, falls back to path.basename). Sets CLAUDE_MEM_PROJECT env var in spawn env. Unified patch makes gp() check this env var first, before worktree detection and basename. Correct for Conductor workspaces where basename returns workspace name not project name.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Uses git rev-parse --show-toplevel to derive project name",
+          "type": "behavioral"
+        },
+        {
+          "text": "Sets CLAUDE_MEM_PROJECT environment variable in spawn env",
+          "type": "output"
+        },
+        {
+          "text": "Falls back to path.basename if git command fails",
+          "type": "behavioral"
+        },
+        {
+          "text": "Unified patch checks env var before worktree and basename detection",
+          "type": "output"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "happy-path",
+        "mcp-integration"
+      ]
+    },
+    {
+      "id": 168,
+      "command": "build",
+      "prompt": "A build subagent needs to understand the project conventions, locked decisions, and existing test patterns before implementing a task. Context-mode is available and the orchestrator pre-indexed files. What should the agent do?",
+      "expected_output": "Agent uses ctx_search first for conventions, decisions, source file patterns, and existing tests. Read tool reserved for files being actively edited. When pre-indexing succeeded, {CLAUDE_MD_SECTIONS} and {DESIGN_DECISIONS} are empty \u2014 agent fetches via ctx_search. Falls back to Read if ctx_search unavailable.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Uses ctx_search as primary method for conventions, decisions, and patterns",
+          "type": "behavioral"
+        },
+        {
+          "text": "Read tool reserved for files being edited, not context reading",
+          "type": "behavioral"
+        },
+        {
+          "text": "Can search for existing test patterns via ctx_search",
+          "type": "behavioral"
+        },
+        {
+          "text": "Falls back to Read when ctx_search unavailable or returns empty",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "happy-path",
+        "performance"
+      ]
+    },
+    {
+      "id": 169,
+      "command": "build",
+      "prompt": "Build Step 2 pre-indexes files before dispatching agents. A plan modifies src/lib/auth.ts and src/app/settings/page.tsx. What files should be pre-indexed?",
+      "expected_output": "Pre-index manifest includes: source files from files_modified (auth.ts, page.tsx), per-task files from <files> elements, test file discovery (auth.test.ts, page.test.tsx, e2e/settings.spec.ts via convention matching), test-spec skeletons from Step 2.5 if it ran. All deduplicated before indexing.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Includes source files from files_modified frontmatter",
+          "type": "behavioral"
+        },
+        {
+          "text": "Discovers test files by convention (name.test.ext pattern)",
+          "type": "behavioral"
+        },
+        {
+          "text": "Includes test-spec skeletons from Step 2.5 if generated",
+          "type": "behavioral"
+        },
+        {
+          "text": "Deduplicates the combined file manifest",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "happy-path",
+        "performance"
+      ]
+    },
+    {
+      "id": 170,
+      "command": "auto",
+      "prompt": "After the auto-orchestrator completes a build step, what performance metrics are captured and where are they stored?",
+      "expected_output": "Per-session metrics captured in .auto-state.json stepHistory: tokens_in, tokens_out (from claude -p JSON output), read_calls (count of Read tool uses), ctx_search_hits (count of ctx_search/ctx_batch_execute calls). A PHASE_METRICS log line is emitted for claude-mem observability. Enables before/after comparison of optimization changes.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Captures token usage (tokens_in, tokens_out) from claude -p output",
+          "type": "output"
+        },
+        {
+          "text": "Counts Read tool calls and ctx_search hits per session",
+          "type": "output"
+        },
+        {
+          "text": "Stores metrics in .auto-state.json stepHistory",
+          "type": "output"
+        },
+        {
+          "text": "Emits PHASE_METRICS log line for cross-session comparison",
+          "type": "output"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "happy-path",
+        "observability"
+      ]
     }
   ]
 }

@@ -460,6 +460,40 @@ function isApiError(err) {
   return apiPatterns.some(p => msg.includes(p)) || err.timeout;
 }
 
+// ─── Per-Session Metrics ──────────────────────────────────────────────────────
+
+function parseSessionMetrics(stdout) {
+  const metrics = { tokens_in: 0, tokens_out: 0, read_calls: 0, ctx_search_hits: 0 };
+  try {
+    const parsed = JSON.parse(stdout);
+    if (parsed.usage) {
+      metrics.tokens_in = parsed.usage.input_tokens || 0;
+      metrics.tokens_out = parsed.usage.output_tokens || 0;
+    }
+  } catch {
+    // Non-JSON output — count tool calls via string matching
+  }
+  metrics.read_calls = (stdout.match(/"tool":"Read"/g) || []).length;
+  metrics.ctx_search_hits = (stdout.match(/ctx_search|ctx_batch_execute/g) || []).length;
+  return metrics;
+}
+
+// ─── Project Name Resolution ──────────────────────────────────────────────────
+
+function resolveProjectName(cwd) {
+  try {
+    const { execSync } = require('child_process');
+    const gitRoot = execSync('git rev-parse --show-toplevel', {
+      cwd,
+      timeout: 5000,
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).toString().trim();
+    return path.basename(gitRoot);
+  } catch {
+    return path.basename(cwd);
+  }
+}
+
 // ─── Claude Session Runner (with stuck detection + activity monitoring) ───────
 
 function runClaudeSession(prompt, opts) {
@@ -506,7 +540,9 @@ function runClaudeSession(prompt, opts) {
       const claudeMd = fs.readFileSync(claudeMdPath, 'utf-8').slice(0, 4000);
       args.push('--append-system-prompt', `Project conventions:\n${claudeMd}`);
     }
+    const projectName = resolveProjectName(opts.cwd);
     log(`  Running: claude -p "${prompt.slice(0, 80)}..." (plugin-dir=${pluginDir})`);
+    log(`  MEM: project=${projectName} (via CLAUDE_MEM_PROJECT)`);
 
     const child = spawn('claude', args, {
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -514,6 +550,7 @@ function runClaudeSession(prompt, opts) {
       env: {
         ...process.env,
         ...(opts.sessionId ? { CLAUDE_SESSION_ID: opts.sessionId } : {}),
+        CLAUDE_MEM_PROJECT: projectName,
       },
     });
 
@@ -1648,6 +1685,9 @@ async function main() {
         // Record in step_history
         const stepCompletedAt = new Date().toISOString();
         const stepElapsedMs = _autoStatus.stepStartedAt ? Date.now() - new Date(_autoStatus.stepStartedAt).getTime() : 0;
+        const stepStdout = (outcome.result && outcome.result.stdout) || '';
+        const metrics = parseSessionMetrics(stepStdout);
+        log(`PHASE_METRICS: phase=${phase.id} step=${step} elapsed=${stepElapsedMs}ms tokens_in=${metrics.tokens_in} tokens_out=${metrics.tokens_out} reads=${metrics.read_calls} ctx_hits=${metrics.ctx_search_hits}`);
         _autoStatus.stepHistory.push({
           phase: phase.id,
           step,
@@ -1656,6 +1696,7 @@ async function main() {
           cost_estimate: sessionCost,
           started_at: _autoStatus.stepStartedAt || stepCompletedAt,
           completed_at: stepCompletedAt,
+          metrics,
         });
 
         // Write enriched status after step completes

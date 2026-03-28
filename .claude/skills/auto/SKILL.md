@@ -299,6 +299,8 @@ Each step is a separate `claude -p` session with fresh context. The orchestrator
 - Without `--plugin-dir`, `/fh:` skill commands are unavailable in `-p` sessions
 - Without `--permission-mode bypassPermissions`, interactive prompts hang the process
 - Bare skill invocations (e.g. `/fh:plan-work`) alone are insufficient — include phase goal and autonomy instructions
+- Without `CLAUDE_MEM_PROJECT` env var, claude-mem stores observations under the plugin-dir project name instead of the actual project name, causing observation misattribution across projects
+- Project name must use `git rev-parse --show-toplevel` (not `path.basename`) for Conductor workspaces where the cwd basename differs from the project name (e.g., "cairo" vs "fhhs-skills")
 
 **Resilience features (built into orchestrator):**
 - **Stuck detection:** Sessions producing no output for 3min get warned, killed at 8min silence — prevents API stalls from running to the 45min hard timeout
