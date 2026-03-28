@@ -8,6 +8,19 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.42.0] - 2026-03-28
+
+### Added
+- **Local Supabase via OrbStack** — `/fh:new-project` now offers local/cloud/both Supabase modes when database is needed. Local mode auto-detects container runtime (OrbStack preferred on macOS, Docker fallback), configures `DOCKER_HOST` for OrbStack, installs Supabase CLI, runs `supabase init` + `supabase start`, checks for existing migrations, and generates `.env.local` with local credentials. Adds `db:start`, `db:stop`, `db:reset` package.json scripts. [setup:tool:orbstack] [setup:tool:supabase]
+- **Container runtime detection in `/fh:setup`** — prerequisite check now detects Docker/OrbStack/Supabase CLI and recommends OrbStack on macOS for ~2x less power usage
+- **Supabase drift detection in `/fh:update`** — Step 5b½ checks `DOCKER_HOST` configuration, OrbStack socket, Supabase CLI availability, and container running status during environment reconciliation
+- **Auto-start Supabase in Conductor** — `conductor.json` setup script now starts Supabase containers automatically when `supabase/config.toml` exists
+- **6 new evals** covering OrbStack/Supabase local setup flows (IDs 261-266): happy-path local setup, Docker Desktop fallback, cloud-only mode, auto-mode defaults, update drift detection, and migration handling
+
+### Changed
+- **`/fh:new-project` sync mode** now checks local Supabase container status, cloud Supabase configuration, and container runtime availability separately
+- **OrbStack research** — comprehensive documentation scraped and indexed at `.planning/research/orbstack-supabase-RESEARCH.md`
+
 ## [1.41.2] - 2026-03-28
 
 ### Changed

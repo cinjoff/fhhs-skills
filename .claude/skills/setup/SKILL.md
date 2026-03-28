@@ -84,7 +84,7 @@ If the platform is `windows`, skip the Homebrew step — Windows uses its own in
 Check all tools:
 
 ```bash
-for cmd in node npm git gh vercel typescript-language-server; do
+for cmd in node npm git gh vercel typescript-language-server docker supabase; do
   if command -v "$cmd" >/dev/null 2>&1; then
     VERSION=$("$cmd" --version 2>/dev/null | head -1)
     echo "OK $cmd $VERSION"
@@ -105,6 +105,22 @@ Present results using status symbols:
 | gh                         | ✗ MISSING (optional) |
 | vercel                     | ✗ MISSING (optional) |
 | typescript-language-server  | ✗ MISSING            |
+| docker                     | ✓ v27.1.0 (OrbStack) |
+| supabase                   | ✓ v2.1.0             |
+```
+
+Also check container runtime (macOS only):
+
+```bash
+if [ "$PLATFORM" = "macos" ]; then
+  if [ -d "/Applications/OrbStack.app" ] || command -v orb >/dev/null 2>&1; then
+    echo "OK OrbStack $(orb version 2>/dev/null || echo 'installed')"
+  elif [ -d "/Applications/Docker.app" ]; then
+    echo "OK Docker Desktop (consider OrbStack for ~2x less power usage)"
+  else
+    echo "MISSING container runtime (OrbStack recommended: brew install orbstack)"
+  fi
+fi
 ```
 
 If everything is `✓`, skip to Step 3.
