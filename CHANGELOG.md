@@ -21,6 +21,15 @@ Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliat
 - **`/fh:new-project` sync mode** now checks local Supabase container status, cloud Supabase configuration, and container runtime availability separately
 - **OrbStack research** — comprehensive documentation scraped and indexed at `.planning/research/orbstack-supabase-RESEARCH.md`
 
+## [1.41.2] - 2026-03-28
+
+### Changed
+- **Global tracker install** — tracker dashboard now installs globally at `~/.claude/tracker/` instead of per-project `.project-tracker/`, shared across all projects. `/fh:update` reconciliation refreshes from the global location.
+
+### Fixed
+- **`/fh:update` tracker refresh** — post-update reconciliation now refreshes tracker template files when the plugin version changes, so dashboard redesigns are picked up without manually re-running `/fh:tracker`
+- **`/fh:update` CLAUDE_MEM_PROJECT** — post-update reconciliation now sets `CLAUDE_MEM_PROJECT` in project-local `.claude/settings.json` derived from `git rev-parse --show-toplevel`, fixing observation misattribution in interactive Conductor sessions [setup:env:CLAUDE_MEM_PROJECT]
+
 ## [1.41.0] - 2026-03-28
 
 ### Changed
