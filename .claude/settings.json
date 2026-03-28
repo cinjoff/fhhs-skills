@@ -1,4 +1,7 @@
 {
+  "env": {
+    "CLAUDE_MEM_PROJECT": "fhhs-skills"
+  },
   "hooks": {
     "PostToolUse": [
       {

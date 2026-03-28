@@ -8,6 +8,17 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.44.0] - 2026-03-28
+
+### Changed
+- **OrbStack setup with macOS version check** — `/fh:new-project` Step 8e now checks `sw_vers` for macOS 13+ before recommending OrbStack; falls back to Docker Desktop on older macOS. Decision tree expanded with `orb docker migrate` for Docker Desktop switchers and credential store caveat when both runtimes coexist
+- **OrbStack efficiency tips** — after local Supabase setup, shows `.orb.local` domain access, memory-return-on-stop, `docker builder prune`, and container index page tips (OrbStack only)
+- **Robust migration and seed handling** — `/fh:new-project` Step 8e-local now checks for `seed.sql` separately, provides brownfield migration guidance, and reports seed status explicitly
+- **Migration drift detection in `/fh:update`** — Step 5b½ now compares on-disk migration count vs applied count, warns about unapplied migrations, and suggests `supabase db reset` without auto-applying (destructive operation)
+
+### Added
+- **5 new OrbStack/Supabase evals** (IDs 272-276) covering macOS version gating, dual-runtime context switching, Linux Docker-only path, migration drift in updates, and efficiency tips display
+
 ## [1.43.0] - 2026-03-28
 
 ### Fixed

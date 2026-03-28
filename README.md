@@ -300,7 +300,7 @@ The default stack is **Next.js + TypeScript + Tailwind + shadcn/ui + Supabase + 
 - **Better Auth** — generates secret, configures auth env vars
 - **Resend email** — walks you through signup, creates a sending key
 - **Organizations** — opt-in multi-tenant support (teams, roles, invitations)
-- **Supabase** — creates project, configures API keys and `DATABASE_URL`
+- **Supabase** — local (OrbStack/Docker) or cloud, with automatic runtime detection, migration handling, and seed data loading. OrbStack preferred on macOS 13+ for ~2x less power; Docker Desktop supported on all platforms
 - **Vercel** — links project, syncs env vars, enables auto-deploys
 - **shadcn/ui skills** — installs agent skills for component-aware workflows
 - **Observability** — scaffolds local Sentry error tracking (SQLite-backed)
@@ -316,7 +316,7 @@ Everything is optional — skip what you don't need.
 /fh:update
 ```
 
-Updates the plugin and automatically closes any setup gaps introduced since your last version — new tools, plugins, env vars, hooks, and config are all installed inline. No need to re-run `/fh:setup` or `/fh:new-project` after updating.
+Updates the plugin and automatically closes any setup gaps introduced since your last version — new tools, plugins, env vars, hooks, and config are all installed inline. Detects migration drift in local Supabase projects (unapplied migrations on disk). No need to re-run `/fh:setup` or `/fh:new-project` after updating.
 
 ## License
 

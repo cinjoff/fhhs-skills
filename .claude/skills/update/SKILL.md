@@ -583,6 +583,22 @@ if [ -d "supabase" ] && [ -f "supabase/config.toml" ]; then
   else
     echo "SUPABASE_CLI_MISSING"
   fi
+
+  # Check for migration drift — new migrations on disk that haven't been applied
+  if command -v supabase >/dev/null 2>&1 && supabase status >/dev/null 2>&1; then
+    DISK_MIGRATIONS=$(ls supabase/migrations/*.sql 2>/dev/null | wc -l | tr -d ' ')
+    # Get applied migration count from the local database
+    APPLIED_MIGRATIONS=$(supabase migration list 2>/dev/null | grep -c "applied" || echo "0")
+    if [ "$DISK_MIGRATIONS" -gt "$APPLIED_MIGRATIONS" ] 2>/dev/null; then
+      UNAPPLIED=$((DISK_MIGRATIONS - APPLIED_MIGRATIONS))
+      echo "MIGRATION_DRIFT — $UNAPPLIED unapplied migration(s) on disk"
+    else
+      echo "MIGRATIONS_OK — $DISK_MIGRATIONS migration(s), all applied"
+    fi
+  fi
+
+  # Check for seed.sql existence (common gap in brownfield projects)
+  [ -f "supabase/seed.sql" ] && echo "SEED_OK" || echo "NO_SEED_FILE"
 else
   echo "NO_LOCAL_SUPABASE"
 fi
@@ -604,12 +620,24 @@ esac
 
 **If `SUPABASE_STOPPED`:** Note in the reconciliation table — this is expected if the user stopped it intentionally. Don't auto-start.
 
+**If `MIGRATION_DRIFT`:** Warn the user and suggest applying:
+
+```
+⚠ {N} unapplied migration(s) detected. Run: supabase db reset
+  (This drops and recreates the local DB, applies all migrations, and runs seed.sql)
+```
+
+Do NOT auto-apply — `db reset` is destructive to local data. Let the user decide.
+
+**If `NO_SEED_FILE`:** Note as informational — not all projects use seed.sql.
+
 Add results to the reconciliation table:
 
 ```
 | ✓ | OrbStack DOCKER_HOST     | Fixed — persisted to shell profile |
 | ✓ | Supabase CLI             | Already installed |
 | ⊘ | Supabase containers      | Stopped (run $PM run db:start to restart) |
+| ⚠ | Migration drift          | 2 unapplied migration(s) — run supabase db reset |
 ```
 
 ### 5c: Suggest .planning/ health check

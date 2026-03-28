@@ -909,16 +909,22 @@ If `AUTO_PROJECT` is true, default to `local` — local development is self-cont
 ##### 1. Detect container runtime
 
 ```bash
-# Detect platform
+# Detect platform and macOS version (OrbStack requires macOS 13+)
 PLATFORM="$(uname -s)"
+MACOS_OK=false
+if [ "$PLATFORM" = "Darwin" ]; then
+  MACOS_VER=$(sw_vers -productVersion 2>/dev/null | cut -d. -f1)
+  [ "${MACOS_VER:-0}" -ge 13 ] && MACOS_OK=true
+  echo "macOS version: $(sw_vers -productVersion 2>/dev/null) (OrbStack compatible: $MACOS_OK)"
+fi
 
-# Check for OrbStack (macOS preferred runtime)
+# Check for OrbStack (macOS preferred runtime — ~2x less power, dynamic memory, auto .orb.local domains)
 HAS_ORBSTACK=false
 if [ -d "/Applications/OrbStack.app" ] || command -v orb >/dev/null 2>&1; then
   HAS_ORBSTACK=true
 fi
 
-# Check for Docker
+# Check for Docker (Docker Desktop or standalone)
 HAS_DOCKER=false
 if command -v docker >/dev/null 2>&1; then
   HAS_DOCKER=true
@@ -930,22 +936,30 @@ if docker info >/dev/null 2>&1; then
   DOCKER_RUNNING=true
 fi
 
-echo "PLATFORM=$PLATFORM HAS_ORBSTACK=$HAS_ORBSTACK HAS_DOCKER=$HAS_DOCKER DOCKER_RUNNING=$DOCKER_RUNNING"
+# Check active Docker context
+DOCKER_CONTEXT="none"
+if [ "$HAS_DOCKER" = true ]; then
+  DOCKER_CONTEXT=$(docker context show 2>/dev/null || echo "default")
+fi
+
+echo "PLATFORM=$PLATFORM MACOS_OK=$MACOS_OK HAS_ORBSTACK=$HAS_ORBSTACK HAS_DOCKER=$HAS_DOCKER DOCKER_RUNNING=$DOCKER_RUNNING DOCKER_CONTEXT=$DOCKER_CONTEXT"
 ```
 
 ##### 2. Install or configure container runtime
 
 Follow this decision tree:
 
-**macOS — OrbStack preferred:**
+**macOS — OrbStack preferred (requires macOS 13+):**
 
 | State | Action |
 |-------|--------|
-| Neither installed | Install OrbStack: `brew install orbstack`, wait for it to start, verify with `docker info` |
+| Neither installed, macOS 13+ | Install OrbStack: `brew install orbstack`, wait for it to start, verify with `docker info` |
+| Neither installed, macOS <13 | Install Docker Desktop: direct user to docker.com/products/docker-desktop (OrbStack requires macOS 13+) |
 | OrbStack installed, not running | Start it: `open -a OrbStack` or `orb start`, wait up to 30s for `docker info` to succeed |
 | OrbStack installed and running | Proceed — no action needed |
-| Docker Desktop only, no OrbStack | Ask: "OrbStack uses ~2x less power than Docker Desktop. Install it? (Y/n)". If yes: `brew install orbstack`. If no: use Docker Desktop as-is |
-| Both installed | Check active context with `docker context show`. If not `orbstack`, suggest: `docker context use orbstack`. Proceed with whichever is active |
+| Docker Desktop only, no OrbStack, macOS 13+ | Ask: "OrbStack uses ~2x less power than Docker Desktop, returns memory to macOS when idle, and gives containers automatic `.orb.local` domains. Install it? (Y/n)". If yes: `brew install orbstack` — existing Docker data can be migrated with `orb docker migrate` (copies, doesn't move). If no: use Docker Desktop as-is |
+| Docker Desktop only, macOS <13 | Use Docker Desktop as-is (OrbStack requires macOS 13+) |
+| Both installed | Check active context with `docker context show`. If not `orbstack`, suggest: `docker context use orbstack`. **Credential store note:** OrbStack uses `osxkeychain`, Docker Desktop uses `desktop` — user may need to `docker login` again after switching. Proceed with whichever is active |
 
 **Linux / CI:**
 
@@ -1046,23 +1060,32 @@ LOCAL_DB_URL=$(echo "$SUPABASE_STATUS" | python3 -c "import sys,json; print(json
 
 ##### 7. Run existing migrations and seeds
 
-Check for and run any existing migrations:
+Check for and run any existing migrations and seed data:
 
 ```bash
 # Check for migration files
 MIGRATION_COUNT=$(ls supabase/migrations/*.sql 2>/dev/null | wc -l | tr -d ' ')
 echo "Found $MIGRATION_COUNT migration(s)"
 
+# Check for seed file
+HAS_SEED=false
+[ -f "supabase/seed.sql" ] && HAS_SEED=true
+echo "Seed file (supabase/seed.sql): $HAS_SEED"
+
 if [ "$MIGRATION_COUNT" -gt 0 ]; then
-  # Apply migrations to local database
+  # Apply migrations to local database (also runs seed.sql if it exists)
   supabase db reset
-  echo "✓ Migrations applied and database seeded"
+  echo "✓ Migrations applied"
+  [ "$HAS_SEED" = true ] && echo "✓ Seed data loaded" || echo "⊘ No seed.sql — database has schema but no test data"
 else
   echo "No migrations found — database is empty"
+  echo "Tip: Create migrations with 'supabase migration new <name>'"
 fi
 ```
 
-If `supabase/seed.sql` exists, it runs automatically during `supabase db reset`. If it doesn't exist yet, note this in the setup output — Phase 1 of the project plan will create it.
+If `supabase/seed.sql` exists, it runs automatically during `supabase db reset`. If it doesn't exist yet, note this in the setup output — the project plan will create it.
+
+**For brownfield projects** (existing codebase with migrations): The `supabase db reset` command drops and recreates the database, applies all migrations in order, then runs `seed.sql`. This is the correct approach for local dev — it guarantees schema matches the migration history.
 
 ##### 8. Generate local .env.local
 
@@ -1123,6 +1146,15 @@ Use the Edit tool to merge these into existing scripts — do NOT overwrite exis
   • $PM run db:stop    — stop Supabase containers
   • $PM run db:reset   — reset DB and re-apply migrations + seed
   • $PM run db:studio  — open Supabase Studio URL
+```
+
+**OrbStack tips (show only if using OrbStack):**
+```
+  OrbStack efficiency tips:
+  • Stop containers when not working: $PM run db:stop (memory returned to macOS)
+  • Supabase Studio also available at: https://supabase_studio_fh-starter-project.orb.local
+  • Clean Docker build cache if low on space: docker builder prune -a
+  • Container index page: http://orb.local
 ```
 
 **If `supabase_mode` is `local` only:** Skip to Step 8f.
