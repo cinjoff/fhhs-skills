@@ -38,15 +38,9 @@ $ARGUMENTS
 3. Check if `.project-tracker/.version` exists and read it.
 4. **If `.project-tracker/.version` exists and its content matches the plugin version**, skip to Step 3 — files are already up to date.
 5. **Otherwise**, refresh the template files:
-   a. Read all 6 template files from `templates/project-tracker/` in the plugin directory:
-      - `server.cjs`
-      - `parser.cjs`
-      - `index.html`
-      - `README.md`
-      - `ProjectCard.jsx`
-      - `DailyMetrics.jsx`
+   a. List all non-directory files in `templates/project-tracker/` in the plugin directory.
    b. Create `.project-tracker/` if it doesn't exist.
-   c. Write all 6 files into `.project-tracker/`, overwriting any existing versions.
+   c. Copy all listed files into `.project-tracker/`, overwriting any existing versions.
    d. Write the plugin version string into `.project-tracker/.version`.
    e. Check if `.gitignore` exists and contains `.project-tracker/`:
       - If `.gitignore` doesn't exist, create it with `.project-tracker/` as its content.

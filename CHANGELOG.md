@@ -8,6 +8,13 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.41.1] - 2026-03-28
+
+### Fixed
+- **`/fh:update` tracker refresh** — post-update reconciliation now refreshes `.project-tracker/` template files when the plugin version changes, so tracker dashboard redesigns are picked up without manually re-running `/fh:tracker`
+- **`/fh:update` CLAUDE_MEM_PROJECT** — post-update reconciliation now sets `CLAUDE_MEM_PROJECT` in project-local `.claude/settings.json` derived from `git rev-parse --show-toplevel`, fixing observation misattribution in interactive Conductor sessions [setup:env:CLAUDE_MEM_PROJECT]
+- **Tracker template list** — `/fh:tracker` now copies all template files dynamically instead of a hardcoded list that became stale after the dashboard redesign
+
 ## [1.41.0] - 2026-03-28
 
 ### Changed
