@@ -8,6 +8,21 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.48.0] - 2026-03-28
+
+### Added
+- **Auto-orchestrator crash recovery** — persists phase state at wave boundaries (planning-wave-complete, review-wave-complete) so `--resume` can restart from the last completed wave after a crash
+- **Atomic auto-state writes** — all `.auto-state.json` writes use tmp+rename for POSIX-atomic updates, preventing half-read corruption by the tracker server
+- **Tracker auto-state integration** — tracker server reads `.auto-state.json` into project summaries, showing live auto-execution status and completed state in the sidebar
+- **AutoPipeline step display** — frontend pipeline component maps orchestrator step names to display tokens with correct disambiguation between pre-build review and post-build verify
+
+### Changed
+- **STATE.md phase parsing** — `parseCurrentPhase()` now matches both "Current Phase" and "Active Phase" field names for compatibility with different writers
+- **SUMMARY.md skip logic** — completed phases with existing SUMMARY.md are skipped on `--resume` instead of re-executing
+
+### Fixed
+- **Step alias collision** — AutoPipeline no longer shows both "review" and "verify" as active simultaneously during post-build review
+
 ## [1.47.1] - 2026-03-28
 
 ### Fixed
