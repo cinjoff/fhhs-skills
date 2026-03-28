@@ -355,9 +355,12 @@ function loadAutoState(projectDir) {
   }
 }
 
+let _saveQueue = Promise.resolve();
 function saveAutoState(projectDir, state) {
-  const p = autoStatePath(projectDir);
-  fs.writeFileSync(p, JSON.stringify(state, null, 2), 'utf-8');
+  _saveQueue = _saveQueue.then(() => {
+    const p = autoStatePath(projectDir);
+    fs.writeFileSync(p, JSON.stringify(state, null, 2), 'utf-8');
+  }).catch(() => {});
 }
 
 function clearAutoState(projectDir) {
@@ -2176,7 +2179,7 @@ async function main() {
 
       // Within each wave, build in parallel (phases share no files by wave-assignment invariant)
       const buildPool = new ConcurrencyPool(opts.concurrency);
-      wavePhases.map(phase => buildPool.run(async () => {
+      const buildPromises = wavePhases.map(phase => buildPool.run(async () => {
         // Skip phases already built on resume
         if (phase_states[phase.id] === 'built') {
           log(`  ↷ Skipping build for phase ${phase.id} (already 'built')`);
@@ -2306,6 +2309,7 @@ async function main() {
       }));
 
       await buildPool.drain();
+      await Promise.allSettled(buildPromises);
 
       // Post-wave review batching for phases built in this wave
       const waveBuiltPhases = wavePhases.filter(p => phase_states[p.id] === 'built');

@@ -276,9 +276,11 @@ Pipeline execution (default):
    - Phase-local decisions (.decisions-pending.md), merged after wave
    - Dependency graph computed from plan frontmatter files_modified
 3. Review wave: all plans reviewed concurrently
-4. Build wave: phases built in dependency order (sequential in v1)
+4. Build wave: phases built in dependency-wave order
+   - Phases with no file overlap build concurrently within each wave
+   - Phases with dependencies wait for predecessor waves to complete
    - Each build preceded by speculative plan validation (file overlap check)
-   - Quick reviews batched every 3 phases
+   - Post-wave batched review for all phases built in that wave
      Test metrics:   coverage tracked per phase in SUMMARY.md test_metrics
 5. Final review + state update
 

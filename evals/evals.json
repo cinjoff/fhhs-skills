@@ -5851,17 +5851,14 @@
           "type": "behavioral"
         }
       ],
-      "tier": "smoke",
+      "tier": "micro",
       "tags": [
         "happy-path"
       ],
       "checks": [
         {
-          "type": "required_terms",
-          "terms": [
-            "plan-work",
-            "build"
-          ]
+          "type": "regex",
+          "pattern": "plan|planning"
         },
         {
           "type": "regex",
@@ -6127,12 +6124,12 @@
           "type": "behavioral"
         },
         {
-          "text": "Logs decision with LOW confidence",
-          "type": "output"
+          "text": "Saves state before killing so --resume can recover from the failure point",
+          "type": "behavioral"
         },
         {
-          "text": "Flags decision as NEEDS REVIEW",
-          "type": "output"
+          "text": "Classifies the error to determine if backoff+retry is appropriate",
+          "type": "behavioral"
         }
       ],
       "tier": "smoke",
@@ -6736,19 +6733,19 @@
       "id": 149,
       "command": "auto",
       "prompt": "Auto-orchestrator completes phase 1 plan-work step and writes enriched state.",
-      "expected_output": ".auto-state.json should contain a stepHistory array with entries for each completed step. Each entry includes elapsed_ms (duration) and cost_estimate (token cost) fields, along with phase, step, and completion timestamp.",
+      "expected_output": ".auto-state.json should contain a stepHistory array with entries for each completed step, along with phase, step, and completion information.",
       "files": [],
       "assertions": [
         {
-          "text": ".auto-state.json tracks step completion history",
+          "text": ".auto-state.json tracks step completion and phase progress",
           "type": "output"
         },
         {
-          "text": "Tracks cost or token usage per step",
-          "type": "output"
+          "text": "The orchestrator persists state between steps for crash recovery and resume",
+          "type": "behavioral"
         },
         {
-          "text": "Tracks timing or duration per step",
+          "text": "State includes which phases have been planned, built, or failed",
           "type": "output"
         }
       ],
@@ -6760,14 +6757,12 @@
         {
           "type": "required_terms",
           "terms": [
-            "stepHistory"
+            "state"
           ]
         },
         {
-          "type": "required_terms",
-          "terms": [
-            "elapsed_ms"
-          ]
+          "type": "regex",
+          "pattern": "auto-state|state\\.json|phase|step"
         }
       ]
     },
@@ -6787,7 +6782,7 @@
           "type": "behavioral"
         }
       ],
-      "tier": "smoke",
+      "tier": "micro",
       "tags": [
         "happy-path"
       ],
@@ -6801,6 +6796,10 @@
         {
           "type": "regex",
           "pattern": "[Pp]hase"
+        },
+        {
+          "type": "regex",
+          "pattern": "concurrent|parallel|all.*phase|simultaneous"
         }
       ]
     },
@@ -6828,6 +6827,10 @@
         {
           "type": "regex",
           "pattern": "[Pp]hase"
+        },
+        {
+          "type": "regex",
+          "pattern": "overlap|conflict|shared.*file|validat|replan|adjust"
         }
       ]
     },
@@ -6839,7 +6842,7 @@
       "files": [],
       "assertions": [
         {
-          "text": "mentions 'batch' or 'combined'",
+          "text": "Describes batching or combining reviews for multiple completed phases",
           "type": "behavioral"
         },
         {
@@ -6876,7 +6879,7 @@
           "type": "behavioral"
         },
         {
-          "text": "mentions '3'",
+          "text": "Acknowledges the concurrency setting and explains how parallel sessions are managed",
           "type": "behavioral"
         }
       ],
@@ -6901,20 +6904,20 @@
       "files": [],
       "assertions": [
         {
-          "text": "mentions 'retain' or 'keep' or 'valid'",
+          "text": "Phase 3 continues running because it has no file overlap with failed Phase 2",
           "type": "behavioral"
         },
         {
-          "text": "Identifies task dependencies and wave structure before dispatching",
+          "text": "Phase 2 is marked as failed in the per-phase state map",
           "type": "behavioral"
         },
         {
-          "text": "Dispatches subagents with appropriate skill context (TDD, frontend-design)",
+          "text": "Failed phase can be retried via --resume",
           "type": "behavioral"
         },
         {
-          "text": "Writes SUMMARY.md and updates GSD state after completion",
-          "type": "output"
+          "text": "Dependent phases would be rescheduled but independent phases proceed",
+          "type": "behavioral"
         }
       ],
       "tier": "smoke",
@@ -6925,6 +6928,10 @@
         {
           "type": "regex",
           "pattern": "[Pp]hase"
+        },
+        {
+          "type": "regex",
+          "pattern": "overlap|independent|no.*depend|retain|continue|proceed"
         }
       ]
     },
@@ -6970,23 +6977,23 @@
       "files": [],
       "assertions": [
         {
-          "text": "mentions 'independent' or 'no overlap' or 'same wave'",
+          "text": "Phases with no overlapping files can build concurrently in the same wave",
           "type": "behavioral"
         },
         {
-          "text": "Selects correct workflow path without requiring clarification",
+          "text": "The dependency graph shows these phases are independent",
           "type": "behavioral"
         },
         {
-          "text": "Output follows GSD conventions (PLAN.md, SUMMARY.md as appropriate)",
+          "text": "Both phases can run in parallel within the concurrency limit",
           "type": "behavioral"
         },
         {
-          "text": "Does not skip required GSD gates",
-          "type": "guard"
+          "text": "No speculative validation needed when files don't overlap",
+          "type": "behavioral"
         }
       ],
-      "tier": "smoke",
+      "tier": "micro",
       "tags": [
         "happy-path"
       ],
@@ -7011,23 +7018,23 @@
       "files": [],
       "assertions": [
         {
-          "text": "mentions 'sequential' or 'dependent' or 'overlap'",
+          "text": "All phases must build sequentially because they share file dependencies",
           "type": "behavioral"
         },
         {
-          "text": "Selects correct workflow path without requiring clarification",
+          "text": "The dependency graph shows a chain — each phase depends on the previous",
           "type": "behavioral"
         },
         {
-          "text": "Output follows GSD conventions (PLAN.md, SUMMARY.md as appropriate)",
+          "text": "Speculative plan validation checks file overlap before each build",
           "type": "behavioral"
         },
         {
-          "text": "Does not skip required GSD gates",
-          "type": "guard"
+          "text": "Effective concurrency is 1 despite higher concurrency setting",
+          "type": "behavioral"
         }
       ],
-      "tier": "smoke",
+      "tier": "micro",
       "tags": [
         "happy-path"
       ],
@@ -7085,20 +7092,20 @@
       "files": [],
       "assertions": [
         {
-          "text": "mentions 'reschedule' or 'sequential' or 'fail'",
+          "text": "Phase 3 failure is detected and logged in the per-phase state map",
           "type": "behavioral"
         },
         {
-          "text": "Selects correct workflow path without requiring clarification",
+          "text": "Phase 4 is blocked or rescheduled because it depends on Phase 3 via file overlap",
           "type": "behavioral"
         },
         {
-          "text": "Output follows GSD conventions (PLAN.md, SUMMARY.md as appropriate)",
+          "text": "The orchestrator handles partial failure without aborting the entire pipeline",
           "type": "behavioral"
         },
         {
-          "text": "Does not skip required GSD gates",
-          "type": "guard"
+          "text": "Failed phases can be retried via --resume",
+          "type": "behavioral"
         }
       ],
       "tier": "smoke",
@@ -7116,15 +7123,15 @@
       "id": 160,
       "command": "auto",
       "prompt": "Auto-orchestrator completes the plan-work step for phase 1. User checks .planning/.auto-state.json.",
-      "expected_output": ".auto-state.json contains a stepHistory array with per-step timing (elapsed_ms) and cost (cost_estimate) data.",
+      "expected_output": ".auto-state.json tracks phase progress, step completion, and enables --resume recovery.",
       "files": [],
       "assertions": [
         {
-          "text": "Describes tracking step completion in state file",
+          "text": "Describes what .auto-state.json contains after the plan-work step completes",
           "type": "behavioral"
         },
         {
-          "text": "Mentions cost or timing tracking for steps",
+          "text": "The state file enables crash recovery and resume from the correct point",
           "type": "behavioral"
         }
       ],
@@ -7136,14 +7143,13 @@
         {
           "type": "required_terms",
           "terms": [
-            "stepHistory"
+            "state",
+            "plan"
           ]
         },
         {
-          "type": "required_terms",
-          "terms": [
-            "elapsed_ms"
-          ]
+          "type": "regex",
+          "pattern": "step|phase|progress"
         }
       ]
     },
@@ -7425,10 +7431,15 @@
           "type": "output"
         }
       ],
-      "tier": "smoke",
+      "tier": "micro",
       "tags": [
         "happy-path",
         "mcp-integration"
+      ],
+      "checks": [
+        {"type": "required_terms", "terms": ["CLAUDE_MEM_PROJECT"]},
+        {"type": "regex", "pattern": "git.*rev-parse|rev-parse|toplevel"},
+        {"type": "regex", "pattern": "fallback|basename"}
       ]
     },
     {
@@ -7459,6 +7470,10 @@
       "tags": [
         "happy-path",
         "performance"
+      ],
+      "checks": [
+        {"type": "required_terms", "terms": ["ctx_search"]},
+        {"type": "regex", "pattern": "Read.*edit|only.*Read|Read.*modif"}
       ]
     },
     {
@@ -7489,6 +7504,10 @@
       "tags": [
         "happy-path",
         "performance"
+      ],
+      "checks": [
+        {"type": "required_terms", "terms": ["pre-index"]},
+        {"type": "regex", "pattern": "files_modified|test.*file|dedup"}
       ]
     },
     {
@@ -7519,6 +7538,147 @@
       "tags": [
         "happy-path",
         "observability"
+      ],
+      "checks": [
+        {"type": "required_terms", "terms": ["token"]},
+        {"type": "regex", "pattern": "auto-state|stepHistory|metrics"},
+        {"type": "regex", "pattern": "PHASE_METRICS|log.*metric|observ"}
+      ]
+    },
+    {
+      "id": 171,
+      "command": "auto",
+      "prompt": "Context-mode is not installed on this system. How does the auto pipeline ensure build agents still get project conventions, locked decisions, and architecture context without ctx_search?",
+      "assertions": [
+        {"type": "keyword", "text": "Read"},
+        {"type": "keyword", "text": "fallback"},
+        {"type": "behavioral", "text": "Describes how project conventions and architecture context are injected into agent prompts when context-mode is unavailable"},
+        {"type": "behavioral", "text": "The pipeline still works without context-mode by falling back to direct file reads and template injection"}
+      ],
+      "tier": "micro",
+      "tags": ["edge-case", "guard"],
+      "checks": [
+        {"type": "required_terms", "terms": ["Read", "fallback"]},
+        {"type": "forbidden_terms", "terms": ["will not work", "cannot function"]}
+      ]
+    },
+    {
+      "id": 172,
+      "command": "auto",
+      "prompt": "A project has 8 phases. After the planning wave, the dependency graph shows phases 3,4,5 are independent (no file overlap), phase 6 depends on 4, and phases 7,8 depend on 6. How should the build wave execute these?",
+      "assertions": [
+        {"text": "Phases 3, 4, and 5 can build concurrently in the same wave", "type": "behavioral"},
+        {"text": "Phase 6 must wait for phase 4 to complete", "type": "behavioral"},
+        {"text": "Phases 7 and 8 must wait for phase 6", "type": "behavioral"}
+      ],
+      "tier": "micro",
+      "tags": ["optimization", "parallelism"],
+      "checks": [
+        {"type": "required_terms", "terms": ["concurrent", "parallel"]},
+        {"type": "regex", "pattern": "phase.*6.*wait|phase.*6.*after|phase.*6.*depend"},
+        {"type": "forbidden_terms", "terms": ["worktree", "git worktree"]}
+      ]
+    },
+    {
+      "id": 173,
+      "command": "auto",
+      "prompt": "What makes a plan produced by the planning wave high-quality enough that the build wave succeeds without needing scope changes or fixes? What should plan-work ensure is in PLAN.md?",
+      "assertions": [
+        {"text": "Plans must include files_modified frontmatter for dependency graph construction", "type": "behavioral"},
+        {"text": "Each task needs clear done criteria that can be verified programmatically", "type": "behavioral"},
+        {"text": "Plans should include test specifications so build Step 2.5 can generate test skeletons", "type": "behavioral"}
+      ],
+      "tier": "micro",
+      "tags": ["optimization", "plan-quality"],
+      "checks": [
+        {"type": "required_terms", "terms": ["files_modified"]},
+        {"type": "regex", "pattern": "test|spec|coverage"},
+        {"type": "regex", "pattern": "done|criteria|verify|must_have"}
+      ]
+    },
+    {
+      "id": 174,
+      "command": "auto",
+      "prompt": "How does the auto pipeline minimize token usage across 10 phases? Specifically, how does pre-indexing and ctx_search-first reduce redundant file reads in build agents?",
+      "assertions": [
+        {"text": "Stable planning docs are indexed once and shared across all 4 steps via CLAUDE_SESSION_ID", "type": "behavioral"},
+        {"text": "Build agents use ctx_search for context and only Read files they edit", "type": "behavioral"},
+        {"text": "Post-wave re-indexing ensures next wave sees fresh content without re-reading", "type": "behavioral"}
+      ],
+      "tier": "micro",
+      "tags": ["optimization", "token-efficiency"],
+      "checks": [
+        {"type": "required_terms", "terms": ["ctx_search"]},
+        {"type": "regex", "pattern": "pre.?index|index.*once|shared.*index"},
+        {"type": "regex", "pattern": "Read.*edit|only.*Read|reduc.*[Rr]ead|fewer.*[Rr]ead|avoid.*redundant"}
+      ]
+    },
+    {
+      "id": 175,
+      "command": "auto",
+      "prompt": "For a project with 10 phases and --concurrency 3, walk through the timeline. How many total claude -p sessions are spawned? Where are the parallelism opportunities?",
+      "assertions": [
+        {"text": "Planning wave runs all 10 phases concurrently (limited by concurrency pool)", "type": "behavioral"},
+        {"text": "Review wave also runs concurrently", "type": "behavioral"},
+        {"text": "Build wave parallelizes independent phases based on the dependency graph", "type": "behavioral"}
+      ],
+      "tier": "micro",
+      "tags": ["optimization", "speed"],
+      "checks": [
+        {"type": "regex", "pattern": "concurrent|parallel"},
+        {"type": "regex", "pattern": "depend|overlap|independent"},
+        {"type": "regex", "pattern": "wave|pipeline"}
+      ]
+    },
+    {
+      "id": 176,
+      "command": "auto",
+      "prompt": "In the auto pipeline, plan-work indexes 9 stable docs into context-mode. Then plan-review runs. Then build runs with source file pre-indexing. How does the pipeline avoid re-reading the same planning docs (PROJECT.md, ARCHITECTURE.md, etc.) across these 4 steps?",
+      "assertions": [
+        {"text": "All 4 steps share one context-mode FTS5 database via a common CLAUDE_SESSION_ID", "type": "behavioral"},
+        {"text": "Plan-review checks if the index exists before bootstrapping — skips if plan-work already indexed", "type": "behavioral"},
+        {"text": "Build step only indexes source files and mutable docs, not the stable 9 docs already in the index", "type": "behavioral"}
+      ],
+      "tier": "micro",
+      "tags": ["optimization", "context-sharing", "guard"],
+      "checks": [
+        {"type": "regex", "pattern": "SESSION_ID|session.?id|shared.*session"},
+        {"type": "regex", "pattern": "shar|reuse|persist|same.*session|same.*db|same.*index"},
+        {"type": "forbidden_terms", "terms": ["re-read all", "re-index all stable", "bootstrap every step"]}
+      ]
+    },
+    {
+      "id": 177,
+      "command": "auto",
+      "prompt": "How does the auto-orchestrator ensure claude-mem observations are stored under the correct project name, not the Conductor workspace name or plugin cache directory name?",
+      "assertions": [
+        {"text": "The orchestrator resolves the project name via git rev-parse --show-toplevel, not path.basename of cwd", "type": "behavioral"},
+        {"text": "CLAUDE_MEM_PROJECT env var is injected into every claude -p session's spawn environment", "type": "behavioral"},
+        {"text": "The unified patch adds env var check as the first tier in gp() before worktree and basename detection", "type": "behavioral"}
+      ],
+      "tier": "micro",
+      "tags": ["optimization", "context-sharing"],
+      "checks": [
+        {"type": "required_terms", "terms": ["CLAUDE_MEM_PROJECT"]},
+        {"type": "regex", "pattern": "git.*rev.?parse|show.?toplevel"},
+        {"type": "regex", "pattern": "env|environment|spawn"}
+      ]
+    },
+    {
+      "id": 178,
+      "command": "auto",
+      "prompt": "A build agent for task 3 needs to understand the project's authentication patterns before editing src/auth/login.ts. With context-mode available and source files pre-indexed in Step 3, what should the agent do? What if context-mode is NOT available?",
+      "assertions": [
+        {"text": "With context-mode: agent uses ctx_search to query for auth patterns from the pre-indexed source files", "type": "behavioral"},
+        {"text": "Agent only uses Read tool on files it will actually Edit, not for understanding context", "type": "behavioral"},
+        {"text": "Without context-mode: agent falls back to Read for context, using injected CLAUDE_MD_SECTIONS and DESIGN_DECISIONS", "type": "behavioral"}
+      ],
+      "tier": "micro",
+      "tags": ["optimization", "context-sharing", "edge-case"],
+      "checks": [
+        {"type": "required_terms", "terms": ["ctx_search"]},
+        {"type": "regex", "pattern": "fallback|without.*context|not.*available|unavailable"},
+        {"type": "regex", "pattern": "Read.*[Ee]dit|only.*Read.*edit|Read.*modif"}
       ]
     }
   ]
