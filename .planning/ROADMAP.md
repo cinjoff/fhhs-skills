@@ -3,7 +3,7 @@ type: roadmap
 project: fhhs-skills
 version: v1
 created: "2026-03-25"
-phases: 8
+phases: 11
 ---
 
 # Roadmap
@@ -96,3 +96,101 @@ phases: 8
 - Auto-files structured issues with problem/evidence/suggestion format
 - Supports --dry-run and configurable time windows
 - Suggests claude-mem dashboard for deeper exploration
+
+---
+
+# Milestone: Startup Validation Skills
+
+Pre-building skills that help founders validate ideas, research markets, and shape their startup before writing code. Artifacts produced become the starting point for `/fh:new-project`.
+
+**Research:** `.planning/research/startup-skills-research.md`
+**Upstream candidate:** [ferdinandobons/startup-skill](https://github.com/ferdinandobons/startup-skill) (MIT, 4 skills, 52 commits)
+
+## Phase 10: Deep Skill Analysis & Architecture Design
+**Goal:** Save upstream snapshot, analyze skill internals, and design the 5-skill startup suite — boundaries, artifacts, chains, and advisor knowledge system.
+
+### Upstream & Analysis
+- Save `ferdinandobons/startup-skill` verbatim in `upstream/startup-skill/` (all 4 skills + references + output-guidelines)
+- Clone full repo (not just raw files) to capture all reference files and inter-skill dependencies
+- Analyze each SKILL.md: prompt structure, phase flow, parallel agent dispatch, fallback chains
+- Document artifact chain: which files each skill reads from prior skills, exact paths and formats
+- Catalog all reference files and their role (agent templates, research prompts, output guidelines)
+- Document startup-design's Fast Track mode and checkpoint/resume mechanism
+- Assess shipping boundary: what must co-locate in `.claude/skills/`, what's too large to ship
+
+### Architecture Design (5 skills)
+- **4 forked workflow skills:** `/fh:startup-design` (monolithic 8-phase, the comprehensive journey), `/fh:startup-competitors` (optional deeper dive), `/fh:startup-positioning` (optional deeper dive), `/fh:startup-pitch` (natural follow-up)
+- **1 new skill:** `/fh:startup-advisor` (claude-mem + frameworks + firecrawl)
+- Per-skill spec: name, trigger phrases, explicit exclusions, YAML description draft
+- Artifact directory: `.planning/startup/` with per-skill output files
+- Artifact chain map: which skill produces what, which reads what, fallback when prior data missing
+- `/fh:startup-design --refresh` design: update existing artifacts (v1 for this skill only, others deferred)
+- Artifact flow design: `.planning/startup/` feeds `/fh:new-project` (Step 0.5), `/fh:plan-work` (domain context), `/fh:auto` (pre-indexed), `/fh:plan-review` (business reality checks)
+- Territory conflict analysis: no overlap with `/fh:plan-work`, `/fh:review`, `/fh:research`, `/fh:plan-review`
+
+### Advisor Knowledge Architecture
+- Three-tier retrieval: claude-mem (indexed YC library) → shipped frameworks → firecrawl + WebSearch fallback
+- `/fh:startup-advisor --setup`: downloads YC resources from pinned release, indexes into claude-mem with proper tagging
+- Shipped `references/frameworks/*.md` (~20-30KB): distilled decision frameworks as fallback
+- Firecrawl with targeted arguments (scrape mode for specific URLs, search mode for market data)
+- Context grounding: advisor reads `.planning/startup/` artifacts to personalize advice
+
+### Integration Points
+- `/fh:new-project` bridge: Step 0.5 reads `.planning/startup/` to auto-populate vision, scope, constraints
+- `/fh:auto` detection: when no `.planning/` exists, suggest running `/fh:startup-design` first
+- Startup artifacts drive `/fh:plan-work` — scorecard, market analysis, positioning inform planning decisions
+
+### Delight Features (design only)
+- Visual ASCII scorecard from `/fh:startup-design` (screenshot-worthy format)
+- 2-sentence description generator with clarity scoring (grandmother test)
+- `/fh:startup-pitch --practice` investor roleplay mode (adapt from upstream)
+- Shareable battle card format (self-contained, Notion/Docs-ready)
+
+### Deliverable
+- `.planning/research/startup-skill-deep-analysis.md` — per-skill upstream breakdown
+- `.planning/research/startup-skill-architecture.md` — skill specs, artifact map, territory rules, advisor design, delight specs
+
+## Phase 11: Integration Planning & Readiness
+**Goal:** Plan exact implementation changes, validate the architecture is buildable, and produce a go/no-go assessment with implementation wave plan.
+
+### Upstream Integration
+- Plan PATCHES.md entries for each forked skill
+- Plan COMPATIBILITY.md updates (startup-skill as source #9)
+- Plan UPSTREAM-INDEX.md update: add startup-skill with per-skill quality ratings
+- Plan sync-upstream registry addition for future upstream syncs
+
+### Per-Skill Adaptation Plan
+- List all changes needed per forked SKILL.md: path changes (upstream dirs → `.planning/startup/`), naming (`/fh:` prefix), reference co-location
+- New skill not in upstream: `/fh:startup-advisor` (knowledge + search)
+- `/fh:startup-design --refresh` implementation approach: diff existing artifacts, update sections, preserve user edits
+- Reference files: which must ship vs generated at runtime (web research results)
+- Size assessment: estimate total shipped file size, check plugin cache constraints
+
+### New-Project & Auto Bridge
+- Plan `/fh:new-project` Step 0.5: detect `.planning/startup/`, read artifacts, auto-populate PROJECT.md
+- Map which startup artifacts feed which new-project questions
+- Plan `/fh:auto` detection: suggest startup skills when no `.planning/` exists
+- Design how `.planning/startup/` artifacts flow into `/fh:plan-work` (domain context), `/fh:auto` (pre-indexed per phase), and `/fh:plan-review` (business reality checks)
+- Plan modifications to plan-work and auto to read `.planning/startup/` as context source
+
+### Eval Strategy
+- Minimum 3 evals per skill: standalone mode, chained mode (with prior artifacts), fast-track mode (startup-design)
+- Advisor skill: eval for framework retrieval, eval for claude-mem search, eval for web fallback
+- Territory conflict evals: ensure startup skills don't trigger on development tasks
+
+### Implementation Wave Plan
+- Wave 1: Upstream snapshot + base skill forks (startup-design, startup-competitors, startup-positioning, startup-pitch)
+- Wave 2: New skill (startup-advisor with framework references + claude-mem --setup)
+- Wave 3: New-project bridge (Step 0.5) + auto detection + downstream integration (plan-work + auto + plan-review read .planning/startup/)
+- Wave 4: Delight features + evals + startup-design --refresh
+- Risk assessment + mitigation strategies per wave
+
+### Go/No-Go Checklist
+- All architectural decisions recorded and consistent
+- No unresolved questions or dependencies
+- Size budget confirmed within plugin cache limits
+- Eval strategy covers all skill modes
+- Implementation waves have clear execution order
+
+### Deliverable
+- `.planning/research/startup-skill-integration-plan.md` — task breakdown, wave plan, go/no-go checklist

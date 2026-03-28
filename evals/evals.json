@@ -1355,7 +1355,7 @@
       "id": 56,
       "command": "build",
       "prompt": "Build the auth plan at .planning/phases/01-auth/01-01-PLAN.md. It has 3 tasks \u2014 JWT auth middleware, refresh token rotation (both backend, independent), and a login form that depends on both.",
-      "expected_output": "Should detect GSD mode, find the plan, identify 2 waves (wave 1: 2 parallel backend tasks, wave 2: 1 frontend task). Dispatch general-purpose subagents (model: sonnet) — subagents self-discover Next.js perf rules and do NOT commit (orchestrator commits once per plan). After all waves: single commit, run verification (tests, build, lint), generate SUMMARY.md. Phase completion gates (when all phase plans done): goal verification, design quality gates (critique+harden, polish+adapt, normalize), final verification. User runs /review and /simplify on demand.",
+      "expected_output": "Should detect GSD mode, find the plan, identify 2 waves (wave 1: 2 parallel backend tasks, wave 2: 1 frontend task). Dispatch general-purpose subagents (model: sonnet) \u2014 subagents self-discover Next.js perf rules and do NOT commit (orchestrator commits once per plan). After all waves: single commit, run verification (tests, build, lint), generate SUMMARY.md. Phase completion gates (when all phase plans done): goal verification, design quality gates (critique+harden, polish+adapt, normalize), final verification. User runs /review and /simplify on demand.",
       "files": [
         "evals/fixtures/nextjs-app-deep/next.config.ts",
         "evals/fixtures/nextjs-app-deep/tsconfig.json",
@@ -1755,7 +1755,7 @@
       "id": 63,
       "command": "review",
       "prompt": "Review my changes before creating a PR",
-      "expected_output": "Should run the full /review pipeline: spec verification (Step 1.8, GSD projects), then 2 parallel agents — Agent 1 (code quality + architecture) and Agent 2 (gap analysis). Gate decision aggregates all findings. If Next.js project detected, includes perf patterns in review. Review report includes quality score, spec verification results, and gap analysis. Presents promotion options (PR/merge/keep/discard from finishing-a-development-branch). PR title enforces conventional commit format. Security scanning is handled by /fh:secure, not /review.",
+      "expected_output": "Should run the full /review pipeline: spec verification (Step 1.8, GSD projects), then 2 parallel agents \u2014 Agent 1 (code quality + architecture) and Agent 2 (gap analysis). Gate decision aggregates all findings. If Next.js project detected, includes perf patterns in review. Review report includes quality score, spec verification results, and gap analysis. Presents promotion options (PR/merge/keep/discard from finishing-a-development-branch). PR title enforces conventional commit format. Security scanning is handled by /fh:secure, not /review.",
       "files": [
         "evals/fixtures/nextjs-app-deep/next.config.ts",
         "evals/fixtures/nextjs-app-deep/tsconfig.json",
@@ -6073,7 +6073,7 @@
       "id": 230,
       "command": "new-project",
       "prompt": "After /fh:new-project --auto completes all setup steps (PROJECT.md, ROADMAP.md, STATE.md created), what should happen next to continue the auto workflow?",
-      "expected_output": "Should chain to auto-orchestrator.cjs after setup completes. Set workflow.auto_advance=true so the orchestrator knows to proceed without user confirmation. The transition should be seamless — new-project finishes setup then hands off to auto mode for plan-and-build execution.",
+      "expected_output": "Should chain to auto-orchestrator.cjs after setup completes. Set workflow.auto_advance=true so the orchestrator knows to proceed without user confirmation. The transition should be seamless \u2014 new-project finishes setup then hands off to auto mode for plan-and-build execution.",
       "files": [],
       "assertions": [
         {
@@ -6094,7 +6094,7 @@
       "id": 231,
       "command": "build",
       "prompt": "execute the plan at .planning/phases/03-billing/03-01-PLAN.md",
-      "expected_output": "Should dispatch general-purpose subagents with model: sonnet for all task execution. Haiku model is used only for GSD state updates (Step 5). Subagents should not be dispatched with haiku or opus — sonnet is the implementer model.",
+      "expected_output": "Should dispatch general-purpose subagents with model: sonnet for all task execution. Haiku model is used only for GSD state updates (Step 5). Subagents should not be dispatched with haiku or opus \u2014 sonnet is the implementer model.",
       "files": [],
       "assertions": [
         {
@@ -6210,7 +6210,7 @@
       "id": 235,
       "command": "plan-work",
       "prompt": "plan fixing the button label typo on the settings page from 'Subbmit' to 'Submit'",
-      "expected_output": "Should assess complexity as Simple (1 task, single file, trivial pattern). Should skip brainstorm (Step 2) entirely — Simple complexity skips brainstorming. Should jump directly to Step 3 (Discuss Implementation) with abbreviated scope: identify 1-2 gray areas only. Handoff should still recommend /fh:plan-review, but note this is trivially obvious work where /fh:build directly is acceptable.",
+      "expected_output": "Should assess complexity as Simple (1 task, single file, trivial pattern). Should skip brainstorm (Step 2) entirely \u2014 Simple complexity skips brainstorming. Should jump directly to Step 3 (Discuss Implementation) with abbreviated scope: identify 1-2 gray areas only. Handoff should still recommend /fh:plan-review, but note this is trivially obvious work where /fh:build directly is acceptable.",
       "files": [],
       "assertions": [
         {
@@ -6292,7 +6292,9 @@
           "type": "guard"
         }
       ],
-      "scenario_requires": ["no_claude_mem"]
+      "scenario_requires": [
+        "no_claude_mem"
+      ]
     },
     {
       "id": 238,
@@ -6329,6 +6331,469 @@
         {
           "text": "Does NOT use default 14-day window",
           "type": "guard"
+        }
+      ]
+    },
+    {
+      "id": 240,
+      "command": "startup-design",
+      "prompt": "I have an idea for a pet health tracking app. Can you help me validate it?",
+      "expected_output": "Should start Phase 1 (Intake Interview), ask core questions about the idea, founder, market, and business model. Should NOT touch code or .planning/phases/",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Starts with Phase 0 resume check (no PROGRESS.md found)",
+          "type": "behavioral"
+        },
+        {
+          "text": "Proceeds to Phase 1 Intake Interview",
+          "type": "behavioral"
+        },
+        {
+          "text": "Asks questions about the problem, target users, and business model",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT suggest running /fh:plan-work or /fh:build",
+          "type": "guard"
+        }
+      ]
+    },
+    {
+      "id": 241,
+      "command": "startup-design",
+      "prompt": "quick validation of my SaaS idea for automated invoice processing",
+      "expected_output": "Should detect fast track mode and run compressed validation: shortened intake, 3 brainstorm variations, waves 1+2 only, lean canvas only, skip brand/product, scorecard + top 3 experiments",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects fast track mode from \"quick validation\"",
+          "type": "behavioral"
+        },
+        {
+          "text": "Uses compressed phase sequence",
+          "type": "behavioral"
+        },
+        {
+          "text": "Skips Phase 5 (Brand) and Phase 6 (Product)",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 242,
+      "command": "startup-design",
+      "prompt": "continue working on my startup design",
+      "expected_output": "Should check for .planning/startup/PROGRESS.md, find it, and resume from last incomplete phase",
+      "files": [
+        ".planning/startup/PROGRESS.md",
+        ".planning/startup/brief.md"
+      ],
+      "assertions": [
+        {
+          "text": "Reads .planning/startup/PROGRESS.md",
+          "type": "behavioral"
+        },
+        {
+          "text": "Identifies completed phases from progress file",
+          "type": "behavioral"
+        },
+        {
+          "text": "Resumes from next incomplete phase",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 243,
+      "command": "startup-design",
+      "prompt": "refresh my startup artifacts, the market has changed",
+      "expected_output": "Should detect --refresh mode, read existing .planning/startup/ artifacts, and re-run Phase 3 (Research) + downstream phases",
+      "files": [
+        ".planning/startup/brief.md",
+        ".planning/startup/discovery/market-analysis.md",
+        ".planning/startup/strategy/lean-canvas.md"
+      ],
+      "assertions": [
+        {
+          "text": "Detects refresh mode",
+          "type": "behavioral"
+        },
+        {
+          "text": "Reads existing artifacts in .planning/startup/",
+          "type": "behavioral"
+        },
+        {
+          "text": "Re-runs research phase based on \"market changed\"",
+          "type": "behavioral"
+        },
+        {
+          "text": "Preserves non-affected files",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 244,
+      "command": "startup-design",
+      "prompt": "plan the implementation of the auth module for my Next.js app",
+      "expected_output": "Should NOT trigger \u2014 this is /fh:plan-work territory, not startup validation",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Does NOT run startup-design phases",
+          "type": "guard"
+        },
+        {
+          "text": "This prompt should route to plan-work, not startup-design",
+          "type": "misroute"
+        }
+      ]
+    },
+    {
+      "id": 245,
+      "command": "startup-competitors",
+      "prompt": "analyze competitors in the project management SaaS space",
+      "expected_output": "Should run competitive analysis with 3 research waves, produce battle cards, pricing landscape, and competitive matrix in .planning/startup/competitors/",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Starts intake to understand the competitive scope",
+          "type": "behavioral"
+        },
+        {
+          "text": "Plans to output to .planning/startup/competitors/",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT require prior startup-design session",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 246,
+      "command": "startup-competitors",
+      "prompt": "do a deep competitive analysis for my startup",
+      "expected_output": "Should detect prior startup-design artifacts and use them as starting point, skip redundant intake questions",
+      "files": [
+        ".planning/startup/brief.md",
+        ".planning/startup/discovery/competitor-landscape.md"
+      ],
+      "assertions": [
+        {
+          "text": "Detects prior startup-design artifacts",
+          "type": "behavioral"
+        },
+        {
+          "text": "Uses existing competitor data as starting point",
+          "type": "behavioral"
+        },
+        {
+          "text": "Skips redundant intake questions",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 247,
+      "command": "startup-competitors",
+      "prompt": "review the code quality of my React components",
+      "expected_output": "Should NOT trigger \u2014 this is /fh:review territory",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Does NOT run competitive analysis",
+          "type": "guard"
+        },
+        {
+          "text": "This prompt should route to review, not startup-competitors",
+          "type": "misroute"
+        }
+      ]
+    },
+    {
+      "id": 248,
+      "command": "startup-positioning",
+      "prompt": "help me position my developer tools startup in the market",
+      "expected_output": "Should run positioning analysis with April Dunford framework, produce positioning doc, Moore statement, category analysis in .planning/startup/positioning/",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Uses April Dunford positioning framework",
+          "type": "behavioral"
+        },
+        {
+          "text": "Plans to output to .planning/startup/positioning/",
+          "type": "behavioral"
+        },
+        {
+          "text": "Produces Moore positioning statement",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 249,
+      "command": "startup-positioning",
+      "prompt": "define my market positioning",
+      "expected_output": "Should detect prior startup-design and startup-competitors artifacts, use them for richer analysis",
+      "files": [
+        ".planning/startup/brief.md",
+        ".planning/startup/discovery/competitor-landscape.md",
+        ".planning/startup/competitors/competitors-report.md"
+      ],
+      "assertions": [
+        {
+          "text": "Detects prior startup-design artifacts",
+          "type": "behavioral"
+        },
+        {
+          "text": "Detects prior startup-competitors artifacts",
+          "type": "behavioral"
+        },
+        {
+          "text": "Uses existing data to enrich positioning analysis",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 250,
+      "command": "startup-pitch",
+      "prompt": "help me create a pitch for my fintech startup, I have a demo day next week",
+      "expected_output": "Should run pitch creation with intake, research, construction, and review phases. Produce multiple pitch formats in .planning/startup/pitch/",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Starts intake to understand the startup and pitch context",
+          "type": "behavioral"
+        },
+        {
+          "text": "Plans to produce multiple pitch formats (10/5/2/1-min + email)",
+          "type": "behavioral"
+        },
+        {
+          "text": "Plans to output to .planning/startup/pitch/",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 251,
+      "command": "startup-pitch",
+      "prompt": "create an investor pitch for my startup",
+      "expected_output": "Should detect all prior startup artifacts (design, competitors, positioning) and use them for a richer pitch",
+      "files": [
+        ".planning/startup/brief.md",
+        ".planning/startup/strategy/lean-canvas.md",
+        ".planning/startup/validation/scorecard.md",
+        ".planning/startup/competitors/competitors-report.md",
+        ".planning/startup/positioning/positioning-doc.md"
+      ],
+      "assertions": [
+        {
+          "text": "Detects prior startup-design artifacts",
+          "type": "behavioral"
+        },
+        {
+          "text": "Detects prior startup-competitors and startup-positioning artifacts",
+          "type": "behavioral"
+        },
+        {
+          "text": "Uses validated business data in pitch narrative",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 252,
+      "command": "startup-pitch",
+      "prompt": "I want to practice my pitch, can you do investor roleplay?",
+      "expected_output": "Should enter practice/roleplay mode and simulate investor questions",
+      "files": [
+        ".planning/startup/pitch/pitch-full.md"
+      ],
+      "assertions": [
+        {
+          "text": "Detects practice/roleplay request",
+          "type": "behavioral"
+        },
+        {
+          "text": "Reads existing pitch artifacts",
+          "type": "behavioral"
+        },
+        {
+          "text": "Simulates investor questions and challenges",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 253,
+      "command": "startup-advisor",
+      "prompt": "should I raise funding or bootstrap my B2B SaaS?",
+      "expected_output": "Should use Tier 1 framework (bootstrap-vs-raise.md), give direct recommendation with reasoning",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Reads relevant framework file (bootstrap-vs-raise.md)",
+          "type": "behavioral"
+        },
+        {
+          "text": "Gives direct recommendation first, then explains",
+          "type": "behavioral"
+        },
+        {
+          "text": "Labels claims with [Framework] or [Opinion]",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 254,
+      "command": "startup-advisor",
+      "prompt": "how should I price my product?",
+      "expected_output": "Should detect startup artifacts, read revenue model and competitor pricing, give personalized advice",
+      "files": [
+        ".planning/startup/brief.md",
+        ".planning/startup/financial/revenue-model.md",
+        ".planning/startup/competitors/pricing-landscape.md"
+      ],
+      "assertions": [
+        {
+          "text": "Reads .planning/startup/ artifacts for context",
+          "type": "behavioral"
+        },
+        {
+          "text": "Uses pricing-strategy.md framework",
+          "type": "behavioral"
+        },
+        {
+          "text": "Personalizes advice based on startup data",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 255,
+      "command": "startup-advisor",
+      "prompt": "when should I pivot my startup?",
+      "expected_output": "Should use framework (when-to-pivot.md), suggest running /fh:startup-design for personalized advice",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Reads when-to-pivot.md framework",
+          "type": "behavioral"
+        },
+        {
+          "text": "Gives general framework-based advice",
+          "type": "behavioral"
+        },
+        {
+          "text": "Suggests /fh:startup-design for personalized context",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 256,
+      "command": "startup-advisor",
+      "prompt": "do a complete competitive analysis of my market",
+      "expected_output": "Should suggest /fh:startup-competitors for deep analysis rather than trying to do it all",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Recognizes this is better handled by /fh:startup-competitors",
+          "type": "behavioral"
+        },
+        {
+          "text": "Offers quick answer OR suggests the dedicated skill",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 257,
+      "command": "new-project",
+      "prompt": "start a new project",
+      "expected_output": "Should detect .planning/startup/ artifacts and auto-populate project vision from startup data (Step 0.5)",
+      "files": [
+        ".planning/startup/brief.md",
+        ".planning/startup/validation/scorecard.md",
+        ".planning/startup/strategy/lean-canvas.md"
+      ],
+      "assertions": [
+        {
+          "text": "Detects .planning/startup/ directory",
+          "type": "behavioral"
+        },
+        {
+          "text": "Reads startup artifacts to derive project vision",
+          "type": "behavioral"
+        },
+        {
+          "text": "Auto-populates Step 1 answers from startup data",
+          "type": "behavioral"
+        },
+        {
+          "text": "Presents derived answers for user confirmation",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "id": 258,
+      "command": "auto",
+      "prompt": "build my startup idea autonomously",
+      "expected_output": "Should detect no .planning/PROJECT.md and suggest running /fh:startup-design first",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects missing .planning/PROJECT.md",
+          "type": "behavioral"
+        },
+        {
+          "text": "Suggests /fh:startup-design before /fh:new-project",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT proceed with autonomous execution",
+          "type": "guard"
+        }
+      ]
+    },
+    {
+      "id": 259,
+      "command": "startup-positioning",
+      "prompt": "position this div element in the center of the page using CSS flexbox",
+      "expected_output": "Should NOT trigger \u2014 this is CSS layout positioning, not market positioning",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Does NOT run market positioning analysis",
+          "type": "guard"
+        },
+        {
+          "text": "This prompt is about CSS, not startup positioning",
+          "type": "misroute"
+        }
+      ]
+    },
+    {
+      "id": 260,
+      "command": "startup-pitch",
+      "prompt": "pitch this PR to my team lead so they approve the refactor",
+      "expected_output": "Should NOT trigger \u2014 this is about explaining code changes, not investor pitching",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Does NOT run investor pitch creation",
+          "type": "guard"
+        },
+        {
+          "text": "This prompt is about code PR advocacy, not startup fundraising",
+          "type": "misroute"
         }
       ]
     }

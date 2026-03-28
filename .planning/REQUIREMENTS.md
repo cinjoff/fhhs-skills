@@ -53,3 +53,21 @@ created: "2026-03-25"
 - **REQ-24:** UPSTREAM-INDEX.md catalogs all upstream sources with per-skill quality ratings and integration status
 - **REQ-25:** /fh:audit-upstream evaluates upstream changes and maintains the capability index
 - **REQ-26:** Gap Registry tracks unused upstream capabilities with prioritized integration recommendations
+
+## Startup Validation Skills
+
+- **REQ-27:** Pre-building skills help founders validate ideas, research markets, and shape startups before writing code
+- **REQ-28:** Each startup skill works standalone but produces richer output when prior skill artifacts exist (progressive enrichment)
+- **REQ-29:** Startup skill artifacts stored in `.planning/startup/` and readable by `/fh:new-project`, `/fh:plan-work`, `/fh:auto`, and `/fh:plan-review`
+- **REQ-30:** Startup skills have explicit territory boundaries — no trigger overlap with existing development skills
+- **REQ-31:** ferdinandobons/startup-skill tracked as upstream #9 with snapshot in `upstream/startup-skill/`
+- **REQ-32:** Each startup skill has minimum 3 evals covering standalone, chained, and fast-track modes
+- **REQ-33:** Reference files required at runtime are co-located in `.claude/skills/{name}/` (shipping boundary)
+- **REQ-34:** `/fh:startup-advisor` provides three-tier knowledge retrieval: claude-mem indexed YC library → shipped curated frameworks → firecrawl/web search
+- **REQ-35:** ~~DROPPED~~ — composite orchestrator removed; startup-design IS the journey, others are optional depth/follow-up
+- **REQ-39:** All startup skills use `startup-` prefix for discoverability (startup-design, startup-competitors, startup-positioning, startup-pitch, startup-advisor)
+- **REQ-40:** `/fh:plan-work` reads `.planning/startup/` as domain context — market data, competitors, and positioning inform planning decisions
+- **REQ-41:** `/fh:auto` pre-indexes `.planning/startup/` alongside other `.planning/` files for each phase session
+- **REQ-36:** `/fh:new-project` Step 0.5 detects `.planning/startup/` and auto-populates project vision from startup artifacts
+- **REQ-37:** `/fh:startup-design` supports `--refresh` to update existing artifacts (other skills get `--refresh` in later milestone)
+- **REQ-38:** `/fh:auto` detects missing `.planning/` and suggests running startup skills first

@@ -67,6 +67,7 @@ Also index research files if they exist:
 - `.planning/research/*.md` (project-level research from /fh:new-project)
 - `.planning/phases/{phase}/{phase}-RESEARCH.md` (phase-level research)
 - `.planning/research/v2/*.md` (milestone-level research)
+- `.planning/startup/*.md` and `.planning/startup/**/*.md` (startup validation artifacts from /fh:startup-design — market data, competitors, positioning inform planning decisions)
 
 If `ctx_batch_execute` is not available, skip silently. The rest of plan-work reads these files directly as fallback.
 

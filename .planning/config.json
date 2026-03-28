@@ -8,9 +8,18 @@
   "verifier": true,
   "parallelization": true,
   "plan_limits": {
-    "tasks_per_plan": [4, 6],
-    "files_per_plan": [8, 15],
+    "tasks_per_plan": [
+      4,
+      6
+    ],
+    "files_per_plan": [
+      8,
+      15
+    ],
     "words_per_plan": 2500,
     "context_target": 60
+  },
+  "workflow": {
+    "auto_advance": true
   }
 }
