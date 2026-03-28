@@ -8,6 +8,12 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.51.1] - 2026-03-28
+
+### Fixed
+- **Native module rebuild in new-project** — adds `prebuild-install` step for better-sqlite3 in Conductor worktrees where pnpm postinstall scripts may not trigger [project:file:.node-version]
+- **Node version pinning** — new projects get a `.node-version` file so shell, Conductor, and CI all use the same Node major version
+
 ## [1.51.0] - 2026-03-28
 
 ### Added
