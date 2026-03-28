@@ -8,6 +8,11 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.46.1] - 2026-03-28
+
+### Fixed
+- **Worktree-safe project name in `/fh:update`** — `CLAUDE_MEM_PROJECT` derivation now uses `git rev-parse --git-common-dir` instead of `--show-toplevel`, correctly resolving the real repo name in Conductor workspaces and git worktrees
+
 ## [1.46.0] - 2026-03-28
 
 ### Fixed
