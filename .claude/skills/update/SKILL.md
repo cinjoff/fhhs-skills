@@ -474,6 +474,70 @@ terminal:
 ✓ All gaps closed — your environment is fully up to date.
 ```
 
+### 5b½: Local Supabase environment check
+
+If the project has a `supabase/` directory (indicating local Supabase was configured), check for drift:
+
+```bash
+if [ -d "supabase" ] && [ -f "supabase/config.toml" ]; then
+  echo "HAS_LOCAL_SUPABASE"
+
+  # Check container runtime
+  if command -v docker >/dev/null 2>&1; then
+    DOCKER_CONTEXT=$(docker context show 2>/dev/null || echo "unknown")
+    DOCKER_RUNNING=$(docker info >/dev/null 2>&1 && echo "true" || echo "false")
+    echo "DOCKER_CONTEXT=$DOCKER_CONTEXT DOCKER_RUNNING=$DOCKER_RUNNING"
+  else
+    echo "NO_DOCKER"
+  fi
+
+  # Check OrbStack DOCKER_HOST on macOS
+  if [ "$(uname -s)" = "Darwin" ]; then
+    if [ -d "/Applications/OrbStack.app" ] || command -v orb >/dev/null 2>&1; then
+      if [ -z "$DOCKER_HOST" ] || ! echo "$DOCKER_HOST" | grep -q "orbstack"; then
+        # Check if /var/run/docker.sock points to OrbStack
+        if ! docker info 2>/dev/null | grep -q "orbstack"; then
+          echo "DOCKER_HOST_DRIFT — OrbStack installed but DOCKER_HOST not set"
+        fi
+      fi
+    fi
+  fi
+
+  # Check if Supabase containers are running
+  if command -v supabase >/dev/null 2>&1; then
+    supabase status >/dev/null 2>&1 && echo "SUPABASE_RUNNING" || echo "SUPABASE_STOPPED"
+  else
+    echo "SUPABASE_CLI_MISSING"
+  fi
+else
+  echo "NO_LOCAL_SUPABASE"
+fi
+```
+
+**If `DOCKER_HOST_DRIFT`:** Fix it inline:
+
+```bash
+export DOCKER_HOST="unix://$HOME/.orbstack/run/docker.sock"
+SHELL_NAME="$(basename "$SHELL")"
+case "$SHELL_NAME" in
+  fish) fish -c 'set -Ux DOCKER_HOST "unix://$HOME/.orbstack/run/docker.sock"' 2>/dev/null ;;
+  zsh) grep -q 'DOCKER_HOST.*orbstack' "$HOME/.zshrc" 2>/dev/null || echo 'export DOCKER_HOST="unix://$HOME/.orbstack/run/docker.sock"' >> "$HOME/.zshrc" ;;
+  bash) grep -q 'DOCKER_HOST.*orbstack' "$HOME/.bashrc" 2>/dev/null || echo 'export DOCKER_HOST="unix://$HOME/.orbstack/run/docker.sock"' >> "$HOME/.bashrc" ;;
+esac
+```
+
+**If `SUPABASE_CLI_MISSING`:** Install it: `brew install supabase/tap/supabase`
+
+**If `SUPABASE_STOPPED`:** Note in the reconciliation table — this is expected if the user stopped it intentionally. Don't auto-start.
+
+Add results to the reconciliation table:
+
+```
+| ✓ | OrbStack DOCKER_HOST     | Fixed — persisted to shell profile |
+| ✓ | Supabase CLI             | Already installed |
+| ⊘ | Supabase containers      | Stopped (run $PM run db:start to restart) |
+```
+
 ### 5c: Suggest .planning/ health check
 
 Check if the user has an existing `.planning/` directory in the current project:

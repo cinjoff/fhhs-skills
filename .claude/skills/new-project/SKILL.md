@@ -95,7 +95,9 @@ These are one-time external integrations. Sync mode only checks and reports stat
 | Git repo | `git rev-parse --is-inside-work-tree 2>/dev/null` | `✓ git` or `⚠ not a git repo` |
 | GitHub remote | `git remote get-url origin 2>/dev/null` | `✓ origin: <url>` or `⊘ no remote` |
 | Vercel project | `[ -d .vercel ] \|\| [ -d "$CONDUCTOR_ROOT_PATH/.vercel" ]` | `✓ vercel linked` or `⊘ not linked (run vercel link)`. If found at `$CONDUCTOR_ROOT_PATH` but not locally, create symlink: `ln -sf "$CONDUCTOR_ROOT_PATH/.vercel" .vercel` |
-| Supabase | `[ -d supabase ]` or `grep -q SUPABASE .env.local 2>/dev/null` | `✓ supabase configured` or `⊘ no supabase` |
+| Supabase (cloud) | `grep -q 'supabase\.co' .env.local 2>/dev/null` | `✓ supabase cloud configured` or `⊘ no cloud supabase` |
+| Supabase (local) | `[ -d supabase ] && docker ps 2>/dev/null \| grep -q supabase` | `✓ supabase local running` or `⊘ supabase local stopped (run $PM run db:start)` or `⊘ no local supabase` |
+| Container runtime | `docker info >/dev/null 2>&1 && docker context show` | `✓ docker via {context}` or `⊘ no container runtime` |
 | `components.json` | `[ -f components.json ]` | `✓ shadcn/ui configured` or `⊘ no shadcn/ui init` |
 
 #### Conductor (conditional)
@@ -870,6 +872,267 @@ This only needs to be done once.
 
 **Only run this step if the user chose Supabase in Step 2.** If not, skip to Step 9.
 
+#### Choose local vs cloud Supabase
+
+Ask:
+
+```
+╔══════════════════════════════════════════════════════════════╗
+║  SUPABASE: Development Environment                           ║
+╚══════════════════════════════════════════════════════════════╝
+
+How would you like to set up Supabase for local development?
+
+  1. Local only (Recommended) — Supabase runs in Docker containers
+     on your machine. No account needed. Best for development.
+
+  2. Cloud only — Create a hosted Supabase project. Requires a
+     Supabase account. Good for team collaboration.
+
+  3. Both — Local containers for dev + cloud project for staging/prod.
+
+──────────────────────────────────────────────────────────────
+```
+
+Track the choice as `supabase_mode` (local, cloud, both).
+
+#### Auto Mode
+
+If `AUTO_PROJECT` is true, default to `local` — local development is self-contained and requires no accounts.
+
+---
+
+#### 8e-local: Local Supabase via OrbStack/Docker
+
+**Run this section if `supabase_mode` is `local` or `both`.**
+
+##### 1. Detect container runtime
+
+```bash
+# Detect platform
+PLATFORM="$(uname -s)"
+
+# Check for OrbStack (macOS preferred runtime)
+HAS_ORBSTACK=false
+if [ -d "/Applications/OrbStack.app" ] || command -v orb >/dev/null 2>&1; then
+  HAS_ORBSTACK=true
+fi
+
+# Check for Docker
+HAS_DOCKER=false
+if command -v docker >/dev/null 2>&1; then
+  HAS_DOCKER=true
+fi
+
+# Check if any Docker daemon is running
+DOCKER_RUNNING=false
+if docker info >/dev/null 2>&1; then
+  DOCKER_RUNNING=true
+fi
+
+echo "PLATFORM=$PLATFORM HAS_ORBSTACK=$HAS_ORBSTACK HAS_DOCKER=$HAS_DOCKER DOCKER_RUNNING=$DOCKER_RUNNING"
+```
+
+##### 2. Install or configure container runtime
+
+Follow this decision tree:
+
+**macOS — OrbStack preferred:**
+
+| State | Action |
+|-------|--------|
+| Neither installed | Install OrbStack: `brew install orbstack`, wait for it to start, verify with `docker info` |
+| OrbStack installed, not running | Start it: `open -a OrbStack` or `orb start`, wait up to 30s for `docker info` to succeed |
+| OrbStack installed and running | Proceed — no action needed |
+| Docker Desktop only, no OrbStack | Ask: "OrbStack uses ~2x less power than Docker Desktop. Install it? (Y/n)". If yes: `brew install orbstack`. If no: use Docker Desktop as-is |
+| Both installed | Check active context with `docker context show`. If not `orbstack`, suggest: `docker context use orbstack`. Proceed with whichever is active |
+
+**Linux / CI:**
+
+| State | Action |
+|-------|--------|
+| Docker installed and running | Proceed |
+| Docker installed, not running | `sudo systemctl start docker` or equivalent |
+| Docker not installed | Show install instructions for the distro and exit |
+
+##### 3. Configure DOCKER_HOST for OrbStack (macOS only)
+
+If OrbStack is the active runtime, the Supabase CLI may not find its Docker socket. Check and fix:
+
+```bash
+if [ "$HAS_ORBSTACK" = true ] && [ "$PLATFORM" = "Darwin" ]; then
+  # Check if DOCKER_HOST is already set correctly
+  if [ -z "$DOCKER_HOST" ] || ! echo "$DOCKER_HOST" | grep -q "orbstack"; then
+    # Check if /var/run/docker.sock is OrbStack's symlink
+    if [ -S "/var/run/docker.sock" ] && docker info 2>/dev/null | grep -q "orbstack"; then
+      echo "DOCKER_HOST not needed — /var/run/docker.sock points to OrbStack"
+    else
+      export DOCKER_HOST="unix://$HOME/.orbstack/run/docker.sock"
+      echo "DOCKER_HOST set to OrbStack socket"
+
+      # Persist to shell profile
+      SHELL_NAME="$(basename "$SHELL")"
+      case "$SHELL_NAME" in
+        fish)
+          fish -c 'set -Ux DOCKER_HOST "unix://$HOME/.orbstack/run/docker.sock"' 2>/dev/null
+          echo "Added DOCKER_HOST to fish universal variables"
+          ;;
+        zsh)
+          if ! grep -q 'DOCKER_HOST.*orbstack' "$HOME/.zshrc" 2>/dev/null; then
+            echo 'export DOCKER_HOST="unix://$HOME/.orbstack/run/docker.sock"' >> "$HOME/.zshrc"
+            echo "Added DOCKER_HOST to ~/.zshrc"
+          fi
+          ;;
+        bash)
+          if ! grep -q 'DOCKER_HOST.*orbstack' "$HOME/.bashrc" 2>/dev/null; then
+            echo 'export DOCKER_HOST="unix://$HOME/.orbstack/run/docker.sock"' >> "$HOME/.bashrc"
+            echo "Added DOCKER_HOST to ~/.bashrc"
+          fi
+          ;;
+      esac
+    fi
+  fi
+fi
+```
+
+##### 4. Install Supabase CLI
+
+```bash
+command -v supabase >/dev/null 2>&1 && echo "OK supabase $(supabase --version 2>/dev/null)" || echo "MISSING supabase"
+```
+
+If `MISSING`:
+
+```bash
+# macOS
+brew install supabase/tap/supabase
+
+# Or via npm (cross-platform fallback)
+# npm install -g supabase
+```
+
+##### 5. Initialize Supabase locally
+
+```bash
+# Initialize Supabase project structure (creates supabase/ directory)
+supabase init 2>/dev/null || true
+```
+
+Edit `supabase/config.toml` to configure local development:
+- Postgres on port 54322 (default)
+- Keep Studio enabled on port 54323 (useful for inspecting data)
+- Keep other services at defaults
+
+##### 6. Start local Supabase
+
+```bash
+supabase start
+```
+
+This pulls Docker images and starts containers. First run takes 2-5 minutes. The output includes local credentials (API URL, anon key, service_role key, DB URL).
+
+Capture the output and extract credentials:
+
+```bash
+# Get local credentials from supabase status
+SUPABASE_STATUS=$(supabase status -o json 2>/dev/null || supabase status 2>/dev/null)
+
+# Parse from JSON output if available
+LOCAL_API_URL=$(echo "$SUPABASE_STATUS" | python3 -c "import sys,json; print(json.load(sys.stdin).get('API_URL','http://127.0.0.1:54321'))" 2>/dev/null || echo "http://127.0.0.1:54321")
+LOCAL_ANON_KEY=$(echo "$SUPABASE_STATUS" | python3 -c "import sys,json; print(json.load(sys.stdin).get('ANON_KEY',''))" 2>/dev/null)
+LOCAL_SERVICE_KEY=$(echo "$SUPABASE_STATUS" | python3 -c "import sys,json; print(json.load(sys.stdin).get('SERVICE_ROLE_KEY',''))" 2>/dev/null)
+LOCAL_DB_URL=$(echo "$SUPABASE_STATUS" | python3 -c "import sys,json; print(json.load(sys.stdin).get('DB_URL','postgresql://postgres:postgres@127.0.0.1:54322/postgres'))" 2>/dev/null || echo "postgresql://postgres:postgres@127.0.0.1:54322/postgres")
+```
+
+##### 7. Run existing migrations and seeds
+
+Check for and run any existing migrations:
+
+```bash
+# Check for migration files
+MIGRATION_COUNT=$(ls supabase/migrations/*.sql 2>/dev/null | wc -l | tr -d ' ')
+echo "Found $MIGRATION_COUNT migration(s)"
+
+if [ "$MIGRATION_COUNT" -gt 0 ]; then
+  # Apply migrations to local database
+  supabase db reset
+  echo "✓ Migrations applied and database seeded"
+else
+  echo "No migrations found — database is empty"
+fi
+```
+
+If `supabase/seed.sql` exists, it runs automatically during `supabase db reset`. If it doesn't exist yet, note this in the setup output — Phase 1 of the project plan will create it.
+
+##### 8. Generate local .env.local
+
+**Security check first** — verify `.gitignore` includes `.env*.local`:
+
+```bash
+grep -q '\.env\*\.local\|\.env\.local' .gitignore 2>/dev/null && echo "GITIGNORE_OK" || echo "GITIGNORE_MISSING"
+```
+
+If `GITIGNORE_MISSING`, append `.env*.local` to `.gitignore` before writing secrets.
+
+Write the local environment file:
+
+```bash
+cat >> .env.local <<EOF
+
+# Supabase (local development via OrbStack/Docker)
+NEXT_PUBLIC_SUPABASE_URL=${LOCAL_API_URL}
+NEXT_PUBLIC_SUPABASE_ANON_KEY=${LOCAL_ANON_KEY}
+SUPABASE_SERVICE_ROLE_KEY=${LOCAL_SERVICE_KEY}
+DATABASE_URL=${LOCAL_DB_URL}
+EOF
+```
+
+**Security rules:**
+- `SUPABASE_SERVICE_ROLE_KEY` must NEVER be prefixed with `NEXT_PUBLIC_` — it bypasses Row Level Security
+- `.env.local` must be gitignored before any secrets are written
+- Local credentials are safe for dev but should never reach production
+
+##### 9. Add package.json scripts
+
+Add convenience scripts for local Supabase management. Read `package.json`, then add to the `scripts` section:
+
+```json
+{
+  "setup": "scripts/setup.sh || (supabase start && echo 'Ready')",
+  "db:start": "supabase start",
+  "db:stop": "supabase stop",
+  "db:reset": "supabase db reset",
+  "db:studio": "echo 'Studio: http://127.0.0.1:54323'"
+}
+```
+
+Use the Edit tool to merge these into existing scripts — do NOT overwrite existing script entries.
+
+##### 10. Report local setup status
+
+```
+✓ Local Supabase running via {OrbStack|Docker}
+  API:     http://127.0.0.1:54321
+  Studio:  http://127.0.0.1:54323
+  DB:      postgresql://postgres:postgres@127.0.0.1:54322/postgres
+  {N} migration(s) applied
+  Seed data: {loaded|not found — will be created in Phase 1}
+
+  Commands:
+  • $PM run db:start   — start Supabase containers
+  • $PM run db:stop    — stop Supabase containers
+  • $PM run db:reset   — reset DB and re-apply migrations + seed
+  • $PM run db:studio  — open Supabase Studio URL
+```
+
+**If `supabase_mode` is `local` only:** Skip to Step 8f.
+
+---
+
+#### 8e-cloud: Cloud Supabase Setup
+
+**Run this section if `supabase_mode` is `cloud` or `both`.**
+
 Check `supabase` CLI availability:
 
 ```bash
@@ -1244,7 +1507,7 @@ If Conductor is detected, create `conductor.json` in the project root with scrip
 ```json
 {
   "scripts": {
-    "setup": "$PM install && [ -f \"$CONDUCTOR_ROOT_PATH/.env.local\" ] && ln -sf \"$CONDUCTOR_ROOT_PATH/.env.local\" .env.local || true; [ -d \"$CONDUCTOR_ROOT_PATH/.vercel\" ] && ln -sf \"$CONDUCTOR_ROOT_PATH/.vercel\" .vercel || true; node -e \"var fs=require('fs'),f='.claude/settings.json',s={};try{s=JSON.parse(fs.readFileSync(f,'utf8'))}catch{}s.env=Object.assign(s.env||{},{CLAUDE_CODE_TASK_LIST_ID:process.env.CONDUCTOR_WORKSPACE_NAME||'default',CLAUDE_CWD:process.env.CONDUCTOR_ROOT_PATH||process.cwd()});fs.writeFileSync(f,JSON.stringify(s,null,2)+'\\n')\"; PATCH=$(find \"$HOME/.claude/plugins/cache/fhhs-skills\" -name patch-claude-mem-project-env.cjs -print -quit 2>/dev/null); [ -n \"$PATCH\" ] && node \"$PATCH\" || true",
+    "setup": "$PM install && [ -f \"$CONDUCTOR_ROOT_PATH/.env.local\" ] && ln -sf \"$CONDUCTOR_ROOT_PATH/.env.local\" .env.local || true; [ -d \"$CONDUCTOR_ROOT_PATH/.vercel\" ] && ln -sf \"$CONDUCTOR_ROOT_PATH/.vercel\" .vercel || true; node -e \"var fs=require('fs'),f='.claude/settings.json',s={};try{s=JSON.parse(fs.readFileSync(f,'utf8'))}catch{}s.env=Object.assign(s.env||{},{CLAUDE_CODE_TASK_LIST_ID:process.env.CONDUCTOR_WORKSPACE_NAME||'default',CLAUDE_CWD:process.env.CONDUCTOR_ROOT_PATH||process.cwd()});fs.writeFileSync(f,JSON.stringify(s,null,2)+'\\n')\"; PATCH=$(find \"$HOME/.claude/plugins/cache/fhhs-skills\" -name patch-claude-mem-project-env.cjs -print -quit 2>/dev/null); [ -n \"$PATCH\" ] && node \"$PATCH\" || true; [ -f supabase/config.toml ] && command -v supabase >/dev/null 2>&1 && supabase start 2>/dev/null || true",
     "run": "$PM run dev -- --port $CONDUCTOR_PORT",
     "archive": "rm -rf \"$HOME/.claude/tasks/${CONDUCTOR_WORKSPACE_NAME}\" 2>/dev/null; true"
   },
@@ -1332,7 +1595,8 @@ Project initialized:
 - .planning/codebase/       — codebase mapping indexed (if default stack)
 - shadcn skills             — global agent context for components (if installed)
 - Vercel project            — linked (auto-deploys on push to main)
-- Supabase project          — <project-url> (if set up)
+- Supabase (local)          — running via OrbStack/Docker (if local setup)
+- Supabase (cloud)          — <project-url> (if cloud setup)
 - Better Auth               — secret generated, auth API at /api/auth/[...all] (if auth enabled)
 - Resend                    — API key configured for transactional email (if set up)
 - Organizations             — multi-tenant support enabled (if enabled)
@@ -1347,13 +1611,23 @@ Error tracking is active in dev by default. Run `node lib/sentry-local-query.mjs
 Next: run /fh:plan to plan your first phase.
 ```
 
-If Supabase was set up, add this reminder:
+If Supabase was set up (local or cloud), add this reminder:
 
 ```
 ⚠ Supabase security reminder:
   - Enable Row Level Security (RLS) on every table you create
   - The anon key is safe for client-side use ONLY with RLS enabled
   - The service_role key bypasses RLS — use only in server-side code
+  - Local DB containers use default credentials — safe for dev only
+```
+
+If local Supabase was set up, add:
+
+```
+Local Supabase note:
+  - Run `$PM run db:start` to start containers after reboot
+  - Run `$PM run db:reset` to reset DB and re-apply migrations + seed
+  - OrbStack uses ~2x less power than Docker Desktop for Supabase
 ```
 
 If Resend was configured, add this reminder:

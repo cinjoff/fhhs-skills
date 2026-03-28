@@ -45,12 +45,12 @@ claude plugin marketplace add cinjoff/fhhs-skills
 claude plugin install fh@fhhs-skills
 ```
 
-Then start a Claude Code session and run `/fh:setup`. It detects your platform and walks you through installing dependencies.
+Then start a Claude Code session and run `/fh:setup`. It detects your platform and walks you through installing dependencies (including Docker/OrbStack and Supabase CLI for local database development).
 
 ## Quick Start
 
 ```
-/fh:new-project    set up a project with structure and tracking
+/fh:new-project    set up a project with structure, tracking, and local Supabase
 /fh:plan-work      design a feature before building it
 /fh:plan-review    challenge the plan before committing to build
 /fh:build          execute the plan with parallel workers and quality gates

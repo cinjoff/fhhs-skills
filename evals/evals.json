@@ -7022,7 +7022,7 @@
           "type": "behavioral"
         },
         {
-          "text": "The dependency graph shows a chain — each phase depends on the previous",
+          "text": "The dependency graph shows a chain \u2014 each phase depends on the previous",
           "type": "behavioral"
         },
         {
@@ -7437,9 +7437,20 @@
         "mcp-integration"
       ],
       "checks": [
-        {"type": "required_terms", "terms": ["CLAUDE_MEM_PROJECT"]},
-        {"type": "regex", "pattern": "git.*rev-parse|rev-parse|toplevel"},
-        {"type": "regex", "pattern": "fallback|basename"}
+        {
+          "type": "required_terms",
+          "terms": [
+            "CLAUDE_MEM_PROJECT"
+          ]
+        },
+        {
+          "type": "regex",
+          "pattern": "git.*rev-parse|rev-parse|toplevel"
+        },
+        {
+          "type": "regex",
+          "pattern": "fallback|basename"
+        }
       ]
     },
     {
@@ -7472,8 +7483,16 @@
         "performance"
       ],
       "checks": [
-        {"type": "required_terms", "terms": ["ctx_search"]},
-        {"type": "regex", "pattern": "Read.*edit|only.*Read|Read.*modif"}
+        {
+          "type": "required_terms",
+          "terms": [
+            "ctx_search"
+          ]
+        },
+        {
+          "type": "regex",
+          "pattern": "Read.*edit|only.*Read|Read.*modif"
+        }
       ]
     },
     {
@@ -7506,8 +7525,16 @@
         "performance"
       ],
       "checks": [
-        {"type": "required_terms", "terms": ["pre-index"]},
-        {"type": "regex", "pattern": "files_modified|test.*file|dedup"}
+        {
+          "type": "required_terms",
+          "terms": [
+            "pre-index"
+          ]
+        },
+        {
+          "type": "regex",
+          "pattern": "files_modified|test.*file|dedup"
+        }
       ]
     },
     {
@@ -7540,9 +7567,20 @@
         "observability"
       ],
       "checks": [
-        {"type": "required_terms", "terms": ["token"]},
-        {"type": "regex", "pattern": "auto-state|stepHistory|metrics"},
-        {"type": "regex", "pattern": "PHASE_METRICS|log.*metric|observ"}
+        {
+          "type": "required_terms",
+          "terms": [
+            "token"
+          ]
+        },
+        {
+          "type": "regex",
+          "pattern": "auto-state|stepHistory|metrics"
+        },
+        {
+          "type": "regex",
+          "pattern": "PHASE_METRICS|log.*metric|observ"
+        }
       ]
     },
     {
@@ -7550,16 +7588,43 @@
       "command": "auto",
       "prompt": "Context-mode is not installed on this system. How does the auto pipeline ensure build agents still get project conventions, locked decisions, and architecture context without ctx_search?",
       "assertions": [
-        {"type": "keyword", "text": "Read"},
-        {"type": "keyword", "text": "fallback"},
-        {"type": "behavioral", "text": "Describes how project conventions and architecture context are injected into agent prompts when context-mode is unavailable"},
-        {"type": "behavioral", "text": "The pipeline still works without context-mode by falling back to direct file reads and template injection"}
+        {
+          "type": "keyword",
+          "text": "Read"
+        },
+        {
+          "type": "keyword",
+          "text": "fallback"
+        },
+        {
+          "type": "behavioral",
+          "text": "Describes how project conventions and architecture context are injected into agent prompts when context-mode is unavailable"
+        },
+        {
+          "type": "behavioral",
+          "text": "The pipeline still works without context-mode by falling back to direct file reads and template injection"
+        }
       ],
       "tier": "micro",
-      "tags": ["edge-case", "guard"],
+      "tags": [
+        "edge-case",
+        "guard"
+      ],
       "checks": [
-        {"type": "required_terms", "terms": ["Read", "fallback"]},
-        {"type": "forbidden_terms", "terms": ["will not work", "cannot function"]}
+        {
+          "type": "required_terms",
+          "terms": [
+            "Read",
+            "fallback"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "will not work",
+            "cannot function"
+          ]
+        }
       ]
     },
     {
@@ -7567,16 +7632,43 @@
       "command": "auto",
       "prompt": "A project has 8 phases. After the planning wave, the dependency graph shows phases 3,4,5 are independent (no file overlap), phase 6 depends on 4, and phases 7,8 depend on 6. How should the build wave execute these?",
       "assertions": [
-        {"text": "Phases 3, 4, and 5 can build concurrently in the same wave", "type": "behavioral"},
-        {"text": "Phase 6 must wait for phase 4 to complete", "type": "behavioral"},
-        {"text": "Phases 7 and 8 must wait for phase 6", "type": "behavioral"}
+        {
+          "text": "Phases 3, 4, and 5 can build concurrently in the same wave",
+          "type": "behavioral"
+        },
+        {
+          "text": "Phase 6 must wait for phase 4 to complete",
+          "type": "behavioral"
+        },
+        {
+          "text": "Phases 7 and 8 must wait for phase 6",
+          "type": "behavioral"
+        }
       ],
       "tier": "micro",
-      "tags": ["optimization", "parallelism"],
+      "tags": [
+        "optimization",
+        "parallelism"
+      ],
       "checks": [
-        {"type": "required_terms", "terms": ["concurrent", "parallel"]},
-        {"type": "regex", "pattern": "phase.*6.*wait|phase.*6.*after|phase.*6.*depend"},
-        {"type": "forbidden_terms", "terms": ["worktree", "git worktree"]}
+        {
+          "type": "required_terms",
+          "terms": [
+            "concurrent",
+            "parallel"
+          ]
+        },
+        {
+          "type": "regex",
+          "pattern": "phase.*6.*wait|phase.*6.*after|phase.*6.*depend"
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "worktree",
+            "git worktree"
+          ]
+        }
       ]
     },
     {
@@ -7584,16 +7676,39 @@
       "command": "auto",
       "prompt": "What makes a plan produced by the planning wave high-quality enough that the build wave succeeds without needing scope changes or fixes? What should plan-work ensure is in PLAN.md?",
       "assertions": [
-        {"text": "Plans must include files_modified frontmatter for dependency graph construction", "type": "behavioral"},
-        {"text": "Each task needs clear done criteria that can be verified programmatically", "type": "behavioral"},
-        {"text": "Plans should include test specifications so build Step 2.5 can generate test skeletons", "type": "behavioral"}
+        {
+          "text": "Plans must include files_modified frontmatter for dependency graph construction",
+          "type": "behavioral"
+        },
+        {
+          "text": "Each task needs clear done criteria that can be verified programmatically",
+          "type": "behavioral"
+        },
+        {
+          "text": "Plans should include test specifications so build Step 2.5 can generate test skeletons",
+          "type": "behavioral"
+        }
       ],
       "tier": "micro",
-      "tags": ["optimization", "plan-quality"],
+      "tags": [
+        "optimization",
+        "plan-quality"
+      ],
       "checks": [
-        {"type": "required_terms", "terms": ["files_modified"]},
-        {"type": "regex", "pattern": "test|spec|coverage"},
-        {"type": "regex", "pattern": "done|criteria|verify|must_have"}
+        {
+          "type": "required_terms",
+          "terms": [
+            "files_modified"
+          ]
+        },
+        {
+          "type": "regex",
+          "pattern": "test|spec|coverage"
+        },
+        {
+          "type": "regex",
+          "pattern": "done|criteria|verify|must_have"
+        }
       ]
     },
     {
@@ -7601,16 +7716,39 @@
       "command": "auto",
       "prompt": "How does the auto pipeline minimize token usage across 10 phases? Specifically, how does pre-indexing and ctx_search-first reduce redundant file reads in build agents?",
       "assertions": [
-        {"text": "Stable planning docs are indexed once and shared across all 4 steps via CLAUDE_SESSION_ID", "type": "behavioral"},
-        {"text": "Build agents use ctx_search for context and only Read files they edit", "type": "behavioral"},
-        {"text": "Post-wave re-indexing ensures next wave sees fresh content without re-reading", "type": "behavioral"}
+        {
+          "text": "Stable planning docs are indexed once and shared across all 4 steps via CLAUDE_SESSION_ID",
+          "type": "behavioral"
+        },
+        {
+          "text": "Build agents use ctx_search for context and only Read files they edit",
+          "type": "behavioral"
+        },
+        {
+          "text": "Post-wave re-indexing ensures next wave sees fresh content without re-reading",
+          "type": "behavioral"
+        }
       ],
       "tier": "micro",
-      "tags": ["optimization", "token-efficiency"],
+      "tags": [
+        "optimization",
+        "token-efficiency"
+      ],
       "checks": [
-        {"type": "required_terms", "terms": ["ctx_search"]},
-        {"type": "regex", "pattern": "pre.?index|index.*once|shared.*index"},
-        {"type": "regex", "pattern": "Read.*edit|only.*Read|reduc.*[Rr]ead|fewer.*[Rr]ead|avoid.*redundant"}
+        {
+          "type": "required_terms",
+          "terms": [
+            "ctx_search"
+          ]
+        },
+        {
+          "type": "regex",
+          "pattern": "pre.?index|index.*once|shared.*index"
+        },
+        {
+          "type": "regex",
+          "pattern": "Read.*edit|only.*Read|reduc.*[Rr]ead|fewer.*[Rr]ead|avoid.*redundant"
+        }
       ]
     },
     {
@@ -7618,16 +7756,37 @@
       "command": "auto",
       "prompt": "For a project with 10 phases and --concurrency 3, walk through the timeline. How many total claude -p sessions are spawned? Where are the parallelism opportunities?",
       "assertions": [
-        {"text": "Planning wave runs all 10 phases concurrently (limited by concurrency pool)", "type": "behavioral"},
-        {"text": "Review wave also runs concurrently", "type": "behavioral"},
-        {"text": "Build wave parallelizes independent phases based on the dependency graph", "type": "behavioral"}
+        {
+          "text": "Planning wave runs all 10 phases concurrently (limited by concurrency pool)",
+          "type": "behavioral"
+        },
+        {
+          "text": "Review wave also runs concurrently",
+          "type": "behavioral"
+        },
+        {
+          "text": "Build wave parallelizes independent phases based on the dependency graph",
+          "type": "behavioral"
+        }
       ],
       "tier": "micro",
-      "tags": ["optimization", "speed"],
+      "tags": [
+        "optimization",
+        "speed"
+      ],
       "checks": [
-        {"type": "regex", "pattern": "concurrent|parallel"},
-        {"type": "regex", "pattern": "depend|overlap|independent"},
-        {"type": "regex", "pattern": "wave|pipeline"}
+        {
+          "type": "regex",
+          "pattern": "concurrent|parallel"
+        },
+        {
+          "type": "regex",
+          "pattern": "depend|overlap|independent"
+        },
+        {
+          "type": "regex",
+          "pattern": "wave|pipeline"
+        }
       ]
     },
     {
@@ -7635,16 +7794,42 @@
       "command": "auto",
       "prompt": "In the auto pipeline, plan-work indexes 9 stable docs into context-mode. Then plan-review runs. Then build runs with source file pre-indexing. How does the pipeline avoid re-reading the same planning docs (PROJECT.md, ARCHITECTURE.md, etc.) across these 4 steps?",
       "assertions": [
-        {"text": "All 4 steps share one context-mode FTS5 database via a common CLAUDE_SESSION_ID", "type": "behavioral"},
-        {"text": "Plan-review checks if the index exists before bootstrapping — skips if plan-work already indexed", "type": "behavioral"},
-        {"text": "Build step only indexes source files and mutable docs, not the stable 9 docs already in the index", "type": "behavioral"}
+        {
+          "text": "All 4 steps share one context-mode FTS5 database via a common CLAUDE_SESSION_ID",
+          "type": "behavioral"
+        },
+        {
+          "text": "Plan-review checks if the index exists before bootstrapping \u2014 skips if plan-work already indexed",
+          "type": "behavioral"
+        },
+        {
+          "text": "Build step only indexes source files and mutable docs, not the stable 9 docs already in the index",
+          "type": "behavioral"
+        }
       ],
       "tier": "micro",
-      "tags": ["optimization", "context-sharing", "guard"],
+      "tags": [
+        "optimization",
+        "context-sharing",
+        "guard"
+      ],
       "checks": [
-        {"type": "regex", "pattern": "SESSION_ID|session.?id|shared.*session"},
-        {"type": "regex", "pattern": "shar|reuse|persist|same.*session|same.*db|same.*index"},
-        {"type": "forbidden_terms", "terms": ["re-read all", "re-index all stable", "bootstrap every step"]}
+        {
+          "type": "regex",
+          "pattern": "SESSION_ID|session.?id|shared.*session"
+        },
+        {
+          "type": "regex",
+          "pattern": "shar|reuse|persist|same.*session|same.*db|same.*index"
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "re-read all",
+            "re-index all stable",
+            "bootstrap every step"
+          ]
+        }
       ]
     },
     {
@@ -7652,16 +7837,39 @@
       "command": "auto",
       "prompt": "How does the auto-orchestrator ensure claude-mem observations are stored under the correct project name, not the Conductor workspace name or plugin cache directory name?",
       "assertions": [
-        {"text": "The orchestrator resolves the project name via git rev-parse --show-toplevel, not path.basename of cwd", "type": "behavioral"},
-        {"text": "CLAUDE_MEM_PROJECT env var is injected into every claude -p session's spawn environment", "type": "behavioral"},
-        {"text": "The unified patch adds env var check as the first tier in gp() before worktree and basename detection", "type": "behavioral"}
+        {
+          "text": "The orchestrator resolves the project name via git rev-parse --show-toplevel, not path.basename of cwd",
+          "type": "behavioral"
+        },
+        {
+          "text": "CLAUDE_MEM_PROJECT env var is injected into every claude -p session's spawn environment",
+          "type": "behavioral"
+        },
+        {
+          "text": "The unified patch adds env var check as the first tier in gp() before worktree and basename detection",
+          "type": "behavioral"
+        }
       ],
       "tier": "micro",
-      "tags": ["optimization", "context-sharing"],
+      "tags": [
+        "optimization",
+        "context-sharing"
+      ],
       "checks": [
-        {"type": "required_terms", "terms": ["CLAUDE_MEM_PROJECT"]},
-        {"type": "regex", "pattern": "git.*rev.?parse|show.?toplevel"},
-        {"type": "regex", "pattern": "env|environment|spawn"}
+        {
+          "type": "required_terms",
+          "terms": [
+            "CLAUDE_MEM_PROJECT"
+          ]
+        },
+        {
+          "type": "regex",
+          "pattern": "git.*rev.?parse|show.?toplevel"
+        },
+        {
+          "type": "regex",
+          "pattern": "env|environment|spawn"
+        }
       ]
     },
     {
@@ -7669,16 +7877,40 @@
       "command": "auto",
       "prompt": "A build agent for task 3 needs to understand the project's authentication patterns before editing src/auth/login.ts. With context-mode available and source files pre-indexed in Step 3, what should the agent do? What if context-mode is NOT available?",
       "assertions": [
-        {"text": "With context-mode: agent uses ctx_search to query for auth patterns from the pre-indexed source files", "type": "behavioral"},
-        {"text": "Agent only uses Read tool on files it will actually Edit, not for understanding context", "type": "behavioral"},
-        {"text": "Without context-mode: agent falls back to Read for context, using injected CLAUDE_MD_SECTIONS and DESIGN_DECISIONS", "type": "behavioral"}
+        {
+          "text": "With context-mode: agent uses ctx_search to query for auth patterns from the pre-indexed source files",
+          "type": "behavioral"
+        },
+        {
+          "text": "Agent only uses Read tool on files it will actually Edit, not for understanding context",
+          "type": "behavioral"
+        },
+        {
+          "text": "Without context-mode: agent falls back to Read for context, using injected CLAUDE_MD_SECTIONS and DESIGN_DECISIONS",
+          "type": "behavioral"
+        }
       ],
       "tier": "micro",
-      "tags": ["optimization", "context-sharing", "edge-case"],
+      "tags": [
+        "optimization",
+        "context-sharing",
+        "edge-case"
+      ],
       "checks": [
-        {"type": "required_terms", "terms": ["ctx_search"]},
-        {"type": "regex", "pattern": "fallback|without.*context|not.*available|unavailable"},
-        {"type": "regex", "pattern": "Read.*[Ee]dit|only.*Read.*edit|Read.*modif"}
+        {
+          "type": "required_terms",
+          "terms": [
+            "ctx_search"
+          ]
+        },
+        {
+          "type": "regex",
+          "pattern": "fallback|without.*context|not.*available|unavailable"
+        },
+        {
+          "type": "regex",
+          "pattern": "Read.*[Ee]dit|only.*Read.*edit|Read.*modif"
+        }
       ]
     },
     {
@@ -8141,6 +8373,285 @@
         {
           "text": "This prompt is about code PR advocacy, not startup fundraising",
           "type": "misroute"
+        }
+      ]
+    },
+    {
+      "id": 261,
+      "command": "new-project",
+      "prompt": "I want to build a SaaS app with user accounts, teams, and a database. I need local development with Supabase.",
+      "expected_output": "Should walk through vision questions, present default stack with Supabase. At Step 8e, should offer local/cloud/both Supabase modes. If local chosen: detect container runtime (OrbStack on macOS preferred, Docker fallback), configure DOCKER_HOST for OrbStack if needed, install Supabase CLI, run supabase init + supabase start, check for migrations, generate .env.local with local credentials, add db:start/db:stop/db:reset scripts to package.json.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Offers local/cloud/both Supabase setup options",
+          "type": "behavioral"
+        },
+        {
+          "text": "Detects container runtime (OrbStack preferred on macOS)",
+          "type": "behavioral"
+        },
+        {
+          "text": "Configures DOCKER_HOST for OrbStack if needed",
+          "type": "behavioral"
+        },
+        {
+          "text": "Runs supabase init and supabase start for local setup",
+          "type": "behavioral"
+        },
+        {
+          "text": "Checks for existing migrations and runs them",
+          "type": "behavioral"
+        },
+        {
+          "text": "Generates .env.local with local Supabase credentials",
+          "type": "output"
+        },
+        {
+          "text": "Adds db:start, db:stop, db:reset scripts to package.json",
+          "type": "output"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "OrbStack",
+            "supabase",
+            "DOCKER_HOST",
+            "local",
+            "docker"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "db:start",
+            "db:stop",
+            "db:reset"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 262,
+      "command": "new-project",
+      "prompt": "I already have Docker Desktop installed and want to use Supabase locally for my new app. Do not install OrbStack.",
+      "expected_output": "Should respect user preference and NOT install OrbStack. Should detect Docker Desktop is available and use it as-is. Should still offer OrbStack recommendation but respect the user decision. Should proceed with supabase init/start using Docker Desktop context.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects Docker Desktop is available",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT force OrbStack installation when user declines",
+          "type": "guard"
+        },
+        {
+          "text": "Proceeds with Docker Desktop as container runtime",
+          "type": "behavioral"
+        },
+        {
+          "text": "Still runs supabase init and start successfully",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case",
+        "guard"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "Docker",
+            "supabase",
+            "local"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "brew install orbstack"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 263,
+      "command": "new-project",
+      "prompt": "Build me a Next.js app with auth and a database, but I only want cloud Supabase \u2014 no Docker needed",
+      "expected_output": "Should offer local/cloud/both options at Step 8e. When user chooses cloud-only, should skip the entire 8e-local section (no OrbStack detection, no Docker, no supabase start). Should proceed with 8e-cloud: supabase login, project creation, API key retrieval, .env.local generation with cloud credentials, Vercel env sync.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Offers Supabase mode selection (local/cloud/both)",
+          "type": "behavioral"
+        },
+        {
+          "text": "Skips OrbStack/Docker setup for cloud-only mode",
+          "type": "guard"
+        },
+        {
+          "text": "Creates cloud Supabase project with supabase projects create",
+          "type": "behavioral"
+        },
+        {
+          "text": "Writes cloud credentials to .env.local",
+          "type": "output"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "cloud",
+            "supabase",
+            "login",
+            "project"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "orbstack",
+            "docker context"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 264,
+      "command": "new-project",
+      "prompt": "set up a new project with Supabase in auto mode --auto \"A multi-tenant CRM with organizations and role-based access\"",
+      "expected_output": "In auto mode, should default to local Supabase setup (no accounts needed). Should auto-detect container runtime, install OrbStack if needed on macOS, run supabase init/start, and generate .env.local without asking the user. Should NOT prompt for local/cloud choice in auto mode.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Auto mode defaults to local Supabase (no user prompt)",
+          "type": "behavioral"
+        },
+        {
+          "text": "Detects and installs container runtime automatically",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT ask user for Supabase mode in auto mode",
+          "type": "guard"
+        },
+        {
+          "text": "Generates .env.local with local credentials",
+          "type": "output"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "happy-path",
+        "guard"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "auto",
+            "local",
+            "supabase"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "Which Supabase mode",
+            "cloud only"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 265,
+      "command": "update",
+      "prompt": "update my fhhs-skills plugin \u2014 I have a local Supabase project with OrbStack",
+      "expected_output": "Should run standard update flow. During Step 5b\u00bd environment reconciliation, should detect supabase/ directory exists, check Docker/OrbStack is running, verify DOCKER_HOST is set for OrbStack, check if Supabase containers are running. Should report status in reconciliation table. Should NOT auto-start stopped Supabase containers.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Checks for supabase/ directory during reconciliation",
+          "type": "behavioral"
+        },
+        {
+          "text": "Verifies DOCKER_HOST configuration for OrbStack",
+          "type": "behavioral"
+        },
+        {
+          "text": "Reports Supabase container status in reconciliation table",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT auto-start stopped Supabase containers",
+          "type": "guard"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "supabase",
+            "DOCKER_HOST",
+            "reconciliation"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 266,
+      "command": "new-project",
+      "prompt": "I want to set up a project with local Supabase. I have existing migrations in supabase/migrations/ from a previous project.",
+      "expected_output": "Should detect existing migrations in supabase/migrations/ directory. Should run supabase db reset to apply all migrations and seed data. Should report how many migrations were found and applied. Should check for supabase/seed.sql and note whether seed data was loaded.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects existing migration files in supabase/migrations/",
+          "type": "behavioral"
+        },
+        {
+          "text": "Runs supabase db reset to apply migrations",
+          "type": "behavioral"
+        },
+        {
+          "text": "Reports migration count and seed status",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT skip migrations even if Supabase was just initialized",
+          "type": "guard"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "migration",
+            "supabase db reset",
+            "seed"
+          ]
         }
       ]
     }
