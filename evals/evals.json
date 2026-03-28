@@ -9306,6 +9306,41 @@
           "pattern": "fh-starter-project"
         }
       ]
+    },
+    {
+      "id": 283,
+      "command": "auto",
+      "prompt": "Run /fh:auto on a project with phases like 03-auth, 04.5-pipeline-depth, 07-auto-mode. During the planning wave, the orchestrator tells Claude to write autonomous decisions to .decisions-pending.md in the phase folder. How does it determine the correct path for phase 04.5?",
+      "expected_output": "Should use findPhaseDir() to resolve the actual phase directory name (e.g., 04.5-pipeline-depth) rather than just the normalized phase number (04.5). The decisions redirect path should be .planning/phases/04.5-pipeline-depth/.decisions-pending.md, NOT .planning/phases/04.5/.decisions-pending.md. After the planning wave, the merge step reads from the same findPhaseDir()-resolved path, so both write and read paths must match.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Uses findPhaseDir() to resolve full phase directory name including slug suffix",
+          "type": "behavioral"
+        },
+        {
+          "text": "Decisions redirect path includes the full folder name (e.g., 04.5-pipeline-depth), not just the number",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT construct path using only normalizePhaseName() which drops the slug suffix",
+          "type": "guard"
+        }
+      ],
+      "tier": "micro",
+      "tags": [
+        "bug-fix",
+        "guard"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "findPhaseDir",
+            "decisions-pending"
+          ]
+        }
+      ]
     }
   ]
 }

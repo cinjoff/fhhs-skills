@@ -1989,8 +1989,12 @@ async function main() {
       const assumeEarlier = phaseIdx > 0
         ? ' Assume earlier phases complete successfully and produce their expected artifacts.'
         : '';
-      const decisionsRedirect = ' Write any autonomous decisions to .planning/phases/' +
-        normalizePhaseName(phase.id) + '/.decisions-pending.md instead of .planning/DECISIONS.md';
+      const phDirForDecisions = findPhaseDir(projectDir, phase.id);
+      const decisionsDirName = phDirForDecisions
+        ? path.relative(projectDir, phDirForDecisions)
+        : '.planning/phases/' + normalizePhaseName(phase.id);
+      const decisionsRedirect = ' Write any autonomous decisions to ' +
+        decisionsDirName + '/.decisions-pending.md instead of .planning/DECISIONS.md';
 
       // Temporarily override executeStep plan-work prompt by passing extra context via a wrapper
       // We patch the prompt by wrapping the session call directly
