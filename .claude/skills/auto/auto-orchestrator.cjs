@@ -58,7 +58,9 @@ function getClaudeTmpBase(projectDir) {
 function writeAutoStatus(projectDir, status) {
   try {
     const p = path.join(projectDir, '.planning', '.auto-state.json');
-    fs.writeFileSync(p, JSON.stringify(status, null, 2), 'utf-8');
+    const tmp = p + '.tmp';
+    fs.writeFileSync(tmp, JSON.stringify(status, null, 2), 'utf-8');
+    fs.renameSync(tmp, p); // Atomic on POSIX — prevents half-read by tracker
   } catch {
     // Non-fatal — dashboard reads are best-effort
   }
@@ -224,7 +226,9 @@ function log(msg) {
       if (fs.existsSync(p)) {
         const existing = JSON.parse(fs.readFileSync(p, 'utf-8'));
         existing.last_log_line = msg;
-        fs.writeFileSync(p, JSON.stringify(existing, null, 2), 'utf-8');
+        const tmp = p + '.tmp';
+        fs.writeFileSync(tmp, JSON.stringify(existing, null, 2), 'utf-8');
+        fs.renameSync(tmp, p);
       }
     } catch {
       // Non-fatal
@@ -247,8 +251,9 @@ function parseCurrentPhase(projectDir) {
   const match = content.match(/current_phase:\s*Phase\s+(\S+)/i);
   if (match) return match[1];
 
-  // Fallback: look in body
-  const bodyMatch = content.match(/\*\*Current phase:\*\*\s*Phase\s+(\S+)/i);
+  // Fallback: look in body — match both "Current Phase" and "Active Phase" field names
+  // (build skill writes "Active Phase", phase.cjs writes "Current Phase")
+  const bodyMatch = content.match(/\*\*(?:Current|Active)\s+Phase:\*\*\s*(?:Phase\s+)?(\d+\S*)/i);
   return bodyMatch ? bodyMatch[1] : null;
 }
 
@@ -359,7 +364,9 @@ let _saveQueue = Promise.resolve();
 function saveAutoState(projectDir, state) {
   _saveQueue = _saveQueue.then(() => {
     const p = autoStatePath(projectDir);
-    fs.writeFileSync(p, JSON.stringify(state, null, 2), 'utf-8');
+    const tmp = p + '.tmp';
+    fs.writeFileSync(tmp, JSON.stringify(state, null, 2), 'utf-8');
+    fs.renameSync(tmp, p);
   }).catch(() => {});
 }
 
@@ -1499,6 +1506,11 @@ async function main() {
   let resumeState = null;
   if (opts.resume) {
     resumeState = loadAutoState(projectDir);
+    // Ignore completed auto-state (active: false) — treat as if no state file exists
+    if (resumeState && resumeState.active === false) {
+      log('Found .auto-state.json but it shows a completed run — starting fresh');
+      resumeState = null;
+    }
     if (!resumeState) {
       // Fallback: infer resume point from STATE.md + existing artifacts
       const currentFromState = parseCurrentPhase(projectDir);
@@ -1681,7 +1693,21 @@ async function main() {
   for (const phase of phasesToRun) {
     // If resuming, skip phases before the saved phase
     if (resumeState && comparePhaseNum(phase.id, resumeState.phase) < 0) {
-      log(`Skipping phase ${phase.id} (already completed)`);
+      log(`Skipping phase ${phase.id} (already completed — before resume point)`);
+      _autoStatus.phasesSkipped++;
+      writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
+        phase: phase.id,
+        phase_name: phase.name,
+        total_cost_estimate: totalCostEstimate,
+        budget: opts.budget || null,
+      }));
+      continue;
+    }
+
+    // Skip phases that already have a SUMMARY.md (completed in a previous run)
+    const existingPlan = findLatestPlan(projectDir, phase.id);
+    if (existingPlan && summaryExists(existingPlan)) {
+      log(`Skipping phase ${phase.id} (already completed — SUMMARY.md exists)`);
       _autoStatus.phasesSkipped++;
       writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
         phase: phase.id,
@@ -1878,6 +1904,15 @@ async function main() {
       log(`Phase ${phase.id} INCOMPLETE — missing critical steps: ${criticalsMissing.join(', ')}`);
       log(`  Saving state for --resume. Run again to retry.`);
       _autoStatus.phasesFailed++;
+      // Persist for --resume in sequential mode
+      saveAutoState(projectDir, {
+        phase: phase.id,
+        step: criticalsMissing[0],
+        steps_completed: completedSteps,
+        total_cost_estimate: totalCostEstimate,
+        retry_count: retryCount,
+        phase_plan_paths: currentPlanPath ? { [phase.id]: path.relative(projectDir, currentPlanPath) } : {},
+      });
       writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
         active: false,
         phase: phase.id,
@@ -1924,6 +1959,15 @@ async function main() {
     //                  'rescheduled-sequential'
     const phase_states = {};
     for (const phase of phasesToRun) phase_states[phase.id] = 'pending';
+
+    // ── Pre-scan: mark phases with SUMMARY.md as 'built' (completed in previous runs) ──
+    for (const phase of phasesToRun) {
+      const plan = findLatestPlan(projectDir, phase.id);
+      if (plan && summaryExists(plan)) {
+        phase_states[phase.id] = 'built';
+        log(`  Phase ${phase.id}: already completed (SUMMARY.md exists) — skipping`);
+      }
+    }
 
     // ── Resume: restore phase_states from auto-state ───────────────────────────
     if (opts.resume && resumeState && resumeState.phase_states) {
@@ -2070,6 +2114,20 @@ async function main() {
 
     await Promise.allSettled(planPromises);
 
+    // Persist state after planning wave — crash between planning and build won't lose progress
+    const relPlanPaths = {};
+    for (const [pid, pp] of Object.entries(phasePlanPaths)) {
+      relPlanPaths[pid] = path.relative(projectDir, pp);
+    }
+    saveAutoState(projectDir, {
+      phase: null,
+      step: 'planning-wave-complete',
+      phase_states: Object.assign({}, phase_states),
+      total_cost_estimate: totalCostEstimate,
+      retry_count: retryCount,
+      phase_plan_paths: relPlanPaths,
+    });
+
     // ── Merge .decisions-pending.md files into DECISIONS.md ───────────────────
     log('  Merging phase-local decisions...');
     for (const phase of phasesToRun) {
@@ -2166,6 +2224,22 @@ async function main() {
     }));
 
     await Promise.allSettled(reviewPromises);
+
+    // Persist state after review wave — crash between review and build won't lose progress
+    {
+      const relPaths = {};
+      for (const [pid, pp] of Object.entries(phasePlanPaths)) {
+        relPaths[pid] = path.relative(projectDir, pp);
+      }
+      saveAutoState(projectDir, {
+        phase: null,
+        step: 'review-wave-complete',
+        phase_states: Object.assign({}, phase_states),
+        total_cost_estimate: totalCostEstimate,
+        retry_count: retryCount,
+        phase_plan_paths: relPaths,
+      });
+    }
 
     writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
       active: true,
@@ -2513,8 +2587,9 @@ async function main() {
   log(`  Cost estimate: $${totalCostEstimate.toFixed(2)}${opts.budget ? ` / $${opts.budget} budget` : ''}`);
   log(`  Duration: ${durationMin}m`);
 
-  // Clean up auto-state so --resume doesn't find stale completed state
-  clearAutoState(projectDir);
+  // Write completed_at timestamp but keep the file — tracker shows "completed" status.
+  // The file has active:false so --resume won't treat it as in-progress.
+  // Next auto run overwrites it. No cleanup needed.
 }
 
 main().catch((err) => {
