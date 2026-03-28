@@ -8,6 +8,19 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.48.0] - 2026-03-28
+
+### Added
+- **Expandable concerns in tracker** — ConcernsPanel now shows individual concern items with titles and detail lines when expanded, not just category counts
+- **Heading-based roadmap parsing** — tracker parser falls back to `## Phase N: Title` heading format when no progress table found, fixing blank phase names for most projects
+- **Registry auto-cleanup** — tracker server prunes dead worktrees and fixes malformed entries on startup, hides projects without `.planning/` from sidebar
+- **Flat plans/ change detection** — tracker now detects changes in `plans/` directory for live updates in flat-layout projects
+- **Concerns lifecycle in build** — post-build step reviews CONCERNS.md, notes resolved/new concerns in SUMMARY.md, flags stale codebase mapping
+
+### Changed
+- **Health checks support multiple layouts** — `verify.cjs` now scans `plans/`, `phases/`, and `milestones/` directories; accepts flexible PROJECT.md section formats
+- **All `/gsd:` references migrated to `/fh:`** — health check messages, repair actions, and state regeneration use correct skill prefix
+
 ## [1.47.1] - 2026-03-28
 
 ### Fixed
