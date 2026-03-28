@@ -209,6 +209,8 @@ function reconcileProject(project) {
           errors: (parsed.errors || []).length,
           warnings: (parsed.warnings || []).length,
           repairsPerformed: parsed.repairs_performed || [],
+          errorDetails: (parsed.errors || []).map(e => ({ code: e.code, message: e.message })),
+          warningDetails: (parsed.warnings || []).map(w => ({ code: w.code, message: w.message })),
         };
       } catch (e) {
         // Health check may output non-JSON on some errors
@@ -360,8 +362,16 @@ function main() {
   }
 
   const results = [];
-  for (const project of projects) {
-    results.push(reconcileProject(project));
+  for (let i = 0; i < projects.length; i++) {
+    const project = projects[i];
+    // Progress to stderr (not captured in JSON stdout)
+    process.stderr.write(`[${i + 1}/${projects.length}] ${project.name}...`);
+    const result = reconcileProject(project);
+    const healthStatus = result.steps.healthRepair?.status || 'skip';
+    const repairs = result.steps.healthRepair?.repairsPerformed?.length || 0;
+    const stale = result.steps.staleFileCheck?.files?.length || 0;
+    process.stderr.write(` ${result.status === 'ok' ? 'ok' : 'partial'} (health: ${healthStatus}${repairs > 0 ? `, ${repairs} repaired` : ''}${stale > 0 ? `, ${stale} stale` : ''})\n`);
+    results.push(result);
   }
 
   // Build summary
