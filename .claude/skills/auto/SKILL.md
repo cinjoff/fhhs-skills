@@ -42,7 +42,10 @@ try { const d = JSON.parse(fs.readFileSync(registryPath, 'utf8')); if (Array.isA
 const projectDir = process.cwd();
 const now = new Date().toISOString();
 const idx = registry.findIndex(e => e.path === projectDir);
-if (idx >= 0) { registry[idx].lastSeen = now; } else { registry.push({ path: projectDir, name: path.basename(projectDir), addedAt: now, lastSeen: now }); }
+const conductorMatch = projectDir.match(/\/conductor\/workspaces\/([^/]+)\//);
+const entry = { path: projectDir, name: path.basename(projectDir), addedAt: now, lastSeen: now };
+if (conductorMatch) entry.conductorWorkspace = conductorMatch[1];
+if (idx >= 0) { Object.assign(registry[idx], { lastSeen: now, ...(conductorMatch ? { conductorWorkspace: conductorMatch[1] } : {}) }); } else { registry.push(entry); }
 fs.writeFileSync(registryPath, JSON.stringify(registry, null, 2));
 "
 ```
@@ -55,7 +58,7 @@ node -e "
 const http = require('http');
 const projectDir = process.cwd();
 const projectName = require('path').basename(projectDir);
-const req = http.get('http://localhost:4111/api/state', { timeout: 2000 }, (res) => {
+const req = http.get('http://127.0.0.1:4111/api/state', { timeout: 2000 }, (res) => {
   if (res.statusCode === 200) {
     // Dashboard is running — register this project
     const postData = JSON.stringify({ path: projectDir, name: projectName });
@@ -79,7 +82,7 @@ req.on('timeout', () => { req.destroy(); console.log('TRACKER_NOT_RUNNING'); });
 " 2>/dev/null
 ```
 
-- If output is `TRACKER_RUNNING`: print `Live dashboard running at http://localhost:4111 — open it to watch progress`
+- If output is `TRACKER_RUNNING`: print `Live dashboard running at http://127.0.0.1:4111 — open it to watch progress`
 - If output is `TRACKER_NOT_RUNNING`: check if tracker files exist and auto-start:
 
 ```bash
@@ -98,7 +101,7 @@ req.on('timeout', () => { req.destroy(); console.log('TRACKER_NOT_RUNNING'); });
     TRACKER_REGISTRY=~/.claude/tracker/projects.json node ~/.claude/tracker/server.cjs
     ```
 
-    Print `Live dashboard started at http://localhost:4111 — open it to watch progress`
+    Print `Live dashboard started at http://127.0.0.1:4111 — open it to watch progress`
 
   - If `TRACKER_NO_FILES`: print `Tip: Run \`/fh:tracker\` to set up the live dashboard`
 

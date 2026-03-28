@@ -45,7 +45,7 @@ const BASE_PORT = 4111;
 const MAX_PORT_ATTEMPTS = 3;
 const DEBOUNCE_MS = 300;
 const CACHE_VERSION = 1;
-const HOME = process.env.HOME || '';
+const HOME = process.env.HOME || require('os').homedir() || '';
 
 // Registry path — from TRACKER_REGISTRY env var or default location
 const registryPath = process.env.TRACKER_REGISTRY
@@ -801,6 +801,34 @@ const server = http.createServer((req, res) => {
 
   if (req.method === 'GET' && pathname === '/api/events') {
     return serveEvents(req, res);
+  }
+
+  // POST /api/register — register a project from auto skill or external tools
+  if (req.method === 'POST' && pathname === '/api/register') {
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk;
+      if (body.length > 8192) { req.destroy(); return; } // Prevent unbounded payloads
+    });
+    req.on('end', () => {
+      try {
+        const data = JSON.parse(body);
+        // Validate: path must be absolute and the directory must exist
+        if (!data.path || !path.isAbsolute(data.path) || !fs.existsSync(data.path)) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'path must be an absolute path to an existing directory' }));
+          return;
+        }
+        autoRegisterProject(data.path);
+        refreshProjectsList();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true }));
+      } catch {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'invalid JSON' }));
+      }
+    });
+    return;
   }
 
   // 404 for everything else

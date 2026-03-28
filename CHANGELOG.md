@@ -8,6 +8,21 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.48.2] - 2026-03-28
+
+### Fixed
+- **Cross-platform temp directory** — auto-orchestrator uses `os.tmpdir()` instead of hardcoded `/private/tmp`, fixing Linux compatibility
+- **Conductor project name fragmentation** — `resolveProjectName()` now detects Conductor workspace paths and extracts the project name, preventing memory fragmentation across branches
+- **Auto-state write races** — unified `writeAutoStatus`, `saveAutoState`, and `log()` through a single serialized write queue, preventing data corruption from concurrent writes
+- **Dead `/api/register` endpoint** — tracker server now implements the `POST /api/register` endpoint that auto skill was already calling, with body size limit (8KB) and path validation
+- **CLAUDE_MEM_PROJECT not set on project init** — `/fh:new-project` setup script now derives and sets `CLAUDE_MEM_PROJECT` via `git rev-parse --git-common-dir`, fixing observation misattribution in Conductor workspaces
+- **Tracker registration uses wrong name** — `post-update-reconcile.sh` now uses the worktree-safe project name for tracker registration instead of `basename`
+- **localhost vs 127.0.0.1 mismatch** — auto SKILL.md standardized to `127.0.0.1` to match server bind address, preventing health check failures on IPv6 systems
+- **Auto skill tracker registration** — now includes `conductorWorkspace` field for proper sidebar grouping
+- **Cross-platform dashboard open** — uses `xdg-open` on Linux, `start` on Windows instead of macOS-only `open`
+- **CLAUDE_CWD value in update skill** — fixed from nonsensical `"true"` to actual derivation instruction
+- **Silent error swallowing** — `saveAutoState` now logs failures to stderr instead of silently catching
+
 ## [1.48.1] - 2026-03-28
 
 ### Fixed
