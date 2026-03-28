@@ -730,14 +730,30 @@ Parse the JSON and display an ASCII project status map. Group projects by Conduc
 After showing the scan, display:
 
 ```
-These changes are applied directly in each project directory — no git
-merge or branch changes are involved. Plugin skills come from the global
-plugin cache, and environment files (.claude/settings.json, .planning/
-config) are updated in-place.
+## How global update works
 
-If you use Conductor: existing workspaces will pick up the new plugin
-skills automatically (they read from the cache). No need to merge main
-or start new workspaces for plugin updates.
+Plugin skills are read from the global cache (~/.claude/plugins/cache/)
+and update automatically — no project changes needed.
+
+Per-project files fall into two categories:
+
+  Gitignored (updated in-place, per-worktree):
+    .claude/settings.json     env vars like CLAUDE_MEM_PROJECT
+    .planning/config.json     runtime defaults cover new keys
+
+  Git-tracked (shared across worktrees):
+    CLAUDE.md                 may need /fh:revise-claude-md
+    conductor.json            may need setup script updates
+
+Gitignored files are updated directly in each project directory.
+Git-tracked files are checked for staleness but NOT auto-modified
+(they contain user content). If stale files are found, you'll see
+warnings with suggested fixes below.
+
+If you use Conductor: all worktrees get their own reconciliation
+pass. Gitignored files update independently per-worktree. For
+git-tracked file fixes, commit the change in any worktree — other
+worktrees pick it up when they pull or rebase.
 ```
 
 ### 6b: Run global reconcile
@@ -795,6 +811,23 @@ Run /fh:update in each project individually to apply the full remediation
 ```
 
 The global reconcile script handles env *detection* but not remediation (tool installs, hook additions need the full SKILL.md logic). The per-project `/fh:update` handles the actual fixes.
+
+**If any projects have stale git-tracked files:**
+
+The reconcile also checks git-tracked files like `conductor.json` and `CLAUDE.md` for staleness. These can't be auto-modified (they contain user content), so show warnings with fix commands:
+
+```
+### Stale git-tracked files
+
+These files may need manual updating. Commit the fix in any worktree —
+other worktrees pick it up on pull/rebase.
+
+  havana: conductor.json — setup script missing post-update-reconcile step
+    Fix: Run /fh:new-project setup or manually add the reconcile step
+
+  dallas: CLAUDE.md — missing (project created with older plugin version)
+    Fix: Run /fh:revise-claude-md to generate
+```
 
 ### 6d: Stale project cleanup
 

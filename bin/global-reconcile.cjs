@@ -223,6 +223,46 @@ function reconcileProject(project) {
     result.steps.healthRepair = { status: 'skipped', reason: 'no .planning/ directory' };
   }
 
+  // Step 4: Check git-tracked files that may be stale
+  // These files live in the repo and are shared across worktrees via git.
+  // We can't auto-modify them (user content), but we can flag staleness.
+  const staleFiles = [];
+
+  // Check conductor.json setup script for outdated patterns
+  const conductorJson = path.join(project.path, 'conductor.json');
+  if (fs.existsSync(conductorJson)) {
+    try {
+      const content = fs.readFileSync(conductorJson, 'utf8');
+      // Check if setup script includes post-update-reconcile
+      if (!content.includes('post-update-reconcile') && !content.includes('patch-claude-mem')) {
+        staleFiles.push({
+          file: 'conductor.json',
+          reason: 'setup script missing post-update-reconcile step',
+          fix: 'Re-run /fh:new-project setup or manually add the reconcile step',
+        });
+      }
+    } catch { /* ignore read errors */ }
+  }
+
+  // Check CLAUDE.md exists (projects created before CLAUDE.md was standard)
+  const claudeMd = path.join(project.path, 'CLAUDE.md');
+  if (project.hasPlanning && !fs.existsSync(claudeMd)) {
+    staleFiles.push({
+      file: 'CLAUDE.md',
+      reason: 'missing — project may have been created with an older plugin version',
+      fix: 'Run /fh:revise-claude-md to generate',
+    });
+  }
+
+  if (staleFiles.length > 0) {
+    result.steps.staleFileCheck = {
+      status: 'warn',
+      files: staleFiles,
+    };
+  } else {
+    result.steps.staleFileCheck = { status: 'ok' };
+  }
+
   // Determine overall status
   if (result.errors.length > 0) {
     result.status = 'partial';
