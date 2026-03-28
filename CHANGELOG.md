@@ -8,6 +8,13 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.51.0] - 2026-03-28
+
+### Added
+- **Auto health repair** — `/fh:update` now runs `health --repair` automatically on the current project (was only suggesting it); `--global` mode runs it on all discovered projects
+- **Progress reporting** — global update shows per-project progress as each completes: `[1/13] kyoto... ok (health: degraded, 1 repaired)`
+- **Detailed repair report** — shows what was fixed per-project and what still needs manual attention, with error codes and fix commands
+
 ## [1.50.1] - 2026-03-28
 
 ### Added
