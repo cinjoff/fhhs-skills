@@ -8,6 +8,11 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.46.2] - 2026-03-28
+
+### Changed
+- **Post-update reconciliation extracted to script** — steps 5a½/5a¾/5a⅞ (claude-mem patch, CLAUDE_MEM_PROJECT, tracker refresh) now run from `bin/post-update-reconcile.sh` instead of inline SKILL.md bash, fixing the chicken-and-egg problem where stale cached prompts would run old reconciliation logic
+
 ## [1.46.1] - 2026-03-28
 
 ### Fixed
