@@ -97,6 +97,21 @@ State persists to `.planning/.auto-state.json` between steps so crashes can resu
 </details>
 
 <details>
+<summary><strong>Startup Validation</strong></summary>
+
+| Command | What it does |
+|---------|-------------|
+| `/fh:startup-design` | Validate a startup idea from scratch — 8-phase process covering market research, strategy, brand, product, financials, and go/no-go scorecard |
+| `/fh:startup-competitors` | Deep competitive analysis with battle cards, pricing landscape, and feature matrix |
+| `/fh:startup-positioning` | Market positioning using April Dunford's framework, Moore statement, and category analysis |
+| `/fh:startup-pitch` | Investor-ready pitch scripts in 5 formats (10/5/2/1-min + email) with optional roleplay practice |
+| `/fh:startup-advisor` | Conversational startup advisor backed by 12 curated decision frameworks and web research |
+
+Startup artifacts in `.planning/startup/` automatically feed into `/fh:new-project`, `/fh:plan-work`, and `/fh:auto`.
+
+</details>
+
+<details>
 <summary><strong>Engineering</strong></summary>
 
 | Command | What it does |
