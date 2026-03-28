@@ -33,44 +33,40 @@ $ARGUMENTS
 
 ## Step 2: Ensure tracker files are up to date
 
-1. Find the fhhs-skills plugin directory by globbing for `**/templates/project-tracker/server.cjs` under the user's home directory `~/.claude/plugins/`.
-2. Read the plugin version from `.claude-plugin/plugin.json` in the plugin directory (the `version` field).
-3. Check if `.project-tracker/.version` exists and read it.
-4. **If `.project-tracker/.version` exists and its content matches the plugin version**, skip to Step 3 — files are already up to date.
+The tracker is installed globally at `~/.claude/tracker/` — shared across all projects.
+
+1. Find the fhhs-skills plugin directory by globbing for `**/templates/project-tracker/server.cjs` under `~/.claude/plugins/`.
+2. Read the plugin version from `.claude-plugin/plugin.json` in the plugin directory.
+3. Check if `~/.claude/tracker/.version` exists and read it.
+4. **If `~/.claude/tracker/.version` exists and its content matches the plugin version**, skip to Step 3 — files are already up to date.
 5. **Otherwise**, refresh the template files:
    a. List all non-directory files in `templates/project-tracker/` in the plugin directory.
-   b. Create `.project-tracker/` if it doesn't exist.
-   c. Copy all listed files into `.project-tracker/`, overwriting any existing versions.
-   d. Write the plugin version string into `.project-tracker/.version`.
-   e. Check if `.gitignore` exists and contains `.project-tracker/`:
-      - If `.gitignore` doesn't exist, create it with `.project-tracker/` as its content.
-      - If `.gitignore` exists but doesn't contain `.project-tracker/`, append `.project-tracker/` on a new line.
-      - If `.gitignore` already contains `.project-tracker/`, do nothing.
+   b. Copy all listed files into `~/.claude/tracker/`, overwriting any existing versions.
+   c. Write the plugin version string into `~/.claude/tracker/.version`.
 
 ---
 
-## Step 3: Verify `.planning/` exists
+## Step 3: Check `.planning/` in current project
 
 ```bash
 [ -d ".planning" ] && echo "OK" || echo "MISSING"
 ```
 
-If `.planning/` is MISSING, tell the user:
+If `.planning/` is MISSING, note it but **do not stop** — other registered projects may have `.planning/` and the dashboard can still show those:
 
 ```
-No .planning/ directory found. Run /fh:new-project first to set up project tracking.
+Note: This project has no .planning/ directory. Run /fh:new-project to enable tracking for it.
+The dashboard will still show other registered projects.
 ```
-
-Stop here — the tracker needs `.planning/` files to display progress.
 
 ---
 
 ## Step 4: Start the server
 
-Start the tracker server in the background, passing the global registry path so it can load all projects:
+Start the tracker server in the background from the global install location, passing the registry path:
 
 ```bash
-TRACKER_REGISTRY=~/.claude/tracker/projects.json node .project-tracker/server.cjs
+TRACKER_REGISTRY=~/.claude/tracker/projects.json node ~/.claude/tracker/server.cjs
 ```
 
 Run this with `run_in_background: true`.

@@ -337,38 +337,37 @@ else
 fi
 ```
 
-### 5a⅞: Refresh tracker template files
+### 5a⅞: Refresh global tracker
 
-If `.project-tracker/` exists, refresh template files from the updated plugin cache. This ensures tracker dashboard changes (UI redesigns, new components, server fixes) are picked up without requiring a manual `/fh:tracker` re-run.
+The tracker is installed globally at `~/.claude/tracker/`. Refresh template files from the updated plugin cache so dashboard changes are picked up without requiring a manual `/fh:tracker` re-run.
 
 ```bash
-if [ -d ".project-tracker" ]; then
-  PLUGIN_ROOT=""
-  LATEST="$(ls -d "$HOME/.claude/plugins/cache/fhhs-skills/fh"/*/ 2>/dev/null | sort | tail -1)"
-  LATEST="${LATEST%/}"
-  if [ -n "$LATEST" ] && [ -d "$LATEST/templates/project-tracker" ]; then
-    PLUGIN_ROOT="$LATEST"
-  fi
+TRACKER_DIR="$HOME/.claude/tracker"
+mkdir -p "$TRACKER_DIR"
 
-  if [ -n "$PLUGIN_ROOT" ]; then
-    PLUGIN_VER=$(python3 -c "import json; print(json.load(open('$PLUGIN_ROOT/.claude-plugin/plugin.json'))['version'])" 2>/dev/null)
-    CURRENT_VER=$(cat .project-tracker/.version 2>/dev/null)
+PLUGIN_ROOT=""
+LATEST="$(ls -d "$HOME/.claude/plugins/cache/fhhs-skills/fh"/*/ 2>/dev/null | sort | tail -1)"
+LATEST="${LATEST%/}"
+if [ -n "$LATEST" ] && [ -d "$LATEST/templates/project-tracker" ]; then
+  PLUGIN_ROOT="$LATEST"
+fi
 
-    if [ "$PLUGIN_VER" = "$CURRENT_VER" ]; then
-      echo "✓ Tracker templates already at v$PLUGIN_VER"
-    else
-      # Copy all non-directory files from the template
-      for f in "$PLUGIN_ROOT/templates/project-tracker"/*; do
-        [ -f "$f" ] && cp "$f" ".project-tracker/$(basename "$f")"
-      done
-      echo "$PLUGIN_VER" > .project-tracker/.version
-      echo "✓ Tracker templates refreshed to v$PLUGIN_VER (was: ${CURRENT_VER:-none})"
-    fi
+if [ -n "$PLUGIN_ROOT" ]; then
+  PLUGIN_VER=$(python3 -c "import json; print(json.load(open('$PLUGIN_ROOT/.claude-plugin/plugin.json'))['version'])" 2>/dev/null)
+  CURRENT_VER=$(cat "$TRACKER_DIR/.version" 2>/dev/null)
+
+  if [ "$PLUGIN_VER" = "$CURRENT_VER" ]; then
+    echo "✓ Tracker already at v$PLUGIN_VER"
   else
-    echo "⚠ Could not find plugin templates for tracker refresh"
+    # Copy all non-directory files from the template
+    for f in "$PLUGIN_ROOT/templates/project-tracker"/*; do
+      [ -f "$f" ] && cp "$f" "$TRACKER_DIR/$(basename "$f")"
+    done
+    echo "$PLUGIN_VER" > "$TRACKER_DIR/.version"
+    echo "✓ Tracker refreshed to v$PLUGIN_VER (was: ${CURRENT_VER:-none})"
   fi
 else
-  echo "· No .project-tracker/ — skipping tracker refresh"
+  echo "⚠ Could not find plugin templates for tracker refresh"
 fi
 ```
 
