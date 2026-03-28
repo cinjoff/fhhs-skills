@@ -40,11 +40,10 @@ const AutoDot = memo(function AutoDot() {
 });
 
 const WorktreeRow = memo(function WorktreeRow({ project, isSelected, hasAuto, onSelect }) {
-  const name = project.conductorWorkspace
-    ? project.conductorWorkspace.split('/').pop()
-    : project.path
-      ? project.path.split('/').pop()
-      : project.id || 'unknown';
+  const name = project.name
+    || (project.path ? project.path.split('/').pop() : null)
+    || project.id
+    || 'unknown';
 
   const displayName = project.worktreeName || name;
 

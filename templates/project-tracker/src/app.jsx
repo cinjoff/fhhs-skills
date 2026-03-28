@@ -174,8 +174,9 @@ function App() {
       <div style={{ gridColumn: '1', gridRow: '2', overflowY: 'auto', borderRight: '1px solid var(--color-border)' }}>
         <ProjectTree
           projects={projects}
-          activeProject={activeProject}
-          onSelect={handleSelectProject}
+          autoJobs={autoJobs}
+          selectedProjectId={activeProject ? activeProject.id : null}
+          onSelectProject={handleSelectProject}
         />
       </div>
 
