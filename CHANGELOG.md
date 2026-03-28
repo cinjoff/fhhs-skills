@@ -8,6 +8,12 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.41.0] - 2026-03-28
+
+### Changed
+- **Tracker dashboard redesign** — Linear-inspired UI with OKLCH color system, workspace-grouped sidebar, portfolio summary, phase grid with expandable tasks, activity feed, and cost chart using Chart.js
+- **`/fh:update` cross-worktree reconciliation** — when the plugin is already current, still runs environment reconciliation to catch gaps from updates applied in a different worktree
+
 ## [1.40.0] - 2026-03-28
 
 ### Added

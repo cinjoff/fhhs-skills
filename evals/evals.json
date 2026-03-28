@@ -1097,7 +1097,7 @@
       "id": 27,
       "command": "update",
       "prompt": "update",
-      "expected_output": "Should check current plugin version against latest available version. If update available, should download and install. Should clear statusline cache after updating. Should report what changed (version diff).",
+      "expected_output": "Should check current plugin version against latest available version. If update available, should download and install. Should clear statusline cache after updating. Should report what changed (version diff). When already current, should still run environment reconciliation to catch gaps from cross-worktree updates.",
       "files": [],
       "assertions": [
         {
@@ -1113,7 +1113,7 @@
           "type": "output"
         },
         {
-          "text": "Does not perform unnecessary update when already current",
+          "text": "Does not perform unnecessary plugin reinstall when already current",
           "type": "guard"
         }
       ],
@@ -4549,7 +4549,7 @@
       "id": 95,
       "command": "update",
       "prompt": "check for updates",
-      "expected_output": "Should compare installed version against latest marketplace version, when versions match report already up to date, not prompt for reinstallation.",
+      "expected_output": "Should compare installed version against latest marketplace version. When versions match, should still run environment reconciliation to check for gaps (missing tools, hooks, env vars, project files) since update may have been applied from a different worktree. Should not prompt for reinstallation.",
       "files": [],
       "assertions": [
         {
@@ -4557,8 +4557,8 @@
           "type": "behavioral"
         },
         {
-          "text": "Reports already up to date when versions match",
-          "type": "output"
+          "text": "When versions match, still runs environment reconciliation check",
+          "type": "behavioral"
         },
         {
           "text": "Does NOT offer to reinstall when already current",
