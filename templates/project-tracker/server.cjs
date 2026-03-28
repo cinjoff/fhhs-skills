@@ -253,7 +253,8 @@ function refreshProjectsList() {
 // Force-refresh summaries for all projects (e.g. when .planning/ files change)
 function refreshAllSummaries() {
   const entries = readRegistry();
-  projectsList = entries.map(e => buildProjectSummary(e));
+  const activeEntries = entries.filter(e => fs.existsSync(path.join(e.path, '.planning')));
+  projectsList = activeEntries.map(e => buildProjectSummary(e));
 }
 
 // ---------------------------------------------------------------------------
