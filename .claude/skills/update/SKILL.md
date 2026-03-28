@@ -449,6 +449,33 @@ terminal:
 ✓ All gaps closed — your environment is fully up to date.
 ```
 
+### 5c: Suggest .planning/ health check
+
+Check if the user has an existing `.planning/` directory in the current project:
+
+```bash
+[ -d ".planning" ] && echo "HAS_PLANNING" || echo "NO_PLANNING"
+```
+
+**If HAS_PLANNING:**
+
+```
+### .planning/ health check
+
+Your project has a .planning/ directory. If it was created with an
+older version of this plugin (or plain GSD), it may have structural
+issues. Run:
+
+  /fh:health --repair
+
+This will detect and auto-fix common problems like missing config,
+invalid state references, or outdated directory layouts.
+```
+
+**If NO_PLANNING:** Skip silently.
+
+---
+
 **After reconciliation is complete:**
 
 ```

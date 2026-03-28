@@ -8,6 +8,18 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.39.0] - 2026-03-28
+
+### Added
+- **Startup validation skills** — 5 new skills for pre-building startup validation: `/fh:startup-design` (8-phase idea-to-validated-plan), `/fh:startup-competitors` (battle cards, pricing landscape, feature matrix), `/fh:startup-positioning` (April Dunford framework, Moore statement, category analysis), `/fh:startup-pitch` (5 pitch formats + investor roleplay practice), `/fh:startup-advisor` (conversational advisor with 12 curated decision frameworks + web search fallback)
+- **Startup-to-project bridge** — `/fh:new-project` Step 0.5 detects `.planning/startup/` artifacts and auto-populates project vision, scope, and constraints from validated startup data
+- **Startup context in planning** — `/fh:plan-work` indexes `.planning/startup/` as domain context; `/fh:auto` pre-indexes startup artifacts for each phase and suggests startup skills when no project exists
+
+## [1.38.0] - 2026-03-27
+
+### Added
+- **`.planning/` health check in `/fh:update`** — after post-update reconciliation, suggests running `/fh:health --repair` if the project has an existing `.planning/` directory that may have structural issues from older plugin versions or plain GSD
+
 ## [1.37.1] - 2026-03-27
 
 ### Fixed

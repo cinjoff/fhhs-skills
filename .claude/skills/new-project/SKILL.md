@@ -151,7 +151,48 @@ Project sync complete:
 
 After reporting, stop. Do NOT continue to Step 1 or any subsequent steps.
 
-### If `NEW_PROJECT`: continue to Step 1
+### If `NEW_PROJECT`: continue to Step 0.5
+
+---
+
+## Step 0.5: Startup Artifact Detection
+
+Check if startup validation artifacts exist:
+
+```bash
+[ -d ".planning/startup" ] && echo "STARTUP_ARTIFACTS" || echo "NO_STARTUP"
+```
+
+### If `STARTUP_ARTIFACTS`: Pre-populate from startup data
+
+Read available startup artifacts and use them to auto-populate project vision. This saves the user from re-answering questions already covered by `/fh:startup-design`.
+
+**Read these files (skip any that don't exist):**
+- `.planning/startup/brief.md` → project description, problem, target users, founder context
+- `.planning/startup/validation/scorecard.md` → validation results, go/no-go verdict
+- `.planning/startup/strategy/lean-canvas.md` → business model, value proposition
+- `.planning/startup/strategy/positioning.md` → market positioning, competitive alternatives
+- `.planning/startup/financial/revenue-model.md` → pricing, revenue projections
+- `.planning/startup/discovery/market-analysis.md` → market size, trends
+- `.planning/startup/discovery/target-audience.md` → user personas, pain points
+- `.planning/startup/positioning/positioning-doc.md` → Dunford positioning (if deeper analysis was run)
+- `.planning/startup/competitors/competitors-report.md` → competitive landscape (if deeper analysis was run)
+
+**Auto-derive Step 1 answers:**
+1. **What** → from brief.md (the idea/solution)
+2. **Who** → from brief.md + target-audience.md (target users)
+3. **Why** → from brief.md + lean-canvas.md (problem + value proposition)
+4. **Scope** → from lean-canvas.md + scorecard.md (MVP features, validated scope)
+5. **Constraints** → from brief.md (founder context, budget, timeline)
+6. **Success criteria** → from scorecard.md + revenue-model.md (validation metrics, revenue targets)
+
+Present the derived answers to the user: "I found startup validation artifacts from a previous `/fh:startup-design` session. Here's what I've derived for your project:"
+
+Show all 6 derived answers and ask: "Does this look right? Anything to adjust?"
+
+If the user confirms, skip Step 1 and proceed to Step 2 with these answers locked.
+
+### If `NO_STARTUP`: continue to Step 1
 
 Proceed with the full greenfield flow below.
 
