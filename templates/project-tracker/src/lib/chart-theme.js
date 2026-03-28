@@ -1,5 +1,6 @@
 import { h } from 'preact';
 import { ResponsiveContainer } from 'recharts';
+import { PHASE_COLORS } from './animations.js';
 
 export const chartConfig = {
   cost: { label: "Cost ($)", color: "hsl(142, 71%, 45%)" },
@@ -11,12 +12,16 @@ export const chartConfig = {
   active: { color: "hsl(47, 96%, 53%)" },
 };
 
-// Build CSS variables object from config
+// Build CSS variables object from config + phase colors
 function buildCSSVars(config) {
   const vars = {};
   for (const [key, val] of Object.entries(config)) {
     if (val.color) vars[`--chart-${key}`] = val.color;
   }
+  // Phase colors as --phase-0 through --phase-9 for Recharts references
+  PHASE_COLORS.forEach((color, i) => {
+    vars[`--phase-${i}`] = color;
+  });
   return vars;
 }
 

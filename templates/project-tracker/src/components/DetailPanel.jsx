@@ -10,7 +10,7 @@ import { DecisionFeed } from './DecisionFeed.jsx';
 import { CostChart } from './CostChart.jsx';
 import { StepTimeline } from './StepTimeline.jsx';
 
-export function DetailPanel({ activeData, connected, showToast }) {
+export function DetailPanel({ activeData, connected, showToast, pendingDecisions }) {
   const milestones = useMemo(
     () => activeData ? groupByMilestone(activeData.stages || []) : [],
     [activeData]
@@ -26,6 +26,7 @@ export function DetailPanel({ activeData, connected, showToast }) {
 
   const autoState = activeData.autoState || null;
   const decisions = activeData.decisions || [];
+  const pending = pendingDecisions || [];
   const isAutoActive = autoState && autoState.active === true;
   const hasLastRunData = !isAutoActive && autoState && autoState.step_history && autoState.step_history.length > 0;
 
@@ -55,7 +56,7 @@ export function DetailPanel({ activeData, connected, showToast }) {
               <div className="text-[0.75rem] text-dim mb-2">
                 <span className="text-muted">{'//'}</span> decisions
               </div>
-              <DecisionFeed decisions={decisions} />
+              <DecisionFeed decisions={decisions} pendingDecisions={pending} />
             </div>
           </div>
         </div>
@@ -78,7 +79,7 @@ export function DetailPanel({ activeData, connected, showToast }) {
               <div className="text-[0.75rem] text-dim mb-2">
                 <span className="text-muted">{'//'}</span> decisions
               </div>
-              <DecisionFeed decisions={decisions} />
+              <DecisionFeed decisions={decisions} pendingDecisions={pending} />
             </div>
           </div>
         </details>

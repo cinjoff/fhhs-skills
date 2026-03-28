@@ -841,7 +841,85 @@ function parseDecisions(planningDir) {
   return decisions.map(({ num: _num, ...rest }) => rest);
 }
 
-/**
+// Parse .planning/phases/<phase>/.decisions-pending.md files.
+// Each file uses the same ## DEC-NNN: section format as DECISIONS.md.
+// Each decision is tagged with source: 'pending' and phase: phaseNumber.
+// Returns array sorted by phase number then ID.
+function parsePendingDecisions(planningDir) {
+  const phasesDir = path.join(planningDir, 'phases');
+  if (!fs.existsSync(phasesDir)) return [];
+
+  let phaseDirs;
+  try {
+    phaseDirs = fs.readdirSync(phasesDir, { withFileTypes: true })
+      .filter(d => d.isDirectory())
+      .map(d => d.name)
+      .sort();
+  } catch {
+    return [];
+  }
+
+  const results = [];
+
+  for (const dir of phaseDirs) {
+    const phaseNumMatch = dir.match(/^(\d+)/);
+    if (!phaseNumMatch) continue;
+    const phaseNumber = parseInt(phaseNumMatch[1], 10);
+
+    const pendingFile = path.join(phasesDir, dir, '.decisions-pending.md');
+    let content;
+    try {
+      content = fs.readFileSync(pendingFile, 'utf8');
+    } catch (err) {
+      if (err.code !== 'ENOENT') {
+        console.warn(`  Warning: Could not read ${pendingFile}:`, err.message);
+      }
+      continue;
+    }
+
+    // Same section parsing as parseDecisions()
+    const sections = content.split(/(?=^## DEC-\d+:)/m);
+    for (const section of sections) {
+      const headingMatch = section.match(/^## (DEC-(\d+)):\s*(.+)$/m);
+      if (!headingMatch) continue;
+
+      const id = headingMatch[1];
+      const num = parseInt(headingMatch[2], 10);
+      const title = headingMatch[3].trim();
+
+      const getField = (label) => {
+        const re = new RegExp(`^-\\s+\\*\\*${label}:\\*\\*\\s*(.+)$`, 'm');
+        const m = section.match(re);
+        return m ? m[1].trim() : '';
+      };
+
+      results.push({
+        id,
+        num,
+        title,
+        status: getField('Status'),
+        confidence: getField('Confidence'),
+        context: getField('Context'),
+        decision: getField('Decision'),
+        affects: getField('Affects'),
+        phase: String(phaseNumber),
+        step: getField('Step'),
+        source: 'pending',
+        phaseNumber,
+      });
+    }
+  }
+
+  // Sort by phase number then by ID number
+  results.sort((a, b) => {
+    if (a.phaseNumber !== b.phaseNumber) return a.phaseNumber - b.phaseNumber;
+    return a.num - b.num;
+  });
+
+  // Remove internal fields
+  return results.map(({ num: _num, phaseNumber: _pn, ...rest }) => rest);
+}
+
 /**
  * Main entry point: parse .planning/ directory into structured data.
  */
@@ -887,6 +965,7 @@ module.exports = {
   parseCodebaseFreshness,
   parseAutoState,
   parseDecisions,
+  parsePendingDecisions,
   parsePlanFile,
   parseSummaryFile,
   parseFrontmatter,

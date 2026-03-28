@@ -41,6 +41,7 @@ const parseConcerns = parser.parseConcerns || (() => ({ categories: [], totalCou
 const parseCodebaseFreshness = parser.parseCodebaseFreshness || (() => ({ lastUpdated: null, isStale: false }));
 const parseAutoState = parser.parseAutoState || (() => null);
 const parseDecisions = parser.parseDecisions || (() => []);
+const parsePendingDecisions = parser.parsePendingDecisions || (() => []);
 
 // ---------------------------------------------------------------------------
 // Configuration
@@ -348,6 +349,7 @@ function categorizeChanges(changedFiles) {
     codebaseFreshness: false,
     autoState: false,
     decisions: false,
+    pendingDecisions: false,
     changedPhaseDirs: new Set(),
   };
 
@@ -358,6 +360,8 @@ function categorizeChanges(changedFiles) {
       needs.autoState = true;
     } else if (parts[0] === 'DECISIONS.md') {
       needs.decisions = true;
+    } else if (parts[0] === 'phases' && parts[2] === '.decisions-pending.md') {
+      needs.pendingDecisions = true;
     } else if (parts[0] === 'STATE.md') {
       needs.state = true;
     } else if (parts[0] === 'PROJECT.md') {
@@ -404,6 +408,9 @@ function buildState(ps, changedFiles) {
       quickTasks: true,
       concerns: true,
       codebaseFreshness: true,
+      autoState: true,
+      decisions: true,
+      pendingDecisions: true,
       changedPhaseDirs: new Set(['__ALL__']),
     };
   } else {
@@ -499,6 +506,14 @@ function buildState(ps, changedFiles) {
     decisions = ps.lastState ? ps.lastState.decisions : parseDecisions(planningDir);
   }
 
+  let pendingDecisions;
+  if (needs.pendingDecisions || isFullParse) {
+    pendingDecisions = parsePendingDecisions(planningDir);
+    console.log('  [cache] Re-parsed pending decisions');
+  } else {
+    pendingDecisions = ps.lastState ? (ps.lastState.pendingDecisions || []) : parsePendingDecisions(planningDir);
+  }
+
   let quickTasks;
   if (needs.quickTasks || isFullParse) {
     quickTasks = parseQuickTasks(planningDir);
@@ -522,6 +537,7 @@ function buildState(ps, changedFiles) {
     codebaseFreshness,
     autoState,
     decisions,
+    pendingDecisions,
     lastActivity: state.lastActivity || null,
   };
 
@@ -711,6 +727,146 @@ function initializeProjectStates() {
       console.error(`  Warning: Could not build initial state for ${entry.name}:`, err.message);
     }
   }
+}
+
+// ---------------------------------------------------------------------------
+// Activity ring buffer (max 200)
+// ---------------------------------------------------------------------------
+const ACTIVITY_RING_MAX = 200;
+const activityRing = [];
+
+function pushActivity(event) {
+  activityRing.push(event);
+  if (activityRing.length > ACTIVITY_RING_MAX) {
+    activityRing.shift();
+  }
+}
+
+/**
+ * Parse JSONL lines from a Claude session output chunk.
+ * Returns array of human-readable strings.
+ */
+function parseJSONLActivity(raw) {
+  const lines = [];
+  for (const line of raw.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    try {
+      const obj = JSON.parse(trimmed);
+      if (obj.type === 'tool_use' && obj.name) {
+        // Show tool name and first input value if present
+        const inputVals = obj.input ? Object.values(obj.input) : [];
+        const firstVal = inputVals.length > 0 ? String(inputVals[0]).slice(0, 60) : '';
+        lines.push(`\u26a1 ${obj.name}${firstVal ? '  ' + firstVal : ''}`);
+      } else if (obj.type === 'assistant') {
+        // Extract text content
+        const content = Array.isArray(obj.message && obj.message.content)
+          ? obj.message.content.find(c => c.type === 'text')
+          : null;
+        const text = content ? content.text : (typeof obj.text === 'string' ? obj.text : null);
+        if (text) {
+          lines.push(text.slice(0, 100));
+        }
+      }
+      // tool_result: skip
+    } catch {
+      // unparseable — skip silently
+    }
+  }
+  return lines;
+}
+
+/**
+ * Watch Claude session .output files in tmpBase for activity.
+ * Returns a cleanup function.
+ */
+function watchClaudeSessions(tmpBase, onActivity) {
+  if (!tmpBase) return () => {};
+  try {
+    if (!fs.existsSync(tmpBase)) return () => {};
+  } catch {
+    return () => {};
+  }
+
+  // Find 5 most recent session dirs by mtime
+  function getRecentSessionDirs() {
+    try {
+      const entries = fs.readdirSync(tmpBase, { withFileTypes: true })
+        .filter(e => e.isDirectory());
+      const withMtime = entries.map(e => {
+        try {
+          const stat = fs.statSync(path.join(tmpBase, e.name));
+          return { name: e.name, mtime: stat.mtimeMs };
+        } catch {
+          return { name: e.name, mtime: 0 };
+        }
+      });
+      withMtime.sort((a, b) => b.mtime - a.mtime);
+      return withMtime.slice(0, 5).map(e => e.name);
+    } catch {
+      return [];
+    }
+  }
+
+  // Batch buffer: collect events for 100ms then flush
+  let batchBuffer = [];
+  let flushTimer = null;
+
+  function scheduleFlush() {
+    if (flushTimer) return;
+    flushTimer = setTimeout(() => {
+      flushTimer = null;
+      const batch = batchBuffer.splice(0);
+      for (const evt of batch) {
+        onActivity(evt);
+      }
+    }, 100);
+  }
+
+  const watcher = { close: () => {} };
+  const sessionDirs = getRecentSessionDirs();
+
+  for (const sessionId of sessionDirs) {
+    const sessionDir = path.join(tmpBase, sessionId);
+    try {
+      const w = fs.watch(sessionDir, { recursive: true }, (eventType, filename) => {
+        if (!filename || !filename.endsWith('.output')) return;
+        const filePath = path.join(sessionDir, filename);
+        let raw;
+        try {
+          const buf = Buffer.alloc(1024);
+          const fd = fs.openSync(filePath, 'r');
+          const stat = fs.fstatSync(fd);
+          const offset = Math.max(0, stat.size - 1024);
+          const bytesRead = fs.readSync(fd, buf, 0, 1024, offset);
+          fs.closeSync(fd);
+          raw = buf.slice(0, bytesRead).toString('utf8');
+        } catch (err) {
+          if (err.code === 'ENOENT' || err.code === 'EBADF') return; // file deleted or dangling symlink
+          return;
+        }
+        const lines = raw.split('\n').filter(l => l.trim()).slice(-5);
+        const parsed = parseJSONLActivity(lines.join('\n'));
+        batchBuffer.push({
+          sessionId,
+          phaseHint: null,
+          lines: parsed.length > 0 ? parsed : lines,
+          timestamp: new Date().toISOString(),
+        });
+        scheduleFlush();
+      });
+      // Keep ref so we can close
+      const origClose = watcher.close.bind(watcher);
+      watcher.close = () => { try { w.close(); } catch {} origClose(); };
+    } catch {
+      // can't watch this session dir — skip
+    }
+  }
+
+  return () => {
+    if (flushTimer) { clearTimeout(flushTimer); flushTimer = null; }
+    try { watcher.close(); } catch {}
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -1011,6 +1167,18 @@ function serveMetrics(res) {
 }
 
 // ---------------------------------------------------------------------------
+// API: /api/activity
+// ---------------------------------------------------------------------------
+function serveActivity(res) {
+  const last50 = activityRing.slice(-50);
+  res.writeHead(200, {
+    'Content-Type': 'application/json',
+    'Cache-Control': 'no-cache',
+  });
+  res.end(JSON.stringify(last50));
+}
+
+// ---------------------------------------------------------------------------
 // API: /api/events (SSE)
 // ---------------------------------------------------------------------------
 function serveEvents(req, res) {
@@ -1025,8 +1193,26 @@ function serveEvents(req, res) {
 
   sseClients.add(res);
 
+  // Check if any active project has autoState.active
+  const projects = loadRegistry();
+  const hasActiveAuto = projects.some(entry => {
+    const ps = projectStates.get(entry.path);
+    return ps && ps.lastState && ps.lastState.autoState && ps.lastState.autoState.active === true;
+  });
+
+  let cleanupSessions = () => {};
+  if (hasActiveAuto) {
+    const tmpBase = path.join(os.tmpdir(), 'claude');
+    cleanupSessions = watchClaudeSessions(tmpBase, (event) => {
+      pushActivity(event);
+      const payload = `event: activity\ndata: ${JSON.stringify(event)}\n\n`;
+      try { res.write(payload); } catch { /* client disconnected */ }
+    });
+  }
+
   req.on('close', () => {
     sseClients.delete(res);
+    cleanupSessions();
   });
 }
 
@@ -1068,6 +1254,10 @@ const server = http.createServer((req, res) => {
 
   if (req.method === 'GET' && pathname === '/api/metrics') {
     return serveMetrics(res);
+  }
+
+  if (req.method === 'GET' && pathname === '/api/activity') {
+    return serveActivity(res);
   }
 
   if (req.method === 'GET' && pathname === '/api/events') {

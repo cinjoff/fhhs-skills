@@ -17,13 +17,15 @@ export function useToast() {
   return [toast, show];
 }
 
-export function useSSE(onData) {
+export function useSSE(onData, onEvent) {
   const [connected, setConnected] = useState(false);
   const esRef = useRef(null);
   const rtRef = useRef(null);
   const unmountedRef = useRef(false);
   const onDataRef = useRef(onData);
   onDataRef.current = onData;
+  const onEventRef = useRef(onEvent);
+  onEventRef.current = onEvent;
 
   const fetchState = useCallback((projectId) => {
     const url = projectId ? `/api/state?project=${encodeURIComponent(projectId)}` : '/api/state';
@@ -62,6 +64,14 @@ export function useSSE(onData) {
       let projectId = null;
       try { projectId = e.data ? JSON.parse(e.data).projectId || null : null; } catch (_) {}
       fetchState(projectId);
+    });
+    es.addEventListener('activity', (e) => {
+      if (onEventRef.current) {
+        try {
+          const parsed = e.data ? JSON.parse(e.data) : null;
+          if (parsed) onEventRef.current('activity', parsed);
+        } catch (_) {}
+      }
     });
     es.onerror = () => {
       setConnected(false);

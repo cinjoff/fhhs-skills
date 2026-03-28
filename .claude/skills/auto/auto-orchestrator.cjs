@@ -49,6 +49,12 @@ const _optimizations = {
   speculative_plans_replanned: 0,
 };
 
+function getClaudeTmpBase(projectDir) {
+  const uid = process.getuid ? process.getuid() : 501;
+  const dirName = '-' + projectDir.replace(/\//g, '-').slice(1);
+  return path.join('/private/tmp', `claude-${uid}`, dirName);
+}
+
 function writeAutoStatus(projectDir, status) {
   try {
     const p = path.join(projectDir, '.planning', '.auto-state.json');
@@ -58,8 +64,32 @@ function writeAutoStatus(projectDir, status) {
   }
 }
 
-function buildAutoStatus(projectDir, overrides) {
+function buildAutoStatus(_projectDir, overrides) {
   const now = Date.now();
+
+  // Derive current_wave from the step that will be set via overrides
+  const stepForWave = (overrides && overrides.step) || null;
+  let current_wave = null;
+  if (stepForWave === 'plan-work') current_wave = 'planning';
+  else if (stepForWave === 'plan-review') current_wave = 'review';
+  else if (stepForWave === 'build') current_wave = 'build';
+  else if (stepForWave === 'review') current_wave = 'review';
+
+  // Derive phase_states: single entry for current phase with step-derived status
+  const phaseForState = (overrides && overrides.phase) || null;
+  const phase_states = {};
+  if (phaseForState) {
+    if (stepForWave === 'plan-work') phase_states[phaseForState] = 'planning';
+    else if (stepForWave === 'plan-review') phase_states[phaseForState] = 'reviewing';
+    else if (stepForWave === 'build') phase_states[phaseForState] = 'building';
+    else if (stepForWave === 'review') phase_states[phaseForState] = 'reviewing';
+    else phase_states[phaseForState] = 'complete';
+  }
+
+  // concurrency.active: 1 when a session is running (active=true and step is set), else 0
+  const isActive = overrides && overrides.active !== undefined ? overrides.active : true;
+  const concurrencyActive = (isActive && stepForWave) ? 1 : 0;
+
   return Object.assign({
     active: true,
     phase: null,
@@ -82,6 +112,14 @@ function buildAutoStatus(projectDir, overrides) {
     errors: _autoStatus.errors,
     last_log_line: _autoStatus.lastLogLine,
     optimizations: Object.assign({}, _optimizations),
+    // Parallel execution fields (sequential fallback values)
+    project_dir: _autoStatus.projectDir,
+    claude_tmp_base: _autoStatus.projectDir ? getClaudeTmpBase(_autoStatus.projectDir) : null,
+    current_wave,
+    concurrency: { max: 1, active: concurrencyActive },
+    phase_states,
+    dep_graph: {},
+    build_order: [],
   }, overrides);
 }
 
@@ -464,14 +502,20 @@ function isApiError(err) {
 
 function parseSessionMetrics(stdout) {
   const metrics = { tokens_in: 0, tokens_out: 0, read_calls: 0, ctx_search_hits: 0 };
-  try {
-    const parsed = JSON.parse(stdout);
-    if (parsed.usage) {
-      metrics.tokens_in = parsed.usage.input_tokens || 0;
-      metrics.tokens_out = parsed.usage.output_tokens || 0;
+  // claude -p with --output-format json emits JSON-lines (one object per line),
+  // not a single JSON object. Parse each line and accumulate usage.
+  for (const line of stdout.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    try {
+      const obj = JSON.parse(trimmed);
+      if (obj.usage) {
+        metrics.tokens_in += obj.usage.input_tokens || 0;
+        metrics.tokens_out += obj.usage.output_tokens || 0;
+      }
+    } catch {
+      // Non-JSON line — skip
     }
-  } catch {
-    // Non-JSON output — count tool calls via string matching
   }
   metrics.read_calls = (stdout.match(/"tool":"Read"/g) || []).length;
   metrics.ctx_search_hits = (stdout.match(/ctx_search|ctx_batch_execute/g) || []).length;
@@ -504,6 +548,7 @@ function runClaudeSession(prompt, opts) {
     const args = [
       '-p', prompt,
       '--permission-mode', 'bypassPermissions',
+      '--output-format', 'json',
       '--plugin-dir', pluginDir,
     ];
 
@@ -1269,7 +1314,6 @@ function assignWaves(depGraph) {
   }
 
   // Log if no parallelism is possible
-  const maxWave = Math.max(...Object.values(waves));
   const phasesPerWave = {};
   for (const [id, w] of Object.entries(waves)) {
     phasesPerWave[w] = (phasesPerWave[w] || []);
@@ -2130,13 +2174,20 @@ async function main() {
       const wavePhases = waveGroups[waveNum];
       log(`  Build wave ${waveNum}: ${wavePhases.map(p => p.id).join(', ')}`);
 
-      // Within each wave, build sequentially (v1)
-      for (const phase of wavePhases) {
+      // Within each wave, build in parallel (phases share no files by wave-assignment invariant)
+      const buildPool = new ConcurrencyPool(opts.concurrency);
+      wavePhases.map(phase => buildPool.run(async () => {
         // Skip phases already built on resume
         if (phase_states[phase.id] === 'built') {
           log(`  ↷ Skipping build for phase ${phase.id} (already 'built')`);
           builtPhasesForReview.push(phase);
-          continue;
+          return;
+        }
+
+        // Skip phases blocked by earlier wave failures
+        if (phase_states[phase.id] === 'blocked') {
+          log(`  ↷ Skipping build for phase ${phase.id} (blocked by dependency failure)`);
+          return;
         }
 
         // Speculative plan validation before building
@@ -2199,7 +2250,7 @@ async function main() {
           _autoStatus.phasesFailed++;
           stableRun = false; // error → revert to per-step writes
 
-          // Propagate failure: check dep graph for downstream phases
+          // Propagate failure: mark dependents in later waves as blocked
           for (const otherPhase of phasesToRun) {
             if (otherPhase.id === phase.id) continue;
             if ((depGraph[otherPhase.id] || []).includes(phase.id)) {
@@ -2252,23 +2303,16 @@ async function main() {
             last_log_line: `Phase ${phase.id} build ${phase_states[phase.id]}`,
           }));
         }
+      }));
 
-        // Quick review batching: run review every 3 built phases
-        if (builtPhasesForReview.length > 0 && builtPhasesForReview.length % 3 === 0) {
-          const batchStart = builtPhasesForReview.length - 3;
-          const batch = builtPhasesForReview.slice(batchStart, batchStart + 3);
-          log(`  [review-batch] Triggering batched review after ${builtPhasesForReview.length} built phases`);
-          await batchReview(batch);
-        }
+      await buildPool.drain();
+
+      // Post-wave review batching for phases built in this wave
+      const waveBuiltPhases = wavePhases.filter(p => phase_states[p.id] === 'built');
+      if (waveBuiltPhases.length > 0) {
+        log(`  [review-batch] Triggering batched review for wave ${waveNum} (${waveBuiltPhases.length} phase(s))`);
+        await batchReview(waveBuiltPhases);
       }
-    }
-
-    // Final review for any remaining unreviewed phases (batch size < 3)
-    const reviewedSoFar = Math.floor(builtPhasesForReview.length / 3) * 3;
-    const remainingForReview = builtPhasesForReview.slice(reviewedSoFar);
-    if (remainingForReview.length > 0) {
-      log(`  [review-batch] Final review for ${remainingForReview.length} remaining phase(s)`);
-      await batchReview(remainingForReview);
     }
 
     // Update state for built phases

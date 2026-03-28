@@ -1,15 +1,379 @@
-import { useState, useEffect } from 'preact/hooks';
+import { h } from 'preact';
+import { useState, useEffect, useMemo } from 'preact/hooks';
+import { memo } from 'preact/compat';
+import { AnimatedNumber, phaseColor, formatElapsed, formatCost, EASE_EXPO } from '../lib/animations.js';
 
-const PHASES = ['plan-work', 'plan-review', 'build', 'review'];
+// ── Wave step names ────────────────────────────────────────────────────────────
+const WAVE_STEPS = ['planning', 'review', 'build'];
 
-function formatElapsed(ms) {
-  if (ms < 1000) return `${ms}ms`;
-  const s = Math.floor(ms / 1000);
-  const m = Math.floor(s / 60);
-  const rem = s % 60;
-  if (m === 0) return `${s}s`;
-  return `${m}m ${rem}s`;
+// ── Helpers ────────────────────────────────────────────────────────────────────
+
+function sumHistory(entries) {
+  let cost = 0;
+  let elapsedMs = 0;
+  for (const e of entries) {
+    cost += e.cost_usd || 0;
+    elapsedMs += e.elapsed_ms || 0;
+  }
+  return { cost, elapsedMs };
 }
+
+function liveElapsed(startedAt, now) {
+  if (!startedAt) return 0;
+  return now - new Date(startedAt).getTime();
+}
+
+// ── PhasePill ──────────────────────────────────────────────────────────────────
+
+const PhasePill = memo(function PhasePill({ phaseId, phaseName, status, stepHistory, index, now }) {
+  const [hovered, setHovered] = useState(false);
+  const color = phaseColor(phaseId);
+
+  const ownHistory = useMemo(
+    () => (stepHistory || []).filter(e => String(e.phase_id) === String(phaseId)),
+    [stepHistory, phaseId]
+  );
+
+  // Per-step breakdown for tooltip
+  const byStep = useMemo(() => {
+    const map = {};
+    for (const e of ownHistory) {
+      const step = e.step || 'unknown';
+      if (!map[step]) map[step] = { elapsedMs: 0, cost: 0 };
+      map[step].elapsedMs += e.elapsed_ms || 0;
+      map[step].cost += e.cost_usd || 0;
+    }
+    return map;
+  }, [ownHistory]);
+
+  const { cost: totalCost, elapsedMs: totalElapsed } = sumHistory(ownHistory);
+
+  // Active: live elapsed from started_at
+  const activeEntry = status === 'active'
+    ? (stepHistory || []).find(e => String(e.phase_id) === String(phaseId) && !e.elapsed_ms && e.started_at)
+    : null;
+  const liveMs = activeEntry ? liveElapsed(activeEntry.started_at, now) : 0;
+
+  // Visual state styles
+  let borderStyle = {};
+  let bgStyle = {};
+  let iconChar = '·';
+  let textOpacity = '';
+  let extraClass = '';
+
+  if (status === 'done') {
+    bgStyle = { backgroundColor: color + '1a' }; // 10% opacity
+    borderStyle = { borderColor: color + '44' };
+    iconChar = '✓';
+    textOpacity = 'opacity-60';
+  } else if (status === 'active') {
+    borderStyle = { borderColor: color };
+    iconChar = '⟳';
+    extraClass = 'progress-pulse';
+  } else if (status === 'failed') {
+    bgStyle = { backgroundColor: 'oklch(0.5 0.25 25 / 0.1)' };
+    borderStyle = { borderColor: 'var(--color-fire)' };
+    iconChar = '✗';
+  } else if (status === 'rescheduled') {
+    borderStyle = { borderColor: 'var(--color-amber)', borderStyle: 'dashed' };
+    iconChar = '↻';
+  } else if (status === 'skipped') {
+    borderStyle = { borderColor: 'var(--color-dim)' };
+    iconChar = '·';
+    textOpacity = 'opacity-40 line-through';
+  } else {
+    // pending
+    borderStyle = { borderColor: 'var(--color-dim)' };
+  }
+
+  const showTooltip = hovered || status === 'failed';
+  const hasBreakdown = Object.keys(byStep).length > 0;
+
+  return (
+    <div
+      style={{ position: 'relative', display: 'inline-flex' }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <div
+        class={`stagger-item inline-flex flex-col items-center min-w-[56px] px-2 py-1 rounded border text-[0.65rem] cursor-default ${textOpacity} ${extraClass}`}
+        style={{ ...bgStyle, ...borderStyle, '--index': index, animationDelay: `calc(${index} * ${STAGGER_MS}ms)` }}
+      >
+        <span class="font-bold tabular-nums" style={{ color: status === 'active' ? color : undefined }}>
+          {iconChar} P{phaseId}
+        </span>
+        <span class="text-muted truncate max-w-[52px]" title={phaseName}>
+          {phaseName && phaseName.length > 7 ? phaseName.slice(0, 6) + '…' : (phaseName || '')}
+        </span>
+        {status === 'active' && (
+          <span class="text-muted tabular-nums" style={{ color }}>
+            {formatElapsed(liveMs)}
+          </span>
+        )}
+      </div>
+
+      {showTooltip && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 'calc(100% + 6px)',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 50,
+            background: 'var(--color-surface)',
+            border: '1px solid var(--color-border)',
+            backdropFilter: 'blur(4px)',
+            borderRadius: '3px',
+            padding: '8px 10px',
+            minWidth: '200px',
+            pointerEvents: 'none',
+            fontFamily: 'var(--font-family-mono)',
+            fontSize: '0.65rem',
+            lineHeight: '1.5',
+            whiteSpace: 'pre',
+          }}
+        >
+          <div style={{ color: color, fontWeight: 'bold', marginBottom: '3px' }}>
+            Phase {phaseId}{phaseName ? `: ${phaseName}` : ''}
+          </div>
+          <div style={{ color: 'var(--color-dim)', marginBottom: '4px' }}>{'─'.repeat(22)}</div>
+          {hasBreakdown ? (
+            Object.entries(byStep).map(([step, { elapsedMs, cost }]) => (
+              <div key={step} class="tabular-nums" style={{ color: 'var(--color-text)' }}>
+                {step.padEnd(10)} {formatElapsed(elapsedMs).padStart(8)}  {formatCost(cost)}
+              </div>
+            ))
+          ) : (
+            <div style={{ color: 'var(--color-muted)' }}>no data</div>
+          )}
+          {hasBreakdown && (
+            <>
+              <div style={{ color: 'var(--color-dim)', margin: '4px 0' }}>{'─'.repeat(22)}</div>
+              <div class="tabular-nums" style={{ color: 'var(--color-bright)', fontWeight: 'bold' }}>
+                {'total     '} {formatElapsed(totalElapsed).padStart(8)}  {formatCost(totalCost)}
+              </div>
+            </>
+          )}
+          {status === 'rescheduled' && (
+            <div style={{ color: 'var(--color-amber)', marginTop: '4px' }}>
+              Rescheduled: file overlap with failed phase
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+});
+
+// ── BuildOrderPreview ──────────────────────────────────────────────────────────
+
+function BuildOrderPreview({ phases }) {
+  if (!phases || phases.length === 0) return null;
+
+  // Group phases: each element is either a single phase or an array of parallel phases
+  // Simple heuristic: treat all as a flat chain for now
+  const segments = phases.map(p => ({ id: p.id, name: p.name }));
+
+  return (
+    <div class="text-xs text-muted font-mono mt-1 flex flex-wrap items-center gap-1">
+      {segments.map((p, i) => (
+        <span key={p.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+          <span class="font-bold" style={{ color: phaseColor(p.id) }}>P{p.id}</span>
+          {i < segments.length - 1 && (
+            <span style={{ color: 'var(--color-dim)' }}>→</span>
+          )}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+// ── ConcurrencyIndicator ───────────────────────────────────────────────────────
+
+function ConcurrencyIndicator({ active, max }) {
+  const pct = max > 0 ? (active / max) * 100 : 0;
+  const atCapacity = active >= max && max > 0;
+  const hasActive = active > 0;
+
+  let barColor = 'var(--color-dim)';
+  if (atCapacity) barColor = 'var(--color-amber)';
+  else if (hasActive) barColor = 'var(--color-green)';
+
+  let labelColor = 'var(--color-muted)';
+  if (atCapacity) labelColor = 'var(--color-amber)';
+  else if (hasActive) labelColor = 'var(--color-green)';
+
+  return (
+    <div class="flex items-center gap-2 text-xs">
+      <span style={{ color: labelColor, fontVariantNumeric: 'tabular-nums' }}>
+        Sessions: <AnimatedNumber value={active} /> / {max}
+      </span>
+      <div style={{ width: '36px', height: '3px', background: 'var(--color-border)', borderRadius: '2px', overflow: 'hidden' }}>
+        <div style={{
+          width: `${pct}%`,
+          height: '100%',
+          background: barColor,
+          borderRadius: '2px',
+          transition: `width 0.4s ${EASE_EXPO}`,
+        }} />
+      </div>
+    </div>
+  );
+}
+
+// ── WaveLane ───────────────────────────────────────────────────────────────────
+
+function WaveLane({ name, phases, isActive, isComplete, stepHistory, now, isBuildWave }) {
+  const waveHistory = useMemo(
+    () => (stepHistory || []).filter(e => (e.step || '').toLowerCase() === name.toLowerCase()),
+    [stepHistory, name]
+  );
+
+  const { cost, elapsedMs } = useMemo(() => sumHistory(waveHistory), [waveHistory]);
+
+  // Live elapsed for active wave: find earliest started_at in active steps
+  const activeStartEntry = isActive
+    ? waveHistory.find(e => e.started_at && !e.elapsed_ms)
+    : null;
+  const displayElapsed = isActive && activeStartEntry
+    ? liveElapsed(activeStartEntry.started_at, now)
+    : elapsedMs;
+
+  const phaseCount = phases ? phases.length : 0;
+
+  // Container styles
+  let containerStyle = {
+    borderRadius: '3px',
+    padding: '8px 10px',
+    marginBottom: '6px',
+    border: '1px solid',
+  };
+
+  let statusIcon = '·';
+
+  if (isActive) {
+    containerStyle.borderLeft = '2px solid var(--accent-success, var(--color-green))';
+    containerStyle.borderColor = 'var(--color-border)';
+    containerStyle.background = 'var(--color-surface)';
+    statusIcon = '⟳';
+  } else if (isComplete) {
+    containerStyle.borderColor = 'var(--color-border)';
+    containerStyle.opacity = '0.7';
+    statusIcon = '✓';
+  } else {
+    // pending
+    containerStyle.borderColor = 'var(--color-dim)';
+    containerStyle.borderStyle = 'dashed';
+    containerStyle.opacity = '0.4';
+  }
+
+  const hasStats = cost > 0 || displayElapsed > 0;
+
+  return (
+    <div style={containerStyle}>
+      {/* Header row */}
+      <div class="flex items-center justify-between gap-2 mb-1">
+        <div class="flex items-center gap-2">
+          <span class="text-xs tracking-wide uppercase" style={{ color: 'var(--color-text-tertiary, var(--color-muted))' }}>
+            {name}
+          </span>
+          <span class="text-xs" style={{ color: isActive ? 'var(--color-green)' : isComplete ? 'var(--color-subtle)' : 'var(--color-dim)' }}>
+            {statusIcon}
+          </span>
+        </div>
+        {hasStats && (
+          <div class="flex items-center gap-2 text-xs tabular-nums" style={{ color: 'var(--color-muted)' }}>
+            {isComplete && <span style={{ color: 'var(--color-subtle)' }}>{name} ✓</span>}
+            <span class="tabular-nums">
+              {formatElapsed(displayElapsed)}
+            </span>
+            <span>·</span>
+            <span class="tabular-nums">
+              {formatCost(cost)}
+            </span>
+            <span>·</span>
+            <span>{phaseCount} {phaseCount === 1 ? 'phase' : 'phases'}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Phase pills */}
+      {phases && phases.length > 0 && (
+        <div class="flex flex-wrap gap-1 mt-1">
+          {phases.map((p, i) => (
+            <PhasePill
+              key={p.id}
+              phaseId={p.id}
+              phaseName={p.name}
+              status={p.status}
+              stepHistory={stepHistory}
+              index={i}
+              now={now}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Build order preview inside build wave */}
+      {isBuildWave && phases && phases.length > 0 && (
+        <BuildOrderPreview phases={phases} />
+      )}
+    </div>
+  );
+}
+
+// ── SkeletonShimmer ────────────────────────────────────────────────────────────
+
+function SkeletonShimmer() {
+  return (
+    <div class="mb-4">
+      {[0, 1, 2].map(i => (
+        <div key={i} style={{ marginBottom: '6px', borderRadius: '3px', padding: '8px 10px', border: '1px dashed var(--color-dim)', opacity: 1 - i * 0.15 }}>
+          <div class="skeleton" style={{ height: '10px', width: '60px', marginBottom: '8px', borderRadius: '3px' }} />
+          <div class="flex gap-1 flex-wrap">
+            {Array.from({ length: 4 - i }).map((_, j) => (
+              <div key={j} class="skeleton" style={{ height: '44px', width: '56px', borderRadius: '3px' }} />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── SequentialFallback ─────────────────────────────────────────────────────────
+
+function SequentialFallback({ phases, phasesCompleted, phasesTotal }) {
+  const items = phases || [];
+  return (
+    <div>
+      <div class="flex flex-wrap items-center gap-1 text-xs mb-2">
+        {items.map((p, i) => {
+          const color = phaseColor(p.id);
+          let icon = '·';
+          let col = 'var(--color-dim)';
+          if (p.status === 'done') { icon = '✓'; col = 'var(--color-subtle)'; }
+          else if (p.status === 'active') { icon = '⟳'; col = color; }
+          else if (p.status === 'failed') { icon = '✗'; col = 'var(--color-fire)'; }
+          return (
+            <span key={p.id} class="flex items-center gap-1">
+              <span style={{ color: col }}>{icon}</span>
+              <span style={{ color: col, fontVariantNumeric: 'tabular-nums' }}>{p.name || `P${p.id}`}</span>
+              {i < items.length - 1 && <span style={{ color: 'var(--color-dim)' }}>→</span>}
+            </span>
+          );
+        })}
+      </div>
+      <div class="text-xs" style={{ color: 'var(--color-muted)' }}>
+        Phase {phasesCompleted} of {phasesTotal}
+        <span style={{ color: 'var(--color-dim)', margin: '0 6px' }}>|</span>
+        <AnimatedNumber value={phasesTotal > 0 ? Math.round((phasesCompleted / phasesTotal) * 100) : 0} />%
+      </div>
+    </div>
+  );
+}
+
+// ── AutoPipeline ───────────────────────────────────────────────────────────────
 
 export function AutoPipeline({ autoState }) {
   const [now, setNow] = useState(Date.now());
@@ -19,90 +383,136 @@ export function AutoPipeline({ autoState }) {
     return () => clearInterval(id);
   }, []);
 
-  if (!autoState) return null;
+  // Empty / loading state
+  if (!autoState) {
+    return (
+      <div class="bg-surface border border-border rounded-[3px] p-4 mb-4">
+        <SkeletonShimmer />
+      </div>
+    );
+  }
 
   const {
-    current_phase = '',
-    current_step = '',
+    phase_states = {},
     phases_completed = 0,
     phases_total = 0,
-    step_started_at = null,
-    failed_steps = [],
+    concurrency = {},
+    step_history = [],
+    cost_total_usd = 0,
   } = autoState;
 
-  const stepElapsed = step_started_at ? now - new Date(step_started_at).getTime() : 0;
-  const progressPct = phases_total > 0 ? Math.round((phases_completed / phases_total) * 100) : 0;
+  // Empty phase_states → skeleton
+  const phaseIds = Object.keys(phase_states);
+  if (phaseIds.length === 0) {
+    return (
+      <div class="bg-surface border border-border rounded-[3px] p-4 mb-4">
+        <SkeletonShimmer />
+      </div>
+    );
+  }
 
-  // Determine step status for the phase pipeline display
-  function getStepStatus(phase) {
-    if (failed_steps && failed_steps.includes(phase)) return 'failed';
-    const phaseIdx = PHASES.indexOf(phase);
-    const currentIdx = PHASES.indexOf(current_phase);
-    if (phaseIdx < currentIdx) return 'done';
-    if (phaseIdx === currentIdx) return 'active';
+  // Build phase list with status
+  const phaseList = phaseIds.map(id => ({
+    id,
+    name: phase_states[id].name || '',
+    status: phase_states[id].status || 'pending',
+    wave: phase_states[id].wave || 'build',
+  }));
+
+  // Sequential fallback: concurrency.max === 1
+  const maxConcurrency = concurrency.max || 1;
+  if (maxConcurrency === 1) {
+    const progressPct = phases_total > 0 ? Math.round((phases_completed / phases_total) * 100) : 0;
+    return (
+      <div class="bg-surface border border-border rounded-[3px] p-4 mb-4">
+        <SequentialFallback
+          phases={phaseList}
+          phasesCompleted={phases_completed}
+          phasesTotal={phases_total}
+        />
+        <div style={{ height: '3px', background: 'var(--color-border)', borderRadius: '9999px', marginTop: '8px', overflow: 'hidden' }}>
+          <div style={{
+            width: `${progressPct}%`,
+            height: '100%',
+            background: 'var(--color-green)',
+            borderRadius: '9999px',
+            transition: `width 0.5s ${EASE_EXPO}`,
+          }} />
+        </div>
+      </div>
+    );
+  }
+
+  // Group phases by wave
+  const waveMap = {};
+  for (const wave of WAVE_STEPS) waveMap[wave] = [];
+  for (const p of phaseList) {
+    const w = (p.wave || 'build').toLowerCase();
+    if (!waveMap[w]) waveMap[w] = [];
+    waveMap[w].push(p);
+  }
+
+  // Determine which wave is active/complete
+  function waveStatus(waveName) {
+    const wPhases = waveMap[waveName] || [];
+    if (wPhases.length === 0) return 'empty';
+    if (wPhases.every(p => p.status === 'done' || p.status === 'skipped')) return 'complete';
+    if (wPhases.some(p => p.status === 'active')) return 'active';
+    if (wPhases.some(p => p.status === 'done')) return 'active'; // partially done = in progress
     return 'pending';
   }
 
-  const failedStep = failed_steps && failed_steps.length > 0 ? failed_steps[failed_steps.length - 1] : null;
+  const activeConcurrency = concurrency.active || 0;
+  const progressPct = phases_total > 0 ? Math.round((phases_completed / phases_total) * 100) : 0;
 
   return (
-    <div className="bg-surface border border-border rounded-[3px] p-4 mb-4">
-      {/* Step indicator */}
-      <div className="flex items-center gap-0 mb-4 overflow-x-auto">
-        {PHASES.map((phase, i) => {
-          const status = getStepStatus(phase);
-          return (
-            <div key={phase} className="flex items-center">
-              <div className="flex flex-col items-center gap-1">
-                <div
-                  className={`
-                    w-6 h-6 rounded-full flex items-center justify-center text-[0.7rem] font-bold border
-                    ${status === 'done' ? 'bg-green border-green text-bg' : ''}
-                    ${status === 'active' ? 'border-green text-green animate-[pulse_1.5s_ease-in-out_infinite]' : ''}
-                    ${status === 'failed' ? 'bg-fire border-fire text-bg' : ''}
-                    ${status === 'pending' ? 'border-dim text-muted' : ''}
-                  `}
-                  title={status === 'failed' && failedStep === phase ? `Failed: ${phase}` : undefined}
-                >
-                  {status === 'done' ? '✓' : status === 'failed' ? '✗' : i + 1}
-                </div>
-                <span className={`text-[0.65rem] whitespace-nowrap ${status === 'active' ? 'text-green' : status === 'done' ? 'text-subtle' : 'text-dim'}`}>
-                  {phase}
-                </span>
-              </div>
-              {i < PHASES.length - 1 && (
-                <div className={`h-px w-8 mx-1 mb-5 ${PHASES.indexOf(current_phase) > i ? 'bg-green' : 'bg-border'}`} />
-              )}
-            </div>
-          );
-        })}
+    <div class="bg-surface border border-border rounded-[3px] p-4 mb-4">
+      {/* Top bar: concurrency indicator */}
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-xs" style={{ color: 'var(--color-dim)' }}>pipeline</span>
+        <ConcurrencyIndicator active={activeConcurrency} max={maxConcurrency} />
       </div>
 
-      {/* Current step info */}
-      <div className="flex items-center justify-between gap-4 mb-3">
-        <div className="flex items-center gap-2">
-          <span className="text-muted text-xs">{'//'}</span>
-          <span className="text-dim text-xs">step:</span>
-          <span className="text-bright text-xs font-bold">{current_step || current_phase || '—'}</span>
-          {stepElapsed > 0 && (
-            <span className="text-muted text-xs">({formatElapsed(stepElapsed)})</span>
-          )}
-        </div>
-        <span className="text-dim text-xs shrink-0">
-          Phase {phases_completed} of {phases_total}
-        </span>
-      </div>
+      {/* Wave lanes */}
+      {WAVE_STEPS.map(wave => {
+        const phases = waveMap[wave] || [];
+        if (phases.length === 0) return null;
+        const ws = waveStatus(wave);
+        return (
+          <WaveLane
+            key={wave}
+            name={wave}
+            phases={phases}
+            isActive={ws === 'active'}
+            isComplete={ws === 'complete'}
+            stepHistory={step_history}
+            now={now}
+            isBuildWave={wave === 'build'}
+          />
+        );
+      })}
 
       {/* Overall progress bar */}
-      <div className="h-[3px] bg-border rounded-full overflow-hidden">
-        <div
-          className="h-full bg-green rounded-full transition-all duration-500"
-          style={{ width: `${progressPct}%` }}
-        />
-      </div>
-      <div className="flex justify-between mt-1">
-        <span className="text-muted text-[0.65rem]">progress</span>
-        <span className="text-dim text-[0.65rem]">{progressPct}%</span>
+      <div style={{ marginTop: '8px' }}>
+        <div style={{ height: '3px', background: 'var(--color-border)', borderRadius: '9999px', overflow: 'hidden' }}>
+          <div style={{
+            width: `${progressPct}%`,
+            height: '100%',
+            background: 'var(--color-green)',
+            borderRadius: '9999px',
+            transition: `width 0.5s ${EASE_EXPO}`,
+          }} />
+        </div>
+        <div class="flex items-center justify-between mt-1">
+          <span class="text-xs tabular-nums" style={{ color: 'var(--color-muted)' }}>
+            <AnimatedNumber value={phases_completed} /> / {phases_total} phases complete
+            {'  '}
+            <AnimatedNumber value={progressPct} />%
+          </span>
+          <span class="text-xs tabular-nums" style={{ color: 'var(--color-muted)' }}>
+            {formatCost(cost_total_usd)}
+          </span>
+        </div>
       </div>
     </div>
   );
