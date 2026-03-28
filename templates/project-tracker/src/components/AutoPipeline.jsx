@@ -62,7 +62,6 @@ export function AutoPipeline({ autoState }) {
     phase,
     phase_name,
     step,
-    steps_completed = 0,
     started_at,
     total_cost_estimate,
     elapsed_ms,
@@ -76,12 +75,20 @@ export function AutoPipeline({ autoState }) {
     : (elapsed_ms || 0);
 
   // Derive step statuses from step_history and current step
+  // Display names → orchestrator step names mapping
   const knownSteps = ['plan', 'review', 'build', 'verify'];
+  const stepAliases = {
+    plan: ['plan', 'plan-work'],
+    review: ['plan-review'],         // pre-build review only
+    build: ['build'],
+    verify: ['verify', 'review'],    // post-build 'review' step maps to verify display
+  };
   const completedSet = new Set((step_history || []).map(h => h.step || h.name).filter(Boolean));
 
   function stepStatus(name) {
-    if (completedSet.has(name)) return 'done';
-    if (step && step.toLowerCase() === name.toLowerCase()) return 'active';
+    const aliases = stepAliases[name] || [name];
+    if (aliases.some(a => completedSet.has(a))) return 'done';
+    if (step && aliases.some(a => step.toLowerCase() === a.toLowerCase())) return 'active';
     return 'pending';
   }
 
