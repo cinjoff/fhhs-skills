@@ -106,7 +106,7 @@ EXEC_MODEL=$(node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs resolve-model gs
 
 If the plan has `must_haves.truths` and at least one task modifies `.ts`, `.tsx`, `.js`, `.jsx` files (excluding config-only, types-only, or constants-only files):
 
-Dispatch a **test-spec subagent** (`general-purpose`, model `$EXEC_MODEL`) in parallel with Wave 1. This agent writes test skeletons from the plan specification — it has NOT seen the implementation code.
+Dispatch a **test-spec subagent** (`general-purpose`, model `$EXEC_MODEL`) **before Wave 1 begins**. This agent writes test skeletons from the plan specification — it has NOT seen the implementation code. Wave 1 subagents will find these test files already on disk and can implement code to make them pass.
 
 **Subagent prompt:**
 ```
@@ -132,7 +132,7 @@ Error cases: {ERROR_RESCUE_MAP_IF_AVAILABLE}
 Report: test files created, test count, which must_haves.truths are covered.
 ```
 
-This subagent runs in parallel with Wave 1 and does not block execution. If it finishes before all waves complete, its test files are available for implementation subagents. If it finishes after, the Step 4 verification integrates them.
+Wait for this subagent to complete before dispatching Wave 1. This ensures implementation subagents see pre-existing test skeletons and can implement to pass them — orchestration-level TDD.
 
 Skip if: no `must_haves.truths`, all tasks are config/docs only, or plan has fewer than 2 tasks.
 
@@ -253,6 +253,7 @@ Run verification commands directly:
    Parse output for line/branch percentages. Include in SUMMARY.md `test_metrics` frontmatter.
    If coverage isn't configured or command fails, skip with note "Coverage not configured — consider adding vitest coverage."
 5. **Spec test count:** If Step 2.5 ran, capture the test-spec subagent's reported test count as `spec_tests_count` in `test_metrics`. If Step 2.5 was skipped, set to 0.
+6. **Test creation check:** If the plan included tasks with `tdd="true"` or companion test tasks, verify at least one `*.test.*` or `*.spec.*` file was created or modified in this build (check via `git diff --name-only $WAVE_START_SHA HEAD`). If none found: WARN "Plan required tests but no test files were created — check subagent reports for UNTESTED flags."
 
 If any fail: flag in SUMMARY under "Issues Encountered". Do NOT claim success if verification failed.
 
