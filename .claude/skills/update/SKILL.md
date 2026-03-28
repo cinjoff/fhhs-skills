@@ -631,6 +631,28 @@ Do NOT auto-apply — `db reset` is destructive to local data. Let the user deci
 
 **If `NO_SEED_FILE`:** Note as informational — not all projects use seed.sql.
 
+##### OrbStack auto-config drift (macOS only, when OrbStack is active)
+
+```bash
+if docker context show 2>/dev/null | grep -q orbstack; then
+  # Check memory config — only flag if below recommended
+  MEM=$(orb config show memory_mib 2>/dev/null || echo "0")
+  [ "$MEM" -lt 8192 ] 2>/dev/null && echo "ORBSTACK_MEM_LOW — memory_mib=$MEM (recommended: 8192)" || echo "ORBSTACK_MEM_OK — $MEM MiB"
+
+  # Check package.json for smart db:studio (uses open-studio.sh helper)
+  if [ -f "package.json" ]; then
+    grep '"db:studio"' package.json 2>/dev/null | grep -q 'open-studio' && echo "DB_STUDIO_SMART" || echo "DB_STUDIO_BASIC"
+    grep -q '"db:clean"' package.json 2>/dev/null && echo "DB_CLEAN_OK" || echo "DB_CLEAN_MISSING"
+  fi
+fi
+```
+
+**If `ORBSTACK_MEM_LOW`:** Fix inline: `orb config set memory_mib 8192`
+
+**If `DB_STUDIO_BASIC`:** Update `package.json` db:studio to `"sh scripts/open-studio.sh"` and create `scripts/open-studio.sh` with OrbStack detection (same as `/fh:new-project` Step 8e-local section 9).
+
+**If `DB_CLEAN_MISSING`:** Add to package.json: `"db:clean": "docker builder prune -f"`, `"db:clean:all": "docker builder prune -af"`
+
 Add results to the reconciliation table:
 
 ```
@@ -638,6 +660,9 @@ Add results to the reconciliation table:
 | ✓ | Supabase CLI             | Already installed |
 | ⊘ | Supabase containers      | Stopped (run $PM run db:start to restart) |
 | ⚠ | Migration drift          | 2 unapplied migration(s) — run supabase db reset |
+| ✓ | OrbStack memory          | Raised to 8192 MiB (was: 4096) |
+| ✓ | db:studio                | Updated to OrbStack-aware version |
+| ✓ | db:clean                 | Added to package.json |
 ```
 
 ### 5c: Suggest .planning/ health check

@@ -1115,7 +1115,7 @@ EOF
 - `.env.local` must be gitignored before any secrets are written
 - Local credentials are safe for dev but should never reach production
 
-##### 9. Add package.json scripts
+##### 9. Add package.json scripts and helper
 
 Add convenience scripts for local Supabase management. Read `package.json`, then add to the `scripts` section:
 
@@ -1125,13 +1125,55 @@ Add convenience scripts for local Supabase management. Read `package.json`, then
   "db:start": "supabase start",
   "db:stop": "supabase stop",
   "db:reset": "supabase db reset",
-  "db:studio": "echo 'Studio: http://127.0.0.1:54323'"
+  "db:studio": "sh scripts/open-studio.sh",
+  "db:clean": "docker builder prune -f",
+  "db:clean:all": "docker builder prune -af"
 }
 ```
 
-Use the Edit tool to merge these into existing scripts — do NOT overwrite existing script entries.
+Create the Studio helper script at `scripts/open-studio.sh` (set `chmod +x`):
 
-##### 10. Report local setup status
+```bash
+#!/bin/sh
+# Open Supabase Studio — detects OrbStack for .orb.local domain, falls back to localhost
+PROJECT_ID=$(grep '^project_id' supabase/config.toml 2>/dev/null | sed 's/.*= *"//;s/".*//')
+if [ -n "$PROJECT_ID" ] && docker context show 2>/dev/null | grep -q orbstack; then
+  URL="http://supabase_studio_${PROJECT_ID}.orb.local"
+else
+  URL="http://localhost:54323"
+fi
+open "$URL" 2>/dev/null || xdg-open "$URL" 2>/dev/null || echo "Studio: $URL"
+```
+
+Use the Edit tool to merge scripts into existing entries — do NOT overwrite existing script entries.
+
+##### 10. Auto-configure OrbStack efficiency (macOS only)
+
+**Run this section only if OrbStack is the active container runtime.** Skip for Docker Desktop and Linux.
+
+```bash
+if docker context show 2>/dev/null | grep -q orbstack; then
+  # Check current memory limit — only RAISE, never lower
+  CURRENT_MEM=$(orb config show memory_mib 2>/dev/null || echo "0")
+  if [ "$CURRENT_MEM" -lt 8192 ] 2>/dev/null; then
+    orb config set memory_mib 8192
+    echo "✓ OrbStack memory raised to 8192 MiB (was: ${CURRENT_MEM} MiB)"
+  else
+    echo "✓ OrbStack memory already at ${CURRENT_MEM} MiB — no change needed"
+  fi
+else
+  echo "Not using OrbStack — skipping auto-configuration"
+fi
+```
+
+##### 11. Report local setup status
+
+Derive the project_id for `.orb.local` URLs:
+
+```bash
+PROJECT_ID=$(grep '^project_id' supabase/config.toml 2>/dev/null | sed 's/.*= *"//;s/".*//')
+IS_ORBSTACK=$(docker context show 2>/dev/null | grep -q orbstack && echo "true" || echo "false")
+```
 
 ```
 ✓ Local Supabase running via {OrbStack|Docker}
@@ -1142,19 +1184,20 @@ Use the Edit tool to merge these into existing scripts — do NOT overwrite exis
   Seed data: {loaded|not found — will be created in Phase 1}
 
   Commands:
-  • $PM run db:start   — start Supabase containers
-  • $PM run db:stop    — stop Supabase containers
-  • $PM run db:reset   — reset DB and re-apply migrations + seed
-  • $PM run db:studio  — open Supabase Studio URL
+  • $PM run db:start     — start Supabase containers
+  • $PM run db:stop      — stop Supabase containers
+  • $PM run db:reset     — reset DB and re-apply migrations + seed
+  • $PM run db:studio    — open Supabase Studio
+  • $PM run db:clean     — free Docker build cache
+  • $PM run db:clean:all — aggressive cleanup (all build cache)
 ```
 
-**OrbStack tips (show only if using OrbStack):**
+**If using OrbStack, also show:**
 ```
-  OrbStack efficiency tips:
-  • Stop containers when not working: $PM run db:stop (memory returned to macOS)
-  • Supabase Studio also available at: https://supabase_studio_fh-starter-project.orb.local
-  • Clean Docker build cache if low on space: docker builder prune -a
-  • Container index page: http://orb.local
+  OrbStack auto-configured:
+  • Memory: {CURRENT_MEM} MiB (Supabase needs ~4-8 GB for its 15 containers)
+  • Studio: http://supabase_studio_{PROJECT_ID}.orb.local
+  • All containers: http://orb.local
 ```
 
 **If `supabase_mode` is `local` only:** Skip to Step 8f.

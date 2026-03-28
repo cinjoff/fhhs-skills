@@ -9058,6 +9058,176 @@
           ]
         }
       ]
+    },
+    {
+      "id": 277,
+      "command": "new-project",
+      "prompt": "Set up a new project with local Supabase using OrbStack. After setup, verify that OrbStack memory is configured and db:studio opens the .orb.local URL.",
+      "expected_output": "Should auto-configure OrbStack memory to 8192 MiB via orb config set (only if current is lower). Should create scripts/open-studio.sh helper that detects OrbStack and opens supabase_studio_{project_id}.orb.local. Should add db:clean and db:clean:all scripts to package.json. Status report should show .orb.local Studio URL.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Auto-configures OrbStack memory via orb config set",
+          "type": "behavioral"
+        },
+        {
+          "text": "Creates scripts/open-studio.sh with OrbStack detection",
+          "type": "behavioral"
+        },
+        {
+          "text": "Shows .orb.local Studio URL in status report",
+          "type": "output"
+        },
+        {
+          "text": "Adds db:clean scripts to package.json",
+          "type": "output"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "orb config",
+            "memory_mib",
+            "orb.local",
+            "db:studio",
+            "db:clean"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 278,
+      "command": "new-project",
+      "prompt": "Set up local Supabase with Docker Desktop (not OrbStack). I don't have OrbStack installed. Should NOT run any OrbStack-specific configuration.",
+      "expected_output": "Should detect Docker Desktop is the active runtime. Should NOT run orb config or reference .orb.local domains. Should still add db:clean scripts. db:studio should fall back to localhost:54323. Should skip the OrbStack auto-configuration step entirely.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Skips OrbStack auto-configuration for non-OrbStack users",
+          "type": "guard"
+        },
+        {
+          "text": "Does NOT reference .orb.local domains",
+          "type": "guard"
+        },
+        {
+          "text": "db:studio falls back to localhost:54323",
+          "type": "behavioral"
+        },
+        {
+          "text": "Still adds db:clean scripts",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case",
+        "guard"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "Docker",
+            "localhost",
+            "db:clean"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "orb config set",
+            ".orb.local"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 279,
+      "command": "update",
+      "prompt": "Update my plugin — I use OrbStack but memory_mib is only 4096 and my package.json has a basic db:studio that just echoes the URL. Should detect these as drift and fix them.",
+      "expected_output": "Should detect OrbStack memory is below 8192 and raise it via orb config set. Should detect db:studio is basic (no open-studio.sh) and update it. Should detect db:clean is missing and add it. Should show all fixes in reconciliation table.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects OrbStack memory below 8192",
+          "type": "behavioral"
+        },
+        {
+          "text": "Raises memory to 8192 via orb config set",
+          "type": "behavioral"
+        },
+        {
+          "text": "Detects basic db:studio without OrbStack detection",
+          "type": "behavioral"
+        },
+        {
+          "text": "Adds missing db:clean script",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "memory_mib",
+            "8192",
+            "db:studio",
+            "db:clean",
+            "orbstack"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 280,
+      "command": "new-project",
+      "prompt": "Set up local Supabase with OrbStack. My OrbStack memory is already configured to 16384 MiB. The auto-configuration should NOT lower it to 8192.",
+      "expected_output": "Should detect OrbStack memory is already at 16384 MiB which is above the 8192 recommendation. Should skip the memory configuration step and note 'memory already at 16384 MiB — no change needed'. Should NOT run orb config set memory_mib 8192.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Checks current OrbStack memory before setting",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT lower memory from 16384 to 8192",
+          "type": "guard"
+        },
+        {
+          "text": "Reports memory is already sufficient",
+          "type": "output"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case",
+        "guard"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "memory_mib",
+            "16384"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "orb config set memory_mib 8192"
+          ]
+        }
+      ]
     }
   ]
 }

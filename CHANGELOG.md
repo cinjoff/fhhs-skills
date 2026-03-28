@@ -8,6 +8,15 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.45.0] - 2026-03-28
+
+### Changed
+- **OrbStack auto-configuration replaces informational tips** — `/fh:new-project` Step 8e now auto-configures OrbStack memory (`orb config set memory_mib 8192`, only raises, never lowers), creates `scripts/open-studio.sh` helper that detects OrbStack and opens `supabase_studio_{project_id}.orb.local` (falls back to `localhost:54323`), and adds `db:clean`/`db:clean:all` scripts for Docker build cache management
+- **OrbStack auto-config drift detection in `/fh:update`** — Step 5b½ now detects low OrbStack memory, basic `db:studio` scripts (missing OrbStack detection), and missing `db:clean` scripts; auto-remediates all three
+
+### Added
+- **4 new OrbStack auto-config evals** (IDs 277-280) covering auto-config happy path, Docker Desktop guard (no OrbStack config), drift detection and remediation, and memory preservation guard (don't lower existing higher setting)
+
 ## [1.44.0] - 2026-03-28
 
 ### Changed
