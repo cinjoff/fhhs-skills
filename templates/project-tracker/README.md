@@ -8,7 +8,7 @@ This directory contains a local web dashboard that visualizes your project's pro
 node server.cjs
 ```
 
-Then open the URL printed in the terminal (default: `http://localhost:3847`).
+Then open the URL printed in the terminal (default: `http://localhost:4111`).
 
 The dashboard auto-updates in real time as files in `.planning/` change.
 

@@ -63,7 +63,13 @@ The dashboard will still show other registered projects.
 
 ## Step 4: Start the server
 
-Start the tracker server in the background from the global install location, passing the registry path:
+First, kill any stale tracker process that may be occupying the port:
+
+```bash
+lsof -ti :4111 -s TCP:LISTEN | xargs kill 2>/dev/null; echo "port cleared"
+```
+
+Then start the tracker server in the background using the **full absolute path** to the global install:
 
 ```bash
 TRACKER_REGISTRY=~/.claude/tracker/projects.json node ~/.claude/tracker/server.cjs
@@ -71,7 +77,7 @@ TRACKER_REGISTRY=~/.claude/tracker/projects.json node ~/.claude/tracker/server.c
 
 Run this with `run_in_background: true`.
 
-The server loads the global registry at startup so the dashboard can display all registered projects.
+**IMPORTANT:** Always use the full path `~/.claude/tracker/server.cjs` — never `node server.cjs` from a repo directory. The server resolves `index.html` relative to `__dirname`, so running from the wrong directory causes "index.html not found" errors.
 
 ---
 

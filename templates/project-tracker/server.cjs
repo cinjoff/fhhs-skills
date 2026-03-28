@@ -41,7 +41,7 @@ const parseCodebaseFreshness = parser.parseCodebaseFreshness || (() => ({ lastUp
 // ---------------------------------------------------------------------------
 // Configuration
 // ---------------------------------------------------------------------------
-const BASE_PORT = 3847;
+const BASE_PORT = 4111;
 const MAX_PORT_ATTEMPTS = 3;
 const DEBOUNCE_MS = 300;
 const CACHE_VERSION = 1;
