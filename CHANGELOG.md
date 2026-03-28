@@ -8,6 +8,11 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.49.1] - 2026-03-28
+
+### Added
+- **Global update tip** — after a regular `/fh:update`, suggests `--global` when other projects exist in the tracker registry, shown on both fresh-update and already-current paths
+
 ## [1.49.0] - 2026-03-28
 
 ### Added
