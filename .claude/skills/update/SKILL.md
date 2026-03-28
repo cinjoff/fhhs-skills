@@ -78,15 +78,9 @@ Clear any stale update indicator:
 rm -f "$HOME/.claude/cache/fhhs-update-check.json"
 ```
 
-```
-## fhhs-skills
+The plugin itself is current, but this worktree/project may still have environment gaps (missing tools, hooks, env vars, or project files) — especially if the update was applied from a different worktree. Skip to **Step 5½: Environment Reconciliation** to check and fix any gaps.
 
-**Installed:** X.Y.Z
-**Latest:** X.Y.Z
-
-You're on the latest version.
-```
-Exit.
+Set `PREV_VERSION="0.0.0"` and `LATEST_VERSION` to the installed version so reconciliation scans ALL changelog tags.
 
 ---
 
@@ -229,6 +223,37 @@ Running post-update reconciliation...
 ```
 
 Proceed to Step 5.
+
+---
+
+## Step 5½: Environment Reconciliation (already up to date)
+
+This step is reached when the plugin version already matches the latest. The plugin was likely updated from another worktree, but this project/environment may still have gaps.
+
+```
+## fhhs-skills
+
+**Installed:** X.Y.Z
+**Latest:** X.Y.Z
+
+Plugin is current. Checking this environment for gaps...
+```
+
+Fetch the changelog and run reconciliation with `--from 0.0.0` to scan ALL tags:
+
+```bash
+CHANGELOG_CONTENT=$(curl -sL "https://raw.githubusercontent.com/cinjoff/fhhs-skills/main/CHANGELOG.md" 2>/dev/null)
+echo "$CHANGELOG_CONTENT" > /tmp/fhhs-changelog.md
+```
+
+Then run Steps 5a, 5a½, and 5b with `PREV_VERSION="0.0.0"` and `LATEST_VERSION` set to the installed version.
+
+**After reconciliation completes:**
+
+- If ALL items were already OK (nothing missing): `You're on the latest version — environment is fully synced.`
+- If gaps were found and fixed: show the reconciliation table, then `Environment synced. Restart Claude Code to pick up any hook or plugin changes.`
+
+Then check Step 5c (`.planning/` health suggestion) and exit.
 
 ---
 
