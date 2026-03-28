@@ -41,6 +41,10 @@ const _autoStatus = {
   lastLogWriteMs: 0,
 };
 
+// Rolling log buffer for tracker visibility
+const _logBuffer = [];
+const LOG_BUFFER_MAX = 20;
+
 // Optimization counters — module-level, included in every writeAutoStatus() call
 const _optimizations = {
   health_checks_cached: 0,
@@ -118,6 +122,7 @@ function buildAutoStatus(_projectDir, overrides) {
     step_history: _autoStatus.stepHistory,
     errors: _autoStatus.errors,
     last_log_line: _autoStatus.lastLogLine,
+    log_buffer: [..._logBuffer],
     optimizations: Object.assign({}, _optimizations),
     // Parallel execution fields (sequential fallback values)
     project_dir: _autoStatus.projectDir,
@@ -222,16 +227,21 @@ function timestamp() {
 function log(msg) {
   process.stdout.write(`[${timestamp()}] ${msg}\n`);
   _autoStatus.lastLogLine = msg;
+  // Push to rolling log buffer
+  _logBuffer.push({ ts: timestamp(), msg });
+  while (_logBuffer.length > LOG_BUFFER_MAX) _logBuffer.shift();
   // Debounced last_log_line update: max once per 2 seconds, routed through _stateWriteQueue
   const now = Date.now();
   if (_autoStatus.projectDir && (now - _autoStatus.lastLogWriteMs) >= 2000) {
     _autoStatus.lastLogWriteMs = now;
+    const bufferSnapshot = [..._logBuffer];
     _stateWriteQueue = _stateWriteQueue.then(() => {
       try {
         const p = path.join(_autoStatus.projectDir, '.planning', '.auto-state.json');
         if (fs.existsSync(p)) {
           const existing = JSON.parse(fs.readFileSync(p, 'utf-8'));
           existing.last_log_line = msg;
+          existing.log_buffer = bufferSnapshot;
           const tmp = p + '.tmp';
           fs.writeFileSync(tmp, JSON.stringify(existing, null, 2), 'utf-8');
           fs.renameSync(tmp, p);
@@ -650,9 +660,19 @@ function runClaudeSession(prompt, opts) {
     let stuckWarned = false;
 
     child.stdout.on('data', (data) => {
-      stdout += data.toString();
+      const chunk = data.toString();
+      stdout += chunk;
       lastActivityAt = Date.now();
       stuckWarned = false; // reset warning on new output
+      // Feed last non-empty line into rolling log buffer for tracker visibility
+      const lines = chunk.split('\n').filter(l => l.trim());
+      if (lines.length > 0) {
+        const lastLine = lines[lines.length - 1].slice(0, 120);
+        const prefixed = `[session] ${lastLine}`;
+        _logBuffer.push({ ts: timestamp(), msg: prefixed });
+        while (_logBuffer.length > LOG_BUFFER_MAX) _logBuffer.shift();
+        _autoStatus.lastLogLine = prefixed;
+      }
     });
     child.stderr.on('data', (data) => {
       stderr += data.toString();
