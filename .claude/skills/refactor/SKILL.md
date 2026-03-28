@@ -54,7 +54,7 @@ If large (10+ files or 3+ subsystems), suggest writing a PLAN.md via `/fh:plan-w
 
 If ctx_batch_execute is available, index the analysis scope before planning refactoring steps:
 - Index files in the target module/directory via ctx_batch_execute
-- Include `.planning/codebase/CONVENTIONS.md` and `.planning/codebase/ARCHITECTURE.md` for pattern reference
+- Include `.planning/codebase/CODEBASE.md` for structure, conventions, and architecture reference (fall back to individual files in `.planning/codebase/` if CODEBASE.md doesn't exist)
 - Use ctx_search for "coupling between modules", "dependency patterns", "abstraction layers" to find refactoring targets
 - If unavailable, fall back to direct Grep/Glob/Read
 

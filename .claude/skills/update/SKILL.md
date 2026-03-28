@@ -257,6 +257,22 @@ else
 fi
 ```
 
+### 5a½: Re-apply claude-mem project-env patch
+
+claude-mem derives its project name from the process cwd basename, which causes misattribution in Conductor workspaces and worktrees. This unified patch adds a `CLAUDE_MEM_PROJECT` env var check as the first tier in `gp()`, covering both worktrees and headless sessions. It must be re-applied after every claude-mem update since the update overwrites the patched files.
+
+```bash
+# Find the patch script shipped with fhhs-skills
+PATCH=$(find "$HOME/.claude/plugins/cache/fhhs-skills" -name patch-claude-mem-project-env.cjs -print -quit 2>/dev/null)
+if [ -n "$PATCH" ]; then
+  node "$PATCH" 2>&1
+else
+  echo "⚠ Project-env patch not found (expected in fhhs-skills plugin cache)"
+fi
+```
+
+If the patch outputs "WARNING: gp() signature changed", claude-mem changed its internals and the patch needs updating — note this in the reconciliation table but don't fail the update.
+
 ### 5b: Changelog-driven reconciliation — auto-fix gaps
 
 Save the changelog (already fetched in Step 2) to a temp file and run the reconciliation check:
@@ -304,12 +320,12 @@ Verify after install: `command -v $ID >/dev/null 2>&1`
 
 | ID | Install command |
 |----|----------------|
-| `~/.skills/shadcn` | `cd "$HOME" && npx skills add shadcn/ui` |
+| `~/.agents/skills/shadcn` or `~/.skills/shadcn` | `cd "$HOME" && npx -y skills add -g -y --all shadcn/ui` |
 | Any other dir | `mkdir -p "$EXPANDED_PATH"` |
 
 ```bash
 # For shadcn skills
-cd "$HOME" && npx skills add shadcn/ui 2>&1 && echo "✓ shadcn skills installed" || echo "⚠ shadcn skills install failed"
+cd "$HOME" && npx -y skills add -g -y --all shadcn/ui 2>&1 && echo "✓ shadcn skills installed" || echo "⚠ shadcn skills install failed"
 ```
 
 **`setup:env:*`** — Add the env var to `~/.claude/settings.json`:

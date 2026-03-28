@@ -72,36 +72,101 @@ AUTO_MODE=$(node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs config-get workfl
 
 If `AUTO_MODE` is `"true"` AND `.planning/DECISIONS.md` exists, include the last 10 entries for this phase as `{DECISIONS_CONTEXT}`. Otherwise empty string.
 
-### Pre-Index Source Files
+### Pre-Index Source Files + Test Files
 
-If ctx_batch_execute is available, index all source files listed in the plan's `files_modified` frontmatter field. These are the files agents will need to read for context.
+If ctx_batch_execute is available, build a comprehensive file manifest for pre-indexing:
+
+1. **Source files:** All files from `files_modified` frontmatter
+2. **Per-task files:** All files from each task's `<files>` element (may include read-only context files not in files_modified)
+3. **Test file discovery:** For each source file, find its test counterpart:
+   - `{name}.test.{ext}` in the same directory
+   - `__tests__/{name}.test.{ext}` in parent directory
+   - `tests/{name}.test.{ext}` in project root
+   - `e2e/{name}.spec.{ext}` for page/route files
+4. **Test-spec skeletons:** If Step 2.5 ran, include all files it created (test skeletons from plan specification)
+5. **Deduplicate** the combined list
+6. Index all unique files plus planning docs:
 
 ```
 ctx_batch_execute([
-  // For each file in files_modified:
+  // For each file in the deduplicated manifest:
   { label: "{filename}", cmd: "cat {filepath}" },
-  // Also index the PLAN.md itself and CONTEXT.md
+  // Planning docs:
   { label: "PLAN", cmd: "cat {planPath}" },
   { label: "CONTEXT", cmd: "cat .planning/phases/{phase}/{phase}-CONTEXT.md" },
 ], queries: [
   "existing patterns in modified files",
+  "existing test patterns and assertions",
   "locked decisions for this phase",
   "plan tasks and requirements"
 ])
 ```
 
-If the Phase Context Bootstrap ran in a prior step (plan-work or plan-review), the stable docs (ARCHITECTURE, CONVENTIONS, etc.) are already in the index. Only source files and mutable planning docs need fresh indexing.
+If the Phase Context Bootstrap ran in a prior step, stable docs (ARCHITECTURE, CONVENTIONS, etc.) are already indexed. Only source files, test files, and mutable planning docs need fresh indexing.
+
+### Conditional Context Injection
+
+If pre-indexing succeeded (ctx_batch_execute returned without error):
+- Leave `{CLAUDE_MD_SECTIONS}` **empty** when filling the implementer-prompt template
+- Leave `{DESIGN_DECISIONS}` **empty** when filling the template
+- Agents will fetch this context via ctx_search (pre-indexed and compact)
+
+If pre-indexing was skipped (context-mode unavailable):
+- Populate `{CLAUDE_MD_SECTIONS}` and `{DESIGN_DECISIONS}` as today
+- Zero behavioral change for systems without context-mode
 
 If ctx_batch_execute is not available, skip silently.
 
 ---
 
-## Step 3: Execute Waves
+## Step 2.5: Test-Spec Generation
 
-Resolve the execution model once before dispatching waves:
+Resolve the execution model (needed for both this step and Step 3):
 
 ```bash
-EXEC_MODEL=$(node ./.claude/get-shit-done/bin/gsd-tools.cjs resolve-model gsd-executor --raw)
+EXEC_MODEL=$(node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs resolve-model gsd-executor --raw)
+```
+
+If the plan has `must_haves.truths` and at least one task modifies `.ts`, `.tsx`, `.js`, `.jsx` files (excluding config-only, types-only, or constants-only files):
+
+Dispatch a **test-spec subagent** (`general-purpose`, model `$EXEC_MODEL`) **before Wave 1 begins**. This agent writes test skeletons from the plan specification — it has NOT seen the implementation code. Wave 1 subagents will find these test files already on disk and can implement code to make them pass.
+
+**Subagent prompt:**
+```
+You are writing test skeletons from a plan specification. You have NOT seen the implementation.
+
+Read `.claude/skills/build/references/testing-manifesto.md` for testing rules.
+
+## Spec
+Must-haves: {PLAN_MUST_HAVES}
+Task acceptance criteria: {PLAN_DONE_CRITERIA}
+Error cases: {ERROR_RESCUE_MAP_IF_AVAILABLE}
+
+## Instructions
+1. For each must_haves.truth → write 1-3 behavioral test cases
+2. For each task's done criteria → write the test proving it
+3. For error/rescue entries → write failure-path tests
+4. Write to `__tests__/` or `tests/` matching project convention
+5. Use Vitest + @testing-library/react for components. Playwright for E2E.
+6. Use `getByRole` > `getByLabel` > `getByTestId` for selectors
+7. Mark tests needing implementation with `it.todo()` if API is unclear
+8. DO NOT import from files that don't exist yet — use expected paths from the plan
+
+Report: test files created, test count, which must_haves.truths are covered.
+```
+
+Wait for this subagent to complete before dispatching Wave 1. This ensures implementation subagents see pre-existing test skeletons and can implement to pass them — orchestration-level TDD.
+
+Skip if: no `must_haves.truths`, all tasks are config/docs only, or plan has fewer than 2 tasks.
+
+---
+
+## Step 3: Execute Waves
+
+Use `$EXEC_MODEL` resolved in Step 2.5 (or resolve here if Step 2.5 was skipped):
+
+```bash
+[ -z "$EXEC_MODEL" ] && EXEC_MODEL=$(node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs resolve-model gsd-executor --raw)
 ```
 
 For each wave, dispatch **one subagent per task** using the Agent tool with **`subagent_type: "general-purpose"`** and **`model: "$EXEC_MODEL"`** (use the resolved value, e.g. `"sonnet"` or `"opus"`).
@@ -113,8 +178,8 @@ For each wave, dispatch **one subagent per task** using the Agent tool with **`s
 Use the structured template at `references/implementer-prompt.md`. Fill its placeholders:
 
 - `{TASK_TEXT}` — Full task content (files, action, verify, done). Copy the text, don't reference the plan file.
-- `{CLAUDE_MD_SECTIONS}` — Relevant sections from CLAUDE.md for this task type (UI work → CONVENTIONS.md + DESIGN.md; new files → STRUCTURE.md; API work → ARCHITECTURE.md; tests → TESTING.md). **Always populate** — agents with ctx_search may skip it, agents without rely on it.
-- `{DESIGN_DECISIONS}` — If `.planning/phases/{phase}/{phase}-CONTEXT.md` exists, include the "Decisions", "Discretion Areas", and "Deferred Ideas" sections. **Always populate** — agents with ctx_search may prefer the index, but agents without plugins need this content injected.
+- `{CLAUDE_MD_SECTIONS}` — Relevant sections from CLAUDE.md for this task type, plus `.planning/codebase/CODEBASE.md` sections (fall back to individual files in `.planning/codebase/` if CODEBASE.md doesn't exist) (UI work → Conventions + Design; new files → Structure guidance; API work → Architecture patterns). **Follow Conditional Context Injection** (Step 2): empty when pre-indexed, populated when context-mode unavailable.
+- `{DESIGN_DECISIONS}` — If `.planning/phases/{phase}/{phase}-CONTEXT.md` exists, include the "Decisions", "Discretion Areas", and "Deferred Ideas" sections. **Follow Conditional Context Injection** (Step 2): empty when pre-indexed, populated when context-mode unavailable.
 - `{PHASE_DIR}` — Path to `.planning/phases/{phase}/` for deferred items logging.
 - `{PHASE_NAME}` — Phase directory name for ctx_search queries (e.g. "13-pending-payments-invoicing").
 - `{FILE_TYPES}` — Comma-separated file type descriptions for convention queries (e.g. "tsx components", "test files").
@@ -165,6 +230,14 @@ ctx_batch_execute([
 
 This ensures the next wave sees fresh content when using ctx_search. Skip silently if ctx_batch_execute is not available.
 
+### Post-Wave Cache Lifecycle
+
+After a wave completes, the re-index step serves as cache invalidation:
+- Files modified by wave agents are re-indexed with fresh content
+- Files NOT modified remain in the index unchanged (still valid cache)
+- Test files created by wave agents are added to the index
+- Next wave agents see up-to-date content via ctx_search
+
 Triage subagent outcomes:
 
 **BLOCKED:** Surface immediately:
@@ -207,6 +280,11 @@ Run verification commands directly:
 1. **Test suite:** `npm test` (or the project's test command from package.json or CLAUDE.md)
 2. **Build check:** `npm run build` (if the project has a build step)
 3. **Lint:** `npm run lint` (if the project has a linter)
+4. **Coverage report** (if Vitest/Jest config exists): `pnpm test --run --coverage 2>/dev/null || npx vitest run --coverage 2>/dev/null`
+   Parse output for line/branch percentages. Include in SUMMARY.md `test_metrics` frontmatter.
+   If coverage isn't configured or command fails, skip with note "Coverage not configured — consider adding vitest coverage."
+5. **Spec test count:** If Step 2.5 ran, capture the test-spec subagent's reported test count as `spec_tests_count` in `test_metrics`. If Step 2.5 was skipped, set to 0.
+6. **Test creation check:** If the plan included tasks with `tdd="true"` or companion test tasks, verify at least one `*.test.*` or `*.spec.*` file was created or modified in this build (check via `git diff --name-only $WAVE_START_SHA HEAD`). If none found: WARN "Plan required tests but no test files were created — check subagent reports for UNTESTED flags."
 
 If any fail: flag in SUMMARY under "Issues Encountered". Do NOT claim success if verification failed.
 
@@ -246,7 +324,7 @@ Read `references/gsd-state-updates.md` and run the batch state update command. T
 
 These run once at plan completion. No state writes during wave execution.
 
-Resolve via `node ./.claude/get-shit-done/bin/gsd-tools.cjs resolve-model gsd-codebase-mapper --raw` — mechanical state updates don't require deep reasoning.
+Resolve via `node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs resolve-model gsd-codebase-mapper --raw` — mechanical state updates don't require deep reasoning.
 
 ---
 

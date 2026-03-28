@@ -1,139 +1,144 @@
 # External Integrations
 
-**Analysis Date:** 2026-03-12
+**Analysis Date:** 2026-03-27
 
 ## APIs & External Services
 
-**Web Search & Documentation:**
-- Firecrawl - Web scraping and search capability
-  - Purpose: Scrape web content for research subagents
-  - Reference: `.claude/skills/research/SKILL.md` and `.claude/skills/plan-work/SKILL.md`
-  - Fallback: If unavailable, subagents fall back to WebSearch/WebFetch
+**Brave Search API:**
+- Purpose: Web search capability for the `websearch` CLI command
+- Client: Node.js built-in `fetch()` in `bin/lib/commands.cjs` (lines 321-348)
+- Endpoint: `https://api.search.brave.com/res/v1/web/search`
+- Auth: `BRAVE_API_KEY` environment variable
+- Optional: Command gracefully reports `{ available: false }` when key is not set
 
-- Context7 - Library documentation aggregation
-  - Purpose: Search library documentation for research phase
-  - Reference: `.claude/skills/research/SKILL.md` and `.claude/skills/plan-work/SKILL.md`
-  - Integration: Used alongside Firecrawl in research workflows
+**GitHub Raw Content:**
+- Purpose: Plugin update checks (version comparison)
+- Client: Node.js built-in `https` module in `hooks/fhhs-check-update.js`
+- Endpoint: Raw GitHub content URL for `plugin.json` from `cinjoff/fhhs-skills`
+- Auth: None (public repo)
+- Throttle: Checks at most once per 6 hours, caches result in `~/.claude/cache/fhhs-update-check.json`
 
-- Brave Search API - Web search service
-  - Configuration: `BRAVE_API_KEY` environment variable
-  - Files: `bin/lib/commands.cjs`, `bin/lib/init.cjs`, `bin/lib/config.cjs`
-  - Status: Optional; if not configured, web search features disabled
-  - Default fallback location: `~/.brave-api-key` or `process.env.BRAVE_API_KEY`
+**Claude Code CLI (`claude -p`):**
+- Purpose: Subagent dispatch for builds, reviews, evals, and autonomous orchestration
+- Client: `child_process.spawn()` / `child_process.execSync()` in:
+  - `.claude/skills/auto/auto-orchestrator.cjs` — Headless multi-phase execution loop
+  - `fhhs-skills-workspace/run_all_evals.py` — Behavioral eval runner (ThreadPoolExecutor)
+  - `fhhs-skills-workspace/llm_grader.py` — Semantic grading via `claude -p --model haiku`
+- Auth: Relies on ambient Claude Code authentication (API key or session)
+- Not a traditional API — process-isolated CLI invocations
 
-**AI & Language Services:**
-- Claude Code - Host IDE/platform
-  - All composites, skills, and agents run within Claude Code environment
-  - Plugin system used for skill registration and invocation
-  - TypeScript Language Server integration for code navigation (goToDefinition, findReferences, hover, documentSymbol, workspaceSymbol)
+**GitHub CLI (`gh`):**
+- Purpose: PR creation, release management, issue operations
+- Client: Shell commands via `bin/lib/commands.cjs` (`execSync`)
+- Auth: `gh auth login` (managed by user, checked during `/fh:setup`)
+- Recommended but not required
 
 ## Data Storage
 
 **Databases:**
-- None detected - Project uses file-based state management via `.planning/` directory
+- None — All state is file-based Markdown with YAML frontmatter
 
-**File Storage:**
-- Local filesystem only
-  - State: `.planning/STATE.md`
-  - Roadmap: `.planning/ROADMAP.md`
-  - Plans: `.planning/phases/XX-name/XX-PLAN.md`
-  - Summaries: `.planning/phases/XX-name/XX-SUMMARY.md`
-  - Designs: `.planning/designs/YYYY-MM-DD-<topic>.md`
-  - Project metadata: `.planning/PROJECT.md`
-  - Configuration: `.planning/config.json`
+**File Storage (Local Filesystem):**
+- `.planning/` directory — Project state, roadmap, requirements, phase plans, summaries
+- `.planning/config.json` — GSD configuration (model profile, plan limits)
+- `.planning/STATE.md` — Current phase, plan counter, progress, decisions, blockers
+- `.planning/ROADMAP.md` — Phase definitions and progress tracking
+- `.planning/REQUIREMENTS.md` — Work items with completion status
+- `.planning/phases/N-name/` — Phase directories with PLAN.md, SUMMARY.md, CONTEXT.md, VERIFICATION.md
+- `~/.claude/cache/fhhs-update-check.json` — Update check cache (written by hooks)
 
 **Caching:**
-- None detected - State is read from disk for each operation
+- File-based only: `~/.claude/cache/fhhs-update-check.json` for version checks
+- GSD CLI large output cache: `$TMPDIR/gsd-*.json` for payloads exceeding 50KB
 
 ## Authentication & Identity
 
 **Auth Provider:**
-- None detected for the plugin itself
-- GitHub authentication used for Git operations
-  - Git CLI (`gh`) is required and checked during setup (`commands/setup.md`)
-  - Used for PR creation, branch management, and commit history
-  - Referenced in composites that use git workflows (finishing-a-development-branch, build pipeline)
+- None — Plugin has no user authentication system
+- Relies on ambient Claude Code session for API access
+- Relies on `gh auth` for GitHub operations
+- Relies on `BRAVE_API_KEY` env var for web search
 
 ## Monitoring & Observability
 
 **Error Tracking:**
-- None detected - Errors logged via console output
+- None — Errors written to stderr via `bin/lib/core.cjs` `error()` function
 
 **Logs:**
-- Console output (stdout/stderr) from CLI tools
-- gsd-tools.cjs may write structured output
-- Project tracker server logs request processing
+- No structured logging framework
+- CLI outputs JSON to stdout (structured) or raw text (with `--raw` flag)
+- Auto-orchestrator (`.claude/skills/auto/auto-orchestrator.cjs`) has inline progress logging with timestamps
+
+**Context Monitoring:**
+- `hooks/fhhs-context-monitor.js` — Reads context metrics from statusline bridge file, emits WARNING (35%) and CRITICAL (25%) alerts
+- `hooks/fhhs-statusline.js` — Statusline data bridge for context usage display
 
 ## CI/CD & Deployment
 
 **Hosting:**
-- Claude Code plugin system (user's local Claude Code installation)
-- Installation path: `~/.claude/plugins/fh/`
-- Dashboard server: Runs on `localhost:3847` when `/fh:tracker` invoked
-- Plugin version: 1.12.5 (in `plugin.json`)
-- Marketplace version: 1.12.5 (in `marketplace.json`)
+- GitHub (`cinjoff/fhhs-skills`) — Source repo
+- Claude Code Plugin Marketplace — Distribution via `claude plugin install fh@cinjoff/fhhs-skills`
 
 **CI Pipeline:**
-- None detected at runtime
-- Evaluation suite present (`evals/` directory) with test fixtures
-- Playwright-based E2E testing supported via `/fh:playwright-testing` skill
+- None detected — No `.github/workflows/`, no CI config files
+- Eval suite run manually: `python3 fhhs-skills-workspace/run_all_evals.py`
+
+**Release Process:**
+- Manual via `.claude/commands/release.md` maintainer command
+- Bumps `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` (must stay in sync)
+- Creates git tag and GitHub release via `gh release create`
+- Post-push hook (`.claude/hooks/post-push-release-check.sh`) reminds about unreleased commits
 
 ## Environment Configuration
 
 **Required env vars:**
-- `HOME` - User home directory (for plugin discovery, `.brave-api-key` location)
-- Optional: `BRAVE_API_KEY` - Brave Search API key (if not using `~/.brave-api-key`)
+- None strictly required — Plugin operates without any env vars
+
+**Optional env vars:**
+- `BRAVE_API_KEY` — Enables `websearch` command
+- `CLAUDE_CONFIG_DIR` — Override default `~/.claude` path (used by hooks)
 
 **Secrets location:**
-- Brave API key: Environment variable `BRAVE_API_KEY` OR `~/.brave-api-key` file
-- Git credentials: Managed by system Git/GitHub CLI
-- No other secrets detected in codebase
-
-**Build-time env:**
-- `NODE_ENV` - Not explicitly referenced (build is environment-agnostic)
-- Platform detection: `uname -s` output (macOS/Darwin, Linux, Windows)
+- User's shell environment only
+- No `.env` files detected in the repository
+- No secrets committed or referenced in config files
 
 ## Webhooks & Callbacks
 
 **Incoming:**
-- None detected
+- None — Plugin has no HTTP server in production use
+- Template sub-project (`templates/project-tracker/server.cjs`) runs a local HTTP server for the tracker UI, but this is a template shipped to user projects, not the plugin itself
 
 **Outgoing:**
-- None detected - Project is synchronous request-response only
+- None — All external communication is pull-based (fetch on demand)
 
-## LSP Integration
+## Claude Code Plugin Hooks (Event-Driven)
 
-**TypeScript Language Server:**
-- Capability: Code navigation (goToDefinition, findReferences, hover, documentSymbol, workspaceSymbol, rename, incomingCalls, outgoingCalls)
-- Used by: `/build`, `/fix`, `/refactor`, `/plan-work`, `/extract` composites
-- Provides: Fast code traversal without grep, reference discovery, symbol lookup
-- Installation: Required via `npm install -g typescript-language-server typescript` and `/plugin install typescript-lsp@claude-plugins-official`
-- Not forked/modified - Uses `typescript-lsp@claude-plugins-official` (first-party built-in)
+The plugin uses Claude Code's hook system for event-driven behavior. These are not HTTP webhooks but process-spawned scripts triggered by Claude Code events:
 
-## Upstream Dependencies
+**SessionStart:**
+- `hooks/fhhs-check-update.js` — Background version check against GitHub
 
-**Bundled source projects:**
-- Superpowers (v4.3.1) - Engineering discipline skills, bundled from upstream snapshot
-- Impeccable (v1.2.0) - Design quality skills, bundled with Playwright and Motion
-- GSD (v1.22.4) - Project orchestration CLI, bundled in `bin/`
-- feature-dev (55b58ec6) - Code intelligence agents, adapted (not verbatim)
-- Vercel React Best Practices (v1.0.0, 64bee5b7) - Nextjs-perf optimization skill
-- Playwright Best Practices - E2E testing skill reference files
+**PostToolUse:**
+- `hooks/fhhs-context-monitor.js` — Context window monitoring with threshold alerts
+- `hooks/fhhs-learnings.js` — Learning capture
+- `hooks/fhhs-statusline.js` — Statusline data bridge
+- `.claude/hooks/post-push-release-check.sh` — Release reminder after `git push` (repo-local, matcher: Bash)
 
-All upstreams tracked in `upstream/` directory with deviations documented in `PATCHES.md`.
+## External Tool Dependencies
 
-## Runtime Plugin System
+Managed by `/fh:setup`, detected per-platform:
 
-**Skill Invocation:**
-- Skills at `.claude/skills/{name}/SKILL.md` invoked as `/fh:{name}` commands
-- Agent dispatch: Tasks spawned via Agent tool with agent definitions from `agents/` directory
-- Composites: Orchestrator skills that delegate to subagents
-
-**Reference Files:**
-- Prompts: `references/implementer-prompt.md`, `references/spec-gate-prompt.md`
-- Templates: `references/gsd-templates/` for GSD file scaffolding
-- Cannot be read from disk by shipped plugins — only `.claude/skills/` paths work at runtime
+| Tool | Purpose | Required |
+|------|---------|----------|
+| Node.js + npm | GSD CLI runtime | Yes |
+| Git | Version control operations | Yes |
+| GitHub CLI (`gh`) | PR/release management | Recommended |
+| Vercel CLI | Deployment commands | Recommended |
+| Homebrew | Package management (macOS/Linux) | Convenience |
+| `typescript-language-server` | LSP-powered code navigation | Recommended |
+| `typescript-lsp` Claude plugin | LSP integration in Claude Code | Recommended |
 
 ---
 
-*Integration audit: 2026-03-12*
+*Integration audit: 2026-03-27*

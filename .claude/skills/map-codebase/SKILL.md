@@ -4,20 +4,17 @@ description: Explore and document how your codebase is structured.
 user-invocable: true
 ---
 
-Each agent has fresh context, explores a specific focus area, and **writes documents directly**. The orchestrator only receives confirmation + line counts, then writes a summary. Output: .planning/codebase/ folder with 7 structured documents.
+Spawns a single mapper agent that explores the codebase and writes a focused `CODEBASE.md` capturing three things agents can't discover by grepping: where to put new code, which patterns to follow, and how layers connect.
 
 <philosophy>
-**Why dedicated mapper agents:**
-- Fresh context per domain (no token contamination)
-- Agents write documents directly (no context transfer back to orchestrator)
-- Orchestrator only summarizes what was created (minimal context usage)
-- Faster execution (agents run simultaneously)
+**One document, not seven.**
+Previous versions produced 7 documents across 4 parallel agents (~250K tokens). Most of that duplicated what package.json, config files, and grep already provide. This version produces a single ~150-line CODEBASE.md focused on prescriptive guidance.
 
-**Document quality over length:**
-Include enough detail to be useful as reference. Prioritize practical examples (especially code patterns) over arbitrary brevity.
+**Prescriptive over descriptive.**
+"Put new routes in `src/routes/{feature}/`" is useful. "Routes are in src/routes" is grep output.
 
-**Always include file paths:**
-Documents are reference material for Claude when planning/executing. Always include actual file paths formatted with backticks: `src/services/user.ts`.
+**Run once, update incrementally.**
+Full mapping runs at project bootstrap. After that, the build completion flow updates CODEBASE.md incrementally based on what changed. Re-mapping should be rare — only after major restructuring.
 </philosophy>
 
 <process>
@@ -36,27 +33,38 @@ Extract from init JSON: `mapper_model`, `commit_docs`, `codebase_dir`, `existing
 <step name="check_existing">
 Check if .planning/codebase/ already exists using `has_maps` from init context.
 
+**Cost awareness:** Full mapping spawns 1 agent, uses ~60K tokens, and takes ~2 minutes. Still, re-mapping is only worthwhile after major changes (new framework, directory restructure, significant new modules).
+
 If `codebase_dir_exists` is true:
 ```bash
 ls -la .planning/codebase/
+# Check how stale the map is
+if [ -f .planning/codebase/.last-mapped ]; then
+  MAPPED_SHA=$(cat .planning/codebase/.last-mapped)
+  CURRENT_SHA=$(git rev-parse HEAD)
+  COMMITS_SINCE=$(git rev-list --count $MAPPED_SHA..$CURRENT_SHA 2>/dev/null || echo "unknown")
+  echo "Mapped at: $MAPPED_SHA"
+  echo "Current:   $CURRENT_SHA"
+  echo "Commits since mapping: $COMMITS_SINCE"
+fi
 ```
 
-**If exists:**
+**If exists — present staleness context and options:**
 
 ```
-.planning/codebase/ already exists with these documents:
-[List files found]
+.planning/codebase/CODEBASE.md exists ([N] lines).
+Mapped [N] commits ago.
 
 What's next?
-1. Refresh - Delete existing and remap codebase
-2. Update - Keep existing, only update specific documents
-3. Skip - Use existing codebase map as-is
+1. Refresh - Remap the codebase (~60K tokens, ~2 min)
+2. Skip - Use existing map as-is (recommended if <50 commits since last map)
 ```
+
+Default to **Skip** if the map is recent (<50 commits). Only suggest Refresh if there's been a major structural change.
 
 Wait for user response.
 
-If "Refresh": Delete .planning/codebase/, continue to create_structure
-If "Update": Ask which documents to update, continue to spawn_agents (filtered)
+If "Refresh": Delete .planning/codebase/CODEBASE.md, continue to create_structure
 If "Skip": Exit workflow
 
 **If doesn't exist:**
@@ -70,154 +78,68 @@ Create .planning/codebase/ directory:
 mkdir -p .planning/codebase
 ```
 
-**Expected output files:**
-- STACK.md (from tech mapper)
-- INTEGRATIONS.md (from tech mapper)
-- ARCHITECTURE.md (from arch mapper)
-- STRUCTURE.md (from arch mapper)
-- CONVENTIONS.md (from quality mapper)
-- TESTING.md (from quality mapper)
-- CONCERNS.md (from concerns mapper)
+**Expected output:** A single `CODEBASE.md` (~150-200 lines) covering structure, conventions, and architecture.
 
-Continue to spawn_agents.
+Continue to spawn_agent.
 </step>
 
-<step name="spawn_agents">
-Spawn all 4 parallel gsd-codebase-mapper agents **in a single message**.
+<step name="spawn_agent">
+Spawn a single gsd-codebase-mapper agent.
 
-Use Task tool with `subagent_type="gsd-codebase-mapper"`, `model="{mapper_model}"`, and **`run_in_background=true`** for parallel execution. All 4 Task calls MUST be in the same response so they run simultaneously.
+Use Agent tool with `subagent_type="gsd-codebase-mapper"`, `model="{mapper_model}"`, and **`mode="bypassPermissions"`**.
 
-**CRITICAL:** Use the dedicated `gsd-codebase-mapper` agent, NOT `Explore`. The mapper agent writes documents directly.
-
-**Lean orchestrator principle:** Do NOT read agent output documents back into your context. You only need the confirmation messages (file paths + line counts). The agents write directly to disk — there is no need to transfer document contents through the orchestrator.
-
-**Agent 1: Tech Focus**
+**CRITICAL: `mode="bypassPermissions"` is required.** Without it, the agent inherits the parent's permission mode. In interactive sessions (default mode), the agent cannot surface Write permission prompts — it fails silently.
 
 ```
-Task(
+Agent(
   subagent_type="gsd-codebase-mapper",
   model="{mapper_model}",
-  run_in_background=true,
-  description="Map codebase tech stack",
-  prompt="Focus: tech
+  mode="bypassPermissions",
+  description="Map codebase structure, conventions, and architecture",
+  prompt="Analyze this codebase and write .planning/codebase/CODEBASE.md.
 
-Analyze this codebase for technology stack and external integrations.
+Capture three things:
+1. Structure — where to put new code (directory layout, placement rules, entry points)
+2. Conventions — which patterns to follow (naming, style, imports, error handling)
+3. Architecture — how layers connect (pattern overview, dependencies, data flow)
 
-Write these documents to .planning/codebase/:
-- STACK.md - Languages, runtime, frameworks, dependencies, configuration
-- INTEGRATIONS.md - External APIs, databases, auth providers, webhooks
+Stay focused: ~150-200 lines. No stack versions, no integrations, no tech debt — those can be discovered on-demand from source files.
 
-Explore thoroughly. Write documents directly using templates. Return confirmation only."
+Write the document directly. Return confirmation only."
 )
 ```
 
-**Agent 2: Architecture Focus**
+Wait for agent completion. You will be **notified automatically** — do NOT poll or sleep-loop.
 
-```
-Task(
-  subagent_type="gsd-codebase-mapper",
-  model="{mapper_model}",
-  run_in_background=true,
-  description="Map codebase architecture",
-  prompt="Focus: arch
-
-Analyze this codebase architecture and directory structure.
-
-Write these documents to .planning/codebase/:
-- ARCHITECTURE.md - Pattern, layers, data flow, abstractions, entry points
-- STRUCTURE.md - Directory layout, key locations, naming conventions
-
-Explore thoroughly. Write documents directly using templates. Return confirmation only."
-)
-```
-
-**Agent 3: Quality Focus**
-
-```
-Task(
-  subagent_type="gsd-codebase-mapper",
-  model="{mapper_model}",
-  run_in_background=true,
-  description="Map codebase conventions",
-  prompt="Focus: quality
-
-Analyze this codebase for coding conventions and testing patterns.
-
-Write these documents to .planning/codebase/:
-- CONVENTIONS.md - Code style, naming, patterns, error handling
-- TESTING.md - Framework, structure, mocking, coverage
-
-Explore thoroughly. Write documents directly using templates. Return confirmation only."
-)
-```
-
-**Agent 4: Concerns Focus**
-
-```
-Task(
-  subagent_type="gsd-codebase-mapper",
-  model="{mapper_model}",
-  run_in_background=true,
-  description="Map codebase concerns",
-  prompt="Focus: concerns
-
-Analyze this codebase for technical debt, known issues, and areas of concern.
-
-Write this document to .planning/codebase/:
-- CONCERNS.md - Tech debt, bugs, security, performance, fragile areas
-
-Explore thoroughly. Write document directly using template. Return confirmation only."
-)
-```
-
-Continue to collect_confirmations.
-</step>
-
-<step name="collect_confirmations">
-Wait for all 4 agents to complete.
-
-Read each agent's output file to collect confirmations.
-
-**Expected confirmation format from each agent:**
-```
-## Mapping Complete
-
-**Focus:** {focus}
-**Documents written:**
-- `.planning/codebase/{DOC1}.md` ({N} lines)
-- `.planning/codebase/{DOC2}.md` ({N} lines)
-
-Ready for orchestrator summary.
-```
-
-**What you receive:** Just file paths and line counts. NOT document contents.
-
-If any agent failed, note the failure and continue with successful documents.
+**Handling failure:**
+- If the agent fails silently (no output file): re-spawn once with the same prompt. If it fails again, have it return content in its response and write CODEBASE.md yourself.
+- Check `ls -la .planning/codebase/` to verify the directory is writable.
 
 Continue to verify_output.
 </step>
 
 <step name="verify_output">
-Verify all documents created successfully:
+Verify document created successfully:
 
 ```bash
-ls -la .planning/codebase/
-wc -l .planning/codebase/*.md
+ls -la .planning/codebase/CODEBASE.md
+wc -l .planning/codebase/CODEBASE.md
 ```
 
 **Verification checklist:**
-- All 7 documents exist
-- No empty documents (each should have >20 lines)
+- CODEBASE.md exists
+- Not empty (should have >50 lines)
+- Has all 3 sections (Structure, Conventions, Architecture)
 
-If any documents missing or empty, note which agents may have failed.
+If missing or empty, note the failure.
 
 Continue to finalize_context.
 </step>
 
 <step name="finalize_context">
-Create path-scoped rules, index documents, and record git SHA.
+Create path-scoped rules, index document, and record git SHA.
 
-**3a. Create .claude/rules/ with path-scoped references:**
+**Create .claude/rules/ with path-scoped references:**
 
 ```bash
 mkdir -p .claude/rules
@@ -244,38 +166,34 @@ paths:
   - "pages/**"
 ---
 Codebase mapping available. Before grepping for architecture info, check:
-- @.planning/codebase/ARCHITECTURE.md for patterns and data flow
-- @.planning/codebase/CONVENTIONS.md for code style
-- @.planning/codebase/STRUCTURE.md for file organization
-- @.planning/codebase/TESTING.md for test patterns
+- @.planning/codebase/CODEBASE.md for structure, conventions, and architecture patterns
 ```
 
-**3b. Index into FTS5 via ctx_index (if context-mode available):**
+**Index into FTS5 via ctx_index (if context-mode available):**
 
-Check if `ctx_index` MCP tool is available. If not available, skip silently — the `.claude/rules/` files provide fallback context. If available, index two categories:
+Check if `ctx_index` MCP tool is available. If not, skip silently.
 
-**Codebase documents:** Read each `.planning/codebase/*.md` file and call `ctx_index` with `title="codebase:{filename}"` (e.g. `codebase:ARCHITECTURE.md`) and `content=file content`.
+If available:
+1. Read `.planning/codebase/CODEBASE.md` and call `ctx_index` with `title="codebase:CODEBASE"` and `content=file content`
+2. Index planning docs that skills read repeatedly:
 
-**Planning documents:** Index the core `.planning/` files that skills read repeatedly:
+| File | Index title |
+|------|-------------|
+| `.planning/PROJECT.md` | `planning:PROJECT` |
+| `.planning/ROADMAP.md` | `planning:ROADMAP` |
+| `.planning/STATE.md` | `planning:STATE` |
+| `.planning/DESIGN.md` | `planning:DESIGN` |
+| `.planning/REQUIREMENTS.md` | `planning:REQUIREMENTS` |
+| `.planning/DECISIONS.md` | `planning:DECISIONS` |
 
-| File | Index title | Why |
-|------|-------------|-----|
-| `.planning/PROJECT.md` | `planning:PROJECT` | Vision, scope, success criteria — read by progress, plan-work, plan-review |
-| `.planning/ROADMAP.md` | `planning:ROADMAP` | Phase goals, ordering — read by progress, plan-work, build |
-| `.planning/STATE.md` | `planning:STATE` | Current position — read by almost every skill |
-| `.planning/DESIGN.md` | `planning:DESIGN` | Design language — read by build, fix, review |
-| `.planning/REQUIREMENTS.md` | `planning:REQUIREMENTS` | Work items — read by plan-work |
-| `.planning/DECISIONS.md` | `planning:DECISIONS` | Decision journal — read by build, plan-work, plan-review, fix |
+For each file: if it exists, read and index. Skip missing files silently.
 
-For each file: if it exists, read it and call `ctx_index` with the title and content. Skip missing files silently. After indexing, write a manifest for cache invalidation:
-
+Write manifest for cache invalidation:
 ```bash
-# Generate content hashes for indexed .planning/ files
-md5sum .planning/PROJECT.md .planning/ROADMAP.md .planning/STATE.md .planning/DESIGN.md .planning/REQUIREMENTS.md .planning/DECISIONS.md 2>/dev/null > .planning/codebase/.planning-index-manifest
+md5sum .planning/PROJECT.md .planning/ROADMAP.md .planning/STATE.md .planning/DESIGN.md .planning/REQUIREMENTS.md .planning/DECISIONS.md .planning/codebase/CODEBASE.md 2>/dev/null > .planning/codebase/.planning-index-manifest
 ```
 
-**3c. Record git SHA for freshness:**
-
+**Record git SHA for freshness:**
 ```bash
 git rev-parse HEAD > .planning/codebase/.last-mapped
 ```
@@ -284,89 +202,43 @@ Continue to scan_for_secrets.
 </step>
 
 <step name="scan_for_secrets">
-**CRITICAL SECURITY CHECK — do not skip this step.** Scan output files for accidentally leaked secrets before committing.
-
-Run secret pattern detection:
+**CRITICAL SECURITY CHECK.** Scan output for leaked secrets before committing.
 
 ```bash
-# Check for common API key patterns in generated docs
-grep -E '(sk-[a-zA-Z0-9]{20,}|sk_live_[a-zA-Z0-9]+|sk_test_[a-zA-Z0-9]+|ghp_[a-zA-Z0-9]{36}|gho_[a-zA-Z0-9]{36}|glpat-[a-zA-Z0-9_-]+|AKIA[A-Z0-9]{16}|xox[baprs]-[a-zA-Z0-9-]+|-----BEGIN.*PRIVATE KEY|eyJ[a-zA-Z0-9_-]+\.eyJ[a-zA-Z0-9_-]+\.)' .planning/codebase/*.md 2>/dev/null && SECRETS_FOUND=true || SECRETS_FOUND=false
+grep -E '(sk-[a-zA-Z0-9]{20,}|sk_live_[a-zA-Z0-9]+|sk_test_[a-zA-Z0-9]+|ghp_[a-zA-Z0-9]{36}|gho_[a-zA-Z0-9]{36}|glpat-[a-zA-Z0-9_-]+|AKIA[A-Z0-9]{16}|xox[baprs]-[a-zA-Z0-9-]+|-----BEGIN.*PRIVATE KEY|eyJ[a-zA-Z0-9_-]+\.eyJ[a-zA-Z0-9_-]+\.)' .planning/codebase/CODEBASE.md 2>/dev/null && SECRETS_FOUND=true || SECRETS_FOUND=false
 ```
 
-**If SECRETS_FOUND=true:**
-
-```
-SECURITY ALERT: Potential secrets detected in codebase documents!
-
-Found patterns that look like API keys or tokens in:
-[show grep output]
-
-This would expose credentials if committed.
-
-**Action required:**
-1. Review the flagged content above
-2. If these are real secrets, they must be removed before committing
-3. Consider adding sensitive files to Claude Code "Deny" permissions
-
-Pausing before commit. Reply "safe to proceed" if the flagged content is not actually sensitive, or edit the files first.
-```
-
-Wait for user confirmation before continuing to commit_codebase_map.
-
-**If SECRETS_FOUND=false:**
-
-Continue to commit_codebase_map.
+If SECRETS_FOUND=true: alert user and wait for confirmation before committing.
+If SECRETS_FOUND=false: continue.
 </step>
 
 <step name="commit_codebase_map">
-Commit the codebase map:
-
 ```bash
-node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" commit "docs: map existing codebase" --files .planning/codebase/*.md
+node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" commit "docs: map existing codebase" --files .planning/codebase/CODEBASE.md
 ```
-
-Continue to offer_next.
 </step>
 
 <step name="offer_next">
-Present completion summary and next steps.
-
-**Get line counts:**
+**Get line count:**
 ```bash
-wc -l .planning/codebase/*.md
+wc -l .planning/codebase/CODEBASE.md
 ```
 
-**Output format:**
-
 ```
-Codebase mapping complete.
+Codebase mapped.
 
-Created .planning/codebase/:
-- STACK.md ([N] lines) - Technologies and dependencies
-- ARCHITECTURE.md ([N] lines) - System design and patterns
-- STRUCTURE.md ([N] lines) - Directory layout and organization
-- CONVENTIONS.md ([N] lines) - Code style and patterns
-- TESTING.md ([N] lines) - Test structure and practices
-- INTEGRATIONS.md ([N] lines) - External services and APIs
-- CONCERNS.md ([N] lines) - Technical debt and issues
-
+Created .planning/codebase/CODEBASE.md ([N] lines)
+- Structure: where to put new code
+- Conventions: which patterns to follow
+- Architecture: how layers connect
 
 ---
 
 ## ▶ Next Up
 
-**Initialize project** — use codebase context for planning
-
-`/fh:new-project`
+**Initialize project** — `/fh:new-project`
 
 <sub>`/clear` first → fresh context window</sub>
-
----
-
-**Also available:**
-- Re-run mapping: `map-codebase`
-- Review specific file: `cat .planning/codebase/STACK.md`
-- Edit any document before proceeding
 
 ---
 ```
@@ -377,15 +249,14 @@ End workflow.
 </process>
 
 <success_criteria>
-- .planning/codebase/ directory created
-- 4 parallel gsd-codebase-mapper agents spawned with run_in_background=true
-- Agents write documents directly (orchestrator doesn't receive document contents)
-- Read agent output files to collect confirmations
-- All 7 codebase documents exist
-- .claude/rules/gsd-planning.md and .claude/rules/codebase-context.md created with path-scoped frontmatter
-- ctx_index called for each codebase document AND each existing .planning/ file when context-mode is available, skipped silently otherwise
-- .planning/codebase/.planning-index-manifest written with content hashes for cache invalidation
+- .planning/codebase/ directory created before agent spawns
+- 1 gsd-codebase-mapper agent spawned with `mode="bypassPermissions"`
+- Agent writes CODEBASE.md directly (orchestrator doesn't receive document contents)
+- Orchestrator waits for agent completion notification (no sleep-polling)
+- CODEBASE.md exists and is non-empty (>50 lines, <250 lines)
+- CODEBASE.md has all 3 sections: Structure, Conventions, Architecture
+- .claude/rules/codebase-context.md points to CODEBASE.md (not individual docs)
+- ctx_index called for CODEBASE.md when context-mode available
 - .planning/codebase/.last-mapped written with current git SHA
-- Clear completion summary with line counts
-- User offered clear next steps in GSD style
+- Clear completion summary
 </success_criteria>

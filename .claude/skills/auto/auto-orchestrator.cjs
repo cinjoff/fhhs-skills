@@ -21,11 +21,119 @@ const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
 
+// ─── Enriched Auto-Status ─────────────────────────────────────────────────────
+
+// Runtime state for enriched status tracking
+const _autoStatus = {
+  projectDir: null,
+  startedAt: null,
+  phaseStartedAt: null,
+  stepStartedAt: null,
+  stepHistory: [],
+  errors: [],
+  phasesCompleted: 0,
+  phasesFailed: 0,
+  phasesSkipped: 0,
+  phasesTotal: 0,
+  stepsTotal: 0,
+  lastLogLine: '',
+  lastLogWriteMs: 0,
+};
+
+// Optimization counters — module-level, included in every writeAutoStatus() call
+const _optimizations = {
+  health_checks_cached: 0,
+  state_writes_saved: 0,
+  reviews_batched: 0,
+  speculative_plans_validated: 0,
+  speculative_plans_replanned: 0,
+};
+
+function getClaudeTmpBase(projectDir) {
+  const uid = process.getuid ? process.getuid() : 501;
+  const dirName = '-' + projectDir.replace(/\//g, '-').slice(1);
+  return path.join('/private/tmp', `claude-${uid}`, dirName);
+}
+
+function writeAutoStatus(projectDir, status) {
+  try {
+    const p = path.join(projectDir, '.planning', '.auto-state.json');
+    fs.writeFileSync(p, JSON.stringify(status, null, 2), 'utf-8');
+  } catch {
+    // Non-fatal — dashboard reads are best-effort
+  }
+}
+
+function buildAutoStatus(_projectDir, overrides) {
+  const now = Date.now();
+
+  // Derive current_wave from the step that will be set via overrides
+  const stepForWave = (overrides && overrides.step) || null;
+  let current_wave = null;
+  if (stepForWave === 'plan-work') current_wave = 'planning';
+  else if (stepForWave === 'plan-review') current_wave = 'review';
+  else if (stepForWave === 'build') current_wave = 'build';
+  else if (stepForWave === 'review') current_wave = 'review';
+
+  // Derive phase_states: single entry for current phase with step-derived status
+  const phaseForState = (overrides && overrides.phase) || null;
+  const phase_states = {};
+  if (phaseForState) {
+    if (stepForWave === 'plan-work') phase_states[phaseForState] = 'planning';
+    else if (stepForWave === 'plan-review') phase_states[phaseForState] = 'reviewing';
+    else if (stepForWave === 'build') phase_states[phaseForState] = 'building';
+    else if (stepForWave === 'review') phase_states[phaseForState] = 'reviewing';
+    else phase_states[phaseForState] = 'complete';
+  }
+
+  // concurrency.active: 1 when a session is running (active=true and step is set), else 0
+  const isActive = overrides && overrides.active !== undefined ? overrides.active : true;
+  const concurrencyActive = (isActive && stepForWave) ? 1 : 0;
+
+  return Object.assign({
+    active: true,
+    phase: null,
+    phase_name: null,
+    step: null,
+    step_index: 0,
+    steps_total: _autoStatus.stepsTotal,
+    steps_completed: [],
+    started_at: _autoStatus.startedAt,
+    phase_started_at: _autoStatus.phaseStartedAt,
+    elapsed_ms: _autoStatus.startedAt ? now - new Date(_autoStatus.startedAt).getTime() : 0,
+    total_cost_estimate: 0,
+    budget: null,
+    phases_total: _autoStatus.phasesTotal,
+    phases_completed: _autoStatus.phasesCompleted,
+    phases_failed: _autoStatus.phasesFailed,
+    phases_skipped: _autoStatus.phasesSkipped,
+    current_plan_path: null,
+    step_history: _autoStatus.stepHistory,
+    errors: _autoStatus.errors,
+    last_log_line: _autoStatus.lastLogLine,
+    optimizations: Object.assign({}, _optimizations),
+    // Parallel execution fields (sequential fallback values)
+    project_dir: _autoStatus.projectDir,
+    claude_tmp_base: _autoStatus.projectDir ? getClaudeTmpBase(_autoStatus.projectDir) : null,
+    current_wave,
+    concurrency: { max: 1, active: concurrencyActive },
+    phase_states,
+    dep_graph: {},
+    build_order: [],
+  }, overrides);
+}
+
 // ─── Timeout & Retry Constants ───────────────────────────────────────────────
 
 const SOFT_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
 const HARD_TIMEOUT_MS = 45 * 60 * 1000; // 45 minutes
+const STUCK_SILENCE_MS = 3 * 60 * 1000; // 3 min no output → warn
+const STUCK_KILL_MS = 8 * 60 * 1000;    // 8 min no output → kill (stuck session)
 const MAX_RETRIES = 2;
+const API_HEALTH_TIMEOUT_MS = 15000;     // 15s for health check
+const API_BACKOFF_BASE_MS = 10000;       // 10s initial backoff on API failure
+const API_BACKOFF_MAX_MS = 120000;       // 2 min max backoff
+const API_MAX_HEALTH_RETRIES = 5;        // max consecutive health check failures before aborting
 
 // ─── Cost Estimation Constants ───────────────────────────────────────────────
 // Rough heuristic: ~4 chars per token. Pricing approximate (Opus-class model).
@@ -48,6 +156,8 @@ function parseArgs(argv) {
     dryRun: false,
     resume: false,
     checkCorrections: false,
+    concurrency: 2,
+    noSpeculative: false,
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -77,6 +187,13 @@ function parseArgs(argv) {
       case '--check-corrections':
         opts.checkCorrections = true;
         break;
+      case '--concurrency':
+        if (++i >= args.length) fatal('--concurrency requires a value');
+        opts.concurrency = Math.max(1, Math.min(4, parseInt(args[i], 10) || 2));
+        break;
+      case '--no-speculative':
+        opts.noSpeculative = true;
+        break;
       default:
         fatal(`Unknown argument: ${args[i]}`);
     }
@@ -97,6 +214,22 @@ function timestamp() {
 
 function log(msg) {
   process.stdout.write(`[${timestamp()}] ${msg}\n`);
+  _autoStatus.lastLogLine = msg;
+  // Debounced last_log_line update: max once per 2 seconds
+  const now = Date.now();
+  if (_autoStatus.projectDir && (now - _autoStatus.lastLogWriteMs) >= 2000) {
+    _autoStatus.lastLogWriteMs = now;
+    try {
+      const p = path.join(_autoStatus.projectDir, '.planning', '.auto-state.json');
+      if (fs.existsSync(p)) {
+        const existing = JSON.parse(fs.readFileSync(p, 'utf-8'));
+        existing.last_log_line = msg;
+        fs.writeFileSync(p, JSON.stringify(existing, null, 2), 'utf-8');
+      }
+    } catch {
+      // Non-fatal
+    }
+  }
 }
 
 function fatal(msg) {
@@ -222,9 +355,12 @@ function loadAutoState(projectDir) {
   }
 }
 
+let _saveQueue = Promise.resolve();
 function saveAutoState(projectDir, state) {
-  const p = autoStatePath(projectDir);
-  fs.writeFileSync(p, JSON.stringify(state, null, 2), 'utf-8');
+  _saveQueue = _saveQueue.then(() => {
+    const p = autoStatePath(projectDir);
+    fs.writeFileSync(p, JSON.stringify(state, null, 2), 'utf-8');
+  }).catch(() => {});
 }
 
 function clearAutoState(projectDir) {
@@ -257,15 +393,15 @@ function countDecisions(projectDir) {
   const dp = decisionsPath(projectDir);
   if (!fs.existsSync(dp)) return 0;
   const content = fs.readFileSync(dp, 'utf-8');
-  const matches = content.match(/^## DEC-/gm);
+  const matches = content.match(/^### D-/gm);
   return matches ? matches.length : 0;
 }
 
 function nextDecisionId(projectDir) {
-  return `DEC-${String(countDecisions(projectDir) + 1).padStart(3, '0')}`;
+  return `D-${String(countDecisions(projectDir) + 1).padStart(3, '0')}`;
 }
 
-function appendDecision(projectDir, { id, title, status, confidence, context, decision, affects }) {
+function appendDecision(projectDir, { id, title, status, confidence, context, decision, affects, category, alternatives }) {
   const dp = decisionsPath(projectDir);
   let content = '';
   if (fs.existsSync(dp)) {
@@ -274,21 +410,138 @@ function appendDecision(projectDir, { id, title, status, confidence, context, de
     content = '# Decisions\n\nAuto-generated decision log.\n';
   }
 
-  const entry = [
+  const lines = [
     '',
-    `## ${id}: ${title}`,
+    `### ${id}: ${title}`,
+    `- **Category:** ${category || 'implementation'}`,
     `- **Status:** ${status}`,
     `- **Confidence:** ${confidence}`,
     `- **Context:** ${context}`,
     `- **Decision:** ${decision}`,
-    `- **Affects:** ${affects}`,
-    '',
-  ].join('\n');
+  ];
 
-  fs.writeFileSync(dp, content.trimEnd() + '\n' + entry, 'utf-8');
+  // Record alternatives for product/architecture decisions
+  if (alternatives && alternatives.length > 0) {
+    lines.push(`- **Alternatives considered:**`);
+    for (const alt of alternatives) {
+      lines.push(`  - ${alt}`);
+    }
+  }
+
+  lines.push(`- **Affects:** ${affects}`);
+  lines.push('');
+
+  fs.writeFileSync(dp, content.trimEnd() + '\n' + lines.join('\n'), 'utf-8');
 }
 
-// ─── Claude Session Runner (with stuck detection) ────────────────────────────
+// ─── API Health Check ─────────────────────────────────────────────────────────
+
+let lastHealthCheckAt = 0;
+let lastHealthResult = true;
+const HEALTH_CACHE_TTL_MS = 60 * 1000; // 60s cache TTL
+
+/**
+ * Verify the Claude CLI is responsive before spawning a session.
+ * Returns true if healthy, false if unreachable.
+ * Caches the result for 60s to avoid excessive polling.
+ */
+function checkApiHealth() {
+  const now = Date.now();
+  if (now - lastHealthCheckAt < HEALTH_CACHE_TTL_MS) {
+    _optimizations.health_checks_cached++;
+    return lastHealthResult;
+  }
+  const { execSync } = require('child_process');
+  try {
+    execSync('claude --version', { stdio: 'pipe', timeout: API_HEALTH_TIMEOUT_MS });
+    lastHealthResult = true;
+  } catch {
+    lastHealthResult = false;
+  }
+  lastHealthCheckAt = Date.now();
+  return lastHealthResult;
+}
+
+/**
+ * Wait for API to become healthy with exponential backoff.
+ * Throws if max retries exceeded.
+ */
+async function waitForHealthyApi() {
+  let attempts = 0;
+  let backoffMs = API_BACKOFF_BASE_MS;
+
+  while (attempts < API_MAX_HEALTH_RETRIES) {
+    if (checkApiHealth()) {
+      if (attempts > 0) {
+        log(`  ✓ API recovered after ${attempts} health check(s)`);
+      }
+      return;
+    }
+
+    attempts++;
+    log(`  ⚠ API health check failed (attempt ${attempts}/${API_MAX_HEALTH_RETRIES}), waiting ${Math.round(backoffMs / 1000)}s...`);
+    await new Promise(r => setTimeout(r, backoffMs));
+    backoffMs = Math.min(backoffMs * 2, API_BACKOFF_MAX_MS);
+  }
+
+  throw new Error(`API unreachable after ${attempts} health checks (${Math.round((API_BACKOFF_BASE_MS * (Math.pow(2, attempts) - 1)) / 1000)}s total). Check network/API status.`);
+}
+
+/**
+ * Classify an error as likely API/infrastructure vs logic/content.
+ * API errors benefit from backoff+retry; logic errors do not.
+ */
+function isApiError(err) {
+  const msg = (err.message || '').toLowerCase();
+  const apiPatterns = [
+    'econnrefused', 'econnreset', 'etimedout', 'enotfound',
+    'socket hang up', 'network', 'api error', '502', '503', '529',
+    'overloaded', 'rate limit', 'spawn', 'killed',
+  ];
+  return apiPatterns.some(p => msg.includes(p)) || err.timeout;
+}
+
+// ─── Per-Session Metrics ──────────────────────────────────────────────────────
+
+function parseSessionMetrics(stdout) {
+  const metrics = { tokens_in: 0, tokens_out: 0, read_calls: 0, ctx_search_hits: 0 };
+  // claude -p with --output-format json emits JSON-lines (one object per line),
+  // not a single JSON object. Parse each line and accumulate usage.
+  for (const line of stdout.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    try {
+      const obj = JSON.parse(trimmed);
+      if (obj.usage) {
+        metrics.tokens_in += obj.usage.input_tokens || 0;
+        metrics.tokens_out += obj.usage.output_tokens || 0;
+      }
+    } catch {
+      // Non-JSON line — skip
+    }
+  }
+  metrics.read_calls = (stdout.match(/"tool":"Read"/g) || []).length;
+  metrics.ctx_search_hits = (stdout.match(/ctx_search|ctx_batch_execute/g) || []).length;
+  return metrics;
+}
+
+// ─── Project Name Resolution ──────────────────────────────────────────────────
+
+function resolveProjectName(cwd) {
+  try {
+    const { execSync } = require('child_process');
+    const gitRoot = execSync('git rev-parse --show-toplevel', {
+      cwd,
+      timeout: 5000,
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).toString().trim();
+    return path.basename(gitRoot);
+  } catch {
+    return path.basename(cwd);
+  }
+}
+
+// ─── Claude Session Runner (with stuck detection + activity monitoring) ───────
 
 function runClaudeSession(prompt, opts) {
   return new Promise((resolve, reject) => {
@@ -298,6 +551,7 @@ function runClaudeSession(prompt, opts) {
     const args = [
       '-p', prompt,
       '--permission-mode', 'bypassPermissions',
+      '--output-format', 'json',
       '--plugin-dir', pluginDir,
     ];
 
@@ -334,7 +588,9 @@ function runClaudeSession(prompt, opts) {
       const claudeMd = fs.readFileSync(claudeMdPath, 'utf-8').slice(0, 4000);
       args.push('--append-system-prompt', `Project conventions:\n${claudeMd}`);
     }
-    log(`  Running: claude -p "${prompt}" (plugin-dir=${pluginDir})`);
+    const projectName = resolveProjectName(opts.cwd);
+    log(`  Running: claude -p "${prompt.slice(0, 80)}..." (plugin-dir=${pluginDir})`);
+    log(`  MEM: project=${projectName} (via CLAUDE_MEM_PROJECT)`);
 
     const child = spawn('claude', args, {
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -342,15 +598,42 @@ function runClaudeSession(prompt, opts) {
       env: {
         ...process.env,
         ...(opts.sessionId ? { CLAUDE_SESSION_ID: opts.sessionId } : {}),
+        CLAUDE_MEM_PROJECT: projectName,
       },
     });
 
     let stdout = '';
     let stderr = '';
     const sessionStart = Date.now();
+    let lastActivityAt = Date.now();
+    let stuckWarned = false;
 
-    child.stdout.on('data', (data) => { stdout += data.toString(); });
-    child.stderr.on('data', (data) => { stderr += data.toString(); });
+    child.stdout.on('data', (data) => {
+      stdout += data.toString();
+      lastActivityAt = Date.now();
+      stuckWarned = false; // reset warning on new output
+    });
+    child.stderr.on('data', (data) => {
+      stderr += data.toString();
+      lastActivityAt = Date.now();
+    });
+
+    // Activity monitor: detect sessions that go silent (API stall, infinite loop)
+    const activityCheck = setInterval(() => {
+      const silenceMs = Date.now() - lastActivityAt;
+      const elapsedMin = Math.round((Date.now() - sessionStart) / 60000);
+
+      if (silenceMs >= STUCK_KILL_MS) {
+        log(`  ✗ STUCK: no output for ${Math.round(silenceMs / 60000)}min — killing session (elapsed: ${elapsedMin}min)`);
+        child.kill('SIGTERM');
+        setTimeout(() => {
+          try { child.kill('SIGKILL'); } catch { /* already dead */ }
+        }, 5000);
+      } else if (silenceMs >= STUCK_SILENCE_MS && !stuckWarned) {
+        stuckWarned = true;
+        log(`  ⚠ SILENT: no output for ${Math.round(silenceMs / 60000)}min (will kill at ${STUCK_KILL_MS / 60000}min silence)`);
+      }
+    }, 30000); // check every 30s
 
     // Soft timeout: warn but continue
     const softTimer = setTimeout(() => {
@@ -370,6 +653,7 @@ function runClaudeSession(prompt, opts) {
     }, HARD_TIMEOUT_MS);
 
     function cleanup() {
+      clearInterval(activityCheck);
       clearTimeout(softTimer);
       clearTimeout(hardTimer);
     }
@@ -382,16 +666,24 @@ function runClaudeSession(prompt, opts) {
     child.on('close', (code, signal) => {
       cleanup();
       const elapsedMs = Date.now() - sessionStart;
+      const silenceMs = Date.now() - lastActivityAt;
 
       if (signal === 'SIGTERM' || signal === 'SIGKILL') {
-        const err = new Error(`Session killed after hard timeout (${Math.round(elapsedMs / 60000)}min)`);
+        const reason = silenceMs >= STUCK_KILL_MS
+          ? `stuck (no output for ${Math.round(silenceMs / 60000)}min)`
+          : `hard timeout (${Math.round(elapsedMs / 60000)}min)`;
+        const err = new Error(`Session killed: ${reason}`);
         err.timeout = true;
+        err.stuck = silenceMs >= STUCK_KILL_MS;
         err.elapsedMs = elapsedMs;
         err.stdout = stdout;
         reject(err);
       } else if (code !== 0) {
         const errMsg = `claude -p exited with code ${code}\nstderr: ${stderr.slice(0, 500)}`;
-        reject(new Error(errMsg));
+        const err = new Error(errMsg);
+        err.exitCode = code;
+        err.stderr = stderr;
+        reject(err);
       } else {
         resolve({ stdout, stderr, exitCode: code, elapsedMs, promptText: prompt });
       }
@@ -516,10 +808,10 @@ function parseCorrectedDecisions(projectDir) {
   const content = fs.readFileSync(dp, 'utf-8');
   const entries = [];
 
-  // Split on ## DEC- boundaries
-  const sections = content.split(/(?=^## DEC-)/gm);
+  // Split on ### D- boundaries
+  const sections = content.split(/(?=^### D-)/gm);
   for (const section of sections) {
-    const headerMatch = section.match(/^## (DEC-\d+):\s*(.+)/m);
+    const headerMatch = section.match(/^### (D-\d+):\s*(.+)/m);
     if (!headerMatch) continue;
 
     const statusMatch = section.match(/\*\*Status:\*\*\s*(.+)/i);
@@ -690,6 +982,427 @@ async function runCorrectionCascade(projectDir) {
   log(`  Cascade decision logged: ${cascadeId}`);
 }
 
+// ─── ConcurrencyPool ─────────────────────────────────────────────────────────
+
+/**
+ * Bounded async task executor with queuing.
+ * maxConcurrency: max simultaneous running tasks (default 2).
+ * Max queue size: 2 × maxConcurrency. Exceeding it rejects immediately.
+ */
+class ConcurrencyPool {
+  constructor(maxConcurrency = 2) {
+    this.maxConcurrency = maxConcurrency;
+    this.maxQueue = maxConcurrency * 2;
+    this.active = 0;
+    this.queued = 0;
+    this.completed = 0;
+    this._taskIdCounter = 0;
+    this._queue = [];
+    this._drainResolvers = [];
+  }
+
+  run(fn) {
+    if (this.queued >= this.maxQueue) {
+      return Promise.reject(new Error(
+        `ConcurrencyPool queue full (active=${this.active}, queued=${this.queued}, max=${this.maxQueue})`
+      ));
+    }
+
+    return new Promise((resolve, reject) => {
+      const taskId = ++this._taskIdCounter;
+      const task = () => this._execute(fn, taskId, resolve, reject);
+
+      if (this.active < this.maxConcurrency) {
+        this._start(task);
+      } else {
+        this.queued++;
+        this._queue.push(task);
+        log(`  [pool] task ${taskId} queued (active=${this.active}, queued=${this.queued})`);
+      }
+    });
+  }
+
+  _start(task) {
+    this.active++;
+    task();
+  }
+
+  async _execute(fn, taskId, resolve, reject) {
+    log(`  [pool] task ${taskId} started (active=${this.active})`);
+    try {
+      const result = await fn();
+      resolve(result);
+    } catch (err) {
+      log(`  [pool] task ${taskId} error: ${err.message.slice(0, 120)}`);
+      reject(err);
+    } finally {
+      this.active--;
+      this.completed++;
+      log(`  [pool] task ${taskId} done (active=${this.active}, completed=${this.completed})`);
+      this._drain();
+      this._pump();
+    }
+  }
+
+  _pump() {
+    while (this.active < this.maxConcurrency && this._queue.length > 0) {
+      const next = this._queue.shift();
+      this.queued--;
+      this._start(next);
+    }
+  }
+
+  _drain() {
+    if (this.active === 0 && this._queue.length === 0) {
+      for (const resolve of this._drainResolvers) resolve();
+      this._drainResolvers = [];
+    }
+  }
+
+  drain() {
+    if (this.active === 0 && this._queue.length === 0) return Promise.resolve();
+    return new Promise((resolve) => {
+      this._drainResolvers.push(resolve);
+    });
+  }
+}
+
+// ─── Plan Frontmatter Parser ──────────────────────────────────────────────────
+
+/**
+ * Read a PLAN.md file and extract YAML frontmatter.
+ * Returns { files_modified: [...] } or null if not parseable.
+ */
+function parsePlanFrontmatter(planPath) {
+  try {
+    const content = fs.readFileSync(planPath, 'utf-8');
+    const fmMatch = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+    if (!fmMatch) return null;
+    const fm = fmMatch[1];
+
+    // Extract files_modified array: supports inline and block list syntax
+    // Inline: files_modified: [a, b, c]
+    const inlineMatch = fm.match(/^files_modified:\s*\[([^\]]*)\]/m);
+    if (inlineMatch) {
+      const items = inlineMatch[1]
+        .split(',')
+        .map(s => s.trim().replace(/^['"]|['"]$/g, ''))
+        .filter(Boolean);
+      return { files_modified: items };
+    }
+
+    // Block list:
+    // files_modified:
+    //   - file.js
+    const blockMatch = fm.match(/^files_modified:\s*\n((?:[ \t]+-[^\n]*\n?)*)/m);
+    if (blockMatch) {
+      const items = blockMatch[1]
+        .split('\n')
+        .map(line => line.match(/^\s*-\s*(.+)/))
+        .filter(Boolean)
+        .map(m => m[1].trim().replace(/^['"]|['"]$/g, ''));
+      return { files_modified: items };
+    }
+
+    return { files_modified: [] };
+  } catch {
+    return null;
+  }
+}
+
+// ─── Dependency Graph ─────────────────────────────────────────────────────────
+
+/**
+ * Build a dependency graph from phases and their plan frontmatter.
+ * Returns adjacency list: { phaseId: [dependsOnPhaseIds] }
+ */
+function buildDependencyGraph(phases, planMap) {
+  const deps = {};
+  for (const phase of phases) {
+    deps[phase.id] = [];
+  }
+
+  for (let i = 0; i < phases.length; i++) {
+    const later = phases[i];
+    const laterPlan = planMap[later.id];
+
+    // Conservative fallback: no plan → depends on all predecessors
+    if (!laterPlan || !laterPlan.files_modified || laterPlan.files_modified.length === 0) {
+      if (i > 0) {
+        log(`  [dep-graph] warning: phase ${later.id} has no files_modified — treating as depends-on-all-predecessors`);
+        for (let j = 0; j < i; j++) {
+          deps[later.id].push(phases[j].id);
+        }
+      }
+      continue;
+    }
+
+    const laterFiles = new Set(laterPlan.files_modified);
+
+    for (let j = 0; j < i; j++) {
+      const earlier = phases[j];
+      const earlierPlan = planMap[earlier.id];
+
+      if (!earlierPlan || !earlierPlan.files_modified || earlierPlan.files_modified.length === 0) {
+        // Earlier phase unknown → assume overlap (conservative)
+        deps[later.id].push(earlier.id);
+        continue;
+      }
+
+      const overlap = earlierPlan.files_modified.some(f => laterFiles.has(f));
+      if (overlap) {
+        deps[later.id].push(earlier.id);
+      }
+    }
+  }
+
+  // Cycle detection (defensive — phase ordering should prevent cycles)
+  const visited = new Set();
+  const inStack = new Set();
+  let hasCycle = false;
+
+  function dfs(id) {
+    if (inStack.has(id)) { hasCycle = true; return; }
+    if (visited.has(id)) return;
+    visited.add(id);
+    inStack.add(id);
+    for (const dep of (deps[id] || [])) dfs(dep);
+    inStack.delete(id);
+  }
+
+  for (const phase of phases) dfs(phase.id);
+
+  if (hasCycle) {
+    log('  [dep-graph] error: cycle detected in dependency graph — falling back to fully sequential ordering');
+    // Rebuild as fully sequential
+    for (let i = 0; i < phases.length; i++) {
+      deps[phases[i].id] = i > 0 ? [phases[i - 1].id] : [];
+    }
+  }
+
+  return deps;
+}
+
+// ─── Speculative Plan Validation ─────────────────────────────────────────────
+
+/**
+ * Validate a speculatively-created plan against its predecessors' file_modified lists.
+ * Returns 'VALID', 'ADJUSTED', or 'REPLAN'.
+ */
+async function validateSpeculativePlan(projectDir, phaseId, depGraph, planMap) {
+  _optimizations.speculative_plans_validated++;
+
+  const currentPlan = planMap[phaseId];
+  const currentFiles = (currentPlan && currentPlan.files_modified) ? currentPlan.files_modified : [];
+
+  // Collect all predecessor files (union of all transitive predecessors)
+  const predecessorIds = depGraph[phaseId] || [];
+  const allPredecessorFiles = [];
+  for (const predId of predecessorIds) {
+    const predPlan = planMap[predId];
+    if (predPlan && predPlan.files_modified) {
+      for (const f of predPlan.files_modified) {
+        if (!allPredecessorFiles.includes(f)) allPredecessorFiles.push(f);
+      }
+    }
+  }
+
+  // Compute overlap
+  const currentSet = new Set(currentFiles);
+  const overlap = allPredecessorFiles.filter(f => currentSet.has(f));
+
+  if (overlap.length === 0) {
+    log(`  [validate] Phase ${phaseId}: no file overlap with predecessors — plan validated`);
+    appendDecision(projectDir, {
+      id: nextDecisionId(projectDir),
+      title: `Speculative plan validated: phase ${phaseId}`,
+      status: 'ACTIVE',
+      confidence: 'HIGH',
+      context: `No file overlap with predecessor phases (${predecessorIds.join(', ') || 'none'})`,
+      decision: 'Plan proceeds as-is (VALID)',
+      affects: `Phase ${phaseId}`,
+    });
+    return 'VALID';
+  }
+
+  log(`  [validate] Phase ${phaseId}: overlap detected (${overlap.length} file(s)) — running validation session`);
+
+  // Find the plan path for the prompt
+  const planPath = findLatestPlan(projectDir, phaseId);
+  const relPlanPath = planPath ? path.relative(projectDir, planPath) : `(plan not found)`;
+
+  const validationPrompt =
+    `Validate this plan against predecessor changes.\n` +
+    `Predecessor phases modify: ${allPredecessorFiles.join(', ')}.\n` +
+    `This plan modifies: ${currentFiles.join(', ')}.\n` +
+    `Overlapping files: ${overlap.join(', ')}.\n` +
+    `Read the current plan at ${relPlanPath} and the overlapping files.\n` +
+    `If the plan's tasks for overlapping files are still correct, say VALID.\n` +
+    `If tasks need minor adjustments, update the plan and say ADJUSTED.\n` +
+    `If there's a fundamental conflict requiring redesign, say REPLAN.`;
+
+  let result = 'VALID';
+  try {
+    const sessionResult = await runClaudeSession(validationPrompt, {
+      cwd: projectDir,
+      sessionId: `validate-phase-${phaseId}`,
+    });
+    const stdout = sessionResult.stdout || '';
+    if (/\bREPLAN\b/.test(stdout)) {
+      result = 'REPLAN';
+      _optimizations.speculative_plans_replanned++;
+    } else if (/\bADJUSTED\b/.test(stdout)) {
+      result = 'ADJUSTED';
+    } else {
+      result = 'VALID';
+    }
+  } catch (err) {
+    log(`  [validate] Phase ${phaseId}: validation session failed (${err.message.slice(0, 120)}) — treating as VALID`);
+    result = 'VALID';
+  }
+
+  log(`  [validate] Phase ${phaseId}: validation result = ${result}`);
+  appendDecision(projectDir, {
+    id: nextDecisionId(projectDir),
+    title: `Speculative plan validation: phase ${phaseId} = ${result}`,
+    status: 'ACTIVE',
+    confidence: result === 'REPLAN' ? 'HIGH' : 'MEDIUM',
+    context: `Overlapping files with predecessors: ${overlap.join(', ')}`,
+    decision: result === 'REPLAN'
+      ? `Fundamental conflict detected — will replan phase ${phaseId}`
+      : result === 'ADJUSTED'
+        ? `Plan was adjusted to account for predecessor changes`
+        : `Plan is still valid despite file overlap`,
+    affects: `Phase ${phaseId}`,
+  });
+
+  return result;
+}
+
+// ─── Wave Assigner ────────────────────────────────────────────────────────────
+
+/**
+ * Topological sort → wave numbers.
+ * Returns { phaseId: waveNumber } (1-based).
+ */
+function assignWaves(depGraph) {
+  const waves = {};
+  const ids = Object.keys(depGraph);
+
+  // Iteratively assign waves until all phases are placed
+  let remaining = new Set(ids);
+  let wave = 1;
+
+  while (remaining.size > 0) {
+    const ready = [];
+    for (const id of remaining) {
+      const unresolvedDeps = (depGraph[id] || []).filter(dep => remaining.has(dep));
+      if (unresolvedDeps.length === 0) ready.push(id);
+    }
+
+    if (ready.length === 0) {
+      // Cycle guard: shouldn't happen after cycle detection, but be defensive
+      log('  [waves] error: no progress in wave assignment — breaking deadlock');
+      for (const id of remaining) {
+        waves[id] = wave++;
+      }
+      break;
+    }
+
+    for (const id of ready) {
+      waves[id] = wave;
+      remaining.delete(id);
+    }
+    wave++;
+  }
+
+  // Log if no parallelism is possible
+  const phasesPerWave = {};
+  for (const [id, w] of Object.entries(waves)) {
+    phasesPerWave[w] = (phasesPerWave[w] || []);
+    phasesPerWave[w].push(id);
+  }
+  const parallelWaves = Object.values(phasesPerWave).filter(ps => ps.length > 1);
+  if (parallelWaves.length === 0) {
+    log('  [waves] All phases share files — running sequentially (no parallelization benefit)');
+  }
+
+  return waves;
+}
+
+// ─── Pre-Index Shared Docs ────────────────────────────────────────────────────
+
+/**
+ * Run a single claude -p session that indexes shared planning docs
+ * so concurrent planning sessions can skip re-indexing shared context.
+ */
+async function preIndexSharedDocs(projectDir) {
+  log('Pre-indexing shared docs for concurrent planning sessions...');
+  const sharedDocPaths = [
+    '.planning/PROJECT.md',
+    '.planning/ROADMAP.md',
+    '.planning/REQUIREMENTS.md',
+    '.planning/DESIGN.md',
+    '.planning/codebase/ARCHITECTURE.md',
+    '.planning/codebase/STACK.md',
+    '.planning/codebase/CONVENTIONS.md',
+    '.planning/codebase/STRUCTURE.md',
+    '.planning/codebase/INTEGRATIONS.md',
+    '.planning/codebase/CONCERNS.md',
+    '.planning/codebase/TESTING.md',
+  ].filter(p => fs.existsSync(path.join(projectDir, p)));
+
+  // Add research files
+  const researchDir = path.join(projectDir, '.planning', 'research');
+  if (fs.existsSync(researchDir)) {
+    try {
+      const researchFiles = fs.readdirSync(researchDir).filter(f => f.endsWith('.md'));
+      for (const f of researchFiles) sharedDocPaths.push(`.planning/research/${f}`);
+    } catch { /* ignore */ }
+    const v2Dir = path.join(researchDir, 'v2');
+    if (fs.existsSync(v2Dir)) {
+      try {
+        const v2Files = fs.readdirSync(v2Dir).filter(f => f.endsWith('.md'));
+        for (const f of v2Files) sharedDocPaths.push(`.planning/research/v2/${f}`);
+      } catch { /* ignore */ }
+    }
+  }
+
+  // Add phase-level RESEARCH.md files
+  const phasesDir = path.join(projectDir, '.planning', 'phases');
+  if (fs.existsSync(phasesDir)) {
+    try {
+      for (const entry of fs.readdirSync(phasesDir, { withFileTypes: true })) {
+        if (!entry.isDirectory()) continue;
+        for (const f of fs.readdirSync(path.join(phasesDir, entry.name))) {
+          if (f.includes('RESEARCH.md')) {
+            sharedDocPaths.push(`.planning/phases/${entry.name}/${f}`);
+          }
+        }
+      }
+    } catch { /* ignore */ }
+  }
+
+  if (sharedDocPaths.length === 0) {
+    log('  No shared docs found — skipping pre-index');
+    return false;
+  }
+
+  const prompt =
+    `Index these shared planning documents into context: ${sharedDocPaths.join(', ')}. ` +
+    `Read each file and summarize key decisions, constraints, and architecture to memory. ` +
+    `Do not take any other action.`;
+
+  try {
+    await runClaudeSession(prompt, { cwd: projectDir, sessionId: 'pre-index-shared-docs' });
+    log(`  Pre-indexed ${sharedDocPaths.length} shared doc(s)`);
+    return true;
+  } catch (err) {
+    log(`  Warning: pre-index failed (non-fatal): ${err.message.slice(0, 120)}`);
+    return false;
+  }
+}
+
 // ─── Main Orchestration Loop ──────────────────────────────────────────────────
 
 async function main() {
@@ -753,13 +1466,57 @@ async function main() {
     fatal('claude CLI not found on PATH. Install Claude Code first.');
   }
 
-  // Handle --resume
+  // Initialize enriched status tracking
+  _autoStatus.projectDir = projectDir;
+  _autoStatus.startedAt = new Date().toISOString();
+  _autoStatus.phasesTotal = phasesToRun.length;
+  _autoStatus.stepsTotal = phasesToRun.length * PHASE_STEPS.length;
+
+  // Auto-open tracker dashboard
+  const { exec } = require('child_process');
+  const dashboardPort = 4111;
+  log('Opening dashboard...');
+  exec(`open http://127.0.0.1:${dashboardPort}`);
+
+  // Write initial active status
+  writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
+    active: true,
+    budget: opts.budget || null,
+    last_log_line: 'Auto-execution starting',
+  }));
+
+  // Handle --resume (check both .auto-state.json AND git log for completed phases)
   let resumeState = null;
   if (opts.resume) {
     resumeState = loadAutoState(projectDir);
     if (!resumeState) {
-      fatal('No .auto-state.json found — nothing to resume');
+      // Fallback: infer resume point from STATE.md + existing artifacts
+      const currentFromState = parseCurrentPhase(projectDir);
+      if (currentFromState) {
+        log(`No .auto-state.json found — inferring resume point from STATE.md (phase ${currentFromState})`);
+        resumeState = { phase: currentFromState, step: PHASE_STEPS[0], steps_completed: [] };
+      } else {
+        fatal('No .auto-state.json and no current phase in STATE.md — nothing to resume');
+      }
     }
+
+    // Cross-check: skip phases that have SUMMARY.md (completed in a previous run that crashed before state update)
+    for (const phase of phasesToRun) {
+      if (comparePhaseNum(phase.id, resumeState.phase) < 0) continue;
+      if (comparePhaseNum(phase.id, resumeState.phase) > 0) break;
+
+      const plan = findLatestPlan(projectDir, phase.id);
+      if (plan && summaryExists(plan) && phase.id === resumeState.phase) {
+        log(`Phase ${phase.id} has SUMMARY.md — skipping ahead`);
+        // Find next incomplete phase
+        const idx = phasesToRun.findIndex(p => p.id === phase.id);
+        if (idx + 1 < phasesToRun.length) {
+          resumeState = { phase: phasesToRun[idx + 1].id, step: PHASE_STEPS[0], steps_completed: [] };
+          log(`Resuming from phase ${resumeState.phase} instead`);
+        }
+      }
+    }
+
     log(`Resuming from phase ${resumeState.phase}, step ${resumeState.step}`);
   }
 
@@ -778,14 +1535,102 @@ async function main() {
   if (opts.budget) log(`  Budget: $${opts.budget}`);
   log('');
 
+  // ─── Helper: run a single step with budget check, retry, cost tracking ───────
+
+  async function runStepWithRetry(phase, step, planPath) {
+    const stepKey = `${phase.id}:${step}`;
+
+    // Budget check
+    if (opts.budget && totalCostEstimate >= opts.budget) {
+      log(`Budget ceiling reached ($${totalCostEstimate.toFixed(2)} >= $${opts.budget}) — skipping ${phase.id}:${step}`);
+      return { skipped: true, reason: 'budget' };
+    }
+
+    // Pre-spawn API health check
+    try {
+      await waitForHealthyApi();
+    } catch (healthErr) {
+      log(`  ✗ API unreachable — cannot run ${phase.id}:${step}`);
+      return { skipped: true, reason: 'api-down', error: healthErr };
+    }
+
+    let attempts = retryCount[stepKey] || 0;
+    let stepResult = null;
+    let stepSucceeded = false;
+
+    while (attempts < MAX_RETRIES && !stepSucceeded) {
+      if (attempts > 0) {
+        log(`  ↻ Retry ${attempts}/${MAX_RETRIES - 1} for ${step} (phase ${phase.id})`);
+      }
+
+      try {
+        stepResult = await executeStep(projectDir, phase.id, step, planPath || null);
+        stepSucceeded = true;
+      } catch (err) {
+        attempts++;
+        retryCount[stepKey] = attempts;
+        const errType = err.stuck ? 'stuck (no output)' : err.timeout ? 'timeout' : 'failure';
+        _autoStatus.errors.push({
+          phase: phase.id,
+          step,
+          attempt: attempts,
+          error_type: err.stuck ? 'stuck' : err.timeout ? 'timeout' : isApiError(err) ? 'api' : 'logic',
+          message: err.message.slice(0, 300),
+          timestamp: new Date().toISOString(),
+        });
+        log(`  ✗ ${step} ${errType} (attempt ${attempts}/${MAX_RETRIES}): ${err.message.slice(0, 200)}`);
+        if (isApiError(err) && attempts < MAX_RETRIES) {
+          try { await waitForHealthyApi(); } catch { /* continue to retry logic */ }
+        }
+        if (attempts >= MAX_RETRIES) {
+          const skipDecId = nextDecisionId(projectDir);
+          const reason = err.stuck ? 'stuck session' : err.timeout ? 'hard timeout' : 'repeated failure';
+          appendDecision(projectDir, {
+            id: skipDecId,
+            title: `Skipped ${step} in phase ${phase.id} after ${reason}`,
+            status: 'ACTIVE ⚠ NEEDS REVIEW',
+            confidence: 'LOW',
+            context: `Step "${step}" failed ${attempts} time(s). Last error: ${err.message.slice(0, 200)}`,
+            decision: `Skipping step and continuing to next. Manual intervention required.`,
+            affects: `Phase ${phase.id}, step ${step}`,
+          });
+          log(`  ⚠ Skipping ${step} after ${attempts} attempts — decision logged as ${skipDecId}`);
+          return { skipped: true, reason: 'max-retries', error: err };
+        }
+      }
+    }
+
+    // Cost tracking
+    let sessionCost = 0;
+    if (stepResult) {
+      sessionCost = estimateSessionCost(stepResult.promptText || '', stepResult.stdout || '');
+      totalCostEstimate += sessionCost;
+      log(`    Cost estimate: ~$${sessionCost.toFixed(4)} (running total: ~$${totalCostEstimate.toFixed(2)} — minimum estimate, actual cost higher)`);
+    }
+
+    return { skipped: false, succeeded: stepSucceeded, result: stepResult, cost: sessionCost };
+  }
+
+  if (opts.noSpeculative) {
+    // ─── SEQUENTIAL FALLBACK (--no-speculative) ───────────────────────────────
+    log('Mode: sequential (--no-speculative)');
+
   for (const phase of phasesToRun) {
     // If resuming, skip phases before the saved phase
     if (resumeState && comparePhaseNum(phase.id, resumeState.phase) < 0) {
       log(`Skipping phase ${phase.id} (already completed)`);
+      _autoStatus.phasesSkipped++;
+      writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
+        phase: phase.id,
+        phase_name: phase.name,
+        total_cost_estimate: totalCostEstimate,
+        budget: opts.budget || null,
+      }));
       continue;
     }
 
     log(`═══ Phase ${phase.id}: ${phase.name} ═══`);
+    _autoStatus.phaseStartedAt = new Date().toISOString();
 
     // Determine which steps to run for this phase
     let stepsToRun = [...PHASE_STEPS];
@@ -799,8 +1644,6 @@ async function main() {
     let currentPlanPath = null;
 
     for (const step of stepsToRun) {
-      const stepKey = `${phase.id}:${step}`;
-
       // Budget check (with cost estimate)
       if (opts.budget && totalCostEstimate >= opts.budget) {
         log(`Budget ceiling reached ($${totalCostEstimate.toFixed(2)} >= $${opts.budget})`);
@@ -817,98 +1660,104 @@ async function main() {
           affects: phasesToRun.filter(p => comparePhaseNum(p.id, phase.id) >= 0).map(p => `Phase ${p.id}`).join(', '),
         });
 
-        saveAutoState(projectDir, {
+        writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
+          active: false,
           phase: phase.id,
+          phase_name: phase.name,
           step,
-          plan: currentPlanPath ? path.relative(projectDir, currentPlanPath) : null,
-          started_at: new Date().toISOString(),
+          step_index: PHASE_STEPS.indexOf(step),
           steps_completed: completedSteps,
+          current_plan_path: currentPlanPath ? path.relative(projectDir, currentPlanPath) : null,
           total_cost_estimate: totalCostEstimate,
-          retry_count: retryCount,
-        });
+          budget: opts.budget || null,
+          last_log_line: `Budget ceiling reached ($${totalCostEstimate.toFixed(2)} >= $${opts.budget})`,
+        }));
         log('State saved for resume. Exiting.');
         process.exit(0);
       }
 
-      // Save state before each step
-      saveAutoState(projectDir, {
+      // Write enriched status before each step starts
+      _autoStatus.stepStartedAt = new Date().toISOString();
+      writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
         phase: phase.id,
+        phase_name: phase.name,
         step,
-        plan: currentPlanPath ? path.relative(projectDir, currentPlanPath) : null,
-        started_at: new Date().toISOString(),
+        step_index: PHASE_STEPS.indexOf(step),
         steps_completed: completedSteps,
+        current_plan_path: currentPlanPath ? path.relative(projectDir, currentPlanPath) : null,
         total_cost_estimate: totalCostEstimate,
-        retry_count: retryCount,
-      });
+        budget: opts.budget || null,
+        last_log_line: `Starting step: ${step}`,
+      }));
 
       log(`  ▸ ${step}`);
 
-      // Retry loop with stuck detection
-      const maxAttempts = MAX_RETRIES;
-      let attempts = retryCount[stepKey] || 0;
-      let stepResult = null;
-      let stepSucceeded = false;
+      const outcome = await runStepWithRetry(phase, step, currentPlanPath);
 
-      while (attempts < maxAttempts && !stepSucceeded) {
-        if (attempts > 0) {
-          log(`  ↻ Retry ${attempts}/${maxAttempts - 1} for ${step}`);
-        }
-
-        try {
-          stepResult = await executeStep(projectDir, phase.id, step, currentPlanPath);
-          stepSucceeded = true;
-        } catch (err) {
-          attempts++;
-          retryCount[stepKey] = attempts;
-
-          // Save retry state
-          saveAutoState(projectDir, {
-            phase: phase.id,
-            step,
-            plan: currentPlanPath ? path.relative(projectDir, currentPlanPath) : null,
-            started_at: new Date().toISOString(),
-            steps_completed: completedSteps,
-            total_cost_estimate: totalCostEstimate,
-            retry_count: retryCount,
-          });
-
-          if (err.timeout) {
-            log(`  ✗ ${step} timed out (attempt ${attempts}/${maxAttempts})`);
-          } else {
-            log(`  ✗ ${step} failed (attempt ${attempts}/${maxAttempts}): ${err.message}`);
-          }
-
-          if (attempts >= maxAttempts) {
-            // Max retries exhausted — skip step with logged decision
-            const skipDecId = nextDecisionId(projectDir);
-            const reason = err.timeout ? 'hard timeout' : 'repeated failure';
-            appendDecision(projectDir, {
-              id: skipDecId,
-              title: `Skipped ${step} in phase ${phase.id} after ${reason}`,
-              status: 'ACTIVE ⚠ NEEDS REVIEW',
-              confidence: 'LOW',
-              context: `Step "${step}" failed ${attempts} time(s). Last error: ${err.message.slice(0, 200)}`,
-              decision: `Skipping step and continuing to next. Manual intervention required.`,
-              affects: `Phase ${phase.id}, step ${step}`,
-            });
-            log(`  ⚠ Skipping ${step} after ${attempts} attempts — decision logged as ${skipDecId}`);
-            break;
-          }
-        }
+      // If API is down, save state and abort (preserve old behaviour)
+      if (outcome.skipped && outcome.reason === 'api-down') {
+        log(`  ✗ API unreachable — saving state for --resume`);
+        const apiDecId = nextDecisionId(projectDir);
+        appendDecision(projectDir, {
+          id: apiDecId,
+          title: `API outage halted phase ${phase.id} at ${step}`,
+          status: 'ACTIVE ⚠ NEEDS REVIEW',
+          confidence: 'HIGH',
+          context: outcome.error ? outcome.error.message : 'API health check failed',
+          decision: `Saved state for --resume. Re-run after API recovery.`,
+          affects: `Phase ${phase.id}, step ${step}`,
+        });
+        writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
+          active: false,
+          phase: phase.id,
+          phase_name: phase.name,
+          step,
+          step_index: PHASE_STEPS.indexOf(step),
+          steps_completed: completedSteps,
+          current_plan_path: currentPlanPath ? path.relative(projectDir, currentPlanPath) : null,
+          total_cost_estimate: totalCostEstimate,
+          budget: opts.budget || null,
+          last_log_line: `API unreachable — saving state for --resume`,
+        }));
+        log(`  State saved for resume (decision ${apiDecId}). Exiting.`);
+        process.exit(1);
       }
 
-      // Cost tracking: estimate cost from session I/O
-      if (stepResult) {
-        const sessionCost = estimateSessionCost(
-          stepResult.promptText || '',
-          stepResult.stdout || ''
-        );
-        totalCostEstimate += sessionCost;
-        log(`    Cost estimate: ~$${sessionCost.toFixed(4)} (running total: ~$${totalCostEstimate.toFixed(2)} — minimum estimate, actual cost higher)`);
-      }
+      let stepSucceeded = !outcome.skipped;
+      const sessionCost = outcome.cost || 0;
 
       if (stepSucceeded) {
         completedSteps.push(step);
+
+        // Record in step_history
+        const stepCompletedAt = new Date().toISOString();
+        const stepElapsedMs = _autoStatus.stepStartedAt ? Date.now() - new Date(_autoStatus.stepStartedAt).getTime() : 0;
+        const stepStdout = (outcome.result && outcome.result.stdout) || '';
+        const metrics = parseSessionMetrics(stepStdout);
+        log(`PHASE_METRICS: phase=${phase.id} step=${step} elapsed=${stepElapsedMs}ms tokens_in=${metrics.tokens_in} tokens_out=${metrics.tokens_out} reads=${metrics.read_calls} ctx_hits=${metrics.ctx_search_hits}`);
+        _autoStatus.stepHistory.push({
+          phase: phase.id,
+          step,
+          status: 'success',
+          elapsed_ms: stepElapsedMs,
+          cost_estimate: sessionCost,
+          started_at: _autoStatus.stepStartedAt || stepCompletedAt,
+          completed_at: stepCompletedAt,
+          metrics,
+        });
+
+        // Write enriched status after step completes
+        writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
+          phase: phase.id,
+          phase_name: phase.name,
+          step,
+          step_index: PHASE_STEPS.indexOf(step),
+          steps_completed: completedSteps,
+          current_plan_path: currentPlanPath ? path.relative(projectDir, currentPlanPath) : null,
+          total_cost_estimate: totalCostEstimate,
+          budget: opts.budget || null,
+          last_log_line: `${step} complete`,
+        }));
       }
 
       // Post-step verification — treat missing artifacts as step failure, not fatal
@@ -965,24 +1814,624 @@ async function main() {
     if (criticalsMissing.length > 0) {
       log(`Phase ${phase.id} INCOMPLETE — missing critical steps: ${criticalsMissing.join(', ')}`);
       log(`  Saving state for --resume. Run again to retry.`);
-      saveAutoState(projectDir, {
+      _autoStatus.phasesFailed++;
+      writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
+        active: false,
         phase: phase.id,
+        phase_name: phase.name,
         step: criticalsMissing[0],
-        plan: currentPlanPath ? path.relative(projectDir, currentPlanPath) : null,
-        started_at: new Date().toISOString(),
+        step_index: PHASE_STEPS.indexOf(criticalsMissing[0]),
         steps_completed: completedSteps,
+        current_plan_path: currentPlanPath ? path.relative(projectDir, currentPlanPath) : null,
         total_cost_estimate: totalCostEstimate,
-        retry_count: retryCount,
-      });
+        budget: opts.budget || null,
+        last_log_line: `Phase ${phase.id} INCOMPLETE — missing: ${criticalsMissing.join(', ')}`,
+      }));
       break; // exit phases loop — don't continue to next phase
     }
 
     updateStateViaGsd(projectDir, phase.id);
+    _autoStatus.phasesCompleted++;
+    writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
+      phase: phase.id,
+      phase_name: phase.name,
+      step: null,
+      steps_completed: completedSteps,
+      current_plan_path: currentPlanPath ? path.relative(projectDir, currentPlanPath) : null,
+      total_cost_estimate: totalCostEstimate,
+      budget: opts.budget || null,
+      last_log_line: `Phase ${phase.id} complete`,
+    }));
     log(`Phase ${phase.id} complete\n`);
   }
 
-  // Clear auto-state on successful completion
-  clearAutoState(projectDir);
+  } else {
+    // ─── 3-WAVE PIPELINE ──────────────────────────────────────────────────────
+    log('Mode: speculative pipeline (planning wave → review wave → build wave)');
+
+    // State write reduction: in stable runs write only at phase start/end
+    let stableRun = true;
+
+    // ── Step 1: Pre-index shared docs ──────────────────────────────────────────
+    const preIndexSucceeded = await preIndexSharedDocs(projectDir);
+
+    // ── Phase states map ───────────────────────────────────────────────────────
+    // Possible values: 'pending' | 'planned' | 'plan-failed' | 'reviewed' |
+    //                  'review-failed' | 'built' | 'build-failed' | 'blocked' |
+    //                  'rescheduled-sequential'
+    const phase_states = {};
+    for (const phase of phasesToRun) phase_states[phase.id] = 'pending';
+
+    // ── Resume: restore phase_states from auto-state ───────────────────────────
+    if (opts.resume && resumeState && resumeState.phase_states) {
+      log('  Restoring phase_states from saved auto-state for granular resume...');
+      for (const phase of phasesToRun) {
+        const saved = resumeState.phase_states[phase.id];
+        if (saved) {
+          phase_states[phase.id] = saved;
+          log(`    Phase ${phase.id}: restored as '${saved}'`);
+        }
+      }
+    }
+
+    // Plan paths per phase
+    const phasePlanPaths = {};
+
+    // ── Resume: restore phasePlanPaths from auto-state ────────────────────────
+    if (opts.resume && resumeState && resumeState.phase_plan_paths) {
+      log('  Restoring phasePlanPaths from saved auto-state...');
+      for (const [pid, relPath] of Object.entries(resumeState.phase_plan_paths)) {
+        const absPath = path.resolve(projectDir, relPath);
+        if (fs.existsSync(absPath)) {
+          phasePlanPaths[pid] = absPath;
+          log(`    Phase ${pid}: plan path restored`);
+        }
+      }
+    }
+
+    // Phases that need sequential fallback after pipeline
+    const rescheduledPhases = [];
+
+    // ── PLANNING WAVE ─────────────────────────────────────────────────────────
+    log('');
+    log('═══ Planning wave ═══');
+
+    writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
+      active: true,
+      phase: null,
+      step: 'plan-work',
+      total_cost_estimate: totalCostEstimate,
+      budget: opts.budget || null,
+      phase_states,
+      last_log_line: 'Planning wave starting',
+    }));
+
+    const planPool = new ConcurrencyPool(opts.concurrency);
+    const planPromises = phasesToRun.map((phase, phaseIdx) => planPool.run(async () => {
+      // Skip phases already past planning on resume
+      const currentState = phase_states[phase.id];
+      if (currentState === 'planned' || currentState === 'reviewed' || currentState === 'built') {
+        log(`  ↷ Skipping planning for phase ${phase.id} (already '${currentState}')`);
+        // Restore plan path if available
+        const existingPlan = findLatestPlan(projectDir, phase.id);
+        if (existingPlan) phasePlanPaths[phase.id] = existingPlan;
+        return;
+      }
+      log(`  ▸ Planning phase ${phase.id}: ${phase.name}`);
+
+      // Build planning prompt additions
+      const skipBootstrap = preIndexSucceeded
+        ? 'SKIP Phase Context Bootstrap (Step -0.5) — shared context already indexed. Use ctx_search for shared docs.'
+        : '';
+      const assumeEarlier = phaseIdx > 0
+        ? ' Assume earlier phases complete successfully and produce their expected artifacts.'
+        : '';
+      const decisionsRedirect = ' Write any autonomous decisions to .planning/phases/' +
+        normalizePhaseName(phase.id) + '/.decisions-pending.md instead of .planning/DECISIONS.md';
+
+      // Temporarily override executeStep plan-work prompt by passing extra context via a wrapper
+      // We patch the prompt by wrapping the session call directly
+      let researchHint = '';
+      const researchDir = path.join(projectDir, '.planning', 'research');
+      if (fs.existsSync(researchDir)) {
+        try {
+          const researchFiles = fs.readdirSync(researchDir).filter(f => f.endsWith('.md'));
+          if (researchFiles.length > 0) {
+            researchHint = ` Project research exists in .planning/research/ (${researchFiles.join(', ')}) — index and use these findings.`;
+          }
+        } catch { /* ignore */ }
+      }
+      const phDir = findPhaseDir(projectDir, phase.id);
+      if (phDir) {
+        try {
+          const phaseResearch = fs.readdirSync(phDir).filter(f => f.includes('RESEARCH.md'));
+          if (phaseResearch.length > 0) researchHint += ` Phase research exists: ${phaseResearch.join(', ')}.`;
+        } catch { /* ignore */ }
+      }
+
+      let phaseGoal = '';
+      try {
+        const roadmap = fs.readFileSync(path.join(projectDir, '.planning/ROADMAP.md'), 'utf-8');
+        const phaseMatch = roadmap.match(new RegExp(`## Phase ${phase.id}[^\\n]*\\n\\*\\*Goal:\\*\\*\\s*([^\\n]+)`));
+        if (phaseMatch) phaseGoal = phaseMatch[1].trim();
+      } catch { /* ignore */ }
+
+      const sessionId = `phase-${phase.id}-auto`;
+
+      let stepResult;
+      try {
+        stepResult = await runClaudeSession(
+          `You are in auto mode (workflow.auto_advance=true).` +
+          (skipBootstrap ? ` ${skipBootstrap}` : '') +
+          ` Read .planning/STATE.md and .planning/ROADMAP.md for context. ` +
+          `Plan phase ${phase.id}. Phase goal: "${phaseGoal}". ` +
+          `Use /fh:plan-work to create the plan. Auto-decide all gray areas using best judgment. ` +
+          `Write the plan to .planning/phases/ directory. Do not ask questions — make decisions autonomously.` +
+          researchHint + assumeEarlier + decisionsRedirect,
+          { cwd: projectDir, sessionId }
+        );
+      } catch (err) {
+        log(`  ✗ Planning failed for phase ${phase.id}: ${err.message.slice(0, 200)}`);
+        phase_states[phase.id] = 'plan-failed';
+        _autoStatus.errors.push({
+          phase: phase.id,
+          step: 'plan-work',
+          attempt: 1,
+          error_type: 'logic',
+          message: err.message.slice(0, 300),
+          timestamp: new Date().toISOString(),
+        });
+        return;
+      }
+
+      // Cost tracking
+      const sessionCost = estimateSessionCost(stepResult.promptText || '', stepResult.stdout || '');
+      totalCostEstimate += sessionCost;
+      log(`    Phase ${phase.id} plan cost: ~$${sessionCost.toFixed(4)}`);
+
+      const planPath = findLatestPlan(projectDir, phase.id);
+      if (!planPath) {
+        log(`  ✗ phase ${phase.id}: plan-work produced no PLAN.md`);
+        phase_states[phase.id] = 'plan-failed';
+        return;
+      }
+
+      phasePlanPaths[phase.id] = planPath;
+      phase_states[phase.id] = 'planned';
+      log(`  ✓ Phase ${phase.id} planned: ${path.relative(projectDir, planPath)}`);
+    }));
+
+    await Promise.allSettled(planPromises);
+
+    // ── Merge .decisions-pending.md files into DECISIONS.md ───────────────────
+    log('  Merging phase-local decisions...');
+    for (const phase of phasesToRun) {
+      const phaseDir = findPhaseDir(projectDir, phase.id);
+      if (!phaseDir) continue;
+      const pendingPath = path.join(phaseDir, '.decisions-pending.md');
+      if (!fs.existsSync(pendingPath)) continue;
+      try {
+        const pendingContent = fs.readFileSync(pendingPath, 'utf-8').trim();
+        if (pendingContent) {
+          const dp = decisionsPath(projectDir);
+          let existing = '';
+          if (fs.existsSync(dp)) {
+            existing = fs.readFileSync(dp, 'utf-8');
+          } else {
+            existing = '# Decisions\n\nAuto-generated decision log.\n';
+          }
+          fs.writeFileSync(dp, existing.trimEnd() + '\n\n' + pendingContent + '\n', 'utf-8');
+          log(`    Merged decisions from phase ${phase.id}`);
+        }
+        fs.unlinkSync(pendingPath);
+      } catch (err) {
+        log(`    Warning: could not merge decisions for phase ${phase.id}: ${err.message}`);
+      }
+    }
+
+    // ── Build dependency graph from actual files_modified ─────────────────────
+    const planMap = {};
+    for (const phase of phasesToRun) {
+      if (phasePlanPaths[phase.id]) {
+        planMap[phase.id] = parsePlanFrontmatter(phasePlanPaths[phase.id]);
+      }
+    }
+    const depGraph = buildDependencyGraph(phasesToRun, planMap);
+    const waveMap = assignWaves(depGraph);
+
+    log(`  Dependency graph built. Wave assignments: ${JSON.stringify(waveMap)}`);
+
+    // ── Handle plan-failed phases: mark dependents as rescheduled ─────────────
+    for (const phase of phasesToRun) {
+      if (phase_states[phase.id] !== 'plan-failed') continue;
+      for (const otherPhase of phasesToRun) {
+        if (otherPhase.id === phase.id) continue;
+        if ((depGraph[otherPhase.id] || []).includes(phase.id)) {
+          log(`  Phase ${otherPhase.id} depends on failed phase ${phase.id} — rescheduling to sequential`);
+          phase_states[otherPhase.id] = 'rescheduled-sequential';
+          rescheduledPhases.push(otherPhase);
+        }
+      }
+      phase_states[phase.id] = 'rescheduled-sequential';
+      rescheduledPhases.push(phase);
+    }
+
+    writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
+      active: true,
+      step: 'plan-work',
+      total_cost_estimate: totalCostEstimate,
+      budget: opts.budget || null,
+      phase_states,
+      last_log_line: 'Planning wave complete',
+    }));
+
+    // ── REVIEW WAVE ───────────────────────────────────────────────────────────
+    log('');
+    log('═══ Review wave ═══');
+
+    writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
+      active: true,
+      step: 'plan-review',
+      total_cost_estimate: totalCostEstimate,
+      budget: opts.budget || null,
+      phase_states,
+      last_log_line: 'Review wave starting',
+    }));
+
+    const reviewPool = new ConcurrencyPool(opts.concurrency);
+    const phasesToReview = phasesToRun.filter(p => phase_states[p.id] === 'planned' || phase_states[p.id] === 'reviewed');
+    const reviewPromises = phasesToReview.map(phase => reviewPool.run(async () => {
+      // Skip phases already reviewed on resume
+      if (phase_states[phase.id] === 'reviewed') {
+        log(`  ↷ Skipping review for phase ${phase.id} (already 'reviewed')`);
+        return;
+      }
+      log(`  ▸ Reviewing phase ${phase.id}`);
+      const outcome = await runStepWithRetry(phase, 'plan-review', phasePlanPaths[phase.id]);
+      if (outcome.skipped) {
+        log(`  ✗ Review failed for phase ${phase.id} (${outcome.reason}) — rescheduling to sequential`);
+        phase_states[phase.id] = 'review-failed';
+        if (!rescheduledPhases.find(p => p.id === phase.id)) rescheduledPhases.push(phase);
+      } else {
+        phase_states[phase.id] = 'reviewed';
+        log(`  ✓ Phase ${phase.id} reviewed`);
+      }
+    }));
+
+    await Promise.allSettled(reviewPromises);
+
+    writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
+      active: true,
+      step: 'plan-review',
+      total_cost_estimate: totalCostEstimate,
+      budget: opts.budget || null,
+      phase_states,
+      last_log_line: 'Review wave complete',
+    }));
+
+    // ── BUILD WAVE ────────────────────────────────────────────────────────────
+    log('');
+    log('═══ Build wave ═══');
+
+    // Track built phases for review batching
+    const builtPhasesForReview = [];
+
+    // Helper: run a batched review session for a group of phases
+    async function batchReview(batchPhases) {
+      if (batchPhases.length === 0) return;
+      _optimizations.reviews_batched++;
+
+      // Check if batch has >20 files — if so, split into 2 sessions
+      const batchFiles = [];
+      for (const bp of batchPhases) {
+        const pm = planMap[bp.id];
+        if (pm && pm.files_modified) {
+          for (const f of pm.files_modified) {
+            if (!batchFiles.includes(f)) batchFiles.push(f);
+          }
+        }
+      }
+
+      const phaseIds = batchPhases.map(p => p.id).join(', ');
+
+      if (batchFiles.length > 20 && batchPhases.length > 1) {
+        // Split into two halves — only recurse if there is more than one phase to split
+        const half = Math.ceil(batchPhases.length / 2);
+        const firstHalf = batchPhases.slice(0, half);
+        const secondHalf = batchPhases.slice(half);
+        log(`  [review-batch] ${phaseIds}: >20 files — splitting into 2 review sessions`);
+        await batchReview(firstHalf);
+        await batchReview(secondHalf);
+        return;
+      }
+      // Base case: single phase with >20 files — review as-is (cannot split further)
+
+      log(`  [review-batch] Running batched review for phases: ${phaseIds}`);
+      const reviewPrompt =
+        `You are in auto mode. Review changes from phases ${phaseIds}. ` +
+        `Run /fh:review --quick covering all recent changes from these phases. ` +
+        `Fix any issues found. Do not ask questions.`;
+      try {
+        await runClaudeSession(reviewPrompt, {
+          cwd: projectDir,
+          sessionId: `batch-review-${batchPhases.map(p => p.id).join('-')}`,
+        });
+        log(`  ✓ Batched review complete for phases: ${phaseIds}`);
+      } catch (err) {
+        log(`  ✗ Batched review failed for phases ${phaseIds}: ${err.message.slice(0, 120)}`);
+      }
+    }
+
+    // Group phases by wave number for ordered processing
+    const waveGroups = {};
+    for (const phase of phasesToRun) {
+      if (phase_states[phase.id] !== 'reviewed' && phase_states[phase.id] !== 'built') continue;
+      const w = waveMap[phase.id] || 1;
+      if (!waveGroups[w]) waveGroups[w] = [];
+      waveGroups[w].push(phase);
+    }
+
+    const sortedWaveNums = Object.keys(waveGroups).map(Number).sort((a, b) => a - b);
+
+    for (const waveNum of sortedWaveNums) {
+      const wavePhases = waveGroups[waveNum];
+      log(`  Build wave ${waveNum}: ${wavePhases.map(p => p.id).join(', ')}`);
+
+      // Within each wave, build in parallel (phases share no files by wave-assignment invariant)
+      const buildPool = new ConcurrencyPool(opts.concurrency);
+      const buildPromises = wavePhases.map(phase => buildPool.run(async () => {
+        // Skip phases already built on resume
+        if (phase_states[phase.id] === 'built') {
+          log(`  ↷ Skipping build for phase ${phase.id} (already 'built')`);
+          builtPhasesForReview.push(phase);
+          return;
+        }
+
+        // Skip phases blocked by earlier wave failures
+        if (phase_states[phase.id] === 'blocked') {
+          log(`  ↷ Skipping build for phase ${phase.id} (blocked by dependency failure)`);
+          return;
+        }
+
+        // Speculative plan validation before building
+        const validationResult = await validateSpeculativePlan(projectDir, phase.id, depGraph, planMap);
+        if (validationResult === 'REPLAN') {
+          log(`  [validate] Phase ${phase.id}: REPLAN required — running plan-work + plan-review`);
+          const planOutcome = await runStepWithRetry(phase, 'plan-work', null);
+          if (!planOutcome.skipped) {
+            const newPlanPath = findLatestPlan(projectDir, phase.id);
+            if (newPlanPath) phasePlanPaths[phase.id] = newPlanPath;
+            await runStepWithRetry(phase, 'plan-review', phasePlanPaths[phase.id]);
+          }
+        }
+
+        log(`  ▸ Building phase ${phase.id}`);
+
+        // State write reduction: in stable run, only write at phase-start
+        // Build plan path with fallback
+        if (!phasePlanPaths[phase.id]) {
+          const fallback = findLatestPlan(projectDir, phase.id);
+          if (fallback) {
+            log(`  [build] Phase ${phase.id}: plan path missing from map — falling back to ${path.relative(projectDir, fallback)}`);
+            phasePlanPaths[phase.id] = fallback;
+          }
+        }
+
+        // Serialize phasePlanPaths as relative paths for state persistence
+        const relPhasePlanPaths = {};
+        for (const [pid, pp] of Object.entries(phasePlanPaths)) {
+          relPhasePlanPaths[pid] = path.relative(projectDir, pp);
+        }
+
+        if (stableRun) {
+          _optimizations.state_writes_saved++;
+          saveAutoState(projectDir, {
+            phase: phase.id,
+            phase_states: Object.assign({}, phase_states),
+            total_cost_estimate: totalCostEstimate,
+            retry_count: retryCount,
+            phase_plan_paths: relPhasePlanPaths,
+          });
+        } else {
+          writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
+            active: true,
+            phase: phase.id,
+            phase_name: phase.name,
+            step: 'build',
+            total_cost_estimate: totalCostEstimate,
+            budget: opts.budget || null,
+            phase_states,
+            last_log_line: `Building phase ${phase.id}`,
+          }));
+        }
+
+        const outcome = await runStepWithRetry(phase, 'build', phasePlanPaths[phase.id]);
+
+        if (outcome.skipped) {
+          log(`  ✗ Build failed for phase ${phase.id} (${outcome.reason})`);
+          phase_states[phase.id] = 'build-failed';
+          _autoStatus.phasesFailed++;
+          stableRun = false; // error → revert to per-step writes
+
+          // Propagate failure: mark dependents in later waves as blocked
+          for (const otherPhase of phasesToRun) {
+            if (otherPhase.id === phase.id) continue;
+            if ((depGraph[otherPhase.id] || []).includes(phase.id)) {
+              if (phase_states[otherPhase.id] !== 'built' && phase_states[otherPhase.id] !== 'build-failed') {
+                log(`  Phase ${otherPhase.id} is blocked by failed build of ${phase.id} — rescheduling to sequential`);
+                phase_states[otherPhase.id] = 'blocked';
+                if (!rescheduledPhases.find(p => p.id === otherPhase.id)) rescheduledPhases.push(otherPhase);
+              }
+            }
+          }
+        } else {
+          // Verify SUMMARY.md
+          if (!summaryExists(phasePlanPaths[phase.id])) {
+            log(`  ✗ Build succeeded but no SUMMARY.md for phase ${phase.id} — treating as failure`);
+            phase_states[phase.id] = 'build-failed';
+            _autoStatus.phasesFailed++;
+            stableRun = false;
+          } else {
+            phase_states[phase.id] = 'built';
+            _autoStatus.phasesCompleted++;
+            plansExecuted++;
+            builtPhasesForReview.push(phase);
+            log(`  ✓ Phase ${phase.id} built — SUMMARY.md verified`);
+          }
+        }
+
+        // State write reduction: in stable run, only write at phase-end
+        if (stableRun) {
+          _optimizations.state_writes_saved++;
+          const relPhasePlanPathsEnd = {};
+          for (const [pid, pp] of Object.entries(phasePlanPaths)) {
+            relPhasePlanPathsEnd[pid] = path.relative(projectDir, pp);
+          }
+          saveAutoState(projectDir, {
+            phase: phase.id,
+            phase_states: Object.assign({}, phase_states),
+            total_cost_estimate: totalCostEstimate,
+            retry_count: retryCount,
+            phase_plan_paths: relPhasePlanPathsEnd,
+          });
+        } else {
+          writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
+            active: true,
+            phase: phase.id,
+            phase_name: phase.name,
+            step: 'build',
+            total_cost_estimate: totalCostEstimate,
+            budget: opts.budget || null,
+            phase_states,
+            last_log_line: `Phase ${phase.id} build ${phase_states[phase.id]}`,
+          }));
+        }
+      }));
+
+      await buildPool.drain();
+      await Promise.allSettled(buildPromises);
+
+      // Post-wave review batching for phases built in this wave
+      const waveBuiltPhases = wavePhases.filter(p => phase_states[p.id] === 'built');
+      if (waveBuiltPhases.length > 0) {
+        log(`  [review-batch] Triggering batched review for wave ${waveNum} (${waveBuiltPhases.length} phase(s))`);
+        await batchReview(waveBuiltPhases);
+      }
+    }
+
+    // Update state for built phases
+    for (const phase of phasesToRun) {
+      if (phase_states[phase.id] === 'built') {
+        updateStateViaGsd(projectDir, phase.id);
+      }
+    }
+
+    // ── RESCHEDULED SEQUENTIAL PHASES ─────────────────────────────────────────
+    if (rescheduledPhases.length > 0) {
+      log('');
+      log(`═══ Sequential fallback for ${rescheduledPhases.length} rescheduled phase(s) ═══`);
+
+      // Deduplicate while preserving order
+      const seen = new Set();
+      const uniqueRescheduled = [];
+      for (const p of rescheduledPhases) {
+        if (!seen.has(p.id)) { seen.add(p.id); uniqueRescheduled.push(p); }
+      }
+
+      for (const phase of uniqueRescheduled) {
+        log(`═══ Phase ${phase.id}: ${phase.name} (rescheduled) ═══`);
+        _autoStatus.phaseStartedAt = new Date().toISOString();
+
+        const completedSteps = [];
+        let currentPlanPath = phasePlanPaths[phase.id] || null;
+
+        for (const step of PHASE_STEPS) {
+          // Budget check
+          if (opts.budget && totalCostEstimate >= opts.budget) {
+            log(`Budget ceiling reached — stopping`);
+            break;
+          }
+
+          writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
+            phase: phase.id,
+            phase_name: phase.name,
+            step,
+            step_index: PHASE_STEPS.indexOf(step),
+            steps_completed: completedSteps,
+            current_plan_path: currentPlanPath ? path.relative(projectDir, currentPlanPath) : null,
+            total_cost_estimate: totalCostEstimate,
+            budget: opts.budget || null,
+            phase_states,
+            last_log_line: `Starting step: ${step}`,
+          }));
+
+          log(`  ▸ ${step}`);
+
+          const outcome = await runStepWithRetry(phase, step, currentPlanPath);
+
+          if (outcome.skipped) {
+            log(`  ✗ ${step} skipped (${outcome.reason}) for rescheduled phase ${phase.id}`);
+            break;
+          }
+
+          completedSteps.push(step);
+
+          if (step === 'plan-work') {
+            currentPlanPath = findLatestPlan(projectDir, phase.id);
+            if (!currentPlanPath) {
+              log(`  ✗ plan-work produced no PLAN.md for phase ${phase.id}`);
+              break;
+            }
+            phasePlanPaths[phase.id] = currentPlanPath;
+          }
+
+          if (step === 'build') {
+            if (!summaryExists(currentPlanPath)) {
+              log(`  ✗ build produced no SUMMARY.md for phase ${phase.id}`);
+              break;
+            }
+            plansExecuted++;
+            phase_states[phase.id] = 'built';
+            _autoStatus.phasesCompleted++;
+            log('    SUMMARY.md verified');
+          }
+
+          log(`  ✓ ${step} complete`);
+        }
+
+        const criticalSteps = ['plan-work', 'plan-review', 'build'];
+        const criticalsMissing = criticalSteps.filter(s => !completedSteps.includes(s));
+        if (criticalsMissing.length > 0) {
+          log(`Phase ${phase.id} INCOMPLETE — missing: ${criticalsMissing.join(', ')}`);
+          _autoStatus.phasesFailed++;
+        } else {
+          updateStateViaGsd(projectDir, phase.id);
+          phase_states[phase.id] = 'built';
+          log(`Phase ${phase.id} complete\n`);
+        }
+
+        writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
+          phase: phase.id,
+          phase_name: phase.name,
+          step: null,
+          steps_completed: completedSteps,
+          current_plan_path: currentPlanPath ? path.relative(projectDir, currentPlanPath) : null,
+          total_cost_estimate: totalCostEstimate,
+          budget: opts.budget || null,
+          phase_states,
+          last_log_line: `Phase ${phase.id} ${phase_states[phase.id]}`,
+        }));
+      }
+    }
+  } // end else (pipeline)
+
+  // Write final inactive status on successful completion
+  writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
+    active: false,
+    total_cost_estimate: totalCostEstimate,
+    budget: opts.budget || null,
+    last_log_line: 'Auto-execution complete',
+  }));
 
   // Print summary
   const durationMs = Date.now() - startTime;
@@ -996,8 +2445,16 @@ async function main() {
   log(`  Decisions logged: ${decisionsLogged}`);
   log(`  Cost estimate: $${totalCostEstimate.toFixed(2)}${opts.budget ? ` / $${opts.budget} budget` : ''}`);
   log(`  Duration: ${durationMin}m`);
+
+  // Clean up auto-state so --resume doesn't find stale completed state
+  clearAutoState(projectDir);
 }
 
 main().catch((err) => {
+  writeAutoStatus(_autoStatus.projectDir || process.cwd(), {
+    active: false,
+    last_log_line: `Fatal error: ${err.message.slice(0, 200)}`,
+    errors: [{ phase: null, step: null, attempt: 1, error_type: 'fatal', message: err.message.slice(0, 300), timestamp: new Date().toISOString() }],
+  });
   fatal(err.message);
 });

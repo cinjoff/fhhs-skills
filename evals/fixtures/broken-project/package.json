@@ -1,0 +1,24 @@
+{
+  "name": "broken-project",
+  "version": "1.0.0",
+  "description": "Intentionally broken project fixture for eval testing",
+  "main": "dist/app.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/app.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "react": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.0.0",
+    "@types/react": "^17.0.0",
+    "react": "^17.0.2",
+    "typescript": "^5.3.3"
+  },
+  "peerDependencies": {
+    "react": "^16.8.0 || ^17.0.0 || ^18.0.0"
+  }
+}

@@ -12,23 +12,39 @@ You are implementing a task from a plan.
 
 {TASK_TEXT}
 
+## Pre-Cached Files
+
+The orchestrator has pre-indexed files for this phase via context-mode. Use ctx_search to access them:
+- Source files from your task: `ctx_search(queries: ["existing implementation in {filename}"])`
+- Existing test files: `ctx_search(queries: ["existing tests for {component}", "test patterns in project"])`
+- Test skeletons from spec generation: `ctx_search(queries: ["test skeleton for {feature}"])`
+
+**Read vs ctx_search rule:**
+- Use `ctx_search` for UNDERSTANDING existing code, patterns, conventions, decisions
+- Use `Read` ONLY for files you are about to `Edit` or `Write` (you need exact content for modifications)
+
+If ctx_search is not available or returns no results, fall back to Read.
+
 ## Project Context
 
-If `./CLAUDE.md` exists, read it for project conventions.
+### Conventions
+If ctx_search is available, query: `ctx_search(queries: ["conventions for {FILE_TYPES}", "project constraints and gotchas"])`
+If ctx_search returns results, use those (pre-indexed and compact).
+If ctx_search is unavailable or returns nothing, use the injected context below:
 
 {CLAUDE_MD_SECTIONS}
 
-If the above section is empty, query context-mode or read docs directly:
-- If ctx_search is available: `ctx_search(queries: ["conventions for {FILE_TYPES}", "structure for new files"])`
-- Otherwise read from `.planning/codebase/`: UI work → CONVENTIONS.md + DESIGN.md; new files → STRUCTURE.md; API work → ARCHITECTURE.md; tests → TESTING.md
+If both are empty, read `./CLAUDE.md` and `.planning/codebase/` directly.
 
 ### Decisions & Scope Boundary
 
+If ctx_search is available, query: `ctx_search(queries: ["locked decisions for {PHASE_NAME}", "discretion areas", "deferred scope boundary"])`
+If ctx_search returns results, use those.
+Otherwise, use the injected decisions below:
+
 {DESIGN_DECISIONS}
 
-If the above section is empty, query context-mode or read CONTEXT.md directly:
-- If ctx_search is available: `ctx_search(queries: ["locked decisions for {PHASE_NAME}", "discretion areas for {PHASE_NAME}", "deferred ideas scope boundary"])`
-- Otherwise read `.planning/phases/{PHASE_DIR}/CONTEXT.md`
+If both are empty, read `.planning/phases/{PHASE_DIR}/CONTEXT.md` directly.
 
 Do not contradict locked decisions. Stay within discretion bounds.
 Do not implement deferred ideas.
@@ -59,18 +75,39 @@ Skip TaskUpdate calls if {TASK_ID} is empty.
 
 ## Implementation Rules
 
-**TDD** (if `tdd="true"`): RED-GREEN-REFACTOR per `skills/test-driven-development/PROMPT.md`.
+**TDD** (if `tdd="true"`): RED-GREEN-REFACTOR per `skills/test-driven-development/PROMPT.md`. For all other tasks: follow `.claude/skills/build/references/testing-manifesto.md`.
 
 **Tests — non-watch mode only** (watch mode hangs subagents): Vitest: `pnpm test --run`. Jest: `CI=true pnpm test`. When in doubt: prefix `CI=true`.
 
 **Context-aware skills** — read these if relevant to your task:
-- Playwright tests (`*.spec.*`, `*.test.*`, `e2e/`): read `.claude/skills/playwright-testing/PROMPT.md`
+- Playwright tests (`*.spec.*`, `*.test.*`, `e2e/`): resolve from `$HOME/.claude/plugins/cache/fhhs-skills/*/playwright-testing/PROMPT.md` (fall back to `.claude/skills/playwright-testing/PROMPT.md`)
 - Frontend work (`.tsx`, `.css`): read `.planning/DESIGN.md` and `skills/frontend-design/PROMPT.md`
 - Next.js project (`next.config.*`): read `.claude/skills/nextjs-perf/PROMPT.md`
 
 **YAGNI:**
 Do not add features, abstractions, or error handling beyond what the task specifies.
 If in doubt, leave it out.
+
+## Testing Requirements
+
+Read `.claude/skills/build/references/testing-manifesto.md` for testing rules and stack defaults.
+
+**For every task that creates/modifies business logic, state, or data transformation:**
+- Write unit or integration tests alongside implementation — testing is part of the task, not a separate step
+- Detect the project's test runner from package.json scripts or config files. Default: Vitest with `pnpm test --run {test-file}`
+- React components: use `@testing-library/react` with semantic queries (`getByRole` > `getByLabel` > `getByTestId`)
+- If pre-generated test skeletons exist in `__tests__/` or `e2e/`, write implementation to make them pass
+
+**For UI tasks with interactive features (forms, auth flows, navigation):**
+- Resolve the Playwright testing skill: check `$HOME/.claude/plugins/cache/fhhs-skills/*/playwright-testing/PROMPT.md` first, fall back to `.claude/skills/playwright-testing/PROMPT.md`
+- Use Page Object Model pattern, role-based selectors, web-first assertions
+- No `waitForTimeout()` — Playwright auto-waits
+
+**Report format — add to your report:**
+```
+**Tests:** {pass_count}/{total_count} passing | New test files: {list}
+```
+If you skip tests for modified business logic, report `UNTESTED: {file} — {reason}`.
 
 ## Deviation Rules
 
@@ -100,7 +137,7 @@ Edit/Write/Bash action, STOP. Write code or report "blocked".
 
 ## Before Reporting: Self-Review
 
-Before reporting: verify completeness (all task requirements met), quality (clear names, clean code, follows patterns), discipline (no overbuilding), testing (behavior-based, TDD if required). Fix any issues found.
+Before reporting: verify completeness (all task requirements met), quality (clear names, clean code, follows patterns), discipline (no overbuilding), testing (tests exist for new business logic, behavior-based assertions, TDD if required). Fix any issues found.
 
 ## Report Format
 

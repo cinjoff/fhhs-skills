@@ -24,6 +24,68 @@ Read STATE.md and ROADMAP.md to determine current position, total phases, and wh
 
 ---
 
+## Step 1.5: Tracker Registration
+
+Register the current project with the live dashboard and surface the URL if it's running.
+
+```bash
+# Ensure tracker directory exists
+mkdir -p "$HOME/.claude/tracker"
+
+# Register project in global registry
+node -e "
+const fs = require('fs');
+const path = require('path');
+const registryPath = path.join(process.env.HOME, '.claude', 'tracker', 'projects.json');
+let registry = [];
+try { const d = JSON.parse(fs.readFileSync(registryPath, 'utf8')); if (Array.isArray(d)) registry = d; } catch {}
+const projectDir = process.cwd();
+const now = new Date().toISOString();
+const idx = registry.findIndex(e => e.path === projectDir);
+if (idx >= 0) { registry[idx].lastSeen = now; } else { registry.push({ path: projectDir, name: path.basename(projectDir), addedAt: now, lastSeen: now }); }
+fs.writeFileSync(registryPath, JSON.stringify(registry, null, 2));
+"
+```
+
+Then check if the live dashboard is running:
+
+```bash
+# Attempt HTTP GET to tracker API with 2s timeout
+node -e "
+const http = require('http');
+const projectDir = process.cwd();
+const projectName = require('path').basename(projectDir);
+const req = http.get('http://localhost:4111/api/state', { timeout: 2000 }, (res) => {
+  if (res.statusCode === 200) {
+    // Dashboard is running — register this project
+    const postData = JSON.stringify({ path: projectDir, name: projectName });
+    const postReq = http.request({
+      hostname: 'localhost',
+      port: 4111,
+      path: '/api/register',
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(postData) }
+    }, () => {});
+    postReq.on('error', () => {});
+    postReq.write(postData);
+    postReq.end();
+    console.log('TRACKER_RUNNING');
+  } else {
+    console.log('TRACKER_NOT_RUNNING');
+  }
+});
+req.on('error', () => console.log('TRACKER_NOT_RUNNING'));
+req.on('timeout', () => { req.destroy(); console.log('TRACKER_NOT_RUNNING'); });
+" 2>/dev/null
+```
+
+- If output is `TRACKER_RUNNING`: print `Live dashboard running at http://localhost:4111 — open it to watch progress`
+- If output is `TRACKER_NOT_RUNNING`: print `Tip: Run \`/fh:tracker\` in another terminal to watch progress live`
+
+This step always succeeds — tracker errors are non-fatal.
+
+---
+
 ## Step 2: Strategic Requirements Workshop
 
 Before autonomous execution, engage the user as a strategic advisor to shape and validate the project vision. This step ensures the autonomous pipeline builds the RIGHT thing, not just builds things.
@@ -132,6 +194,8 @@ Parse `$ARGUMENTS` for flags:
 | `--budget N` | Set cost ceiling in dollars. Passed to the orchestrator as `--budget N`. |
 | `--check-corrections` | Run decision correction cascade instead of normal execution. See Step 8. |
 | `--skip-workshop` | Skip the Strategic Requirements Workshop (Step 2) and go straight to execution. |
+| `--concurrency N` | Max parallel claude -p sessions (default 2, max 4). Higher values increase throughput but also API cost. |
+| `--no-speculative` | Disable speculative planning pipeline — fall back to fully sequential execution identical to pre-parallel behavior. Use if parallel mode causes issues. |
 | *(no flags)* | Run all incomplete phases from current position in STATE.md. |
 
 Determine `START_PHASE` and `END_PHASE`:
@@ -147,14 +211,19 @@ If `--dry-run` is set:
 
 1. Read ROADMAP.md and STATE.md
 2. List each phase that would execute (from START_PHASE to END_PHASE, skipping completed phases)
-3. For each phase, show the per-phase loop steps:
+3. Show the pipeline structure:
    ```
-   Phase N: {phase name}
-     1. /fh:plan-work  → produces PLAN.md
-     2. /fh:plan-review → HOLD SCOPE review
-     3. /fh:build       → executes plan
-     4. /fh:review --quick → final code review
-     5. Update STATE.md via gsd-tools
+   Phase range: 4–7 (4 phases)
+   Dependency analysis: (computed after planning wave)
+
+   Pipeline plan:
+     Wave 1 (planning): Phase 4, Phase 5, Phase 6, Phase 7 [concurrent, max 2]
+     Wave 2 (review):   Phase 4, Phase 5, Phase 6, Phase 7 [concurrent, max 2]
+     Wave 3 (build):    dependency-ordered (computed from plan files_modified)
+     Quick reviews:     batched every 3 phases
+
+   Note: Actual build order depends on file overlap between plans.
+   Use --no-speculative for guaranteed sequential execution.
    ```
 4. Report total phases to execute and exit. Do not set AUTO_MODE or invoke the orchestrator.
 
@@ -196,19 +265,35 @@ node "$ORCHESTRATOR" \
   ${RESUME:+--resume}
 ```
 
-The orchestrator runs each phase through a sequential loop using `claude -p` for fresh-context sessions. Each session receives:
+The orchestrator runs phases using `claude -p` for fresh-context sessions. Each session receives:
 - `--plugin-dir` pointing to the fh plugin root (so `/fh:` skills are available)
 - `--permission-mode bypassPermissions` (non-interactive, no prompts)
 - `--append-system-prompt` with CLAUDE.md content (project context)
+- Testing enforcement: "Every phase build must include tests for business logic. Build Step 2.5 auto-generates test specs from plan must_haves. plan-work rejects plans without test coverage for business logic (check 7). UI phases should include E2E tests using Playwright. Coverage metrics are tracked in SUMMARY.md test_metrics field."
 - A rich prompt with the phase goal and explicit autonomous instructions
 
 ```
-Per-phase loop:
-1. claude -p [rich prompt] --plugin-dir [...] --permission-mode bypassPermissions  → PLAN.md
-2. claude -p [rich prompt] --plugin-dir [...] --permission-mode bypassPermissions  → HOLD review
-3. claude -p [rich prompt] --plugin-dir [...] --permission-mode bypassPermissions  → build
-4. claude -p [rich prompt] --plugin-dir [...] --permission-mode bypassPermissions  → quick review
-5. Update STATE.md via gsd-tools (from projectDir/.claude/get-shit-done/bin/)
+Pipeline execution (default):
+1. Pre-index shared docs (PROJECT, ROADMAP, research, codebase mapping)
+2. Planning wave: all phases plan concurrently via ConcurrencyPool
+   - Phase-local decisions (.decisions-pending.md), merged after wave
+   - Dependency graph computed from plan frontmatter files_modified
+3. Review wave: all plans reviewed concurrently
+4. Build wave: phases built in dependency-wave order
+   - Phases with no file overlap build concurrently within each wave
+   - Phases with dependencies wait for predecessor waves to complete
+   - Each build preceded by speculative plan validation (file overlap check)
+   - Post-wave batched review for all phases built in that wave
+     Test metrics:   coverage tracked per phase in SUMMARY.md test_metrics
+5. Final review + state update
+
+Sequential fallback (--no-speculative):
+Per-phase loop (unchanged from pre-parallel behavior):
+1. claude -p → PLAN.md
+2. claude -p → HOLD review
+3. claude -p → build
+4. claude -p → quick review
+5. Update STATE.md
 ```
 
 Each step is a separate `claude -p` session with fresh context. The orchestrator handles crash recovery, state persistence to `.planning/`, and budget tracking.
@@ -219,8 +304,65 @@ Each step is a separate `claude -p` session with fresh context. The orchestrator
 - Without `--plugin-dir`, `/fh:` skill commands are unavailable in `-p` sessions
 - Without `--permission-mode bypassPermissions`, interactive prompts hang the process
 - Bare skill invocations (e.g. `/fh:plan-work`) alone are insufficient — include phase goal and autonomy instructions
+- Without `CLAUDE_MEM_PROJECT` env var, claude-mem stores observations under the plugin-dir project name instead of the actual project name, causing observation misattribution across projects
+- Project name must use `git rev-parse --show-toplevel` (not `path.basename`) for Conductor workspaces where the cwd basename differs from the project name (e.g., "cairo" vs "fhhs-skills")
+
+**Resilience features (built into orchestrator):**
+- **Stuck detection:** Sessions producing no output for 3min get warned, killed at 8min silence — prevents API stalls from running to the 45min hard timeout
+- **API health check:** Before each session spawn, verifies `claude --version` responds. On failure, retries with exponential backoff (10s → 20s → 40s → 80s → 120s) up to 5 times before aborting with saved state
+- **API error classification:** Distinguishes API/infra errors (connection refused, 502/503, rate limit) from logic errors. Only backs off on infra errors.
+- **Smart resume:** `--resume` checks both `.auto-state.json` AND existing SUMMARY.md artifacts. If a phase has SUMMARY.md but the state file says incomplete (crashed between build and state update), skips ahead automatically.
 
 Monitor the orchestrator's stdout for progress updates. If the orchestrator exits with a non-zero code, read its error output and report the failure point.
+
+---
+
+## Parallelism Details
+
+### Dependency Graph
+
+The orchestrator computes a dependency graph from plan frontmatter after the planning wave completes. Each PLAN.md may include a `files_modified` list. Two phases are considered dependent if their `files_modified` sets overlap — meaning they touch the same files and cannot safely build in parallel. Independent phases (no overlapping files) can build concurrently within the concurrency limit.
+
+### Speculative Plan Validation
+
+Before each build session in the build wave, the orchestrator performs a file overlap check:
+1. Compare the phase's planned `files_modified` against files already modified by earlier builds in the same wave.
+2. If overlap is detected, trigger a validation session (`claude -p`) that re-evaluates the plan against the actual post-build state.
+3. If the plan is still valid, proceed. If not, fall back to REPLAN: re-run the planning step for this phase before building.
+
+Use `--no-speculative` to skip this check and always build in strict dependency order without validation sessions.
+
+### Phase-Local Decisions
+
+During the concurrent planning wave, multiple sessions may attempt to update `.planning/DECISIONS.md` simultaneously, causing write races. To prevent this:
+- Each planning session writes its decisions to `.decisions-pending.md` in the phase directory instead of the shared DECISIONS.md.
+- After the planning wave completes, the orchestrator merges all `.decisions-pending.md` files into `.planning/DECISIONS.md` in a single serial step.
+- This guarantees DECISIONS.md integrity without file locking.
+
+### Context-Mode Pre-Indexing
+
+Shared documents (PROJECT.md, ROADMAP.md, research files, codebase mapping) are indexed once before any wave begins using context-mode's `ctx_batch_execute`. Concurrent sessions then use `ctx_search` in read-only mode to query the shared index. This prevents SQLite write contention that would occur if each parallel session independently indexed the same files.
+
+### Partial Failure Handling
+
+If a phase fails during the build wave:
+- Phases that depend on the failed phase (via the dependency graph) are rescheduled to sequential execution after the wave completes.
+- Phases that are independent of the failed phase continue running concurrently without interruption.
+- The failed phase is logged as `failed` in the per-phase state map and can be retried via `--resume`.
+
+### Parallel-Aware Resume (`--resume`)
+
+In parallel mode, `--resume` uses a per-phase state map (`.auto-state.json`) that tracks each phase's status individually:
+
+| Status | Meaning |
+|--------|---------|
+| `planned` | PLAN.md produced, not yet reviewed |
+| `reviewed` | Plan reviewed and approved |
+| `built` | Build complete, SUMMARY.md exists |
+| `failed` | Session exited non-zero |
+| `blocked` | Waiting on a failed dependency |
+
+On resume, the orchestrator reconstructs the dependency graph from existing PLAN.md files and re-enters the pipeline at the earliest incomplete wave, skipping phases already in `built` state.
 
 ---
 

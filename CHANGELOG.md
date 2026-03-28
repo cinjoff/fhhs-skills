@@ -8,6 +8,28 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.40.0] - 2026-03-28
+
+### Added
+- **Parallel wave builds** — auto-orchestrator executes build tasks concurrently within each wave, reducing multi-task phase build time
+- **Micro eval tier** — `--tier micro` runs only the fastest subset of evals for rapid iteration loops
+- **Auto-improve script** — `auto-improve.sh` iteratively runs evals, analyzes failures, and applies fixes
+- **Context-sharing in auto pipeline** — unified claude-mem patch with `CLAUDE_MEM_PROJECT` env var ensures observations are attributed to the correct project across worktrees; `ctx_search`-first strategy reduces redundant file reads
+- **Multi-project tracker** — `/fh:tracker` discovers Conductor workspaces automatically, supports project registration via `/api/register`, and serves a three-column dashboard with decision workflow
+- **Auto pipeline dashboard** — wave-centric pipeline visualization with live activity feed, cost charts, and step timeline in the project tracker
+- **Testing enforcement** — build pipeline generates test specs before execution, tracks `spec_tests_count` in summaries, and references a testing manifesto for quality standards
+- **Eval quality infrastructure** — tiered suites (smoke/micro/full), deterministic assertion checks (`required_terms`, `forbidden_terms`, `regex`), baseline tracking, and new fixtures (broken-project, minimal-gsd, nextjs-app-deep)
+- **Strategic decision recording** — decisions now capture alternatives considered and impact categories
+- **Per-directory CLAUDE.md files** — AI context documents across skills, agents, evals, and templates directories
+- **Codebase mapping refresh** — updated architecture, concerns, conventions, integrations, stack, structure, and testing documentation
+
+### Fixed
+- **Tracker ProjectTree props** — wired up component interface correctly and fixed workspace name display
+- **Build Step 2.5 ordering** — moved pre-wave-1 test creation gate before first wave execution
+- **Eval #168 schema mismatch** — aligned assertion field names with actual `test_metrics` output
+- **Tracker input validation** — `/api/register` validates path input and enforces body size limits
+- **Auto-orchestrator review findings** — DRY improvements, decision format consistency, resume reliability, and pre-index correctness
+
 ## [1.39.0] - 2026-03-28
 
 ### Added

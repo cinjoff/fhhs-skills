@@ -49,11 +49,7 @@ ctx_batch_execute([
   { label: "ROADMAP", cmd: "cat .planning/ROADMAP.md" },
   { label: "REQUIREMENTS", cmd: "cat .planning/REQUIREMENTS.md" },
   { label: "DESIGN", cmd: "cat .planning/DESIGN.md" },
-  { label: "ARCHITECTURE", cmd: "cat .planning/codebase/ARCHITECTURE.md" },
-  { label: "STRUCTURE", cmd: "cat .planning/codebase/STRUCTURE.md" },
-  { label: "CONVENTIONS", cmd: "cat .planning/codebase/CONVENTIONS.md" },
-  { label: "TESTING", cmd: "cat .planning/codebase/TESTING.md" },
-  { label: "STACK", cmd: "cat .planning/codebase/STACK.md" },
+  { label: "CODEBASE", cmd: "cat .planning/codebase/CODEBASE.md 2>/dev/null || cat .planning/codebase/ARCHITECTURE.md .planning/codebase/STRUCTURE.md .planning/codebase/CONVENTIONS.md .planning/codebase/TESTING.md .planning/codebase/STACK.md 2>/dev/null" },
 ], queries: [
   "project vision and scope",
   "architecture patterns and boundaries",
@@ -263,10 +259,15 @@ If `AUTO_MODE` is `"true"`, skip interactive gray area discussion. Instead:
 **Crash reconciliation:** Before scouting, search `.planning/DECISIONS.md` for entries where Phase matches the current phase directory name AND Step starts with 'plan-work'. If such entries exist BUT the corresponding CONTEXT.md does not exist or is incomplete (missing one of the three canonical sections: Decisions, Discretion Areas, Deferred Ideas), this indicates a prior crash. Warn: 'Prior plan-work decisions found for this phase but CONTEXT.md is incomplete — resuming from existing decisions.' Reuse the existing decisions to populate CONTEXT.md rather than re-deciding. Only auto-decide gray areas not covered by existing entries.
 
 a) **Scout and identify** the same 3-4 gray areas by scanning the codebase (existing components, utilities, patterns, data flows) — same scouting as the normal path below.
-b) **Auto-decide** each gray area using best judgment, following the heuristics in `.claude/skills/build/references/decisions-template.md` (match existing patterns > reversible > simpler > well-documented libs > fewer deps > keep doors open).
-c) **Log each decision** to `.planning/DECISIONS.md` using the decision entry format from the template. Create the file first if it doesn't exist, or recover if corrupt — see the template's "Subagent Instructions: Creating DECISIONS.md" section. Use `step='plan-work Step 3'` in each entry.
-d) **Still produce** the mandatory ASCII diagram and lightweight Error/Rescue Map for the gray areas (same tables as the normal path).
-e) **Write** the same locked/discretion/deferred categories to CONTEXT.md as the normal path (Step 3 item 6 below).
+b) **Classify each gray area** as `product` (user experience, feature scope, what to build), `architecture` (system design, data model, tech choices), or `implementation` (naming, file structure, config). Focus decision-recording effort on product and architecture decisions — these shape the system long-term.
+c) **Auto-decide** each gray area using best judgment, following the heuristics in `.claude/skills/build/references/decisions-template.md` (match existing patterns > reversible > simpler > well-documented libs > fewer deps > keep doors open).
+d) **Log each decision** to `.planning/DECISIONS.md` using the decision entry format from the template. Create the file first if it doesn't exist, or recover if corrupt — see the template's "Subagent Instructions: Creating DECISIONS.md" section. Use `step='plan-work Step 3'` in each entry.
+   - For **product and architecture** decisions: always include `alternatives` — the other options you considered and why you didn't pick them. Also add a one-sentence "expand scope" note: what a more ambitious version of this decision might look like. This preserves strategic context for future sessions even though auto-mode uses HOLD SCOPE.
+   - For **implementation** decisions: alternatives are optional. Keep the entry terse.
+   - Use the `category` field (`product` | `architecture` | `implementation`) in each entry.
+   - Use high-level `affects` descriptions ("auth subsystem", "onboarding flow") not file paths.
+e) **Still produce** the mandatory ASCII diagram and lightweight Error/Rescue Map for the gray areas (same tables as the normal path).
+f) **Write** the same locked/discretion/deferred categories to CONTEXT.md as the normal path (Step 3 item 6 below). For product/architecture decisions in CONTEXT.md, append `(alternatives: X, Y)` to capture what was considered.
 
 Then continue to Step 4.
 
@@ -455,7 +456,7 @@ Keep plan total under **{words_per_plan} words**.
 ### Context optimization
 
 - In `<context>` blocks, reference only files the executor actually needs
-- Pick 1-2 relevant codebase docs per task (CONVENTIONS.md for style, STRUCTURE.md for file placement)
+- Reference relevant sections of CODEBASE.md per task (Conventions for style, Structure for file placement, Architecture for layer boundaries)
 - If GSD and CONTEXT.md exists: honor locked decisions, exclude deferred ideas
 
 > **Task tracking:** `TaskUpdate(createPlanId, status="completed")` — skip if TASKS_AVAILABLE=false.
@@ -485,8 +486,13 @@ These catch schema issues (missing frontmatter fields, malformed tasks) automati
 4. **Scope sanity**: task count within `tasks_per_plan` range, file count within `files_per_plan` range in `files_modified`, plan body under `words_per_plan` words (read limits from `.planning/config.json` `plan_limits` section; defaults: 4-6 tasks, 8-15 files, 2500 words, 60% context).
 5. **must_haves trace**: every truth in `must_haves.truths` maps to at least one task's `<done>` criteria. Every artifact in `must_haves.artifacts` appears in `files_modified`.
 6. **Context compliance** (GSD only): plan does not contradict locked decisions in CONTEXT.md; plan does not include work deferred in CONTEXT.md.
-7. **TDD coverage WARN**: For each task in the plan that creates or modifies `.ts`, `.js`, `.tsx`, `.jsx` files (excluding config, types-only, constants-only files): if the task involves business logic, state management, or data transformation and does NOT have `tdd="true"`, emit a WARN: 'Task N ({name}) modifies business logic but lacks tdd=true. Confirm this is intentional or add tdd=true.' Present the list of flagged tasks and ask the user to confirm or fix. This is advisory — do not block plan creation.
-8. **Playwright E2E WARN** (frontend only): If any task creates interactive UI (forms, auth flows, navigation, CRUD operations) and the project has `playwright.config.*`: check whether any task in the plan includes E2E test files (`e2e/*.spec.*` or `*.spec.*`). If no E2E test task exists, emit a WARN: 'Frontend interactive features planned but no E2E test task found. Add a Playwright test task, or confirm E2E coverage is not needed.' If the user wants a test task, create one referencing `.claude/skills/playwright-testing/PROMPT.md`. This is advisory — do not block plan creation.
+7. **Test coverage REQUIRE**: For each task that creates or modifies `.ts`, `.js`, `.tsx`, `.jsx` files (excluding config-only, types-only, or constants-only files): if the task involves business logic, state management, or data transformation, it MUST either have `tdd="true"` OR the plan must contain a companion test task covering the same files. If neither condition is met, FAIL the check: 'Task N ({name}) modifies business logic without test coverage. Add `tdd="true"` to the task, or add a companion test task in the same wave.' Revise the plan to include test coverage before presenting to the user. This is not advisory — untested business logic is the #1 source of regressions in autonomous builds.
+8. **Playwright E2E check** (frontend only): If any task creates interactive UI (forms, auth flows, navigation, CRUD operations) and the project has `playwright.config.*`: check whether any task includes E2E test files (`e2e/*.spec.*` or `*.spec.*`). If none found, emit WARN and auto-suggest a concrete test task:
+   - Resolve Playwright skill: `find "$HOME/.claude/plugins/cache/fhhs-skills" -path "*/playwright-testing/PROMPT.md" 2>/dev/null | sort -V | tail -1` (fall back to `.claude/skills/playwright-testing/PROMPT.md`)
+   - Suggested task should use: Page Object Model pattern, `getByRole` selectors, critical user journey focus
+   - Present: 'No E2E test task found for interactive UI. Suggested test task: [task description]. Add it, or confirm E2E coverage is not needed for this plan.'
+   Advisory — user can decline. But the suggestion is concrete and ready to add, not a vague warning.
+9. **Test-to-code ratio check**: Count source files in `files_modified` (`.ts`, `.tsx`, `.js`, `.jsx` excluding `*.test.*`, `*.spec.*`, `*.d.ts`) and test files (`*.test.*`, `*.spec.*`). If the ratio of test files to source files is below 0.5 (fewer than 1 test per 2 source files) and the plan modifies business logic, WARN: 'Low test-to-code ratio ({ratio}). The Testing Trophy recommends mostly integration tests — consider adding test tasks.' Advisory only — some plans legitimately have low ratios (config, migrations, docs).
 
 If a check fails, state which check failed, revise the plan, and recheck. After 3 failed iterations, present what you have and ask the user to resolve the issue.
 

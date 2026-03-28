@@ -39,7 +39,8 @@ Claude Code plugin composing upstream skills (Superpowers, Impeccable, GSD) into
 
 ## Testing
 
-- Run evals: `python3 evals/run_all_evals.py`
+- Run evals: `python3 fhhs-skills-workspace/run_all_evals.py`
+  - Options: `--tier smoke` (core skills only), `--update-baselines` (save metrics), `--tags guard,edge-case` (filter by tags), `--grader llm` (use LLM grader)
 - Every shipped skill needs at least 1 eval
 - Upstream changes: re-run full eval suite to catch regressions
 
