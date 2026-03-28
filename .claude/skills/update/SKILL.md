@@ -246,7 +246,7 @@ CHANGELOG_CONTENT=$(curl -sL "https://raw.githubusercontent.com/cinjoff/fhhs-ski
 echo "$CHANGELOG_CONTENT" > /tmp/fhhs-changelog.md
 ```
 
-Then run Steps 5a, 5a½, and 5b with `PREV_VERSION="0.0.0"` and `LATEST_VERSION` set to the installed version.
+Then run Steps 5a, 5a½, 5a¾, 5a⅞, and 5b with `PREV_VERSION="0.0.0"` and `LATEST_VERSION` set to the installed version.
 
 **After reconciliation completes:**
 
@@ -297,6 +297,80 @@ fi
 ```
 
 If the patch outputs "WARNING: gp() signature changed", claude-mem changed its internals and the patch needs updating — note this in the reconciliation table but don't fail the update.
+
+### 5a¾: Set CLAUDE_MEM_PROJECT env var
+
+For Conductor workspaces and git worktrees, the cwd basename often differs from the actual project name (e.g., "cairo" vs "fhhs-skills"). Set `CLAUDE_MEM_PROJECT` in the project-local `.claude/settings.json` so interactive sessions attribute observations correctly — not just auto-orchestrator spawned sessions.
+
+```bash
+# Derive project name from git toplevel basename
+PROJECT_NAME=$(basename "$(git rev-parse --show-toplevel 2>/dev/null)" 2>/dev/null)
+if [ -n "$PROJECT_NAME" ]; then
+  # Check if .claude/settings.json exists and already has CLAUDE_MEM_PROJECT
+  if [ -f ".claude/settings.json" ]; then
+    CURRENT=$(python3 -c "
+import json, sys
+try:
+    s = json.load(open('.claude/settings.json'))
+    print(s.get('env', {}).get('CLAUDE_MEM_PROJECT', ''))
+except: pass
+" 2>/dev/null)
+    if [ "$CURRENT" = "$PROJECT_NAME" ]; then
+      echo "✓ CLAUDE_MEM_PROJECT already set to $PROJECT_NAME"
+    else
+      python3 -c "
+import json
+f = '.claude/settings.json'
+try:
+    s = json.load(open(f))
+except: s = {}
+s.setdefault('env', {})['CLAUDE_MEM_PROJECT'] = '$PROJECT_NAME'
+with open(f, 'w') as fh: json.dump(s, fh, indent=2); fh.write('\n')
+print('✓ CLAUDE_MEM_PROJECT set to $PROJECT_NAME')
+" 2>/dev/null
+    fi
+  else
+    echo "⚠ No .claude/settings.json — skipping CLAUDE_MEM_PROJECT (run /fh:new-project first)"
+  fi
+else
+  echo "⚠ Not a git repo — skipping CLAUDE_MEM_PROJECT"
+fi
+```
+
+### 5a⅞: Refresh tracker template files
+
+If `.project-tracker/` exists, refresh template files from the updated plugin cache. This ensures tracker dashboard changes (UI redesigns, new components, server fixes) are picked up without requiring a manual `/fh:tracker` re-run.
+
+```bash
+if [ -d ".project-tracker" ]; then
+  PLUGIN_ROOT=""
+  LATEST="$(ls -d "$HOME/.claude/plugins/cache/fhhs-skills/fh"/*/ 2>/dev/null | sort | tail -1)"
+  LATEST="${LATEST%/}"
+  if [ -n "$LATEST" ] && [ -d "$LATEST/templates/project-tracker" ]; then
+    PLUGIN_ROOT="$LATEST"
+  fi
+
+  if [ -n "$PLUGIN_ROOT" ]; then
+    PLUGIN_VER=$(python3 -c "import json; print(json.load(open('$PLUGIN_ROOT/.claude-plugin/plugin.json'))['version'])" 2>/dev/null)
+    CURRENT_VER=$(cat .project-tracker/.version 2>/dev/null)
+
+    if [ "$PLUGIN_VER" = "$CURRENT_VER" ]; then
+      echo "✓ Tracker templates already at v$PLUGIN_VER"
+    else
+      # Copy all non-directory files from the template
+      for f in "$PLUGIN_ROOT/templates/project-tracker"/*; do
+        [ -f "$f" ] && cp "$f" ".project-tracker/$(basename "$f")"
+      done
+      echo "$PLUGIN_VER" > .project-tracker/.version
+      echo "✓ Tracker templates refreshed to v$PLUGIN_VER (was: ${CURRENT_VER:-none})"
+    fi
+  else
+    echo "⚠ Could not find plugin templates for tracker refresh"
+  fi
+else
+  echo "· No .project-tracker/ — skipping tracker refresh"
+fi
+```
 
 ### 5b: Changelog-driven reconciliation — auto-fix gaps
 
@@ -362,6 +436,7 @@ Use the **Read tool** to load `~/.claude/settings.json`, then use the **Edit too
 | `CLAUDE_CODE_ENABLE_LSP` | `"1"` |
 | `CLAUDE_CODE_ENABLE_TASKS` | `"true"` |
 | `CLAUDE_CWD` | `"true"` |
+| `CLAUDE_MEM_PROJECT` | Derive from `basename $(git rev-parse --show-toplevel)` — NOT a static value |
 | Any other env | `"true"` (safe default) |
 
 Do NOT overwrite existing keys. Merge carefully.
