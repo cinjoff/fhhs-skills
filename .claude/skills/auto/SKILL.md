@@ -14,7 +14,9 @@ What to run autonomously: $ARGUMENTS
 
 Check that the project is set up for autonomous execution:
 
-1. **`.planning/PROJECT.md` exists** — if missing: "No project found. Run `/fh:new-project` first to set up project tracking." Stop.
+1. **`.planning/PROJECT.md` exists** — if missing, check for startup artifacts first:
+   - If `.planning/startup/` exists: "Found startup validation artifacts but no project setup. Run `/fh:new-project` to create the project — it will auto-populate from your startup data." Stop.
+   - If no `.planning/` at all: "No project found. Consider running `/fh:startup-design` first to validate your idea, then `/fh:new-project` to set up the project. Or run `/fh:new-project` directly if you're ready to build." Stop.
 2. **`.planning/ROADMAP.md` exists** — if missing: "No roadmap found. Run `/fh:new-project` to generate a roadmap." Stop.
 3. **`.planning/STATE.md` exists** — if missing: "No state tracking found. Run `/fh:new-project` to initialize state." Stop.
 
@@ -39,6 +41,7 @@ Read existing planning artifacts to understand what's already defined:
 - `.planning/ROADMAP.md` — phases and scope
 - `.planning/DESIGN.md` — brand/design context (from `/fh:ui-branding`)
 - `.planning/research/` — existing research (FEATURES.md, PITFALLS.md, STACK.md, ARCHITECTURE.md, SUMMARY.md from `/fh:new-project`)
+- `.planning/startup/` — startup validation artifacts (from `/fh:startup-design`). If present, pre-index all startup artifacts alongside planning files. Market data, competitors, positioning, and financial projections should inform every phase's planning context.
 
 If DESIGN.md exists, use it throughout to ground UX/UI guidance in the project's actual brand direction — color palette, typography, component patterns, design language, tone. When suggesting UX patterns, frame them in the project's design context: "Your brand is {tone} — for that, the proven pattern is {X}" rather than generic advice.
 

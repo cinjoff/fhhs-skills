@@ -91,6 +91,46 @@ No changes.
 | 2 | Execution handoff: plain text → AskUserQuestion with structured options | Better UX in Claude Code |
 | 3 | Subagent references: `superpowers:` prefix removed | Internal references only |
 
+## startup-skill (forked from v1.0.0, ferdinandobons/startup-skill)
+
+### startup-design
+| # | Change | Rationale |
+|---|--------|-----------|
+| 1 | Output paths: `{project-name}/00-intake/` → `.planning/startup/`, `01-discovery/` → `.planning/startup/discovery/`, etc. | GSD convention — all artifacts in .planning/ |
+| 2 | Removed dynamic `{project-name}` derivation | Fixed output directory for integration with downstream skills |
+| 3 | `PROGRESS.md` → `.planning/startup/PROGRESS.md` | Co-located with other startup artifacts |
+| 4 | Added `--refresh` mode | Update existing artifacts without full re-run (REQ-37) |
+| 5 | Added `user-invocable: true` to frontmatter | Plugin skill format requirement |
+| 6 | Added territory boundaries and downstream integration sections | Prevent overlap with dev skills, document artifact flow |
+| 7 | Expanded description with trigger phrases and explicit exclusions | Better skill routing accuracy |
+
+### startup-competitors
+| # | Change | Rationale |
+|---|--------|-----------|
+| 1 | Output paths: `{project-name}/` → `.planning/startup/competitors/` | GSD convention |
+| 2 | Artifact chain paths updated to `.planning/startup/` | Matches startup-design output location |
+| 3 | Added `user-invocable: true` to frontmatter | Plugin skill format requirement |
+| 4 | Added territory boundaries and downstream integration sections | Skill routing clarity |
+
+### startup-positioning
+| # | Change | Rationale |
+|---|--------|-----------|
+| 1 | Output paths: `{project-name}/` → `.planning/startup/positioning/` | GSD convention |
+| 2 | Artifact chain paths updated for both startup-design and startup-competitors | Matches adapted output locations |
+| 3 | Added `user-invocable: true` to frontmatter | Plugin skill format requirement |
+| 4 | Added territory boundaries and downstream integration sections | Skill routing clarity |
+
+### startup-pitch
+| # | Change | Rationale |
+|---|--------|-----------|
+| 1 | Output paths: `{project-name}/` → `.planning/startup/pitch/` | GSD convention |
+| 2 | Artifact chain paths updated for all three prior skills | Matches adapted output locations |
+| 3 | Added `user-invocable: true` to frontmatter | Plugin skill format requirement |
+| 4 | Added territory boundaries and downstream integration sections | Skill routing clarity |
+
+### startup-advisor (NEW — not upstream)
+Not a fork — entirely new skill. Uses curated decision frameworks in `references/frameworks/` and three-tier knowledge retrieval (frameworks → web search → project context).
+
 ## Vercel React Best Practices (forked from v1.0.0, 64bee5b7)
 
 ### nextjs-perf (skill)

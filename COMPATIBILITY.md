@@ -68,6 +68,25 @@ Forked commands (now at `commands/`) and skills (now at `skills/`):
 | `/adapt`, `/bolder`, `/quieter`, `/extract`, `/colorize`, `/audit`, `/clarify`, `/onboard`, `/optimize`, `/delight` | Standalone design commands |
 | `skills/frontend-design/` | `/build` (subagent directives), `/fix` (design check) |
 
+## startup-skill — v1.0.0 — [repo](https://github.com/ferdinandobons/startup-skill)
+
+Forked skills (now at `.claude/skills/`):
+
+| Skill | Used by |
+|-------|---------|
+| `startup-design` | Standalone `/fh:startup-design` — feeds `/fh:new-project` (Step 0.5), `/fh:plan-work` (domain context), `/fh:auto` (pre-indexed) |
+| `startup-competitors` | Standalone `/fh:startup-competitors` — feeds `/fh:startup-positioning`, `/fh:startup-pitch` |
+| `startup-positioning` | Standalone `/fh:startup-positioning` — feeds `/fh:startup-pitch` |
+| `startup-pitch` | Standalone `/fh:startup-pitch` |
+
+New skill (not upstream):
+
+| Skill | Description |
+|-------|-------------|
+| `startup-advisor` | Conversational startup advisor with three-tier knowledge retrieval (curated frameworks + web search + project context) |
+
+Upstream snapshot preserved at `upstream/startup-skill/`.
+
 ## claude-md-management — v1.0.0 — [repo](https://github.com/anthropics/claude-code-plugins) (claude-plugins-official)
 
 Forked skill and command:
