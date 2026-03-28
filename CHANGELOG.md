@@ -8,6 +8,12 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.45.2] - 2026-03-28
+
+### Fixed
+- **Empty-string guard on `orb config show` parsing** — if OrbStack changes its config output format, `grep | sed` could produce an empty string causing silent arithmetic errors. Now uses `${VAR:-0}` fallback in both `/fh:new-project` and `/fh:update`
+- **Eval 279 implicit RAM assumption** — prompt now explicitly states "16GB MacBook Pro" so the expected 4096→8192 behavior is unambiguous
+
 ## [1.45.1] - 2026-03-28
 
 ### Fixed

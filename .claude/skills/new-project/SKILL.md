@@ -1157,7 +1157,8 @@ OrbStack's `memory_mib` is a hard ceiling — exceeding it triggers Linux OOM ki
 if docker context show 2>/dev/null | grep -q orbstack; then
   # Detect physical RAM and compute recommended OrbStack memory
   TOTAL_RAM_MIB=$(( $(sysctl -n hw.memsize 2>/dev/null || echo "0") / 1048576 ))
-  CURRENT_MEM=$(orb config show 2>/dev/null | grep memory_mib | sed 's/.*: *//' || echo "0")
+  CURRENT_MEM=$(orb config show 2>/dev/null | grep memory_mib | sed 's/.*: *//')
+  CURRENT_MEM="${CURRENT_MEM:-0}"
 
   # Scale recommendation: 50% of RAM, min 4096, max 8192
   # Supabase needs ~2GB typical, ~4GB peak — leave headroom for macOS

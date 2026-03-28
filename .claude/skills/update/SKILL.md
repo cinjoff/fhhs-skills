@@ -645,7 +645,8 @@ if docker context show 2>/dev/null | grep -q orbstack; then
     RECOMMENDED=8192
   fi
 
-  MEM=$(orb config show 2>/dev/null | grep memory_mib | sed 's/.*: *//' || echo "0")
+  MEM=$(orb config show 2>/dev/null | grep memory_mib | sed 's/.*: *//')
+  MEM="${MEM:-0}"
   [ "$MEM" -lt "$RECOMMENDED" ] 2>/dev/null && echo "ORBSTACK_MEM_LOW — memory_mib=$MEM (recommended: $RECOMMENDED for ${TOTAL_RAM_MIB} MiB RAM)" || echo "ORBSTACK_MEM_OK — $MEM MiB"
 
   # Check package.json for smart db:studio (uses open-studio.sh helper)

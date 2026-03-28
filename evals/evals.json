@@ -9153,8 +9153,8 @@
     {
       "id": 279,
       "command": "update",
-      "prompt": "Update my plugin — I use OrbStack but memory_mib is only 4096 and my package.json has a basic db:studio that just echoes the URL. Should detect these as drift and fix them.",
-      "expected_output": "Should detect OrbStack memory is below 8192 and raise it via orb config set. Should detect db:studio is basic (no open-studio.sh) and update it. Should detect db:clean is missing and add it. Should show all fixes in reconciliation table.",
+      "prompt": "Update my plugin — I'm on a 16GB MacBook Pro using OrbStack but memory_mib is only 4096 and my package.json has a basic db:studio that just echoes the URL. Should detect these as drift and fix both.",
+      "expected_output": "Should detect 16GB RAM, compute recommended 8192 MiB, find current 4096 is below recommended, and raise it. Should detect db:studio is basic (no open-studio.sh) and update it. Should detect db:clean is missing and add it. Should show all fixes in reconciliation table.",
       "files": [],
       "assertions": [
         {
