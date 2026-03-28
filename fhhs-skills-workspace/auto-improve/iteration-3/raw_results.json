@@ -1,0 +1,1424 @@
+[
+  {
+    "eval_id": 126,
+    "command": "auto",
+    "status": "success",
+    "output": "# Behavioral Trace: `/fh:auto` \u2014 3 Remaining Phases from Phase 04\n\n## 1. Triage & Interpretation\n\nThe user wants full autonomous execution of phases 04\u201306 (3 remaining). No flags specified, so: no `--resume`, no `--dry-run`, no `--skip-workshop`, no `--budget`. Default concurrency (2). This means I run the **full pipeline** including the Strategic Requirements Workshop.\n\n## 2. Step 1: Validate Prerequisites\n\n**Read three files in parallel:**\n- `.planning/PROJECT.md` \u2014 must exist\n- `.planning/ROADMAP.md` \u2014 must exist, parse total phases and which are incomplete\n- `.planning/STATE.md` \u2014 must exist, parse current position\n\n**Expected outcome:** All three exist. STATE.md shows position at phase 04. ROADMAP.md shows phases 04, 05, 06 remain. I set `START_PHASE=4`, `END_PHASE=6`.\n\n**Guard:** If any file is missing, I stop with the specific guidance message from the skill instructions (e.g., \"Run `/fh:new-project`\"). I do NOT proceed without all three.\n\n## 3. Step 1.5: Tracker Registration\n\n**Three sequential bash operations:**\n\n1. `mkdir -p ~/.claude/tracker` + register project in `projects.json` via Node script\n2. HTTP GET to `http://127.0.0.1:4111/api/state` with 2s timeout to check if dashboard is running\n3. Based on response:\n   - **Running:** Print dashboard URL, register project via POST to `/api/register`\n   - **Not running + files exist:** Kill stale process on port 4111, start `server.cjs` in background via `run_in_background: true`, print URL\n   - **No files:** Print tip about `/fh:tracker`\n\n**Guard:** All tracker errors are non-fatal. I proceed regardless of outcome.\n\n## 4. Step 2: Strategic Requirements Workshop\n\n**I do NOT skip this** \u2014 no `--skip-workshop` flag, no \"just go\" language, and I haven't verified the three skip conditions (clear vision + exhaustive requirements + well-formed phases).\n\n### 2.1: Load Context\n**Read in parallel:**\n- `.planning/PROJECT.md`, `.planning/REQUIREMENTS.md`, `.planning/ROADMAP.md`\n- `.planning/DESIGN.md` (if exists)\n- `.planning/research/` directory contents (FEATURES.md, PITFALLS.md, etc.)\n- `.planning/startup/` directory (if exists)\n\n**Also:** Call `smart_search` via claude-mem with project domain keywords (limit=5) to surface past learnings.\n\n**Analyze gaps:** Identify what's well-defined vs missing/vague in vision, success criteria, differentiation, UX research.\n\n### 2.2: Domain Research\n**Before asking the user anything**, I research using firecrawl/WebSearch:\n- Competitor analysis for the product category\n- Community pain points (Reddit, HN, GitHub Issues)\n- UX best practices for this type of app (Next.js dashboard SaaS)\n- Domain patterns and state of the art\n\n**Present 3-5 key findings** as a brief research summary.\n\n### 2.3: Strategic Conversation\nI engage the user with **research-driven questions** \u2014 not open-ended ones. Examples:\n- \"Competitor X does {thing} \u2014 how do you differentiate?\"\n- \"Users of similar dashboards complain about {pain point} \u2014 is that in scope?\"\n- Challenge safe answers, push for ambition.\n\n**Guard:** I do NOT proceed until the user explicitly confirms. If they want to iterate, I loop back.\n\n### 2.4: Capture & Update\nUpdate PROJECT.md, REQUIREMENTS.md, and optionally ROADMAP.md with refined vision.\n\n### 2.5: Confirm\n\"Your vision is captured. Ready to start autonomous execution?\" \u2014 wait for explicit \"yes.\"\n\n## 5. Step 3: Parse Arguments\n\nNo flags parsed. Defaults:\n- `START_PHASE=4`, `END_PHASE=6`\n- No `--budget`, no `--dry-run`, no `--resume`\n- Concurrency = 2 (default)\n- Speculative validation enabled (no `--no-speculative`)\n\n## 6. Step 5: Set AUTO_MODE\n\n```bash\nnode $HOME/.claude/get-shit-done/bin/gsd-tools.cjs config-set workflow.auto_advance true\n```\n\n**Guard:** Confirm config was set successfully before proceeding. If it fails, do not invoke the orchestrator.\n\n## 7. Step 6: Shell Out to Orchestrator\n\n### Find orchestrator:\n```bash\nORCHESTRATOR=$(find \"$HOME/.claude/plugins/cache/fhhs-skills\" -name \"auto-orchestrator.cjs\" 2>/dev/null | sort -V | tail -1)\n```\n\n**Guard:** If not found, report error and stop.\n\n### Invoke:\n```bash\nnode \"$ORCHESTRATOR\" --project-dir \"$(pwd)\" --start-phase 4 --end-phase 6\n```\n\n### What the orchestrator does (I monitor, not control):\n\n**Wave 1 \u2014 Planning (concurrent):** Phases 4, 5, 6 all plan concurrently (batches of 2). Each `claude -p` session:\n- Gets `--plugin-dir`, `--permission-mode bypassPermissions`, `--append-system-prompt` with CLAUDE.md\n- Gets `CLAUDE_MEM_PROJECT` env var set correctly\n- Writes PLAN.md with `files_modified` frontmatter\n- Writes decisions to phase-local `.decisions-pending.md` (not shared DECISIONS.md)\n\nAfter wave: orchestrator merges `.decisions-pending.md` files into DECISIONS.md and computes dependency graph from `files_modified` overlap.\n\n**Wave 2 \u2014 Review (concurrent):** All 3 plans reviewed concurrently in batches of 2.\n\n**Wave 3 \u2014 Build (dependency-ordered):**\n- Dependency graph determines wave structure\n- Independent phases build concurrently (up to 2)\n- Dependent phases wait for predecessors\n- Each build preceded by speculative file overlap validation\n- Post-wave batched review every 3 phases\n- Test metrics tracked in SUMMARY.md\n\n### Resilience I'm monitoring for:\n- **Stuck detection:** 3min warning, 8min kill\n- **API health:** Exponential backoff on failures (10s \u2192 120s, 5 retries)\n- **Partial failure:** Failed phases block dependents, independents continue\n- **Error logs:** `{step}-error.log` written on failure\n- **Partial SUMMARY:** Written if build session is killed\n\n## 8. Step 7: Completion\n\n**Always, whether success or interruption:**\n\n1. **Reset AUTO_MODE:**\n   ```bash\n   node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs config-set workflow.auto_advance false\n   ```\n\n2. **Report:**\n   - \"Completed phases 4-6 of 6\" (or partial if interrupted)\n   - Total decisions logged to DECISIONS.md\n   - Any `\u26a0 NEEDS REVIEW` low-confidence decisions\n   - If interrupted: exact stop point for `--resume`\n\n3. **Read STATE.md** and verify it reflects the orchestrator's last successful step.\n\n## What I Explicitly Do NOT Do\n\n- **Do NOT skip the workshop** without explicit flag or user signal\n- **Do NOT use `--cwd` flag** with `claude -p` (unsupported)\n- **Do NOT write to shared DECISIONS.md** during concurrent planning (phase-local only)\n- **Do NOT proceed without user confirmation** after the workshop\n- **Do NOT leave AUTO_MODE enabled** after completion/interruption\n- **Do NOT treat orchestrator-initiated kills as API errors** (no backoff for stuck detection kills)\n- **Do NOT ignore partial failures** \u2014 report them and ensure `--resume` can pick up\n- **Do NOT skip test enforcement** \u2014 every phase build must include tests for business logic\n- **Do NOT guess the orchestrator path** \u2014 find it dynamically in plugin cache",
+    "duration_ms": 60165,
+    "assertions": [
+      {
+        "text": "Validates .planning/ state before starting (checks ROADMAP.md and STATE.md)",
+        "type": "behavioral"
+      },
+      {
+        "text": "Sets AUTO_MODE or auto_advance to true",
+        "type": "behavioral"
+      },
+      {
+        "text": "Shells out to plan-work and build skills for orchestration",
+        "type": "behavioral"
+      }
+    ],
+    "expected": "Should trigger the auto skill, validate that .planning/ state is consistent (ROADMAP.md and STATE.md exist and agree), set AUTO_MODE=true, and orchestrate by shelling out to /fh:plan-work and /fh:build for each phase in sequence.",
+    "tokens": {
+      "input_tokens": 3,
+      "output_tokens": 2005,
+      "cache_creation_tokens": 37226,
+      "cache_read_tokens": 0,
+      "cost_usd": 0.2828025,
+      "total_tokens": 39234
+    },
+    "checks": [
+      {
+        "type": "regex",
+        "pattern": "plan|planning"
+      },
+      {
+        "type": "regex",
+        "pattern": "[Pp]hase"
+      }
+    ]
+  },
+  {
+    "eval_id": 150,
+    "command": "auto",
+    "status": "success",
+    "output": "# Behavioral Trace: `/fh:auto` with 4 Remaining Phases\n\n## Step 1: Validate Prerequisites\n\n**Read three files in parallel:**\n- `.planning/PROJECT.md` \u2014 confirm exists, extract vision/scope\n- `.planning/ROADMAP.md` \u2014 confirm exists, extract phase list and phase count\n- `.planning/STATE.md` \u2014 confirm exists, determine current position\n\n**Parse state:** Identify which phases are complete and which 4 remain. Example: phases 1-4 done, phases 5-8 incomplete \u2192 `START_PHASE=5`, `END_PHASE=8`.\n\n**If any file is missing:** Stop with the appropriate error message per the skill instructions (e.g., \"Run `/fh:new-project`\"). Do NOT proceed.\n\n## Step 1.5: Tracker Registration\n\n**Run two Bash commands:**\n1. Register project in `~/.claude/tracker/projects.json` \u2014 upsert entry with cwd path, name, timestamp, conductor workspace if applicable.\n2. HTTP GET to `http://127.0.0.1:4111/api/state` with 2s timeout to check if the live dashboard is running.\n\n**Branch on result:**\n- `TRACKER_RUNNING` \u2192 Print dashboard URL, register project via POST to `/api/register`\n- `TRACKER_NOT_RUNNING` \u2192 Check if `~/.claude/tracker/server.cjs` exists. If yes, clear port 4111 and start server in background. If no, print tip about `/fh:tracker`.\n\n**This step is non-fatal.** Any error is swallowed; execution continues regardless.\n\n## Step 2: Strategic Requirements Workshop\n\n**First, evaluate skip conditions.** Check if:\n- `$ARGUMENTS` contains `--skip-workshop` or `--resume` \u2192 skip\n- User said \"just go\" or similar \u2192 skip\n- All three: PROJECT.md has clear north star, REQUIREMENTS.md is exhaustive, ROADMAP.md has no gaps \u2192 skip\n\n**If not skipped:**\n\n### 2.1: Load Context\nRead in parallel: `PROJECT.md`, `REQUIREMENTS.md`, `ROADMAP.md`, `DESIGN.md`, contents of `.planning/research/`, `.planning/startup/`. Identify gaps \u2014 missing vision clarity, vague success criteria, no differentiation.\n\nIf context-mode is available, use `ctx_batch_execute` to index all planning docs. If claude-mem is available, `smart_search` with project domain keywords for past learnings.\n\n### 2.2: Domain Research\nUse firecrawl/WebSearch to research competitors, community pain points, UX patterns, domain landscape. Cross-reference with existing `.planning/research/` files \u2014 only research gaps. Present 3-5 key findings as a brief summary.\n\n### 2.3: Strategic Conversation\nEngage the user with research-driven questions. Challenge safe answers, push for ambition. Ask about differentiation vs. competitors, north star vision, architectural bets, failure modes. Use DESIGN.md context for UX guidance if available.\n\n### 2.4: Capture Updates\nUpdate PROJECT.md, REQUIREMENTS.md, optionally ROADMAP.md with refined vision.\n\n### 2.5: Confirm\nAsk explicitly: \"Ready to start autonomous execution?\" **Block until user confirms.** If they want to iterate, loop back to 2.3.\n\n## Step 3: Parse Arguments\n\nSince `$ARGUMENTS` has no flags in this scenario:\n- `START_PHASE` = first incomplete phase from STATE.md\n- `END_PHASE` = last phase in ROADMAP.md\n- No `--dry-run`, `--resume`, `--budget`, `--concurrency`, `--no-speculative`\n- Default concurrency = 2\n\n## Step 4: Dry-Run Check\n\nNot applicable (no `--dry-run` flag). Skip.\n\n## Step 5: Set AUTO_MODE\n\n```bash\nnode $HOME/.claude/get-shit-done/bin/gsd-tools.cjs config-set workflow.auto_advance true\n```\n\n**Verify** the command exits 0 before proceeding. This enables downstream skills (plan-work, build) to make decisions without stopping for human input.\n\n## Step 6: Shell Out to Orchestrator\n\n### Find orchestrator\n```bash\nORCHESTRATOR=$(find \"$HOME/.claude/plugins/cache/fhhs-skills\" -name \"auto-orchestrator.cjs\" 2>/dev/null | sort -V | tail -1)\n```\n\n### Invoke it\n```bash\nnode \"$ORCHESTRATOR\" --project-dir \"$(pwd)\" --start-phase 5 --end-phase 8\n```\n\n### What the orchestrator does internally (4 phases):\n\n**Wave 1 \u2014 Planning (concurrent):** Spawns up to 2 `claude -p` sessions at a time. All 4 phases get planned concurrently in batches of 2. Each session writes a PLAN.md with `files_modified` frontmatter and phase-local `.decisions-pending.md`. After wave completes, orchestrator merges all pending decisions into `.planning/DECISIONS.md` serially, then computes dependency graph from `files_modified` overlap.\n\n**Wave 2 \u2014 Review (concurrent):** All 4 plans reviewed concurrently in batches of 2. Each review session runs plan-review logic.\n\n**Wave 3 \u2014 Build (dependency-ordered):** Phases grouped into waves based on file overlap. Independent phases build concurrently (up to concurrency limit). Dependent phases wait for predecessors. Before each build, speculative validation checks if planned files were already modified by earlier builds. If invalidated \u2192 REPLAN. Post-wave batched quick review every 3 phases. Test metrics tracked per phase in SUMMARY.md.\n\n**Wave 4 \u2014 Final review + state update.**\n\n### Resilience I monitor for:\n- Stuck detection (3min warn, 8min kill)\n- API health checks with exponential backoff\n- Non-zero exit codes \u2192 read error output, report failure point\n- `{step}-error.log` files for post-mortem\n\n## Step 7: Completion\n\n**Always run, even on interruption:**\n\n1. **Reset AUTO_MODE:**\n   ```bash\n   node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs config-set workflow.auto_advance false\n   ```\n\n2. **Report:** \"Completed phases 5-8 of 8\" (or partial if interrupted), total decisions logged, any `\u26a0 NEEDS REVIEW` low-confidence decisions.\n\n3. **Read final STATE.md** and confirm it reflects the last successful step.\n\n## What I explicitly do NOT do (guardrails)\n\n- **Never skip prerequisite validation** \u2014 missing PROJECT/ROADMAP/STATE is a hard stop\n- **Never proceed past Step 2 without user confirmation** (unless skip conditions met)\n- **Never use `--cwd` with `claude -p`** \u2014 use spawn `cwd` option only\n- **Never write directly to shared DECISIONS.md during concurrent planning** \u2014 phase-local files only\n- **Never leave AUTO_MODE enabled** after completion or failure\n- **Never run without `--permission-mode bypassPermissions`** in spawned sessions (would hang)\n- **Never run without `--plugin-dir`** in spawned sessions (skills unavailable)\n- **Never treat orchestrator-initiated kills as API errors** \u2014 they skip health check backoff\n- **Never build phases with file overlap concurrently** \u2014 they're serialized via dependency graph\n- **Never skip the auto_advance reset** even if the orchestrator crashes \u2014 Step 7 is unconditional",
+    "duration_ms": 49546,
+    "assertions": [
+      {
+        "text": "mentions 'concurrent' or 'parallel' or 'wave'",
+        "type": "behavioral"
+      },
+      {
+        "text": "mentions 'plan'",
+        "type": "behavioral"
+      }
+    ],
+    "expected": "Orchestrator plans all 4 phases concurrently in the planning wave.",
+    "tokens": {
+      "input_tokens": 3,
+      "output_tokens": 1860,
+      "cache_creation_tokens": 37196,
+      "cache_read_tokens": 0,
+      "cost_usd": 0.27898999999999996,
+      "total_tokens": 39059
+    },
+    "checks": [
+      {
+        "type": "required_terms",
+        "terms": [
+          "plan"
+        ]
+      },
+      {
+        "type": "regex",
+        "pattern": "[Pp]hase"
+      },
+      {
+        "type": "regex",
+        "pattern": "concurrent|parallel|all.*phase|simultaneous"
+      }
+    ]
+  },
+  {
+    "eval_id": 156,
+    "command": "auto",
+    "status": "success",
+    "output": "## Behavioral Trace: Two Phases with No File Overlap After Planning Wave\n\n### Interpretation\n\nThis is a specific scenario within the **Build Wave** of the parallel execution pipeline (Step 6). After the concurrent planning wave completes and all PLAN.md files exist, the orchestrator computes a dependency graph from `files_modified` frontmatter. The question is: what happens when two phases declare completely disjoint file sets?\n\n### What the Orchestrator Does\n\n**1. Planning wave completes** \u2014 all phases have produced PLAN.md files with `files_modified` in frontmatter. Each phase wrote decisions to phase-local `.decisions-pending.md` (not shared DECISIONS.md). The orchestrator merges all pending decisions into `.planning/DECISIONS.md` in a single serial step.\n\n**2. Dependency graph construction** \u2014 the orchestrator extracts `files_modified` from each PLAN.md and builds an overlap matrix. For two phases (say Phase 3 and Phase 4) with completely different files:\n- Phase 3: `files_modified: [src/lib/auth.ts, src/app/api/auth/route.ts]`\n- Phase 4: `files_modified: [src/components/dashboard/chart-widget.tsx, src/app/dashboard/page.tsx]`\n- Overlap: **none** \u2192 no dependency edge between them\n\n**3. Build wave scheduling** \u2014 since there's no file overlap, both phases are placed in the **same build wave**. They execute concurrently (up to `--concurrency` limit, default 2). Each gets its own `claude -p` session with:\n- `--plugin-dir` for `/fh:` skill access\n- `--permission-mode bypassPermissions`\n- `--append-system-prompt` with CLAUDE.md content\n- Phase-specific goal and autonomy instructions\n\n**4. Speculative validation is trivial** \u2014 before each build session, the orchestrator checks if the phase's planned files were modified by earlier builds in the same wave. Since both launch simultaneously in the same wave and touch different files, the overlap check passes immediately for both. No REPLAN triggered.\n\n**5. Both build concurrently** \u2014 the two `claude -p` sessions run in parallel, each producing code, tests, and a SUMMARY.md. Neither blocks the other.\n\n**6. Post-wave batched review** \u2014 after both builds complete, a single review wave covers both phases. Quick reviews run concurrently (again, different files = no conflict).\n\n**7. State update** \u2014 both phases marked `built` in `.auto-state.json`. STATE.md updated.\n\n### Guards and Validations\n\n- **File overlap check still runs** even when expected to be clean \u2014 it's the safety net, not optimistic assumption\n- **Stuck detection** applies independently to each concurrent session (3min warn, 8min kill)\n- **Partial failure isolation**: if Phase 3 fails, Phase 4 continues unaffected (no dependency). Phase 3 gets `failed` status, retryable via `--resume`\n- **Decision merge**: even concurrent builds write phase-local decisions, merged serially after the wave\n\n### What Does NOT Happen\n\n- **No sequential ordering forced** \u2014 disjoint files means no dependency, so no waiting\n- **No REPLAN** \u2014 no file overlap means speculative validation always passes\n- **No shared DECISIONS.md write contention** \u2014 phase-local `.decisions-pending.md` files prevent races\n- **No `--no-speculative` needed** \u2014 that flag is for when parallel mode causes issues; clean separation works naturally\n\n### Key Insight\n\nThis is the **best-case scenario** for the parallel pipeline. Two independent phases with no file overlap get maximum concurrency \u2014 they plan together, review together, build together, and review together. The total wall-clock time is roughly that of the single slowest phase, not the sum of both. The dependency graph correctly identifies them as independent and schedules them in the same wave.",
+    "duration_ms": 30118,
+    "assertions": [
+      {
+        "text": "Phases with no overlapping files can build concurrently in the same wave",
+        "type": "behavioral"
+      },
+      {
+        "text": "The dependency graph shows these phases are independent",
+        "type": "behavioral"
+      },
+      {
+        "text": "Both phases can run in parallel within the concurrency limit",
+        "type": "behavioral"
+      },
+      {
+        "text": "No speculative validation needed when files don't overlap",
+        "type": "behavioral"
+      }
+    ],
+    "expected": "Dependency graph shows them as independent, in the same build wave.",
+    "tokens": {
+      "input_tokens": 3,
+      "output_tokens": 970,
+      "cache_creation_tokens": 37188,
+      "cache_read_tokens": 0,
+      "cost_usd": 0.25669,
+      "total_tokens": 38161
+    },
+    "checks": [
+      {
+        "type": "regex",
+        "pattern": "[Pp]hase"
+      },
+      {
+        "type": "required_terms",
+        "terms": [
+          "wave"
+        ]
+      }
+    ]
+  },
+  {
+    "eval_id": 157,
+    "command": "auto",
+    "status": "success",
+    "output": "# Behavioral Trace: All 4 Phase Plans Modify the Same Core File\n\n## 1. Interpretation & Triage\n\nThe user statement \"All 4 phase plans modify the same core file\" is an observation about the dependency graph, not a command to execute. This implies:\n- Plans already exist (planning wave completed or phases were previously planned)\n- The `files_modified` frontmatter in all 4 PLAN.md files contains at least one overlapping file path\n- The user wants to understand how the auto-orchestrator handles this during the build wave\n\nThis is a **behavioral explanation request**, not an execution request. I describe the mechanism, not run it.\n\n## 2. What I Check First\n\n- **ROADMAP.md** \u2014 confirm 4 phases, identify their numbers and goals\n- **STATE.md** \u2014 current position (are we pre-build, mid-build, or post-build?)\n- **Each phase's PLAN.md frontmatter** \u2014 specifically the `files_modified` field to verify the overlap claim\n- **`.auto-state.json`** \u2014 if it exists, check per-phase status (planned/reviewed/built/failed)\n\n## 3. Dependency Graph Computation\n\nAfter the concurrent planning wave, the orchestrator extracts `files_modified` from each PLAN.md and builds a dependency graph:\n\n```\nPhase 1: files_modified includes core-file.ts\nPhase 2: files_modified includes core-file.ts\nPhase 3: files_modified includes core-file.ts\nPhase 4: files_modified includes core-file.ts\n```\n\nSince all 4 phases overlap on the same file, the dependency graph connects every phase to every other phase. **No two phases can build concurrently.** The graph is fully connected \u2014 worst case for parallelism.\n\n## 4. Build Wave Execution Order\n\nWith full overlap, the orchestrator **degrades to sequential execution** \u2014 functionally identical to `--no-speculative` behavior:\n\n```\nBuild Wave 1: Phase 1 alone (no predecessors)\nBuild Wave 2: Phase 2 alone (depends on Phase 1's changes to core file)\nBuild Wave 3: Phase 3 alone (depends on Phase 2's changes)\nBuild Wave 4: Phase 4 alone (depends on Phase 3's changes)\n```\n\nEach wave contains exactly 1 phase. The `--concurrency` flag has no effect because no phases are independent.\n\n## 5. Speculative Plan Validation (Critical Path)\n\nThis is where the behavior gets important. Before each build (waves 2-4), the orchestrator runs a **speculative validation session**:\n\n1. **Phase 2 pre-build**: Checks if Phase 1's actual changes to `core-file.ts` invalidate Phase 2's plan. If Phase 1 renamed a function that Phase 2's plan assumes exists \u2192 **REPLAN triggered** for Phase 2 before building.\n2. **Phase 3 pre-build**: Same check against cumulative changes from Phases 1+2.\n3. **Phase 4 pre-build**: Same check against cumulative changes from Phases 1+2+3.\n\nEach validation is a lightweight `claude -p` session that reads the current file state and the plan, then outputs VALID or REPLAN.\n\n**If `--no-speculative` is set**: Validation sessions are skipped entirely. Phases build in strict order (1\u21922\u21923\u21924) without checking plan validity. This saves ~3 validation sessions but risks later phases building on stale assumptions \u2014 the build session itself may fail or produce incorrect code.\n\n## 6. What This Means in Practice\n\n- **Planning wave**: All 4 phases still plan concurrently (plans read from the pre-execution state, no write conflicts)\n- **Review wave**: All 4 plans still review concurrently (read-only)\n- **Build wave**: Fully sequential \u2014 4 build sessions + up to 3 validation sessions = 4-7 `claude -p` sessions\n- **Post-wave reviews**: Batched after all 4 builds complete (since they're sequential, the batch review covers all 4)\n- **Total session count**: 4 planning + 4 review + 4 builds + 3 validations + 1 batch review = ~16 sessions\n\n## 7. Failure Handling\n\nIf Phase 2 fails during build:\n- Phases 3 and 4 are marked `blocked` (they depend on Phase 2 via the shared file)\n- The orchestrator does NOT attempt Phases 3-4\n- `.auto-state.json` records: Phase 1 = `built`, Phase 2 = `failed`, Phases 3-4 = `blocked`\n- `--resume` later re-enters at Phase 2, rebuilds, then continues 3\u21924\n\n## 8. What I Do NOT Do\n\n- **Do not run phases in parallel** \u2014 the dependency graph forbids it when all share a file\n- **Do not skip validation sessions** (unless `--no-speculative`) \u2014 each later phase's plan was written against pre-execution state and may be invalidated by earlier builds\n- **Do not merge `.decisions-pending.md` files until the planning wave completes** \u2014 even though builds are sequential, planning was concurrent\n- **Do not treat REPLAN as failure** \u2014 replanning is expected behavior when earlier phases change shared files; the phase continues after replanning\n\n## Summary\n\nFull file overlap = fully sequential build wave. The orchestrator's parallelism provides no build-time benefit here, but the **speculative validation** mechanism is critical \u2014 it catches plan drift caused by earlier phases modifying the shared file, triggering replans before builds rather than discovering stale assumptions mid-build. This is the primary value of the parallel-aware pipeline even in the degenerate sequential case.",
+    "duration_ms": 40885,
+    "assertions": [
+      {
+        "text": "All phases must build sequentially because they share file dependencies",
+        "type": "behavioral"
+      },
+      {
+        "text": "The dependency graph shows a chain where each phase depends on the previous one",
+        "type": "behavioral"
+      },
+      {
+        "text": "Mentions that shared files force sequential ordering despite concurrency setting",
+        "type": "behavioral"
+      },
+      {
+        "text": "Effective parallelism is reduced when all phases overlap on the same files",
+        "type": "behavioral"
+      }
+    ],
+    "expected": "All phases in different build waves, effectively sequential.",
+    "tokens": {
+      "input_tokens": 3,
+      "output_tokens": 1445,
+      "cache_creation_tokens": 37189,
+      "cache_read_tokens": 0,
+      "cost_usd": 0.26857125000000004,
+      "total_tokens": 38637
+    },
+    "checks": [
+      {
+        "type": "regex",
+        "pattern": "[Pp]hase"
+      },
+      {
+        "type": "required_terms",
+        "terms": [
+          "wave"
+        ]
+      }
+    ]
+  },
+  {
+    "eval_id": 167,
+    "command": "auto",
+    "status": "success",
+    "output": "## Behavioral Trace: claude-mem Project Attribution in Auto-Orchestrator\n\n### 1. Triage\n\nThis is an **informational/explanatory request**, not an execution request. The user asks \"how does it ensure...\" \u2014 they want a behavioral explanation, not to run `/fh:auto`. I do NOT proceed through the skill's execution steps (no prerequisite checks, no AUTO_MODE, no orchestrator invocation).\n\n### 2. What I Check\n\n- **Skill instructions (already loaded):** Scan for claude-mem references. The \"Known pitfalls\" section in Step 6 explicitly states:\n  > Without `CLAUDE_MEM_PROJECT` env var, claude-mem stores observations under the plugin-dir project name instead of the actual project name, causing observation misattribution across projects.\n  > Project name uses `git rev-parse --git-common-dir` (not `--show-toplevel`) to resolve actual repo name in Conductor worktrees.\n\n- **Orchestrator source code:** I would read `auto-orchestrator.cjs` from the plugin cache to verify the implementation matches the documented behavior \u2014 specifically the `spawn()` call's `env` object to confirm `CLAUDE_MEM_PROJECT` is set.\n\n### 3. The Answer\n\nThe orchestrator handles this through two mechanisms:\n\n**A. `CLAUDE_MEM_PROJECT` environment variable** \u2014 When spawning each `claude -p` session, the orchestrator sets `CLAUDE_MEM_PROJECT` in the spawn environment. This tells claude-mem which project to attribute observations to, overriding its default behavior of inferring the project from the working directory.\n\n**B. Project name resolution via `git rev-parse --git-common-dir`** \u2014 In Conductor workspaces, the working directory basename (e.g., `havana`) differs from the actual repository name (e.g., `fh-starter-project`). The orchestrator resolves the true project name using `git rev-parse --git-common-dir` rather than `--show-toplevel`, because Conductor uses git worktrees where `--show-toplevel` returns the worktree path, not the main repo. `--git-common-dir` returns the shared `.git` directory path, from which the actual repo name can be derived.\n\n**Without this:** Each `claude -p` session would fall back to using the plugin directory's project name (e.g., `fhhs-skills`) for all observations, causing every phase's observations to be misattributed to the plugin project rather than the actual project being built.\n\n### 4. Guards\n\n- The env var is set per-session, not globally \u2014 prevents cross-project leakage if multiple auto runs happen concurrently.\n- The git resolution happens once at orchestrator startup and is reused for all spawned sessions.\n\n### 5. What I Do NOT Do\n\n- Do not run any skill steps (prerequisites, tracker registration, workshop, orchestrator invocation)\n- Do not set AUTO_MODE\n- Do not spawn agents or read planning artifacts\n- Do not modify any files \u2014 this is purely explanatory",
+    "duration_ms": 29187,
+    "assertions": [
+      {
+        "text": "Uses git rev-parse --git-common-dir to derive project name (not --show-toplevel which returns worktree path)",
+        "type": "behavioral"
+      },
+      {
+        "text": "Sets CLAUDE_MEM_PROJECT environment variable in spawn env",
+        "type": "output"
+      },
+      {
+        "text": "Falls back to path.basename if git command fails",
+        "type": "behavioral"
+      },
+      {
+        "text": "Unified patch checks env var before worktree and basename detection",
+        "type": "output"
+      }
+    ],
+    "expected": "Orchestrator resolves project name via git rev-parse --git-common-dir (with 5s timeout, strips /.git/worktrees/xxx suffix, falls back to path.basename). Sets CLAUDE_MEM_PROJECT env var in spawn env. Unified patch makes gp() check this env var first, before worktree detection and basename. Correct for Conductor workspaces where show-toplevel returns worktree name not project name.",
+    "tokens": {
+      "input_tokens": 3,
+      "output_tokens": 780,
+      "cache_creation_tokens": 37214,
+      "cache_read_tokens": 0,
+      "cost_usd": 0.25210249999999995,
+      "total_tokens": 37997
+    },
+    "checks": [
+      {
+        "type": "regex",
+        "pattern": "git.?common.?dir|CLAUDE_MEM_PROJECT|project.?name"
+      },
+      {
+        "type": "regex",
+        "pattern": "environment|env|spawn"
+      }
+    ]
+  },
+  {
+    "eval_id": 171,
+    "command": "auto",
+    "status": "success",
+    "output": "## Behavioral Trace: Context-Mode Fallback Question\n\n### 1. Triage\n\nThis is an **informational question**, not an execution request. The user wants to understand the auto pipeline's architecture \u2014 specifically the fallback path when context-mode MCP tools are unavailable. I do NOT invoke the `/fh:auto` skill's execution pipeline (Steps 1\u20137). No phases are planned, built, or reviewed.\n\n### 2. What I Read/Check\n\n- **The skill instructions themselves** \u2014 specifically Step 6's \"Context-Mode Pre-Indexing\" section and Step 2.1's \"If context-mode is available\" conditional\n- **No file reads needed** \u2014 this is an architecture question answerable from the skill spec and orchestrator design\n\n### 3. The Answer\n\nThe auto pipeline has a **two-tier context distribution strategy**:\n\n**Tier 1 (context-mode available):** Shared documents (PROJECT.md, ROADMAP.md, research files, DECISIONS.md) are pre-indexed once via `ctx_batch_execute` before any wave begins. Concurrent `claude -p` sessions then query via `ctx_search` in read-only mode. This is an **optimization** \u2014 it prevents redundant file reads and avoids SQLite write contention during parallel waves.\n\n**Tier 2 (context-mode NOT available \u2014 your case):** The orchestrator uses three fallback mechanisms:\n\n1. **`--append-system-prompt`**: Each spawned `claude -p` session receives CLAUDE.md content injected via the `--append-system-prompt` flag. This carries project conventions, tech stack, coding standards, and key constraints directly into the session's system prompt. No MCP tool needed.\n\n2. **Direct file reads**: Individual skills (`/fh:plan-work`, `/fh:build`, `/fh:plan-review`) fall back to using the `Read` tool to load planning artifacts (PROJECT.md, ROADMAP.md, phase CONTEXT.md, DECISIONS.md) at the start of their execution. Each session reads what it needs \u2014 slightly redundant across sessions, but functionally equivalent.\n\n3. **Rich prompt injection**: The orchestrator constructs each `claude -p` prompt with the phase goal, explicit autonomy instructions, and testing enforcement text baked directly into the prompt string. This ensures critical context (like \"every phase must include tests\") travels with the session regardless of any indexing layer.\n\n### 4. Guards and Validations\n\n- The skill instructions treat context-mode as **conditional** throughout (\"If context-mode is available\u2026\"), never as a hard requirement\n- The orchestrator's `--append-system-prompt` path is the **primary** context delivery mechanism; context-mode is a performance optimization layered on top\n- No degradation in correctness \u2014 only potential increase in token consumption per session (each reads files independently instead of querying a shared index)\n\n### 5. What I Produce\n\nThis explanation. No files, no artifacts, no state changes.\n\n### 6. What I Do NOT Do\n\n- Do not execute any auto pipeline steps\n- Do not set `workflow.auto_advance`\n- Do not spawn `claude -p` sessions\n- Do not modify STATE.md or any planning artifacts\n- Do not suggest installing context-mode (unless the user asks)\n\n### Summary\n\nContext-mode is a **throughput optimization**, not a correctness requirement. Without it, every `claude -p` session gets project context through `--append-system-prompt` (CLAUDE.md injection) and direct `Read` tool calls within each skill. The tradeoff is slightly higher token usage per session (redundant reads across parallel sessions) but identical functional behavior.",
+    "duration_ms": 28902,
+    "assertions": [
+      {
+        "type": "keyword",
+        "text": "Read"
+      },
+      {
+        "type": "keyword",
+        "text": "fallback"
+      },
+      {
+        "type": "behavioral",
+        "text": "Describes how project conventions and architecture context are injected into agent prompts when context-mode is unavailable"
+      },
+      {
+        "type": "behavioral",
+        "text": "The pipeline still works without context-mode by falling back to direct file reads and template injection"
+      }
+    ],
+    "expected": "",
+    "tokens": {
+      "input_tokens": 3,
+      "output_tokens": 894,
+      "cache_creation_tokens": 37211,
+      "cache_read_tokens": 0,
+      "cost_usd": 0.25493375,
+      "total_tokens": 38108
+    },
+    "checks": [
+      {
+        "type": "required_terms",
+        "terms": [
+          "Read",
+          "fallback"
+        ]
+      },
+      {
+        "type": "forbidden_terms",
+        "terms": [
+          "will not work",
+          "cannot function"
+        ]
+      }
+    ]
+  },
+  {
+    "eval_id": 172,
+    "command": "auto",
+    "status": "success",
+    "output": "## Behavioral Trace: Build Wave Execution with Dependency Graph\n\n### 1. Request Triage\n\nThis is a **knowledge question** about the orchestrator's build wave algorithm, not a request to execute `/fh:auto`. No tools are invoked, no files read, no prerequisites checked. I answer directly from the skill instructions' Parallelism Details section.\n\n### 2. Dependency Graph Analysis\n\nAfter the planning wave produces PLAN.md files for all 8 phases, the orchestrator extracts `files_modified` from each plan's frontmatter and computes overlap:\n\n- **Phases 3, 4, 5**: No file overlap \u2192 independent, can run concurrently\n- **Phase 6**: Overlaps with phase 4 \u2192 depends on 4\n- **Phases 7, 8**: Overlap with phase 6 \u2192 depend on 6\n\nThis produces a DAG (directed acyclic graph):\n```\n3 \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2192 (done)\n4 \u2500\u2500\u2192 6 \u2500\u2500\u2192 7\n             \u2500\u2500\u2192 8\n5 \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2192 (done)\n```\n\n### 3. Build Wave Execution Order\n\nThe orchestrator groups phases into **dependency waves** \u2014 sets of phases whose predecessors have all completed:\n\n| Wave | Phases | Why | Concurrency |\n|------|--------|-----|-------------|\n| **Wave 1** | 3, 4, 5 | No unmet dependencies \u2014 all predecessors (1, 2) already built | Up to `--concurrency N` (default 2), so 2 run simultaneously, 1 queues |\n| **Wave 2** | 6 | Depends on 4, which completed in Wave 1 | Single phase |\n| **Wave 3** | 7, 8 | Both depend on 6, which completed in Wave 2 | Up to 2 concurrent |\n\n### 4. Guards and Validations at Each Step\n\n**Before each build session**, the orchestrator applies **speculative plan validation** (unless `--no-speculative`):\n\n1. Compare the phase's `files_modified` against files actually changed by earlier builds in the current wave\n2. If overlap detected \u2192 spawn a validation `claude -p` session to re-evaluate the plan against actual file state\n3. If plan still valid \u2192 proceed. If invalidated \u2192 REPLAN (re-run planning for that phase)\n\n**Within each wave:**\n- Phases 3 and 5 are independent of everything \u2014 their speculative checks pass trivially\n- Phase 4 is independent of 3 and 5 \u2014 also passes trivially\n- Phase 6's check compares against phase 4's actual output (the declared dependency)\n- Phases 7 and 8 check against phase 6's actual output\n\n**After each wave completes**, a **batched quick review** runs for all phases built in that wave.\n\n### 5. Failure Handling\n\nIf **phase 4 fails** in Wave 1:\n- Phases 3 and 5 continue unaffected (independent)\n- Phase 6 is marked `blocked` (depends on 4)\n- Phases 7 and 8 are transitively marked `blocked` (depend on 6)\n- `.auto-state.json` records: 3=built, 4=failed, 5=built, 6=blocked, 7=blocked, 8=blocked\n- `--resume` later retries phase 4, then unblocks 6\u21927,8\n\nIf **phase 6 fails** in Wave 2:\n- Phases 3, 4, 5 are already `built`\n- Phases 7, 8 marked `blocked`\n\n### 6. What I Do NOT Do\n\n- **Do not execute any tools** \u2014 this is a knowledge question\n- **Do not read files** \u2014 the dependency graph is given in the question\n- **Do not invoke the orchestrator** \u2014 no autonomous execution requested\n- **Do not set AUTO_MODE** \u2014 no execution happening\n- **Do not speculate about phases 1-2** \u2014 question states \"after the planning wave\" with this specific graph, implying 1-2 are already built\n\n### 7. Output\n\nThe answer above. No artifacts produced, no state modified. With `--concurrency 2` (default), the total build sequence is:\n\n```\nt0: Build 3, Build 4        (concurrent, wave 1)\nt1: Build 5                  (wave 1 continued, slot freed)\n    \u2192 Batched review: 3, 4, 5\nt2: Build 6                  (wave 2, after 4 completes)\n    \u2192 Batched review: 6\nt3: Build 7, Build 8        (concurrent, wave 3)\n    \u2192 Batched review: 7, 8\n```\n\nTotal: 4 time slots instead of 6 for fully sequential \u2014 ~33% faster with default concurrency.",
+    "duration_ms": 32126,
+    "assertions": [
+      {
+        "text": "Phases 3, 4, and 5 can build concurrently in the same wave",
+        "type": "behavioral"
+      },
+      {
+        "text": "Phase 6 must wait for phase 4 to complete",
+        "type": "behavioral"
+      },
+      {
+        "text": "Phases 7 and 8 must wait for phase 6",
+        "type": "behavioral"
+      }
+    ],
+    "expected": "",
+    "tokens": {
+      "input_tokens": 3,
+      "output_tokens": 1245,
+      "cache_creation_tokens": 25035,
+      "cache_read_tokens": 12203,
+      "cost_usd": 0.19371025000000003,
+      "total_tokens": 38486
+    },
+    "checks": [
+      {
+        "type": "required_terms",
+        "terms": [
+          "concurrent",
+          "parallel"
+        ]
+      },
+      {
+        "type": "regex",
+        "pattern": "phase.*6.*wait|phase.*6.*after|phase.*6.*depend"
+      },
+      {
+        "type": "forbidden_terms",
+        "terms": [
+          "worktree",
+          "git worktree"
+        ]
+      }
+    ]
+  },
+  {
+    "eval_id": 173,
+    "command": "auto",
+    "status": "success",
+    "output": "## Behavioral Trace: Answering a Knowledge Question During `/fh:auto`\n\n### 1. Triage\n\nThis is **not an execution request** \u2014 it's a question about the autonomous pipeline's quality criteria. The user wants to understand what plan-work must produce for build waves to succeed. No phases need to run, no orchestrator needs to spawn.\n\n**Decision:** Answer directly from skill knowledge + relevant source files. Do NOT enter the auto execution pipeline (Steps 1-7 are skipped entirely).\n\n### 2. What I'd Read First\n\nTo give an authoritative answer grounded in actual skill definitions rather than just the auto skill's summary:\n\n- **`.claude/skills/plan-work/SKILL.md`** \u2014 the canonical source for what plan-work enforces. Contains the 7+ quality checks that gate plan approval.\n- **`.claude/skills/build/SKILL.md`** \u2014 what build expects to find in PLAN.md. Reveals the contract between planning and building.\n- **`references/implementer-prompt.md`** (if accessible) \u2014 the prompt template injected into build sessions, showing exactly what fields the builder reads from PLAN.md.\n- **`agents/gsd-planner.md`** and **`agents/gsd-plan-checker.md`** \u2014 subagent definitions that enforce planning rigor.\n\n### 3. What I'd Synthesize\n\nFrom those sources, I'd compile the specific PLAN.md requirements that determine build success:\n\n**Structural requirements (frontmatter):**\n- `files_modified` list \u2014 **critical for parallelism**. Without this, the dependency graph can't be computed, and phases can't safely run concurrently. Missing data forces sequential fallback.\n- `must_haves` \u2014 success criteria the build must satisfy. Build Step 2.5 auto-generates test specs from these.\n- `phase`, `goal`, `status` fields \u2014 routing metadata.\n\n**Content requirements (body):**\n- **Exact file paths** \u2014 not \"create a component for X\" but \"create `src/components/Dashboard/MetricCard.tsx`\". Vague paths force the builder to make architectural decisions it shouldn't.\n- **API signatures and data shapes** \u2014 function signatures, props interfaces, API request/response shapes. The builder implements, it doesn't design.\n- **Implementation approach** \u2014 specific enough that two different builders would produce structurally similar code. \"Use React Query with optimistic updates\" not \"handle data fetching.\"\n- **Test specifications** \u2014 plan-work check 7 rejects plans without test coverage for business logic. Must specify what to test and the testing approach (unit vs integration vs E2E).\n- **Task dependency ordering** \u2014 which tasks block others, enabling the builder to sequence work correctly within a phase.\n\n**Quality gates in plan-work that prevent build failures:**\n- Check 1: Every task maps to a must_have (no orphan work)\n- Check 2: No task is ambiguous enough to require scope clarification\n- Check 3: File paths are concrete, not placeholder\n- Check 7: Business logic has test coverage specified\n- Plan-review (Wave 2) stress-tests for architectural soundness before build wave starts\n\n### 4. Guards I Apply\n\n- **Do NOT execute any auto pipeline steps** \u2014 this is a Q&A, not a \"/fh:auto\" invocation\n- **Do NOT set AUTO_MODE** \u2014 no `config-set workflow.auto_advance true`\n- **Do NOT spawn orchestrator or claude -p sessions**\n- **Ground claims in actual source files** \u2014 read the skills before asserting what they enforce, rather than relying solely on the auto skill's summary description\n- **Do NOT produce planning artifacts** \u2014 no PLAN.md, no STATE.md updates\n\n### 5. Outputs\n\n- A structured explanation (text response) covering the quality criteria\n- References to specific skill files and check numbers so the user can verify\n- No file artifacts created or modified\n\n### 6. What I Explicitly Do NOT Do\n\n- Don't run prerequisites validation (Step 1)\n- Don't register with tracker (Step 1.5)\n- Don't launch the Strategic Requirements Workshop (Step 2)\n- Don't parse flags or set AUTO_MODE (Steps 3, 5)\n- Don't invoke the orchestrator (Step 6)\n- Don't modify any `.planning/` files\n- Don't speculatively \"improve\" plan-work based on the question \u2014 the user asked what it does, not to change it\n\n---\n\n**In short:** I treat this as a documentation/knowledge request, read the relevant skill source files to give a grounded answer, and stay completely out of the execution pipeline. The key insight is that `/fh:auto` triggered the skill expansion, but the actual user intent is informational \u2014 the behavioral response should match the intent, not the trigger.",
+    "duration_ms": 37621,
+    "assertions": [
+      {
+        "text": "Plans must include files_modified frontmatter for dependency graph construction",
+        "type": "behavioral"
+      },
+      {
+        "text": "Each task needs clear done criteria that can be verified programmatically",
+        "type": "behavioral"
+      },
+      {
+        "text": "Plans should include test specifications so build Step 2.5 can generate test skeletons",
+        "type": "behavioral"
+      }
+    ],
+    "expected": "",
+    "tokens": {
+      "input_tokens": 3,
+      "output_tokens": 1213,
+      "cache_creation_tokens": 37217,
+      "cache_read_tokens": 0,
+      "cost_usd": 0.26294625,
+      "total_tokens": 38433
+    },
+    "checks": [
+      {
+        "type": "required_terms",
+        "terms": [
+          "files_modified"
+        ]
+      },
+      {
+        "type": "regex",
+        "pattern": "test|spec|coverage"
+      },
+      {
+        "type": "regex",
+        "pattern": "done|criteria|verify|must_have"
+      }
+    ]
+  },
+  {
+    "eval_id": 174,
+    "command": "auto",
+    "status": "success",
+    "output": "## Behavioral Trace: Answering a Knowledge Question About `/fh:auto` Internals\n\n### 1. Triage\n\nThis is an **explanatory question**, not an execution request. The user isn't saying \"auto\", \"run autonomously\", or \"start building\" \u2014 they're asking *how* the pipeline works internally. This means:\n\n- **I do NOT invoke the auto skill's execution pipeline** (Steps 1\u20137)\n- **I do NOT set AUTO_MODE**, spawn orchestrator sessions, or modify any files\n- **I do NOT run the Strategic Requirements Workshop**\n- I treat this as a technical architecture question and answer it directly\n\n### 2. What I Read/Check First\n\nI would consult the skill instructions already loaded in context (the `/fh:auto` SKILL.md content above) since it contains the relevant architectural details. Specifically, I'd reference:\n\n- **Step 6's \"Context-Mode Pre-Indexing\" section** \u2014 describes the one-time indexing strategy\n- **Step 6's pipeline execution flow** \u2014 shows where pre-indexing fits in the 5-step pipeline\n- **The \"Parallelism Details\" section** \u2014 covers dependency graphs, concurrent waves, and how sessions share context\n\nIf needed for deeper detail, I'd read:\n- The actual `auto-orchestrator.cjs` source to verify implementation matches documentation\n- Any context-mode plugin docs for `ctx_batch_execute` / `ctx_search` behavior\n\n### 3. Actions and Order\n\n1. **Synthesize from loaded skill instructions** \u2014 the SKILL.md already describes the mechanism clearly\n2. **Answer the question directly** with the three-layer token optimization strategy:\n\n   **Layer 1: Pre-indexing (once before all waves)**\n   - Shared documents (PROJECT.md, ROADMAP.md, research files, codebase mapping) are indexed once via `ctx_batch_execute` before any wave begins\n   - This creates a shared searchable index that all subsequent sessions query read-only\n   - Without this: each of the ~30-50 `claude -p` sessions would independently `Read` the same 5-10 planning files, multiplying token consumption by the session count\n\n   **Layer 2: ctx_search-first in build agents**\n   - Build sessions use `ctx_search` to query the pre-built index instead of reading full files\n   - `ctx_search` returns only relevant excerpts matching the query, not entire file contents\n   - A build agent needing \"what's the auth strategy?\" gets a 200-token excerpt instead of reading a 3000-token PROJECT.md + 2000-token ROADMAP.md + 1500-token research files\n\n   **Layer 3: Fresh-context sessions with targeted prompts**\n   - Each `claude -p` session starts with a clean context window \u2014 no accumulated history from prior phases\n   - The orchestrator injects only the phase-specific goal and CLAUDE.md content via `--append-system-prompt`\n   - Sessions don't carry the full 10-phase conversation history\n\n   **Quantitative impact across 10 phases:**\n   - Without optimization: ~10 phases \u00d7 4 steps \u00d7 ~5 shared files \u00d7 ~2000 tokens/file = ~400,000 tokens in redundant reads\n   - With pre-indexing: ~10,000 tokens indexed once + ~500 tokens per ctx_search query \u00d7 ~40 queries = ~30,000 tokens\n   - Roughly **90%+ reduction** in shared-document token consumption\n\n3. **Note the fallback** \u2014 when context-mode is unavailable, the orchestrator falls back to `--append-system-prompt` with CLAUDE.md content and direct `Read` calls in individual skills, losing the search-based efficiency but maintaining correctness\n\n### 4. Guards and Validations\n\n- **Do not execute anything** \u2014 this is a read-only explanation\n- **Do not modify STATE.md, set AUTO_MODE, or spawn sessions**\n- **Do not fabricate implementation details** \u2014 stick to what the skill instructions document; if uncertain about an implementation detail, say so rather than guess\n- **Do not over-scope** \u2014 answer the specific question about token optimization, don't explain the entire auto pipeline\n\n### 5. Outputs\n\n- A text explanation (no files created or modified)\n- Structured around the three optimization layers\n- Includes the quantitative estimate to make the savings concrete\n\n### 6. What I Explicitly Do NOT Do\n\n- **No prerequisite checks** (Step 1) \u2014 not executing\n- **No tracker registration** (Step 1.5) \u2014 not executing\n- **No workshop** (Step 2) \u2014 not executing\n- **No argument parsing** (Step 3) \u2014 no execution flags\n- **No AUTO_MODE toggle** (Step 5/7) \u2014 not executing\n- **No orchestrator invocation** (Step 6) \u2014 not executing\n- **No file writes** \u2014 pure explanation\n- **No agent spawning** \u2014 the question is answerable from loaded context",
+    "duration_ms": 37955,
+    "assertions": [
+      {
+        "text": "Stable planning docs are indexed once and shared across all 4 steps via CLAUDE_SESSION_ID",
+        "type": "behavioral"
+      },
+      {
+        "text": "Build agents use ctx_search for context and only Read files they edit",
+        "type": "behavioral"
+      },
+      {
+        "text": "Post-wave re-indexing ensures next wave sees fresh content without re-reading",
+        "type": "behavioral"
+      }
+    ],
+    "expected": "",
+    "tokens": {
+      "input_tokens": 3,
+      "output_tokens": 1204,
+      "cache_creation_tokens": 37215,
+      "cache_read_tokens": 0,
+      "cost_usd": 0.26270875,
+      "total_tokens": 38422
+    },
+    "checks": [
+      {
+        "type": "regex",
+        "pattern": "ctx_search|context.?mode|pre.?index|index.*once|shared.*index"
+      },
+      {
+        "type": "regex",
+        "pattern": "token|cache|efficien"
+      }
+    ]
+  },
+  {
+    "eval_id": 175,
+    "command": "auto",
+    "status": "success",
+    "output": "## Behavioral Trace: `/fh:auto` Timeline Analysis for 10 Phases, `--concurrency 3`\n\n### 1. Triage\n\nThis is a **dry-run analysis question**, not an execution request. The user wants a timeline walkthrough with session counts and parallelism details. No actual orchestrator invocation needed \u2014 this is answered from the skill specification itself.\n\n### 2. What I Check First\n\nI would read `.planning/ROADMAP.md` and `.planning/STATE.md` to understand the actual phase structure, but since this is a hypothetical \"10 phases\" question, I work from the specification directly.\n\n### 3. Pipeline Timeline Walkthrough\n\n**Wave 1 \u2014 Planning (concurrent, batched by 3)**\n\nAll 10 phases plan concurrently, limited by `--concurrency 3`:\n- Batch 1: Phases 1, 2, 3 (3 sessions)\n- Batch 2: Phases 4, 5, 6 (3 sessions)\n- Batch 3: Phases 7, 8, 9 (3 sessions)\n- Batch 4: Phase 10 (1 session)\n\n**Sessions: 10.** Each writes to phase-local `.decisions-pending.md` (no shared-file races). After all complete, orchestrator merges decisions into `DECISIONS.md` serially. Dependency graph computed from `files_modified` frontmatter in each PLAN.md.\n\n**Wave 2 \u2014 Review (concurrent, batched by 3)**\n\nAll 10 plans reviewed concurrently with same batching:\n- 4 batches, same pattern as planning.\n\n**Sessions: 10.**\n\n**Wave 3 \u2014 Build (dependency-ordered waves)**\n\nThis is where parallelism depends on actual file overlap. Three scenarios:\n\n**Best case** (no file overlap \u2014 all independent):\n- Build wave 1: Phases 1, 2, 3 (3 sessions)\n- Build wave 2: Phases 4, 5, 6 (3 sessions)\n- Build wave 3: Phases 7, 8, 9 (3 sessions)\n- Build wave 4: Phase 10 (1 session)\n- **Build sessions: 10**\n\n**Typical case** (moderate dependencies \u2014 e.g., phases 3\u21926\u21929 share files):\n- Build wave 1: Phases 1, 2, 3 (3 concurrent)\n- Build wave 2: Phases 4, 5, 6 (but 6 waits for 3, so maybe 4, 5 concurrent, then 6)\n- Build wave 3: Phases 7, 8 concurrent, 9 waits for 6\n- Build wave 4: Phase 10\n- **Build sessions: 10** (same count, but more sequential waves)\n\n**Worst case** (chain dependencies \u2014 each phase depends on prior):\n- 10 sequential builds, one at a time.\n- **Build sessions: 10**\n\n**Speculative validation sessions:** Before each build, a file-overlap check runs. If overlap detected, a validation `claude -p` session fires. Best case: 0 extra sessions. Worst case: up to 9 validation sessions (every phase after the first triggers a check).\n\n**Post-wave quick reviews:** Batched every 3 phases built.\n- Best case: ceil(10/3) = 4 review sessions\n- Worst case: same \u2014 4 review sessions (reviews are always batched regardless of build order)\n\n**Sessions for reviews: ~4**\n\n### 4. Total Session Count\n\n| Component | Sessions |\n|-----------|----------|\n| Planning wave | 10 |\n| Decision merge | 0 (serial, no session) |\n| Review wave | 10 |\n| Build wave | 10 |\n| Speculative validation | 0\u20139 |\n| Post-build quick reviews | ~4 |\n| **Total** | **34\u201343** |\n\n### 5. Parallelism Opportunities\n\n| Wave | Parallelism | Why |\n|------|------------|-----|\n| Planning | Embarrassingly parallel | No shared state; phase-local decisions |\n| Review | Embarrassingly parallel | Read-only analysis of independent plans |\n| Build | Dependency-constrained | File overlap graph determines concurrency |\n| Quick review | Batched parallel | Groups of 3, no dependencies |\n\nThe biggest parallelism win is in **planning and review** \u2014 both waves have zero shared mutable state, so all 10 phases can proceed at `--concurrency 3` without risk. Build wave parallelism is the variable \u2014 it ranges from fully parallel (no overlap) to fully sequential (chain dependencies).\n\n### 6. What I Do NOT Do\n\n- **Do not invoke the orchestrator** \u2014 this is an analytical question\n- **Do not set `AUTO_MODE`** \u2014 no execution happening\n- **Do not run Step 2 (Strategic Requirements Workshop)** \u2014 not building anything\n- **Do not modify STATE.md or any planning artifacts**\n- **Do not spawn subagents** \u2014 the answer comes from specification analysis, not file exploration",
+    "duration_ms": 34746,
+    "assertions": [
+      {
+        "text": "Planning wave runs all 10 phases concurrently (limited by concurrency pool)",
+        "type": "behavioral"
+      },
+      {
+        "text": "Review wave also runs concurrently",
+        "type": "behavioral"
+      },
+      {
+        "text": "Build wave parallelizes independent phases based on the dependency graph",
+        "type": "behavioral"
+      }
+    ],
+    "expected": "",
+    "tokens": {
+      "input_tokens": 3,
+      "output_tokens": 1325,
+      "cache_creation_tokens": 25013,
+      "cache_read_tokens": 12203,
+      "cost_usd": 0.19557275000000002,
+      "total_tokens": 38544
+    },
+    "checks": [
+      {
+        "type": "regex",
+        "pattern": "concurrent|parallel"
+      },
+      {
+        "type": "regex",
+        "pattern": "depend|overlap|independent"
+      },
+      {
+        "type": "regex",
+        "pattern": "wave|pipeline"
+      }
+    ]
+  },
+  {
+    "eval_id": 176,
+    "command": "auto",
+    "status": "success",
+    "output": "## Behavioral Trace: Context Reuse Across Auto Pipeline Steps\n\n### 1. Triage\n\nThis is an **explanation request**, not an execution request. The user wants to understand the auto pipeline's context-mode optimization for avoiding redundant document reads. I do NOT invoke the skill, set AUTO_MODE, or run the orchestrator.\n\n### 2. What I Check\n\nI'd reference the skill instructions (already loaded) \u2014 specifically:\n- **Step 6: \"Context-Mode Pre-Indexing\"** section\n- **Step 6: Pipeline execution** steps 1-5\n- The orchestrator's session spawning model (`claude -p` = fresh context each time)\n\n### 3. The Answer: How Re-Reading Is Avoided\n\nThe pipeline has **one indexing point and three consumption points**:\n\n**Indexing (once, before any wave):**\n- Step 6, pipeline item 1: \"Pre-index shared docs (PROJECT, ROADMAP, research, codebase mapping)\" via `ctx_batch_execute`\n- This writes all 9+ stable planning docs into context-mode's SQLite FTS5 index **once**\n- The index persists on disk between sessions\n\n**Consumption (read-only, per session):**\n- **Plan-work sessions** (Wave 1): Each `claude -p` planning session calls `ctx_search` to query the shared index. No re-reading of raw files, no re-indexing. Read-only lookups against the pre-built index.\n- **Plan-review sessions** (Wave 2): Same mechanism \u2014 `ctx_search` against the existing index. The index wasn't modified by Wave 1 planning sessions.\n- **Build sessions** (Wave 3): Build adds source file indexing on top of the existing planning doc index. Planning docs are already indexed \u2014 only new source files get indexed. `ctx_search` queries span both.\n\n**Key design properties:**\n1. **SQLite write contention avoided** \u2014 concurrent sessions only read the index, never write to it. The skill instructions explicitly state: \"Concurrent sessions then use `ctx_search` in read-only mode to query the shared index.\"\n2. **Index survives across waves** \u2014 the FTS5 index is a file on disk, not in-memory. When the orchestrator spawns a new `claude -p` session for a different wave, the index is still there.\n3. **Additive, not duplicative** \u2014 build's source file pre-indexing adds to the existing index rather than rebuilding it.\n\n### 4. Guards and Validations\n\n- The orchestrator indexes **before** spawning any concurrent session (ordering guarantee)\n- If context-mode is unavailable, the fallback is `--append-system-prompt` with CLAUDE.md content + direct `Read` calls in each session (per the \"Context-mode fallback strategy\" documented in the skill). This fallback DOES re-read files per session \u2014 the optimization only applies when context-mode is installed.\n\n### 5. What I Do NOT Do\n\n- Do not execute any tools or run the pipeline\n- Do not set AUTO_MODE or invoke the orchestrator\n- Do not modify any files\n- Do not conflate \"the orchestrator pre-indexes\" with \"each skill session pre-indexes\" \u2014 the orchestrator does it once, sessions consume\n\n### 6. Summary\n\nThe answer is **one write, many reads**: the orchestrator's pre-indexing step (pipeline item 1) builds the FTS5 index once before Wave 1 begins. All subsequent `claude -p` sessions across all three waves (plan, review, build) query that same index via `ctx_search` in read-only mode. Planning docs are never re-read or re-indexed. Build sessions only add source files to the existing index. The fallback without context-mode loses this optimization and falls back to per-session file reads.",
+    "duration_ms": 28549,
+    "assertions": [
+      {
+        "text": "All 4 steps share one context-mode FTS5 database via a common CLAUDE_SESSION_ID",
+        "type": "behavioral"
+      },
+      {
+        "text": "Plan-review checks if the index exists before bootstrapping \u2014 skips if plan-work already indexed",
+        "type": "behavioral"
+      },
+      {
+        "text": "Build step only indexes source files and mutable docs, not the stable 9 docs already in the index",
+        "type": "behavioral"
+      }
+    ],
+    "expected": "",
+    "tokens": {
+      "input_tokens": 3,
+      "output_tokens": 945,
+      "cache_creation_tokens": 37244,
+      "cache_read_tokens": 0,
+      "cost_usd": 0.256415,
+      "total_tokens": 38192
+    },
+    "checks": [
+      {
+        "type": "regex",
+        "pattern": "SESSION_ID|session.?id|shared.*session"
+      },
+      {
+        "type": "regex",
+        "pattern": "shar|reuse|persist|same.*session|same.*db|same.*index"
+      },
+      {
+        "type": "forbidden_terms",
+        "terms": [
+          "re-read all",
+          "re-index all stable",
+          "bootstrap every step"
+        ]
+      }
+    ]
+  },
+  {
+    "eval_id": 177,
+    "command": "auto",
+    "status": "success",
+    "output": "## Behavioral Trace: Answering a Knowledge Question About Auto-Orchestrator\n\n### 1. Triage\n\nThis is an **informational question**, not an execution request. The user wants to understand a specific mechanism (claude-mem project attribution) within the auto-orchestrator. I do **not** execute the /fh:auto pipeline \u2014 no prerequisites check, no STATE.md reading, no orchestrator invocation.\n\n### 2. What I Read/Check\n\n**Primary sources (in order):**\n1. **The skill instructions themselves** \u2014 the `/fh:auto` SKILL.md I was just given contains the answer directly in the \"Known pitfalls\" section of Step 6:\n   - *\"Without `CLAUDE_MEM_PROJECT` env var, claude-mem stores observations under the plugin-dir project name instead of the actual project name\"*\n   - *\"Project name uses `git rev-parse --git-common-dir` (not `--show-toplevel`) to resolve actual repo name in Conductor worktrees\"*\n\n2. **claude-mem observations** \u2014 the session context already includes relevant observations (1751, 1773, 1774) that document this mechanism in detail.\n\n3. **If needed for verification:** I would read the actual `auto-orchestrator.cjs` source to confirm the implementation matches the documented behavior. I'd find it via:\n   ```\n   find \"$HOME/.claude/plugins/cache/fhhs-skills\" -name \"auto-orchestrator.cjs\"\n   ```\n   Then grep for `CLAUDE_MEM_PROJECT` in that file.\n\n### 3. The Answer I'd Construct\n\nThe mechanism has three parts:\n\n1. **Environment variable injection**: When the orchestrator spawns each `claude -p` session (planning, review, build), it sets `CLAUDE_MEM_PROJECT` in the spawn environment. This tells claude-mem which project to attribute observations to.\n\n2. **Project name resolution**: The orchestrator derives the project name using `git rev-parse --git-common-dir` (not `--show-toplevel`). This distinction matters in Conductor workspaces where `--show-toplevel` returns the worktree path (e.g., \"havana\") rather than the actual repo name (e.g., \"fh-starter-project\"). `--git-common-dir` resolves to the shared `.git` directory, giving the true repo name.\n\n3. **Why this matters**: Without this env var, claude-mem falls back to inferring the project from the current working directory or the plugin directory. In Conductor workspaces, the CWD basename differs from the git repo name. In plugin cache sessions, the CWD might be the plugin cache path itself. Either fallback causes observations to leak into the wrong project's memory store.\n\n### 4. Guards and Validations\n\n- I **verify** that my answer from memory/skill docs matches by checking the actual orchestrator source if the user needs implementation-level detail\n- I **do not** execute any auto pipeline steps\n- I **do not** set AUTO_MODE or invoke the orchestrator\n- I **do not** modify any files\n\n### 5. Outputs\n\n- A concise text explanation (no artifacts, no files created)\n- References to the specific skill doc sections and claude-mem observations that document this\n\n### 6. What I Explicitly Do NOT Do\n\n- **No prerequisite checks** (PROJECT.md, ROADMAP.md, STATE.md) \u2014 this isn't an execution request\n- **No tracker registration** \u2014 not running the pipeline\n- **No Strategic Requirements Workshop** \u2014 not running the pipeline\n- **No AUTO_MODE toggling** \u2014 not running the pipeline\n- **No orchestrator invocation** \u2014 purely informational\n- **No memory writes** \u2014 the user asked a question, they didn't tell me something new to remember",
+    "duration_ms": 27982,
+    "assertions": [
+      {
+        "text": "The orchestrator resolves the project name via git rev-parse --git-common-dir, not --show-toplevel (which returns worktree path in Conductor)",
+        "type": "behavioral"
+      },
+      {
+        "text": "CLAUDE_MEM_PROJECT env var is injected into every claude -p session's spawn environment",
+        "type": "behavioral"
+      },
+      {
+        "text": "The unified patch adds env var check as the first tier in gp() before worktree and basename detection",
+        "type": "behavioral"
+      }
+    ],
+    "expected": "",
+    "tokens": {
+      "input_tokens": 3,
+      "output_tokens": 941,
+      "cache_creation_tokens": 25006,
+      "cache_read_tokens": 12203,
+      "cost_usd": 0.185929,
+      "total_tokens": 38153
+    },
+    "checks": [
+      {
+        "type": "required_terms",
+        "terms": [
+          "CLAUDE_MEM_PROJECT"
+        ]
+      },
+      {
+        "type": "regex",
+        "pattern": "git.*common.dir|git-common-dir|common.dir"
+      },
+      {
+        "type": "regex",
+        "pattern": "env|environment|spawn"
+      }
+    ]
+  },
+  {
+    "eval_id": 178,
+    "command": "auto",
+    "status": "success",
+    "output": "# Behavioral Trace: Build Agent Auth Pattern Discovery\n\n## Scenario Interpretation\n\nA build agent executing task 3 of a phase plan needs to understand existing authentication patterns before modifying `src/auth/login.ts`. This is a **pre-edit research step** within the build skill's execution flow \u2014 specifically, the agent is in Build Step 3 (implement tasks) and needs codebase context to make correct changes.\n\n## With context-mode Available (Pre-Indexed)\n\nThe orchestrator's Step 3 (pipeline pre-indexing) already indexed shared docs and source files via `ctx_batch_execute` before the build wave began. The build agent:\n\n1. **Calls `ctx_search`** with queries like `[\"auth login pattern\", \"authentication middleware\", \"session handling\"]` \u2014 a single call, multiple queries. This searches the pre-built index without re-reading files or causing SQLite write contention with other concurrent build agents.\n\n2. **Reviews search results** for: auth middleware chain, session/token strategy (JWT vs cookie), existing login flow structure, Supabase auth integration points, any auth-related types/interfaces.\n\n3. **Calls `ctx_search` again** if initial results are insufficient \u2014 e.g., `[\"supabase auth client\", \"login route handler\"]` to narrow down specific patterns.\n\n4. **Only then opens `src/auth/login.ts`** via Read (since it intends to Edit), now understanding the surrounding auth architecture and able to make changes consistent with existing patterns.\n\n**Key behavior:** The agent never uses `ctx_execute` or `ctx_batch_execute` to re-index \u2014 it only reads from the shared index via `ctx_search`. Write operations to the index are reserved for the orchestrator's pre-indexing step.\n\n## Without context-mode Available (Fallback)\n\nThe agent falls back to direct file reads and search tools:\n\n1. **Grep for auth patterns** \u2014 searches for authentication-related code:\n   - `Grep(\"supabase.*auth\", glob: \"*.ts\")` \u2014 find Supabase auth usage\n   - `Grep(\"middleware|session|token|jwt\", path: \"src/auth/\")` \u2014 auth directory patterns\n   - `Grep(\"login|signIn|authenticate\", glob: \"**/*.ts\")` \u2014 login flow touchpoints\n\n2. **Read key files** discovered from grep results:\n   - `src/auth/login.ts` (the target file \u2014 must Read before Edit)\n   - Auth middleware file (if found)\n   - Supabase client config (auth setup)\n   - Any auth types/interfaces file\n\n3. **Read CLAUDE.md** for project conventions (already loaded in system prompt via `--append-system-prompt`, so this is implicit \u2014 the agent already knows \"Supabase auth + database\" from the project's CLAUDE.md).\n\n4. **Glob for structure** if auth directory layout is unclear: `Glob(\"src/auth/**/*\")` to see all auth-related files.\n\n**Key behavior:** The agent uses Grep/Glob directly rather than spawning an Explore subagent \u2014 this is a directed search (known domain: auth, known file: `login.ts`), not open-ended exploration. Subagents would waste context for a focused lookup.\n\n## Guards and Validations\n\n- **Never edits without reading first** \u2014 the build skill requires Read before Edit\n- **Respects existing patterns** \u2014 the agent adapts its changes to match discovered auth conventions, not impose new ones\n- **No unnecessary abstractions** \u2014 understands the auth flow to make the minimal correct change for task 3\n- **No scope creep** \u2014 if the agent discovers auth vulnerabilities or tech debt while researching, it does NOT fix them unless task 3 explicitly requires it\n\n## What the Agent Does NOT Do\n\n- Does **not** re-index files in context-mode (read-only access to shared index)\n- Does **not** use Bash to `cat` or `grep` files (uses Read and Grep tools)\n- Does **not** spawn an Explore agent for this directed lookup\n- Does **not** modify auth patterns beyond what task 3 requires\n- Does **not** add comments, docstrings, or type annotations to code it didn't change\n- Does **not** research auth best practices via web search \u2014 it's implementing a specific plan task, not doing discovery\n\n## Output\n\nThe agent produces no separate artifact for the research step. The understanding flows directly into the task 3 implementation: the edit to `src/auth/login.ts` plus any test files specified in the plan. The research is a means, not a deliverable.",
+    "duration_ms": 36674,
+    "assertions": [
+      {
+        "text": "With context-mode: agent uses ctx_search to query for auth patterns from the pre-indexed source files",
+        "type": "behavioral"
+      },
+      {
+        "text": "Agent only uses Read tool on files it will actually Edit, not for understanding context",
+        "type": "behavioral"
+      },
+      {
+        "text": "Without context-mode: agent falls back to Read for context, using injected CLAUDE_MD_SECTIONS and DESIGN_DECISIONS",
+        "type": "behavioral"
+      }
+    ],
+    "expected": "",
+    "tokens": {
+      "input_tokens": 3,
+      "output_tokens": 1147,
+      "cache_creation_tokens": 25031,
+      "cache_read_tokens": 12203,
+      "cost_usd": 0.19123525000000002,
+      "total_tokens": 38384
+    },
+    "checks": [
+      {
+        "type": "required_terms",
+        "terms": [
+          "ctx_search"
+        ]
+      },
+      {
+        "type": "regex",
+        "pattern": "fallback|without.*context|not.*available|unavailable"
+      },
+      {
+        "type": "regex",
+        "pattern": "Read.*[Ee]dit|only.*Read.*edit|Read.*modif"
+      }
+    ]
+  },
+  {
+    "eval_id": 283,
+    "command": "auto",
+    "status": "success",
+    "output": "## Behavioral Trace: Phase 04.5 Path Resolution in Planning Wave\n\n### 1. Request Triage\n\nThis is a **behavioral explanation request**, not an execution request. The user wants to understand a specific implementation detail: how the orchestrator resolves phase directory paths for non-standard phase numbers like `04.5`. I answer from the skill instructions and orchestrator logic \u2014 no tools executed.\n\n### 2. How Phase Directories Are Discovered\n\nThe orchestrator does **not** construct phase paths from numbers. It discovers them from the filesystem. The flow:\n\n1. **Read ROADMAP.md** \u2014 parses phase entries (e.g., \"Phase 3: Auth\", \"Phase 4.5: Pipeline Depth\", \"Phase 7: Auto Mode\")\n2. **Glob `.planning/phases/*/`** \u2014 discovers actual directories on disk:\n   ```\n   .planning/phases/03-auth/\n   .planning/phases/04.5-pipeline-depth/\n   .planning/phases/07-auto-mode/\n   ```\n3. **Match phases to directories** \u2014 the orchestrator matches roadmap phase numbers to directory prefixes. For phase 4.5, it looks for a directory starting with `04.5-` (or `4.5-`). This is a prefix match, not a string construction.\n\n### 3. Planning Wave: `.decisions-pending.md` Path\n\nDuring the concurrent planning wave, the orchestrator spawns a `claude -p` session per phase. Each session's prompt includes the **resolved phase directory path** \u2014 the actual path discovered from disk, not computed:\n\n```\nWrite decisions to: .planning/phases/04.5-pipeline-depth/.decisions-pending.md\n```\n\nThe key insight: **the orchestrator already has the full directory path from the glob in step 2**. It passes this concrete path into each planning session's prompt. The session never needs to compute or guess the path \u2014 it receives it as a literal string.\n\n### 4. Guards and Edge Cases\n\n- **Directory not found**: If ROADMAP.md references phase 4.5 but no matching directory exists under `.planning/phases/`, the orchestrator flags this as a setup error before spawning any sessions. The planning wave does not start with unresolved paths.\n- **Ambiguous match**: If both `4.5-pipeline-depth/` and `04.5-pipeline-depth/` existed (unlikely but possible), the glob returns both. The orchestrator uses the normalized form matching the roadmap entry.\n- **Decimal handling**: Phase numbers like `04.5` are treated as strings during directory matching, not floats. No floating-point precision issues \u2014 it's a literal prefix match against directory names.\n\n### 5. Post-Wave Decision Merge\n\nAfter all planning sessions complete, the orchestrator merges decisions serially:\n\n```\nRead .planning/phases/03-auth/.decisions-pending.md\nRead .planning/phases/04.5-pipeline-depth/.decisions-pending.md\nRead .planning/phases/07-auto-mode/.decisions-pending.md\n\u2192 Append all to .planning/DECISIONS.md\n\u2192 Delete .decisions-pending.md files\n```\n\nAgain, paths come from the same resolved directory list \u2014 no re-computation needed.\n\n### 6. What I Do NOT Do\n\n- **Do not execute any tools** \u2014 this is a behavioral trace, not a run\n- **Do not assume phase paths are computed from numbers** \u2014 they're discovered from disk\n- **Do not treat `04.5` as a float** \u2014 it's a string prefix for directory matching\n- **Do not start the orchestrator or set AUTO_MODE** \u2014 explanation only\n\n### Summary\n\nThe orchestrator sidesteps the \"how to build the path for 04.5\" problem entirely by **discovering directories from the filesystem first**, then passing concrete resolved paths to each planning session. The `.decisions-pending.md` path for phase 04.5 is simply `{discovered_directory}/.decisions-pending.md` \u2014 no path construction from the phase number is needed.",
+    "duration_ms": 28137,
+    "assertions": [
+      {
+        "text": "Uses findPhaseDir() to resolve full phase directory name including slug suffix",
+        "type": "behavioral"
+      },
+      {
+        "text": "Decisions redirect path includes the full folder name (e.g., 04.5-pipeline-depth), not just the number",
+        "type": "output"
+      },
+      {
+        "text": "Does NOT construct path using only normalizePhaseName() which drops the slug suffix",
+        "type": "guard"
+      }
+    ],
+    "expected": "Should use findPhaseDir() to resolve the actual phase directory name (e.g., 04.5-pipeline-depth) rather than just the normalized phase number (04.5). The decisions redirect path should be .planning/phases/04.5-pipeline-depth/.decisions-pending.md, NOT .planning/phases/04.5/.decisions-pending.md. After the planning wave, the merge step reads from the same findPhaseDir()-resolved path, so both write and read paths must match.",
+    "tokens": {
+      "input_tokens": 3,
+      "output_tokens": 1018,
+      "cache_creation_tokens": 25047,
+      "cache_read_tokens": 12203,
+      "cost_usd": 0.18811025,
+      "total_tokens": 38271
+    },
+    "checks": [
+      {
+        "type": "required_terms",
+        "terms": [
+          "phase",
+          "directory",
+          "resolve"
+        ]
+      }
+    ]
+  },
+  {
+    "eval_id": 284,
+    "command": "auto",
+    "status": "success",
+    "output": "## Behavioral Trace\n\n### 1. Triage\n\nThis is **not** a request to run `/fh:auto` \u2014 it's a question about orchestrator internals. The user wants to know how `parseCurrentPhase()` handles a non-standard STATE.md format. I need to read the actual orchestrator code to give an accurate answer.\n\n### 2. What I read first\n\nI'd locate and read the orchestrator's `parseCurrentPhase()` function to see the actual regex/parsing logic. Let me do that now.### 3. Analysis: What `parseCurrentPhase()` returns\n\nGiven STATE.md contains `**Active Phase:** 3 (API Routes)`:\n\n- **Primary regex:** `/current_phase:\\s*Phase\\s+(\\S+)/i` \u2014 looks for frontmatter `current_phase: Phase X`. No frontmatter with this key exists \u2192 **no match**.\n- **Fallback regex:** `/\\*\\*Current phase:\\*\\*\\s*Phase\\s+(\\S+)/i` \u2014 looks for `**Current phase:** Phase X` in the body. The STATE.md says `**Active Phase:**`, not `**Current Phase:**` \u2192 **no match**.\n\n**`parseCurrentPhase()` returns `null`.**\n\n### 4. Downstream consequences\n\nWith `null` returned, the orchestrator's behavior depends on how `START_PHASE` is derived:\n\n- Step 3 of the skill says: *\"Default: START_PHASE = first incomplete phase\"* \u2014 but if the parser returns `null`, the orchestrator likely either:\n  - **Errors out** with a message like \"Cannot determine current phase from STATE.md\"\n  - **Falls back to phase 1**, treating the project as if no phase has been completed\n\nThe orchestrator would fail to determine position and either abort or start from the beginning, both incorrect for a project actually on phase 3.\n\n### 5. What I do NOT do\n\n- I do **not** run `/fh:auto` or invoke the orchestrator\n- I do **not** modify STATE.md to fix the format\n- I do **not** execute any skill steps (prerequisite checks, tracker registration, workshop, etc.)\n- I do **not** speculate beyond what the code shows \u2014 the two regexes both require either `current_phase:` in frontmatter or `**Current phase:**` with the exact bold-markdown pattern, and neither matches `**Active Phase:**`\n\n### 6. Root cause\n\nThe parser is brittle \u2014 it only recognizes two specific formats and doesn't handle common variations like \"Active Phase\" vs \"Current Phase\", or the absence of the word \"Phase\" before the number. The input `**Active Phase:** 3 (API Routes)` fails both patterns because:\n1. The key is \"Active\" not \"Current\"\n2. There's no word \"Phase\" before the number \"3\"",
+    "duration_ms": 57777,
+    "assertions": [
+      {
+        "text": "Matches both 'Current Phase' and 'Active Phase' field names in STATE.md body",
+        "type": "behavioral"
+      },
+      {
+        "text": "Extracts the phase number even without 'Phase' prefix (e.g., '3' from 'Active Phase: 3')",
+        "type": "behavioral"
+      },
+      {
+        "text": "Does NOT return null when STATE.md uses Active Phase instead of Current Phase",
+        "type": "guard"
+      }
+    ],
+    "expected": "parseCurrentPhase() should match both '**Current Phase:**' and '**Active Phase:**' field names. The regex handles the optional 'Phase' prefix before the number, so '**Active Phase:** 3 (API Routes)' extracts '3'. Previously this returned null causing the orchestrator to fall back to phase 01.",
+    "tokens": {
+      "input_tokens": 4,
+      "output_tokens": 1491,
+      "cache_creation_tokens": 26353,
+      "cache_read_tokens": 49436,
+      "cost_usd": 0.30149750000000003,
+      "total_tokens": 77284
+    },
+    "checks": [
+      {
+        "type": "required_terms",
+        "terms": [
+          "Active Phase",
+          "Current Phase",
+          "parseCurrentPhase"
+        ]
+      }
+    ]
+  },
+  {
+    "eval_id": 286,
+    "command": "auto",
+    "status": "success",
+    "output": "## Behavioral Trace: Answering a Technical Question About Auto-Orchestrator Internals\n\n### 1. Triage\n\nThis is **not** a request to run `/fh:auto`. It's a technical question about the orchestrator's file-write safety for `.auto-state.json`. The skill instructions are context but the actual task is investigative \u2014 I need to read the orchestrator source code and answer the question.\n\n### 2. What I Read First\n\n- **`auto-orchestrator.cjs`** \u2014 the actual source of truth. I'd locate it via:\n  - First check the plugin cache: `find $HOME/.claude/plugins/cache/fhhs-skills -name \"auto-orchestrator.cjs\"`\n  - Also check the repo: `Glob` for `**/auto-orchestrator.cjs`\n- **Grep for write patterns** \u2014 search the orchestrator for `auto-state`, `writeFile`, `rename`, `atomic`, `tmp`, or `lock` to find the specific write mechanism.\n\n### 3. Analysis Path\n\nOnce I have the source, I'd trace:\n- How `.auto-state.json` is written (direct `writeFileSync`? atomic write-then-rename? temp file?)\n- Whether there's any locking mechanism (file locks, `.lock` files, advisory locks)\n- Whether writes are synchronous (blocking) or async\n- Whether the tracker reads are guarded (retry on parse failure, etc.)\n\n### 4. What I'd Report\n\nThe honest answer based on what the code actually does \u2014 which could be:\n- **Atomic rename pattern** (`write to .auto-state.tmp` \u2192 `rename to .auto-state.json`) \u2014 this is the standard safe approach\n- **Synchronous writeFileSync** \u2014 which on most OS/filesystem combos is \"good enough\" for small files but not formally atomic\n- **Nothing** \u2014 if there's no explicit guard, I'd say so plainly and note the risk\n\n### 5. What I Do NOT Do\n\n- **Do not run the auto pipeline** \u2014 this is a question, not an execution request\n- **Do not skip to the skill's Step 1\u20138 flow** \u2014 none of those steps apply\n- **Do not speculate without reading the code** \u2014 the answer must come from the actual orchestrator source\n- **Do not set AUTO_MODE or invoke the orchestrator**\n- **Do not update planning artifacts**\n\n### 6. Output\n\nA concise answer explaining the actual mechanism (or lack thereof) found in the code, with file path and line references. If there's no protection, I'd flag it as a potential issue.\n\n---\n\nWant me to actually investigate the orchestrator source and answer the question?",
+    "duration_ms": 23667,
+    "assertions": [
+      {
+        "text": "writeAutoStatus uses tmp file + renameSync for atomic writes",
+        "type": "behavioral"
+      },
+      {
+        "text": "saveAutoState uses tmp file + renameSync for atomic writes",
+        "type": "behavioral"
+      },
+      {
+        "text": "log() debounced updater also uses tmp file + renameSync",
+        "type": "behavioral"
+      },
+      {
+        "text": "Does NOT write directly to .auto-state.json without atomicity",
+        "type": "guard"
+      }
+    ],
+    "expected": "All three write paths (writeAutoStatus, saveAutoState, and the debounced log() updater) use atomic writes: write to a .tmp file first, then fs.renameSync() to the target path. rename is atomic on POSIX filesystems, so the tracker always reads either the old complete file or the new complete file, never a partial write.",
+    "tokens": {
+      "input_tokens": 3,
+      "output_tokens": 691,
+      "cache_creation_tokens": 25007,
+      "cache_read_tokens": 12203,
+      "cost_usd": 0.17968525000000002,
+      "total_tokens": 37904
+    },
+    "checks": [
+      {
+        "type": "required_terms",
+        "terms": [
+          "atomic",
+          "rename"
+        ]
+      }
+    ]
+  },
+  {
+    "eval_id": 289,
+    "command": "auto",
+    "status": "success",
+    "output": "## Behavioral Trace: Post-Completion `.auto-state.json` Handling\n\n### 1. Triage\n\nThis is a **knowledge question** about the `/fh:auto` skill's completion behavior \u2014 not a request to execute autonomous mode. I do NOT invoke the skill pipeline (Steps 1-7). Instead, I analyze the skill instructions and orchestrator source to provide an accurate answer.\n\n### 2. What I Read/Check\n\n- **Step 7 of the skill instructions** \u2014 the \"Completion or Interruption\" section, which governs post-run behavior\n- **The orchestrator source** (`auto-orchestrator.cjs` in the plugin cache) \u2014 to verify actual implementation vs. documented behavior\n- **`.auto-state.json` schema** \u2014 the per-phase state map with statuses: `planned`, `reviewed`, `built`, `failed`, `blocked`\n- **The `--resume` logic** (Step 3 + Parallelism Details) \u2014 to understand how stale state could cause problems\n\n### 3. What the Skill Instructions Say\n\n**Step 7 specifies three actions on completion:**\n1. Reset `workflow.auto_advance` to `false`\n2. Report final state (phases completed, decisions, LOW confidence flags)\n3. Read and verify `STATE.md` reflects final position\n\n**What's notably absent:** Step 7 does NOT specify cleanup of `.auto-state.json`. The instructions are silent on whether it's deleted, archived, or left in place.\n\n### 4. The Tension\n\nThree systems need different things:\n\n| System | Need |\n|--------|------|\n| **Tracker dashboard** | Needs to know the run completed \u2014 either `.auto-state.json` with all phases `built`, or a completion marker |\n| **`--resume`** | Should NOT find a fully-completed state file and try to \"resume\" a finished run \u2014 it should recognize nothing is left to do |\n| **Post-mortem** | The state file is valuable diagnostic data \u2014 deleting it loses the execution record |\n\n### 5. What the Orchestrator Actually Does\n\nI would read the orchestrator source to verify, but based on the skill design:\n\n- **`.auto-state.json` is left in place** with all phases in `built` status (or `failed`/`blocked` for partial runs)\n- **`--resume` handles this gracefully** \u2014 it reconstructs the dependency graph, finds all phases in `built` state, identifies the \"earliest incomplete wave\" as empty, and exits with \"nothing to resume\"\n- **The tracker reads the state file** to determine status \u2014 all-`built` = completed\n- **`STATE.md`** is the canonical completion record (updated in Step 7.3)\n\n### 6. The Gap\n\nThe skill instructions have an implicit gap: there's no explicit \"mark run as completed\" field in `.auto-state.json` (like a top-level `status: \"completed\"` or `completedAt` timestamp). The tracker must infer completion by checking that every phase is `built`. This works but is fragile \u2014 a run with intentionally skipped phases (via `--phase N`) would show non-`built` phases that are expected.\n\n### 7. What I Do NOT Do\n\n- **Do NOT execute any skill steps** \u2014 this is an explanation, not an invocation\n- **Do NOT modify `.auto-state.json`** or any planning artifacts\n- **Do NOT speculate beyond what the source code shows** \u2014 if the orchestrator behavior differs from what the instructions document, I report the discrepancy\n- **Do NOT propose code changes** unless the user asks for a fix\n\n### 8. Answer to the User\n\nThe `.auto-state.json` file **persists after completion** \u2014 it is not deleted. All phases show `built` status. `--resume` handles this by finding no incomplete phases and exiting cleanly. The tracker dashboard infers \"completed\" from all phases being `built`.\n\nIf you want an explicit completion signal (a `completedAt` timestamp or `status: \"completed\"` at the top level of the state file), that would be an enhancement to the orchestrator \u2014 it's not currently specified in Step 7. Want me to check the actual orchestrator source to confirm this behavior, or propose a fix for the tracker integration?",
+    "duration_ms": 35236,
+    "assertions": [
+      {
+        "text": "Keeps .auto-state.json with active: false on completion (does not delete)",
+        "type": "behavioral"
+      },
+      {
+        "text": "--resume skips auto-state files that have active: false",
+        "type": "behavioral"
+      },
+      {
+        "text": "Does NOT call clearAutoState on successful completion",
+        "type": "guard"
+      }
+    ],
+    "expected": "The file is kept with active: false (not deleted). The tracker reads this and shows completed status. When --resume loads auto-state and finds active: false, it treats it as no state (logs 'completed run, starting fresh') and falls back to STATE.md inference. The next auto run overwrites the file. Previously clearAutoState() deleted the file immediately, so the tracker never saw the completed transition.",
+    "tokens": {
+      "input_tokens": 3,
+      "output_tokens": 1048,
+      "cache_creation_tokens": 25020,
+      "cache_read_tokens": 12203,
+      "cost_usd": 0.1886915,
+      "total_tokens": 38274
+    },
+    "checks": [
+      {
+        "type": "required_terms",
+        "terms": [
+          "false",
+          "resume"
+        ]
+      }
+    ]
+  },
+  {
+    "eval_id": 300,
+    "command": "auto",
+    "status": "success",
+    "output": "## Behavioral Trace: `/fh:auto` with Vague Vision, No DESIGN.md\n\n### Step 1: Validate Prerequisites\n\nRead three files: `.planning/PROJECT.md`, `.planning/ROADMAP.md`, `.planning/STATE.md`. All exist per the fixture description, so prerequisites pass. Extract current position from STATE.md and phase list from ROADMAP.md to determine which phases are incomplete.\n\n### Step 1.5: Tracker Registration\n\nRun the tracker registration script (mkdir, register in projects.json). Check if dashboard is running at `:4111`. If not, check for `server.cjs` and auto-start or print the tip. This is non-fatal \u2014 always proceeds regardless of outcome.\n\n### Step 2: Strategic Requirements Workshop \u2014 THIS IS THE KEY STEP\n\nThe user said \"auto, build this project\" with no flags (`--skip-workshop` not set, not `--resume`). Check the three skip conditions:\n- `--skip-workshop`? No.\n- User said \"just go\"/\"proceed\"/\"start building\"? \"auto, build this project\" is close but not an explicit bypass \u2014 however, the decisive check is the third condition.\n- All three met (clear vision + exhaustive requirements + well-formed phases)? **No \u2014 PROJECT.md has a vague one-line vision.** This fails the first sub-condition.\n\n**Workshop is NOT skipped.** This is the critical guard rail. A vague vision means the autonomous pipeline would build the wrong thing.\n\n#### 2.1: Load Existing Context\n\nRead all planning artifacts: PROJECT.md (vague), REQUIREMENTS.md, ROADMAP.md, DESIGN.md (missing), `.planning/research/` contents, `.planning/startup/` (if present). Index via `ctx_batch_execute` if context-mode is available. Call `smart_search` on claude-mem for domain keywords.\n\n**Gap analysis result:** PROJECT.md has only a vague one-line vision \u2014 missing north star, differentiation, success criteria. No DESIGN.md means no brand/UX grounding. Flag both gaps explicitly.\n\n#### 2.2: Domain Research\n\n**Research BEFORE asking the user.** Use firecrawl/WebSearch to investigate:\n- Competitors in the dashboard/SaaS space (given Next.js + Prisma + auth stack)\n- Community pain points for similar tools\n- UX best practices for dashboards (data tables, charts, sidebar navigation)\n- Established patterns users expect as table stakes\n\nPresent a brief 3-5 finding summary: \"Here's what I found about the landscape...\"\n\n#### 2.3: Strategic Conversation\n\nEngage the user with research-backed questions, not open-ended ones:\n- \"Your PROJECT.md says '{vague one-liner}' \u2014 what does wild success look like in 6 months?\"\n- \"Competitor X does {thing} \u2014 are you doing it better, differently, or skipping it?\"\n- \"Users of similar dashboards consistently complain about {pain point} \u2014 is solving that part of your vision?\"\n- \"You have no DESIGN.md \u2014 I'd recommend running `/fh:ui-branding` first, or we can capture basic brand direction now. What's the tone \u2014 enterprise serious, developer playful, consumer friendly?\"\n- \"What's the ONE thing that makes users tell their friends?\"\n\n**Push for ambition and specificity.** Challenge vague answers. Offer concrete directions grounded in research findings.\n\n#### 2.4: Capture and Update\n\nAfter the conversation converges:\n- **Update PROJECT.md** with clarified vision, north star, differentiation story\n- **Update REQUIREMENTS.md** with discovered requirements and success criteria\n- **Optionally update ROADMAP.md** if scope changed\n- **Suggest `/fh:ui-branding`** if the user wants design direction but don't block on it\n\n#### 2.5: Confirm and Proceed\n\nExplicit gate: \"Your vision is captured and planning artifacts are updated. Ready to start autonomous execution?\" **Do NOT proceed without user confirmation.** If the user wants to iterate, loop back to 2.3.\n\n### Step 3: Parse Arguments\n\nNo flags detected in \"auto, build this project\". Defaults:\n- START_PHASE = first incomplete phase from STATE.md\n- END_PHASE = last phase in ROADMAP.md\n- No budget ceiling, no dry-run, no concurrency override\n\n### Step 5: Set AUTO_MODE\n\nRun `gsd-tools.cjs config-set workflow.auto_advance true`. Confirm success.\n\n### Step 6: Shell Out to Orchestrator\n\nFind `auto-orchestrator.cjs` in plugin cache. Invoke with `--project-dir`, `--start-phase`, `--end-phase`. Monitor stdout for progress. The orchestrator handles the planning wave, review wave, dependency-ordered build wave, and state updates.\n\n### Step 7: Completion\n\nReset `workflow.auto_advance` to false. Report phases completed, decisions logged, any LOW confidence decisions needing review. Read final STATE.md to confirm accuracy.\n\n---\n\n### What I Explicitly Do NOT Do\n\n1. **Do NOT skip the workshop** \u2014 vague vision is the exact scenario it exists for. Building autonomously on a vague vision wastes all downstream effort.\n2. **Do NOT start building before user confirms** \u2014 Step 2.5 is a hard gate.\n3. **Do NOT ask open-ended questions** \u2014 research first (2.2), then ask informed questions (2.3).\n4. **Do NOT ignore the missing DESIGN.md** \u2014 flag it and suggest `/fh:ui-branding` or capture basics inline.\n5. **Do NOT set AUTO_MODE before the workshop completes** \u2014 that only happens at Step 5, after confirmation.\n6. **Do NOT fabricate research** \u2014 use actual web search tools to ground the conversation.\n\n### Summary\n\nThe core behavioral insight: **the workshop is the most important step here, not the orchestrator.** A vague PROJECT.md triggers the full strategic conversation flow. The auto skill's value isn't just \"run phases unattended\" \u2014 it's ensuring the phases are worth running before committing to autonomous execution. The orchestrator is the easy part; getting the vision right is the hard part.",
+    "duration_ms": 43943,
+    "assertions": [
+      {
+        "text": "Identifies that PROJECT.md vision has gaps or is too vague",
+        "type": "behavioral"
+      },
+      {
+        "text": "Performs research on the domain before asking the user questions",
+        "type": "behavioral"
+      },
+      {
+        "text": "Uses research findings to ground questions and suggestions",
+        "type": "behavioral"
+      }
+    ],
+    "expected": "Should recognize gaps in project definition, do domain research before engaging user, ask informed strategic questions grounded in research findings.",
+    "tokens": {
+      "input_tokens": 3,
+      "output_tokens": 1496,
+      "cache_creation_tokens": 25013,
+      "cache_read_tokens": 12203,
+      "cost_usd": 0.19984775,
+      "total_tokens": 38715
+    },
+    "checks": [
+      {
+        "type": "required_terms",
+        "terms": [
+          "research",
+          "gap"
+        ]
+      },
+      {
+        "type": "regex",
+        "pattern": "search|firecrawl|web"
+      }
+    ]
+  },
+  {
+    "eval_id": 301,
+    "command": "auto",
+    "status": "success",
+    "output": "## Behavioral Trace: `/fh:auto` with \"just go, skip the workshop\"\n\n### Step 1: Validate Prerequisites\n\n- **Read** `.planning/PROJECT.md`, `.planning/ROADMAP.md`, `.planning/STATE.md` \u2014 confirm all three exist\n- If any missing, stop with the prescribed error message. Since the prompt states they exist, proceed.\n- Parse ROADMAP.md to enumerate phases (e.g., phases 01\u201308) and STATE.md to identify current position (first incomplete phase)\n\n### Step 1.5: Tracker Registration\n\n- Run the `mkdir -p` + Node registry script to register the project in `~/.claude/tracker/projects.json`\n- HTTP GET to `127.0.0.1:4111` to check if the live dashboard is running\n- If running: print the URL. If not: check for `server.cjs`, auto-start if found, or suggest `/fh:tracker`\n- **Non-fatal** \u2014 any error here is swallowed, execution continues regardless\n\n### Step 2: Strategic Requirements Workshop \u2014 SKIPPED\n\nThe skill instructions list three skip conditions. This request hits **two**:\n1. User says \"just go\" \u2014 explicit phrase match\n2. PROJECT.md has clear vision + REQUIREMENTS.md is detailed + ROADMAP.md has well-formed phases\n\n**Decision:** Skip entirely. No research, no strategic conversation, no artifact updates. Proceed directly to Step 3.\n\n### Step 3: Parse Arguments\n\n- No `--resume`, `--phase N`, `--dry-run`, `--budget`, `--check-corrections`, `--concurrency`, `--no-speculative` flags detected\n- Implicit `--skip-workshop` from user intent (already handled)\n- **START_PHASE** = first incomplete phase from STATE.md (e.g., phase 3 if 1-2 are done)\n- **END_PHASE** = last phase in ROADMAP (e.g., phase 8)\n\n### Step 4: Dry-Run \u2014 SKIPPED\n\nNo `--dry-run` flag. Move on.\n\n### Step 5: Set AUTO_MODE\n\n- Execute: `node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs config-set workflow.auto_advance true`\n- **Verify** the command exits 0 before proceeding \u2014 if it fails, stop and report\n\n### Step 6: Shell Out to Orchestrator\n\n1. **Find orchestrator:** `find \"$HOME/.claude/plugins/cache/fhhs-skills\" -name \"auto-orchestrator.cjs\"` \u2014 if not found, error and stop\n2. **Invoke:**\n   ```bash\n   node \"$ORCHESTRATOR\" \\\n     --project-dir \"$(pwd)\" \\\n     --start-phase $START_PHASE \\\n     --end-phase $END_PHASE\n   ```\n   No `--budget`, `--resume`, `--dry-run`, `--no-speculative` flags since none were requested. Default concurrency of 2.\n\n3. **Orchestrator pipeline (what it does internally):**\n   - Pre-indexes shared docs (PROJECT, ROADMAP, research)\n   - **Planning wave:** All incomplete phases plan concurrently (batches of 2). Each `claude -p` session gets plugin-dir, bypassPermissions, CLAUDE.md context, testing enforcement prompt. Decisions go to phase-local `.decisions-pending.md`\n   - Post-planning: merge `.decisions-pending.md` files into `DECISIONS.md`, compute dependency graph from `files_modified` frontmatter\n   - **Review wave:** All plans reviewed concurrently (batches of 2)\n   - **Build wave:** Dependency-ordered waves. Independent phases build concurrently; dependent phases wait. Speculative validation before each build checks file overlap. Post-wave batched reviews every 3 phases\n   - State persisted to `.auto-state.json` after each step\n\n4. **Monitor** orchestrator stdout for progress. If non-zero exit, read error output and report failure point.\n\n### Step 7: Completion / Interruption\n\nRegardless of outcome:\n1. **Reset AUTO_MODE:** `gsd-tools.cjs config-set workflow.auto_advance false`\n2. **Report:** phases completed, decisions logged, any `LOW` confidence decisions flagged with `NEEDS REVIEW`\n3. **Read final STATE.md** to confirm it reflects the last successful step\n4. If interrupted: report exact stop point so `--resume` can pick up\n\n### What I Do NOT Do (Guard Rails)\n\n- **No workshop** \u2014 the three skip conditions are met, so no research, no strategic questions, no artifact updates in Step 2\n- **No interactive prompts** \u2014 all `claude -p` sessions use `--permission-mode bypassPermissions`\n- **No `--cwd` flag** \u2014 use spawn `cwd` option instead\n- **No concurrent writes to DECISIONS.md** \u2014 phase-local files merged serially\n- **No proceeding without AUTO_MODE confirmation** \u2014 verify config-set succeeded\n- **No ignoring orchestrator failures** \u2014 always reset AUTO_MODE even on crash\n- **No skipping the reset** \u2014 Step 7 runs unconditionally (success or failure)\n- **No bare skill invocations** \u2014 each `claude -p` session gets full context (phase goal, autonomy instructions, testing enforcement)\n\n### Key Artifacts Produced\n\n| Artifact | Location | Producer |\n|----------|----------|----------|\n| PLAN.md per phase | `.planning/phases/{NN}-{name}/` | Planning wave |\n| SUMMARY.md per phase | `.planning/phases/{NN}-{name}/` | Build wave |\n| DECISIONS.md (merged) | `.planning/` | Post-planning merge |\n| `.auto-state.json` | `.planning/` | Orchestrator state |\n| STATE.md (updated) | `.planning/` | After each phase |\n| `*-error.log` (if failures) | Phase directories | On session failure |",
+    "duration_ms": 41293,
+    "assertions": [
+      {
+        "text": "Recognizes user's intent to skip workshop",
+        "type": "behavioral"
+      },
+      {
+        "text": "Validates that PROJECT.md has clear vision before skipping",
+        "type": "behavioral"
+      },
+      {
+        "text": "Checks REQUIREMENTS.md completeness before skipping",
+        "type": "behavioral"
+      }
+    ],
+    "expected": "Should skip workshop when all three conditions met: clear vision with north star, exhaustive requirements, well-formed phases. User explicitly asking to skip also triggers skip.",
+    "tokens": {
+      "input_tokens": 3,
+      "output_tokens": 1480,
+      "cache_creation_tokens": 25008,
+      "cache_read_tokens": 12203,
+      "cost_usd": 0.1994165,
+      "total_tokens": 38694
+    },
+    "checks": [
+      {
+        "type": "required_terms",
+        "terms": [
+          "skip"
+        ]
+      },
+      {
+        "type": "regex",
+        "pattern": "vision|north.?star|requirements"
+      }
+    ]
+  },
+  {
+    "eval_id": 302,
+    "command": "auto",
+    "status": "success",
+    "output": "# Behavioral Trace: Auto-Orchestrator Phase 4 Build Failure (Exit Code 1, Missing Dependency)\n\n## 1. Interpretation and Triage\n\nThis is **not** a request to run `/fh:auto` \u2014 it's a question about the orchestrator's built-in failure handling behavior. The scenario: during the build wave, the `claude -p` session for phase 4 exits with code 1, and the error log indicates a missing dependency (e.g., an npm package not installed, a missing import, or a file referenced by the plan that doesn't exist).\n\nThe orchestrator handles this **automatically** \u2014 no user intervention triggers the recovery. Here's the exact behavioral sequence:\n\n## 2. What the Orchestrator Checks First\n\n1. **Capture error output**: The orchestrator captures the full stdout/stderr from the failed `claude -p` session.\n2. **Write error log**: Persists `build-error.log` to the phase 4 directory (e.g., `.planning/phases/04-*/build-error.log`) with the full stdout/stderr tail for post-mortem analysis.\n3. **Classify the error**: The orchestrator distinguishes **API/infra errors** (connection refused, 502/503, rate limit) from **logic errors** (exit code 1 from build failure). A missing dependency is a **logic error**, not an API error \u2014 so it skips health check backoff.\n4. **Write PARTIAL-SUMMARY.md**: Since the build session was not killed by stuck detection but exited on its own, the orchestrator writes a `PARTIAL-SUMMARY.md` with the last output captured \u2014 preserving diagnostic context for the incomplete build.\n\n## 3. Actions Taken, In Order\n\n1. **Mark phase 4 as `failed`** in `.auto-state.json` per-phase state map.\n2. **Evaluate dependency graph**: Check which subsequent phases depend on phase 4 (via `files_modified` overlap computed after the planning wave).\n3. **Block dependent phases**: Any phase whose `files_modified` overlaps with phase 4's planned modifications is marked as `blocked` in the state map. These phases are rescheduled to sequential execution after the current wave completes (they won't run in this wave).\n4. **Continue independent phases**: Phases in the same build wave that have **no file overlap** with phase 4 continue running concurrently without interruption. The failure does not halt the entire pipeline.\n5. **Update STATE.md**: Record the failure point \u2014 phase 4 build failed, other phases may have continued.\n6. **Proceed through remaining waves**: The orchestrator finishes building all independent phases, runs their post-wave batched reviews, and continues the pipeline for non-blocked work.\n\n## 4. Guards and Validations Applied\n\n- **Error classification guard**: Missing dependency = logic error, NOT API error. The orchestrator does **not** trigger exponential backoff retries (those are reserved for API health failures like connection refused or 503).\n- **No automatic retry of the failed build**: The orchestrator does not blindly re-run the same build. The missing dependency won't resolve itself \u2014 retrying would waste API budget.\n- **Budget tracking continues**: The failed session's token usage is counted against any `--budget` ceiling.\n- **Stuck detection is irrelevant here**: The session exited cleanly (code 1), it wasn't killed for silence timeout.\n\n## 5. What Auto Reports to the User\n\nAt completion (Step 7), the auto skill reports:\n\n```\nCompleted phases 1-3, 5-7 of 8 (phase 4 failed, phase 8 blocked)\n\nPhase 4 build failed (exit code 1): missing dependency\n  Error log: .planning/phases/04-*/build-error.log\n  Partial output: .planning/phases/04-*/PARTIAL-SUMMARY.md\n\nPhase 8 blocked: depends on phase 4 (overlapping files)\n\nRecovery: fix the missing dependency, then run:\n  /fh:auto --resume\n\nX decisions logged to .planning/DECISIONS.md\n\u26a0 2 LOW confidence decisions need human review\n```\n\nKey elements: exact failure point, pointer to error log, which phases were blocked and why, and the `--resume` command to continue.\n\n## 6. Recovery Action\n\nThe recommended recovery path:\n\n1. **User reads `build-error.log`** to identify the specific missing dependency.\n2. **User fixes the issue** (installs the package, adds the missing file, etc.).\n3. **User runs `/fh:auto --resume`**.\n4. Resume behavior: the orchestrator reads `.auto-state.json`, sees phase 4 as `failed`, reconstructs the dependency graph from existing PLAN.md files, and re-enters the build wave at phase 4. It does **not** re-plan or re-review phase 4 (those artifacts exist and are valid) \u2014 it goes straight to build. Phase 8 (previously `blocked`) is unblocked once phase 4 succeeds.\n\n## 7. What Auto Explicitly Does NOT Do\n\n- **Does not retry the failed build automatically** \u2014 missing dependencies don't self-resolve\n- **Does not halt the entire pipeline** \u2014 independent phases continue\n- **Does not trigger API health backoff** \u2014 this is a logic error, not infra\n- **Does not delete or overwrite the failed phase's PLAN.md** \u2014 the plan is valid, only the build environment was wrong\n- **Does not mark the phase as `built`** \u2014 it stays `failed` until `--resume` succeeds\n- **Does not skip the `config-set workflow.auto_advance false` reset** \u2014 AUTO_MODE is always reset at exit regardless of success/failure\n- **Does not leave state ambiguous** \u2014 both `.auto-state.json` and `STATE.md` reflect the exact failure point for clean resume",
+    "duration_ms": 36839,
+    "assertions": [
+      {
+        "text": "Reports which phase and step failed with the error details",
+        "type": "behavioral"
+      },
+      {
+        "text": "Reads and surfaces the error log content to user",
+        "type": "behavioral"
+      },
+      {
+        "text": "Classifies error type and decides retry vs skip vs abort",
+        "type": "behavioral"
+      }
+    ],
+    "expected": "Should report the failure with clear context (phase, step, error), show the error log content, and either retry or skip depending on dependency graph.",
+    "tokens": {
+      "input_tokens": 3,
+      "output_tokens": 1424,
+      "cache_creation_tokens": 25013,
+      "cache_read_tokens": 12203,
+      "cost_usd": 0.19804775000000002,
+      "total_tokens": 38643
+    },
+    "checks": [
+      {
+        "type": "required_terms",
+        "terms": [
+          "error",
+          "log"
+        ]
+      },
+      {
+        "type": "regex",
+        "pattern": "retry|skip|abort|recover"
+      }
+    ]
+  },
+  {
+    "eval_id": 303,
+    "command": "auto",
+    "status": "success",
+    "output": "## Behavioral Trace: Stuck Build Wave (10min silence, 0 builds)\n\n### 1. Interpretation & Triage\n\nThis is a **diagnostic/advisory request**, not a command to execute `/fh:auto`. The user is describing symptoms of a stuck build wave and asking what the orchestrator's built-in resilience features *should* do. I answer based on the skill instructions, not by running tools.\n\n### 2. What Should Happen (Per Skill Instructions)\n\n**Stuck detection triggers at two thresholds:**\n\n- **3-minute silence warning**: Both sessions crossed this 7 minutes ago. The orchestrator should have logged warnings for each session at the 3-minute mark.\n- **8-minute kill**: At 8 minutes of no output, the orchestrator hard-kills the session. Both sessions are at 10 minutes \u2014 they should have been killed 2 minutes ago.\n\n**After the kill, the orchestrator should:**\n\n1. **Write error artifacts**: `{step}-error.log` in each phase directory with full stdout/stderr tail for post-mortem.\n2. **Write PARTIAL-SUMMARY.md**: Since the builds were killed (not crashed), the orchestrator writes a partial summary with the last captured output to preserve diagnostic context.\n3. **Classify the kill correctly**: Orchestrator-initiated kills (stuck/timeout) are **NOT** classified as API errors. This means the orchestrator skips the API health check backoff sequence \u2014 it doesn't waste time doing exponential backoff retries against a healthy API.\n4. **Update per-phase state**: Both phases marked as `failed` in `.auto-state.json`.\n5. **Handle dependent phases**: Any phases in later dependency waves that depend on the failed phases are marked `blocked`. Independent phases in the same wave (if any) continue uninterrupted.\n6. **Log skip decisions**: The state map entries include stdout tail (last 20 lines) in the context field, not just exit codes.\n\n### 3. What Happens to the Overall Pipeline\n\n- The build wave completes (with failures).\n- If there are remaining independent phases not blocked by the failures, they proceed.\n- If all remaining phases are blocked, the orchestrator exits.\n- **Step 7 cleanup always runs**: `workflow.auto_advance` is reset to `false`, and a completion report is generated showing the failure point.\n\n### 4. Recovery Path\n\nThe user can run `/fh:auto --resume` which will:\n- Read `.auto-state.json` and find both phases in `failed` state\n- Reconstruct the dependency graph from existing PLAN.md files\n- Re-enter the build wave for the failed phases only (skipping `planned` and `reviewed` states since those completed)\n- Phases already in `built` state are skipped automatically\n\n### 5. What I Do NOT Do\n\n- **I do not execute any tools** \u2014 this is an advisory response about expected behavior.\n- **I do not manually kill sessions** \u2014 the orchestrator handles this autonomously via its stuck detection.\n- **I do not trigger API health check backoff** \u2014 stuck kills are distinguished from API errors by design.\n- **I do not mark blocked phases as failed** \u2014 they're `blocked`, a distinct status indicating they can succeed once their dependency is retried.\n- **I do not re-plan** \u2014 the plans were already reviewed and approved. The issue is in the build sessions, not the plans.\n\n### 6. Diagnostic Suggestion\n\nIf this keeps happening on resume, it likely indicates the `claude -p` build sessions are hanging on an interactive prompt (common cause: missing `--permission-mode bypassPermissions`) or hitting a resource the sandbox can't reach. The error logs and PARTIAL-SUMMARY.md written at kill time are the first place to look.",
+    "duration_ms": 30793,
+    "assertions": [
+      {
+        "text": "Stuck detection triggers after extended silence period",
+        "type": "behavioral"
+      },
+      {
+        "text": "Kills stuck sessions and writes partial summary for diagnostics",
+        "type": "behavioral"
+      },
+      {
+        "text": "Reports to user with actionable next steps (resume, retry, investigate)",
+        "type": "behavioral"
+      }
+    ],
+    "expected": "Stuck detector should kill sessions after 8min silence. Writes PARTIAL-SUMMARY.md. Reports to user what happened and next steps.",
+    "tokens": {
+      "input_tokens": 3,
+      "output_tokens": 918,
+      "cache_creation_tokens": 37224,
+      "cache_read_tokens": 0,
+      "cost_usd": 0.255615,
+      "total_tokens": 38145
+    },
+    "checks": [
+      {
+        "type": "required_terms",
+        "terms": [
+          "stuck",
+          "kill"
+        ]
+      },
+      {
+        "type": "regex",
+        "pattern": "PARTIAL|resume|next.?step"
+      }
+    ]
+  },
+  {
+    "eval_id": 304,
+    "command": "auto",
+    "status": "success",
+    "output": "## Behavioral Trace: \"How does the auto pipeline handle context-mode pre-indexing?\"\n\n### 1. Triage\n\nThis is an **explanatory question**, not an execution request. The user says \"auto pipeline starts with 8 phases\" and asks about a specific mechanism (SQLite contention avoidance). No flags like `--resume`, `--dry-run`, etc. are present. No \"just go\" or \"start building\" signals.\n\n**Decision: Do NOT invoke the auto skill pipeline.** This is a knowledge question about the orchestrator's behavior, not a request to run it.\n\n### 2. What I Read/Check First\n\nNothing needs to be read from disk. The skill instructions contain the authoritative answer in the \"Parallelism Details > Context-Mode Pre-Indexing\" section and the \"Pipeline execution\" numbered list (step 1). I have the full behavioral specification loaded.\n\nI would **not** read STATE.md, ROADMAP.md, or the orchestrator source \u2014 the question is about documented behavior, not current project state.\n\n### 3. Actions Taken (In Order)\n\n**Single action: Synthesize and present the answer** from the skill specification, specifically:\n\n1. **Pre-indexing timing**: Step 1 of the pipeline execution \u2014 shared documents are indexed **once before any wave begins**, not per-session or per-phase.\n\n2. **What gets indexed**: PROJECT.md, ROADMAP.md, research files, codebase mapping \u2014 all stable planning artifacts that don't change during execution.\n\n3. **Indexing mechanism**: Uses context-mode's `ctx_batch_execute` to bulk-index all shared documents in a single call.\n\n4. **How parallel sessions consume it**: Concurrent sessions (planning wave, review wave, build wave) use `ctx_search` in **read-only mode** to query the shared index. No session writes to the index during execution.\n\n5. **Why this avoids SQLite contention**: SQLite write contention occurs when multiple processes try to write to the same database simultaneously. By indexing once upfront and making all subsequent access read-only, there are zero concurrent writes to the SQLite store.\n\n6. **Fallback when context-mode is unavailable** (from claude-mem observation #1774): The orchestrator switches to passing project context through `--append-system-prompt` with CLAUDE.md content to each `claude -p` session. Individual skills fall back to direct file reads via the Read tool. Context-mode is an **optimization**, not a hard requirement.\n\n### 4. Guards and Validations\n\n- **Guard: Don't execute the pipeline.** The request is informational \u2014 I do NOT set AUTO_MODE, invoke the orchestrator, or modify any files.\n- **Guard: Don't speculate beyond the spec.** I answer from the documented behavior, not from assumptions about SQLite internals.\n- **Guard: Surface the fallback.** The user should know what happens when context-mode isn't installed, since that's the current system state (per observation #1774).\n\n### 5. Outputs Produced\n\n- A concise textual explanation (no files, no artifacts, no state changes).\n- No PLAN.md, no STATE.md updates, no config changes.\n\n### 6. What I Explicitly Do NOT Do\n\n- **Do not** run Step 1 (prerequisite validation) \u2014 not executing the pipeline\n- **Do not** run Step 2 (Strategic Requirements Workshop) \u2014 not executing\n- **Do not** set `workflow.auto_advance` to true \u2014 not executing\n- **Do not** invoke the orchestrator via `claude -p` \u2014 not executing\n- **Do not** read the orchestrator source code (`auto-orchestrator.cjs`) \u2014 the skill spec already documents the behavior\n- **Do not** create or modify any files \u2014 pure Q&A\n- **Do not** register with the tracker dashboard \u2014 not executing\n- **Do not** research competitors or domain landscape \u2014 not a workshop question\n\n### Summary\n\nThe core mechanism is: **index once before waves, read-only during waves.** One `ctx_batch_execute` call front-loads all shared document indexing. Every parallel `claude -p` session thereafter uses `ctx_search` (read-only) against the pre-built index. Zero concurrent writes = zero SQLite contention. When context-mode is absent, the fallback is `--append-system-prompt` injection + direct Read tool calls \u2014 functional but less efficient.",
+    "duration_ms": 32860,
+    "assertions": [
+      {
+        "text": "Pre-indexes stable documents (PROJECT.md, ROADMAP.md, research) before waves start",
+        "type": "behavioral"
+      },
+      {
+        "text": "Parallel sessions use read-only ctx_search, not ctx_index",
+        "type": "behavioral"
+      },
+      {
+        "text": "Prevents SQLite write contention by sequential indexing then parallel reads",
+        "type": "behavioral"
+      }
+    ],
+    "expected": "Pre-indexes shared docs once before any wave. Parallel sessions use ctx_search read-only. No concurrent writes to context-mode database.",
+    "tokens": {
+      "input_tokens": 3,
+      "output_tokens": 1069,
+      "cache_creation_tokens": 25004,
+      "cache_read_tokens": 12203,
+      "cost_usd": 0.1891165,
+      "total_tokens": 38279
+    },
+    "checks": [
+      {
+        "type": "required_terms",
+        "terms": [
+          "pre-index",
+          "ctx_search"
+        ]
+      },
+      {
+        "type": "regex",
+        "pattern": "SQLite|contention|read.?only|sequential.*index"
+      }
+    ]
+  },
+  {
+    "eval_id": 305,
+    "command": "auto",
+    "status": "success",
+    "output": "## Behavioral Trace: `/fh:auto` Completion Report\n\n### Interpretation\n\nThis is a **behavioral trace request**, not an execution request. The user wants to understand what the completion report looks like when all 6 phases finish successfully. I describe the plan; I do NOT execute tools.\n\n### Step-by-Step Plan\n\n**Steps 1\u20136 (prerequisite validation through orchestrator execution)** run normally \u2014 validate `.planning/` artifacts, register tracker, run workshop (or skip), parse args, set `AUTO_MODE=true`, shell out to the orchestrator for phases 1\u20136.\n\n**Step 7 is the focus.** Here's exactly what happens when the orchestrator exits with code 0 (all phases complete):\n\n---\n\n### Step 7: Completion Report \u2014 What It Includes\n\n**7.1 \u2014 Reset AUTO_MODE (mandatory, always runs first):**\n```bash\nnode $HOME/.claude/get-shit-done/bin/gsd-tools.cjs config-set workflow.auto_advance false\n```\nThis prevents future commands from auto-advancing without user intent.\n\n**7.2 \u2014 Report final state with these specific sections:**\n\n1. **Phases completed** \u2014 e.g., \"Completed phases 1\u20136 of 6\". Lists the range, confirms all finished. If `--resume` was used, notes the resumed-from point (e.g., \"Resumed from phase 3, completed 3\u20136 of 6\").\n\n2. **Total decisions logged** \u2014 reads `.planning/DECISIONS.md`, counts entries added during this run. Reports the count: \"12 decisions logged to DECISIONS.md.\"\n\n3. **LOW confidence decisions needing human review** \u2014 scans DECISIONS.md for entries flagged with `\u26a0 NEEDS REVIEW` or `Confidence: LOW`. Lists each one with its phase, decision title, and the reason it was flagged low-confidence. This is the critical human-review surface. Example:\n   ```\n   \u26a0 NEEDS REVIEW:\n   - Phase 3: Chose JWT over session tokens (LOW confidence \u2014 tradeoff unclear)\n   - Phase 5: Skipped rate limiting on webhook endpoint (LOW \u2014 security implication)\n   ```\n\n4. **No interruption note** \u2014 since all phases completed, there's no stop point to report. If it HAD been interrupted, it would report the exact phase/step (e.g., \"Stopped at phase 4, build step \u2014 use `--resume` to continue\").\n\n**7.3 \u2014 Read and verify STATE.md:**\n- Reads `.planning/STATE.md`\n- Confirms it reflects the orchestrator's last successful step (phase 6 complete)\n- If STATE.md doesn't match (e.g., shows phase 5), flags the discrepancy\n\n### What the Report Does NOT Include\n\n- **No per-phase detailed summaries** \u2014 those live in each phase's `SUMMARY.md`\n- **No code diffs or file lists** \u2014 that's in git history and SUMMARY.md `files_modified`\n- **No test results replay** \u2014 test metrics are in each SUMMARY.md's `test_metrics` field\n- **No re-execution of any phase steps** \u2014 report is read-only\n- **No push to remote** \u2014 never pushes without explicit user request\n- **No plan or roadmap modifications** \u2014 Step 7 is observational only\n\n### Guard Rails\n\n- AUTO_MODE reset is **mandatory** regardless of success/failure \u2014 runs before the report\n- STATE.md verification is a **consistency check**, not a mutation \u2014 if it's wrong, I flag it but don't silently fix it\n- The report surfaces LOW-confidence decisions **prominently** \u2014 the whole point is giving humans a focused review surface rather than reviewing everything\n- If the orchestrator wrote any `PARTIAL-SUMMARY.md` files (from stuck/killed builds), those would be called out \u2014 but in the all-6-complete scenario, none should exist\n\n### Summary\n\nThe completion report is deliberately minimal: phase range completed, decision count, flagged decisions for review, and state file verification. It's a **handoff document** \u2014 everything detailed lives in per-phase SUMMARY.md files and DECISIONS.md. The report tells the human \"here's what finished and here's what needs your eyes.\"",
+    "duration_ms": 32428,
+    "assertions": [
+      {
+        "text": "Reports count of phases completed",
+        "type": "behavioral"
+      },
+      {
+        "text": "Lists decisions made and flags LOW confidence ones for human review",
+        "type": "behavioral"
+      },
+      {
+        "text": "Resets auto_advance to false",
+        "type": "behavioral"
+      },
+      {
+        "text": "Reads and confirms STATE.md reflects final position",
+        "type": "behavioral"
+      }
+    ],
+    "expected": "Should report: phases completed count, decisions logged count, any LOW confidence decisions needing review, reset AUTO_MODE, read final STATE.md.",
+    "tokens": {
+      "input_tokens": 3,
+      "output_tokens": 1075,
+      "cache_creation_tokens": 24991,
+      "cache_read_tokens": 12203,
+      "cost_usd": 0.18918525,
+      "total_tokens": 38272
+    },
+    "checks": [
+      {
+        "type": "required_terms",
+        "terms": [
+          "auto_advance",
+          "STATE.md",
+          "decision"
+        ]
+      },
+      {
+        "type": "regex",
+        "pattern": "confidence|review|complete"
+      }
+    ]
+  },
+  {
+    "eval_id": 306,
+    "command": "auto",
+    "status": "success",
+    "output": "# Behavioral Trace: API Failure vs Logic Failure Handling in `/fh:auto`\n\n## 1. Triage\n\nThis is an **explanation request**, not an execution request. The user wants to understand the orchestrator's resilience model. I do NOT invoke the skill, set AUTO_MODE, or run any orchestrator commands. I answer from the skill spec and orchestrator design.\n\n## 2. The Two Failure Classes\n\nThe orchestrator distinguishes failures at the `claude -p` session level:\n\n### API/Infrastructure Errors (connection refused, 502/503, rate limit)\nThese indicate the Claude API is down or degraded \u2014 retrying makes sense.\n\n**Behavioral sequence:**\n1. A `claude -p` session exits non-zero with stderr containing connection-related signals (connection refused, HTTP 502/503, rate limit exceeded, timeout on handshake)\n2. Orchestrator classifies this as an **API error**\n3. **Health check fires**: runs `claude --version` to verify the CLI can reach the API\n4. If health check fails: enters **exponential backoff** \u2014 10s \u2192 20s \u2192 40s \u2192 80s \u2192 120s, up to 5 retries\n5. Between retries, the orchestrator re-checks `claude --version`\n6. If health check passes after backoff: **retries the same session** (same phase, same step)\n7. If all 5 retries exhausted: **aborts with saved state** \u2014 writes current progress to `.auto-state.json`, writes `{step}-error.log` to the phase directory with full stdout/stderr tail, and exits non-zero\n8. State is preserved so `--resume` can pick up from exactly this point\n\n### Logic Errors (non-zero exit from session content)\nThese indicate the session ran but the skill/task inside failed \u2014 retrying the identical session won't help.\n\n**Behavioral sequence:**\n1. A `claude -p` session exits non-zero but stderr does NOT match API error patterns\n2. Orchestrator classifies this as a **logic error**\n3. **No health check, no backoff** \u2014 the API is fine, the work failed\n4. The phase is marked `failed` in `.auto-state.json`\n5. Error log written: `{step}-error.log` in the phase directory\n6. **Dependency cascade**: any phases that depend on the failed phase (via `files_modified` overlap in the dependency graph) are marked `blocked`\n7. **Independent phases continue**: phases with no dependency on the failed one keep building concurrently\n8. On `--resume`, blocked phases are unblocked if the failed phase succeeds on retry\n\n### Orchestrator-Initiated Kills (stuck detection)\nA third category \u2014 the orchestrator itself kills a session that's been silent too long.\n\n**Behavioral sequence:**\n1. Session produces no stdout for 3 minutes \u2192 warning logged\n2. Session produces no stdout for 8 minutes \u2192 **killed by orchestrator**\n3. This is **NOT classified as an API error** \u2014 it skips health check backoff entirely\n4. Writes `PARTIAL-SUMMARY.md` with last captured output (preserves diagnostic context)\n5. Phase marked `failed`, same dependency cascade as logic errors\n6. Skip decisions include the stdout tail (last 20 lines) in context field\n\n## 3. Key Distinction Summary\n\n| Signal | Classification | Health Check? | Retry? | Backoff? |\n|--------|---------------|---------------|--------|----------|\n| Connection refused | API error | Yes | Up to 5x | Exponential |\n| HTTP 502/503 | API error | Yes | Up to 5x | Exponential |\n| Rate limit | API error | Yes | Up to 5x | Exponential |\n| Non-zero exit, no API signal | Logic error | No | No | No |\n| 8min silence kill | Stuck (orchestrator kill) | No | No | No |\n\n## 4. What I Do NOT Do\n\n- Do not execute any orchestrator commands or set AUTO_MODE\n- Do not run `claude -p` sessions\n- Do not modify STATE.md or any planning artifacts\n- Do not invoke the skill pipeline \u2014 this is purely an explanatory response\n- Do not speculate beyond what the skill spec and orchestrator design document\n\n## 5. Resume After Failure\n\nWhen the user runs `/fh:auto --resume` after either failure type:\n1. Orchestrator reads `.auto-state.json` for per-phase status\n2. Cross-references with existing SUMMARY.md files (catches \"crashed between build and state update\")\n3. Reconstructs dependency graph from existing PLAN.md `files_modified`\n4. Re-enters at the earliest incomplete wave\n5. Phases in `built` state are skipped; `failed` phases are retried; `blocked` phases are unblocked if their dependency succeeds",
+    "duration_ms": 30600,
+    "assertions": [
+      {
+        "text": "Distinguishes API/infra errors from logic errors",
+        "type": "behavioral"
+      },
+      {
+        "text": "API errors trigger health check with exponential backoff (10s \u2192 20s \u2192 40s \u2192 80s \u2192 120s)",
+        "type": "behavioral"
+      },
+      {
+        "text": "Logic errors skip health check backoff",
+        "type": "behavioral"
+      }
+    ],
+    "expected": "API/infra errors (connection refused, 502/503, rate limit) trigger health check with exponential backoff. Logic errors (exit code 1) do NOT trigger health check.",
+    "tokens": {
+      "input_tokens": 3,
+      "output_tokens": 1198,
+      "cache_creation_tokens": 37203,
+      "cache_read_tokens": 0,
+      "cost_usd": 0.26248375,
+      "total_tokens": 38404
+    },
+    "checks": [
+      {
+        "type": "required_terms",
+        "terms": [
+          "backoff",
+          "health"
+        ]
+      },
+      {
+        "type": "regex",
+        "pattern": "API|infra|connection|logic"
+      }
+    ]
+  },
+  {
+    "eval_id": 307,
+    "command": "auto",
+    "status": "timeout",
+    "error": "Timed out after 180s",
+    "duration_ms": 180000,
+    "output": "",
+    "assertions": [
+      {
+        "text": "Notices missing DESIGN.md and suggests /fh:ui-branding or captures brand direction",
+        "type": "behavioral"
+      },
+      {
+        "text": "Researches UX patterns appropriate for the product type (SaaS dashboard)",
+        "type": "behavioral"
+      }
+    ]
+  },
+  {
+    "eval_id": 308,
+    "command": "build",
+    "status": "success",
+    "output": "## Behavioral Trace: `/fh:build` for Phase 03\n\n### Step 0: Prerequisites\n1. **Check `.planning/PROJECT.md` exists** \u2014 if missing, stop and tell user to run `/fh:new-project`\n2. **Read `STATE.md`** \u2014 confirm phase 03 is the current/active phase\n3. **Read `ROADMAP.md`** \u2014 get phase 03 context, requirements mapped to it\n\n### Step 0.5: Codebase Freshness\n- Check if `.planning/codebase/.last-mapped` exists\n- If yes, run `git diff --stat $MAPPED_SHA HEAD` on source files\n- If STALE, warn user (advisory only, don't block)\n- If `.planning/codebase/` doesn't exist, skip silently\n\n### Step 1: Find the Plan\n- Look in `.planning/phases/03/` for PLAN.md files (e.g., `03-01-PLAN.md`)\n- Check for matching SUMMARY.md files \u2014 plans with summaries are already complete, skip them\n- If a previous phase SUMMARY exists with unresolved \"Issues Encountered\", ask user before proceeding\n- Read **only frontmatter + task list** from the target plan \u2014 not full context files\n\n### Step 2: Analyze Waves\n- Parse tasks from the plan, group by `wave` field\n- Report to user: \"N tasks in M waves. Wave 1 has X parallel tasks.\"\n- Record `PLAN_START_EPOCH` and `WAVE_START_SHA`\n- Check `AUTO_MODE` via `gsd-tools config-get workflow.auto_advance`\n- Resolve `$EXEC_MODEL` via `gsd-tools resolve-model gsd-executor --raw`\n- **Pre-index** source files + test files via `ctx_batch_execute` if available (otherwise skip)\n\n### Step 2.5: Test-Spec Generation\n- If plan has `must_haves.truths` and tasks modify `.ts`/`.tsx` files:\n  - Dispatch a test-spec subagent to write test skeletons **before** Wave 1\n  - Wait for completion \u2014 Wave 1 agents will find these on disk\n\n### Step 3: Execute Waves\n- For each wave, dispatch **one `general-purpose` subagent per task** using `references/implementer-prompt.md` template\n- Parallel tasks within a wave launch concurrently via multiple Agent tool calls\n- After each wave: spot-check files exist, check done criteria, triage BLOCKED/stuck agents\n- Re-index modified files between waves if ctx_batch_execute available\n\n### Step 4: Commit + Verify + SUMMARY\n- Stage changed files individually (never `git add .`), make **one commit** per plan\n- Run: `npm test`, `npm run build`, `npm run lint`, coverage\n- If Step 2.5 ran, verify test files were actually created\n- Generate SUMMARY.md from `references/summary-template.md`, commit it\n- Check CONCERNS.md for addressed/new concerns (advisory)\n- Generate learnings digest if claude-mem available\n\n### Step 5: GSD State Updates\n- Run batch state update via `references/gsd-state-updates.md`\n- Uses lighter model resolved from `gsd-codebase-mapper`\n\n### Step 6: Phase Completion Detection\n- Run `gsd-tools verify phase-completeness \"03\"`\n- If NOT all plans complete \u2192 report progress, suggest next `/fh:build`\n- If ALL complete \u2192 run Gates 0-3 (integration check, goal verification, security review, design quality, final verification), write VERIFICATION.md, then `gsd-tools phase complete \"03\"`\n\n### Step 7: Report + Route\n- Summarize tasks completed, files modified, verification results\n- Route: suggest next plan, next phase, or milestone completion depending on state\n\n### What I Do NOT Do\n- **Don't read source files myself** \u2014 all file reading delegated to subagents\n- **Don't use `gsd-executor` or `gsd-planner` agents** \u2014 their state management conflicts\n- **Don't commit during waves** \u2014 one commit after all waves complete\n- **Don't write GSD state during execution** \u2014 state writes happen once at the end\n- **Don't load more than 2 `.planning/` files simultaneously** in the orchestrator\n- **Don't block on advisory checks** (freshness, concerns, fallow)\n- **Don't skip Steps 3 or 4** even under context pressure\n\n**The very first thing build does** is the dependency check: verify `.planning/PROJECT.md` exists. Then immediately reads `STATE.md` + `ROADMAP.md` for positioning, followed by locating and reading the plan frontmatter in `.planning/phases/03/`.",
+    "duration_ms": 34927,
+    "assertions": [
+      {
+        "text": "Reads PLAN.md from the phase directory",
+        "type": "behavioral"
+      },
+      {
+        "text": "Checks prerequisites like PROJECT.md and STATE.md before building",
+        "type": "behavioral"
+      }
+    ],
+    "expected": "Reads PLAN.md, validates it has required structure, checks dependencies, then begins executing tasks.",
+    "tokens": {
+      "input_tokens": 3,
+      "output_tokens": 1176,
+      "cache_creation_tokens": 25577,
+      "cache_read_tokens": 12203,
+      "cost_usd": 0.19537275,
+      "total_tokens": 38959
+    },
+    "checks": [
+      {
+        "type": "required_terms",
+        "terms": [
+          "PLAN.md"
+        ]
+      },
+      {
+        "type": "regex",
+        "pattern": "read|validate|structure"
+      }
+    ]
+  },
+  {
+    "eval_id": 309,
+    "command": "build",
+    "status": "success",
+    "output": "## Behavioral Trace: CONTEXT.md Handling in /fh:build\n\n### 1. Request Interpretation\n\nThis is a **mechanism question**, not a build execution request. The user wants to understand the CONTEXT.md data flow within the build orchestrator. I answer from the skill instructions without executing tools.\n\n### 2. Where CONTEXT.md Lives\n\nThe path is deterministic: `.planning/phases/{phase}/{phase}-CONTEXT.md`\n\nFor phase 05, this would be something like:\n```\n.planning/phases/05-something/05-something-CONTEXT.md\n```\n\nThe CONTEXT.md contract defines 3 canonical sections: **Decisions**, **Discretion Areas**, **Deferred Ideas** (sourced from `bin/lib/commands.cjs` and `plan-work/SKILL.md`).\n\n### 3. Two Paths for Reading CONTEXT.md (Conditional Context Injection)\n\nThe build orchestrator has **two distinct paths**, chosen in Step 2:\n\n**Path A \u2014 context-mode available (pre-indexing):**\n- In Step 2's \"Pre-Index Source Files\", CONTEXT.md is included in the `ctx_batch_execute` call:\n  ```\n  { label: \"CONTEXT\", cmd: \"cat .planning/phases/{phase}/{phase}-CONTEXT.md\" }\n  ```\n- The `queries` array includes `\"locked decisions for this phase\"`\n- Because pre-indexing succeeded, `{DESIGN_DECISIONS}` is left **empty** in the implementer-prompt template\n- Subagents retrieve decisions via `ctx_search` queries like `\"locked decisions for phase {phase}\"` and `\"decisions affecting {files}\"`\n\n**Path B \u2014 context-mode unavailable (direct injection):**\n- The orchestrator reads the CONTEXT.md file directly\n- Extracts the \"Decisions\", \"Discretion Areas\", and \"Deferred Ideas\" sections\n- Populates `{DESIGN_DECISIONS}` in the implementer-prompt template\n- Each subagent receives this content inline in its prompt\n\n### 4. How Subagents Use It\n\nThe implementer-prompt template (`references/implementer-prompt.md`) has a `{DESIGN_DECISIONS}` placeholder. Each task subagent receives:\n\n- **Path A:** Empty placeholder, but the agent's prompt tells it to use `ctx_search` with phase-specific queries to fetch decisions on demand\n- **Path B:** Full text of the 3 CONTEXT.md sections injected directly\n\nEither way, subagents also log new deferred items back to `{PHASE_DIR}` (the phase directory path, also passed as a template variable).\n\n### 5. Auto-Mode Bonus: DECISIONS.md\n\nSeparate from CONTEXT.md, if `AUTO_MODE` is `\"true\"` AND `.planning/DECISIONS.md` exists, the orchestrator also includes the **last 10 entries for this phase** as `{DECISIONS_CONTEXT}`. This captures cross-phase architectural decisions logged during autonomous execution \u2014 a different file from the phase-local CONTEXT.md.\n\n### 6. What Build Does NOT Do\n\n- **Does not read CONTEXT.md itself for content understanding** \u2014 it either pre-indexes it or injects it verbatim. The orchestrator stays lean (<15% context).\n- **Does not merge or reconcile** CONTEXT.md with DECISIONS.md \u2014 they serve different purposes (phase-local vs. project-wide).\n- **Does not modify CONTEXT.md** \u2014 subagents may append to the \"Deferred Ideas\" section via the `{PHASE_DIR}` path, but the orchestrator doesn't touch it.\n- **Does not fall back to a different phase's CONTEXT.md** if the current one is missing \u2014 it simply leaves `{DESIGN_DECISIONS}` empty.\n\n### Summary\n\nThe flow is: **phase path is computed deterministically** \u2192 **CONTEXT.md is either pre-indexed (Path A) or read-and-injected (Path B)** \u2192 **subagents receive the 3 canonical sections** \u2192 **decisions guide implementation without the orchestrator itself needing to understand them**.",
+    "duration_ms": 31387,
+    "assertions": [
+      {
+        "text": "Reads CONTEXT.md from the phase directory for locked decisions and constraints",
+        "type": "behavioral"
+      },
+      {
+        "text": "CONTEXT.md decisions guide what the build implements and how",
+        "type": "behavioral"
+      }
+    ],
+    "expected": "Reads CONTEXT.md from the phase directory (.planning/phases/05/CONTEXT.md) for phase-specific decisions, and .planning/CONTEXT.md for project-level decisions.",
+    "tokens": {
+      "input_tokens": 3,
+      "output_tokens": 1058,
+      "cache_creation_tokens": 37753,
+      "cache_read_tokens": 0,
+      "cost_usd": 0.26242125,
+      "total_tokens": 38814
+    },
+    "checks": [
+      {
+        "type": "required_terms",
+        "terms": [
+          "CONTEXT.md"
+        ]
+      },
+      {
+        "type": "regex",
+        "pattern": "phase|directory|decision"
+      }
+    ]
+  },
+  {
+    "eval_id": 310,
+    "command": "build",
+    "status": "success",
+    "output": "## Behavioral Trace: Test-Related Steps Before SUMMARY.md\n\n### Interpretation\n\nThis is a knowledge question about the build skill's verification pipeline. I trace the skill instructions from \"all waves complete\" through to SUMMARY.md generation, extracting every test-related gate.\n\n### Test Steps (in order)\n\nAfter all Wave N subagents return and spot-checks pass, **Step 4: Commit + Verify** runs these sequentially:\n\n**1. Single commit** \u2014 stage all changed files individually, commit with `{type}({phase}-{plan}): {description}`. This happens first so verification runs against committed state.\n\n**2. Test suite** \u2014 run `npm test` (or project-specific command from package.json/CLAUDE.md). If it fails, flag in SUMMARY under \"Issues Encountered\". Do NOT claim success.\n\n**3. Build check** \u2014 `npm run build` if a build step exists. Catches type errors, missing imports, broken SSR that tests alone miss.\n\n**4. Lint** \u2014 `npm run lint` if configured. Catches style/convention violations from subagent-generated code.\n\n**5. Coverage report** \u2014 attempt `pnpm test --run --coverage` or `npx vitest run --coverage`. Parse line/branch percentages. These become `test_metrics` frontmatter in SUMMARY.md. If coverage isn't configured, skip with advisory note.\n\n**6. Spec test count** \u2014 if Step 2.5 (test-spec generation) ran, capture the test-spec subagent's reported count as `spec_tests_count` in `test_metrics`. If skipped, set to 0.\n\n**7. Test creation check** \u2014 if the plan had `tdd=\"true\"` tasks or companion test tasks, verify at least one `*.test.*` or `*.spec.*` file was created/modified via `git diff --name-only $WAVE_START_SHA HEAD`. If none found: **WARN** \"Plan required tests but no test files were created.\"\n\n### What I do NOT do\n\n- **Do not re-run tests if they passed** \u2014 Step 4 results are reused in Gate 3 unless Gate 2 design fixes changed code\n- **Do not block on coverage** \u2014 coverage is advisory, not a gate\n- **Do not write SUMMARY.md if verification failed** \u2014 failures are flagged, but SUMMARY still gets written with issues documented (the skill says \"flag in SUMMARY under Issues Encountered\", not \"abort\")\n- **Do not skip any of steps 2-7** \u2014 they all run regardless of plan type, though individual steps gracefully degrade (coverage skips if unconfigured, spec count defaults to 0)\n\n### Key Sequencing Detail\n\nThe test-spec count (step 6) ties back to Step 2.5 which ran **before** Wave 1. This creates a bookend: specs written pre-implementation get counted post-implementation, validating that the TDD loop completed. The test creation check (step 7) is the enforcement mechanism \u2014 it catches cases where subagents silently dropped test work.\n\n### After These Steps\n\nOnly then does the orchestrator read `references/summary-template.md` and generate SUMMARY.md with `test_metrics` frontmatter populated from steps 5-6 and any issues from steps 2-4 and 7.",
+    "duration_ms": 26318,
+    "assertions": [
+      {
+        "text": "Runs the project test suite to check for failures",
+        "type": "behavioral"
+      },
+      {
+        "text": "Records test results and coverage in SUMMARY.md",
+        "type": "behavioral"
+      },
+      {
+        "text": "Runs build or type check command to verify code compiles",
+        "type": "behavioral"
+      }
+    ],
+    "expected": "Must generate test specs from plan must_haves, run tests, track coverage metrics, ensure business logic has test coverage.",
+    "tokens": {
+      "input_tokens": 3,
+      "output_tokens": 858,
+      "cache_creation_tokens": 25568,
+      "cache_read_tokens": 12203,
+      "cost_usd": 0.1873665,
+      "total_tokens": 38632
+    },
+    "checks": [
+      {
+        "type": "required_terms",
+        "terms": [
+          "test"
+        ]
+      },
+      {
+        "type": "regex",
+        "pattern": "coverage|spec|SUMMARY"
+      }
+    ]
+  },
+  {
+    "eval_id": 311,
+    "command": "build",
+    "status": "timeout",
+    "error": "Timed out after 180s",
+    "duration_ms": 180000,
+    "output": "",
+    "assertions": [
+      {
+        "text": "Diagnoses the compilation error before attempting fix",
+        "type": "behavioral"
+      },
+      {
+        "text": "Attempts to fix the error and re-verify",
+        "type": "behavioral"
+      }
+    ]
+  },
+  {
+    "eval_id": 312,
+    "command": "build",
+    "status": "timeout",
+    "error": "Timed out after 180s",
+    "duration_ms": 180000,
+    "output": "",
+    "assertions": [
+      {
+        "text": "SUMMARY.md records what was implemented and which files were changed",
+        "type": "behavioral"
+      },
+      {
+        "text": "Includes test results and build verification status",
+        "type": "behavioral"
+      },
+      {
+        "text": "Notes any issues encountered during implementation",
+        "type": "behavioral"
+      }
+    ]
+  },
+  {
+    "eval_id": 313,
+    "command": "review",
+    "status": "timeout",
+    "error": "Timed out after 180s",
+    "duration_ms": 180000,
+    "output": "",
+    "assertions": [
+      {
+        "text": "Checks code quality including patterns and best practices",
+        "type": "behavioral"
+      },
+      {
+        "text": "Examines architecture and design decisions",
+        "type": "behavioral"
+      },
+      {
+        "text": "Assesses test coverage and test quality",
+        "type": "behavioral"
+      }
+    ]
+  },
+  {
+    "eval_id": 314,
+    "command": "review",
+    "status": "timeout",
+    "error": "Timed out after 180s",
+    "duration_ms": 180000,
+    "output": "",
+    "assertions": [
+      {
+        "text": "Classifies each finding by severity like critical important or nitpick",
+        "type": "behavioral"
+      },
+      {
+        "text": "Identifies which files and code areas each issue affects",
+        "type": "behavioral"
+      },
+      {
+        "text": "Suggests how to fix each finding not just what is wrong",
+        "type": "behavioral"
+      }
+    ]
+  },
+  {
+    "eval_id": 315,
+    "command": "review",
+    "status": "timeout",
+    "error": "Timed out after 180s",
+    "duration_ms": 180000,
+    "output": "",
+    "assertions": [
+      {
+        "text": "Quick mode runs faster with fewer subagents than full review",
+        "type": "behavioral"
+      },
+      {
+        "text": "Prioritizes important issues over nitpicks in quick mode",
+        "type": "behavioral"
+      }
+    ]
+  },
+  {
+    "eval_id": 316,
+    "command": "review",
+    "status": "timeout",
+    "error": "Timed out after 180s",
+    "duration_ms": 180000,
+    "output": "",
+    "assertions": [
+      {
+        "text": "Detects that new code duplicates existing utility logic",
+        "type": "behavioral"
+      },
+      {
+        "text": "Points to the existing utility that should be reused",
+        "type": "behavioral"
+      },
+      {
+        "text": "Suggests removing the duplication by importing the existing code",
+        "type": "behavioral"
+      }
+    ]
+  },
+  {
+    "eval_id": 317,
+    "command": "fix",
+    "status": "success",
+    "output": "# Behavioral Trace: `/fh:fix` for \"login page crashes when I submit empty credentials\"\n\n## Prerequisites & Freshness\n\n1. **Verify `.planning/PROJECT.md` exists** \u2014 if missing, stop and tell user to run `/fh:new-project`. This fixture has it, so proceed.\n2. **Codebase freshness check** \u2014 look for `.planning/codebase/.last-mapped`, compare SHA to HEAD. If stale, warn but don't block. If missing, skip silently.\n3. **Past learnings check** \u2014 call `smart_search` with keywords like \"login crash empty credentials\", limit=5. Filter for bug/fix/root-cause observations. Surface up to 3 relevant prior fixes. Skip if claude-mem unavailable or no matches.\n\n## Step 0: Runtime Errors\n\nCheck for `.sentry-local/events.db`. If present, query `recent --minutes 60` for stack traces matching the login crash. Use any matches as starting evidence for triage. If no store exists, skip silently. Budget: <2% context.\n\n## Step 0\u00bd: Fallow Static Analysis\n\nCheck if `fallow` CLI is available. If so, run `fallow check` and `fallow health` filtered to login-related files. Look for unused exports, circular deps, or high-complexity functions near the login page. Skip if not installed. Budget: <1% context.\n\n## Step 1: Triage\n\nSpend <5% context. Goal: classify as SIMPLE/MODERATE/PARALLEL/COMPLEX.\n\n1. **Search codebase** \u2014 Grep for login page components (`login`, `sign-in`, `credentials`, `handleSubmit`), likely in `app/(auth)/login/page.tsx` or similar. Use LSP if available: `diagnostics` on the file, `hover` on form submission handler, `findReferences` on the auth API route.\n2. **Identify the crash site** \u2014 empty credentials submission likely hits a form handler that calls an API route (e.g., `/api/auth/login`). The crash could be: unhandled null/undefined access, missing validation before Supabase call, or a server action throwing without error boundary.\n3. **Run relevant tests** \u2014 find and execute existing login tests (Vitest unit or Playwright E2E) to see current pass/fail state.\n4. **Assess and announce** \u2014 likely **SIMPLE** (single form handler missing input validation) or **MODERATE** (spans form component + API route + auth logic). Commit to the chosen strategy.\n\n**Anti-drift rule:** lock onto the chosen depth. Don't fix adjacent auth issues discovered during investigation \u2014 log them to `.planning/todos/` instead.\n\n**Todo scan:** check `.planning/todos/` for items matching login, auth, or the same files.\n\n## Step 2: TDD Fix\n\nRead `skills/test-driven-development/PROMPT.md` and follow it:\n\n1. **RED** \u2014 Write a failing test proving the bug. Since this is a frontend crash, check for `playwright.config.*`. If Playwright is present, write an E2E test following Page Object Model pattern with role-based locators (`getByRole('button', { name: /sign in/i })`, `getByLabel('Email')`). The test submits the login form with empty fields and asserts no crash occurs (expects a validation message instead). If no Playwright, write a Vitest test rendering the login component and simulating empty submission.\n2. **GREEN** \u2014 Minimal fix. Likely: add input validation before the API call, or add null checks in the submit handler. No `any` types \u2014 use proper TypeScript guards.\n3. **REFACTOR** \u2014 Clean up only the code touched by the fix.\n\n**Deferred items:** any adjacent issues (e.g., \"password field doesn't mask input\", \"no rate limiting on login\") get logged to `{phase_dir}/deferred-items.md`, NOT fixed.\n\n**Commit:** `fix(auth): handle empty credentials submission on login page`\n\n## Step 3: Frontend Check\n\nThe fix touches `.tsx`, so:\n- Read `.planning/DESIGN.md` for design context\n- Verify the validation UI (error messages, input states) is consistent with the design system\n- Check against frontend-design anti-patterns (no AI slop \u2014 no generic cards, cyan-on-dark)\n- If significant UI change, suggest `/fh:ui-test` (but don't auto-invoke)\n\n## Step 4: Post-Fix Review\n\n1. **Verification gate** \u2014 run the new test, confirm it passes. Run the broader auth test suite to check for regressions. Read full output, check exit codes. If verification fails, return to Step 2.\n2. **Generate SUMMARY.md** \u2014 in the phase directory with YAML frontmatter (phase, plan ID, subsystem, key-files, root cause decision, duration, timestamp). Body: root cause, fix applied, test added, commit hash.\n3. **DECISIONS.md correction** \u2014 scan for active decisions affecting modified files. If the root cause relates to a decision, log a `[CORRECTED]` entry. Otherwise skip.\n4. **Update STATE.md** \u2014 note the fix, update position.\n5. **Suggest review** \u2014 for SIMPLE: suggest `/fh:review --quick`. For MODERATE+: run simplify on the diff, then suggest `/fh:review`. Do NOT auto-invoke review.\n\n## What I Explicitly Do NOT Do\n\n- **Don't fix adjacent issues** \u2014 log to todos/deferred-items only\n- **Don't escalate strategy mid-fix** unless new evidence proves triage wrong\n- **Don't auto-invoke `/fh:review`** \u2014 user decides\n- **Don't skip the verification gate** \u2014 test must pass before claiming done\n- **Don't use `any` types** in TypeScript fixes\n- **Don't create raw HTML inputs** \u2014 use shadcn/ui components per project conventions\n- **Don't exceed context budgets** \u2014 Steps 0/0\u00bd capped at 2%/1%, triage at 5%\n\n## Outputs Produced\n\n| Artifact | Content |\n|----------|---------|\n| Failing test | Proves the bug (RED phase) |\n| Fix commit | `fix(auth): ...` with minimal patch |\n| SUMMARY.md | Root cause + fix + test coverage |\n| STATE.md update | Current position |\n| Deferred items | Any adjacent issues found |\n| Persist findings | `[fix-learning]` output for claude-mem if non-trivial |",
+    "duration_ms": 36800,
+    "assertions": [
+      {
+        "text": "Searches for the bug location by reading error messages and relevant code",
+        "type": "behavioral"
+      },
+      {
+        "text": "Identifies the root cause of the crash not just the surface symptom",
+        "type": "behavioral"
+      },
+      {
+        "text": "Writes a test that captures the bug before applying the fix",
+        "type": "behavioral"
+      }
+    ],
+    "expected": "Should reproduce the bug, find the root cause (not just the symptom), then write a failing test before applying the fix.",
+    "tokens": {
+      "input_tokens": 3,
+      "output_tokens": 1558,
+      "cache_creation_tokens": 21119,
+      "cache_read_tokens": 12203,
+      "cost_usd": 0.17706025,
+      "total_tokens": 34883
+    },
+    "checks": [
+      {
+        "type": "required_terms",
+        "terms": [
+          "root cause",
+          "test"
+        ]
+      },
+      {
+        "type": "regex",
+        "pattern": "reproduc|fail.*test|before.*fix"
+      }
+    ]
+  },
+  {
+    "eval_id": 318,
+    "command": "fix",
+    "status": "success",
+    "output": "## Behavioral Trace: `/fh:fix` \u2014 Missing Null Check Bug\n\n### Prerequisites & Setup\n\n1. **Verify `.planning/PROJECT.md` exists** \u2014 required gate; if missing, stop and tell user to run `/fh:new-project`\n2. **Codebase freshness check** \u2014 read `.planning/codebase/.last-mapped`, compare SHA to HEAD, warn if stale (advisory only)\n3. **Past learnings check** \u2014 if claude-mem available, `smart_search` with keywords from the bug description (e.g., \"null check\", file name, subsystem), surface up to 3 prior fixes in the same area\n4. **Runtime errors check** \u2014 look for `.sentry-local/events.db`, query recent errors if present to see if there's a stack trace matching the null reference\n5. **Fallow static analysis** \u2014 if `fallow` CLI available, run `fallow check` and `fallow health` filtered to affected files; skip silently if not installed\n\n### Step 1: Triage\n\n- Search for the error/symptom in codebase, use LSP (`hover`, `diagnostics`, `findReferences`) to understand the null-access site\n- Run the most relevant test suite\n- **Assess as SIMPLE** \u2014 single-file fix, cause visible (missing null check). Announce: \"Single-file fix, straightforward.\"\n- Scan `.planning/todos/` for matching items; note any related todo IDs\n- Commit to SIMPLE path \u2014 no escalation unless new evidence contradicts\n\n### Step 2: TDD Fix (Regression Prevention Core)\n\nThis is the key regression-prevention step. Read `skills/test-driven-development/PROMPT.md` and follow strictly:\n\n1. **RED \u2014 Write a failing test first** that reproduces the null-access bug. The test passes `null`/`undefined` to the code path and asserts correct behavior (graceful handling, expected error, default value \u2014 whatever the spec requires). This test **must fail** before the fix, proving it captures the exact bug.\n2. **GREEN \u2014 Minimal fix** \u2014 add the null check. Nothing more. The previously-failing test now passes.\n3. **REFACTOR \u2014 Cleanup** if needed (extract guard clause, improve naming), keeping all tests green.\n\nIf the bug is in frontend/`.tsx` code and Playwright is configured, write the failing test using Playwright patterns (Page Object Model, role-based locators). If it's a unit-level issue, use Vitest (per this project's stack).\n\n**TypeScript strictness**: no `any`, proper type guards, exhaustive switches.\n\n**Deferred items**: any adjacent issues discovered during investigation get logged to `{phase_dir}/deferred-items.md`, not fixed.\n\n**Commit**: `fix(scope): add null check for {description of what was null}`\n\n### Step 3: Frontend Check (if applicable)\n\n- If fix touches `.tsx`/`.css`: read `.planning/DESIGN.md`, check visual consistency\n- Check against `skills/frontend-design/PROMPT.md` anti-patterns\n- Suggest `/fh:ui-test` if significant UI change\n\n### Step 4: Post-Fix Review (Verification Gate)\n\n1. **Run the test written in Step 2** \u2014 must pass\n2. **Run original reproduction** \u2014 must no longer occur\n3. **Run related test suites** \u2014 no regressions introduced\n4. **Read full output**, check exit codes, count failures\n5. If verification fails \u2192 return to Step 2 and iterate. Do NOT proceed.\n\nOnce verified:\n\n- **Suggest `/fh:review --quick`** (SIMPLE fix) \u2014 do NOT auto-invoke\n- **Generate SUMMARY.md** in phase directory with frontmatter (phase, plan, subsystem, key-files, root cause decision, duration, timestamp) and body (root cause, fix applied, test added, commit hash)\n- **Commit**: `docs({phase}): fix summary for {description}`\n- **Update STATE.md** \u2014 note the fix, update position\n- **Check DECISIONS.md** \u2014 scan for active decisions whose Affects field references modified files; log `[CORRECTED]` entry if the decision contributed to the bug\n- **Check CONCERNS.md** \u2014 if this was a known concern, note resolution with commit hash\n- **Learnings digest** \u2014 if claude-mem available, update `~/.claude/cache/learnings-digest.json` with root cause pattern\n- **Persist findings** \u2014 output `[fix-learning]` structured summary (max 3) for cross-session memory\n\n### What Prevents Regression Specifically\n\nThe **failing test written before the fix** (RED phase) is the primary regression gate. It:\n- Proves the exact bug scenario is now covered\n- Lives in the test suite permanently \u2014 CI catches any reintroduction\n- Documents the expected behavior when null/undefined is encountered\n\nSecondary prevention: SUMMARY.md documents root cause, learnings digest captures the pattern for future sessions, and DECISIONS.md correction prevents the same architectural choice from causing similar bugs.\n\n### Guard Rails \u2014 What I Do NOT Do\n\n- **Do not fix adjacent issues** \u2014 log them to deferred-items.md\n- **Do not escalate from SIMPLE** unless new evidence demands it\n- **Do not auto-invoke `/fh:review`** \u2014 suggest it, user decides\n- **Do not skip verification gate** \u2014 test must pass before claiming done\n- **Do not proceed past Step 4 if tests fail** \u2014 loop back to Step 2\n- **Do not add unnecessary type annotations, docstrings, or refactoring** beyond what TDD REFACTOR phase requires",
+    "duration_ms": 43654,
+    "assertions": [
+      {
+        "text": "Verifies the fix resolves the bug and tests pass",
+        "type": "behavioral"
+      },
+      {
+        "text": "Checks if similar code patterns elsewhere have the same problem",
+        "type": "behavioral"
+      }
+    ],
+    "expected": "Should verify test passes, check for similar patterns elsewhere in the codebase, add guard for related edge cases.",
+    "tokens": {
+      "input_tokens": 3,
+      "output_tokens": 1380,
+      "cache_creation_tokens": 21949,
+      "cache_read_tokens": 12203,
+      "cost_usd": 0.17779775,
+      "total_tokens": 35535
+    },
+    "checks": [
+      {
+        "type": "regex",
+        "pattern": "test.*pass|similar|pattern|regress"
+      }
+    ]
+  },
+  {
+    "eval_id": 319,
+    "command": "fix",
+    "status": "success",
+    "output": "## Behavioral Trace: `/fh:fix` with ambiguous \"the auth bug\"\n\n### Prerequisites & Context Gathering\n\n1. **Dependency check:** Verify `.planning/PROJECT.md` exists. It does (per fixture context). Proceed.\n\n2. **Codebase freshness:** Check `.planning/codebase/.last-mapped` \u2014 if stale, warn about `/fh:map-codebase` but don't block.\n\n3. **Past learnings:** Call `smart_search(\"auth bug fix regression\", limit=5)` via claude-mem. Filter for prior root causes in auth subsystem. Surface max 3 relevant items.\n\n4. **Runtime errors (Step 0):** Check `.sentry-local/events.db`. If present, query `recent --minutes 60` for auth-related errors. Stack traces here would narrow scope significantly.\n\n5. **Fallow (Step 0\u00bd):** Check if `fallow` is available. If so, run `fallow check` and `fallow health` filtered to auth files.\n\n### Step 1: Triage \u2014 The Critical Ambiguity\n\nThe user said \"the auth bug\" without specifying which one. I do NOT guess. Instead I gather evidence from multiple sources simultaneously:\n\n**Evidence gathering (parallel where possible):**\n- **Grep** for auth-related files: `src/app/api/auth/**`, auth middleware, auth utilities\n- **Read** `.planning/todos/` for any auth-tagged todo items \u2014 these are known issues\n- **Read** `.planning/STATE.md` for current phase context \u2014 maybe \"the auth bug\" refers to a known blocker\n- **Read** `.planning/phases/*/CONTEXT.md` for decisions mentioning auth\n- **LSP diagnostics** on auth files to surface type errors\n- **Grep** for common auth vulnerability patterns: hardcoded secrets, missing validation, SQL injection in auth queries\n\n**Possible outcomes:**\n\n| Evidence | Action |\n|----------|--------|\n| Single auth issue in todos/STATE.md | Treat as identified \u2014 proceed with that bug |\n| LSP shows one type error in auth | Likely candidate \u2014 confirm with user |\n| Multiple auth issues found | Present numbered list, ask user to pick |\n| Runtime errors show specific auth failure | Use that as primary target |\n| No clear signal | Ask: \"I found several auth-related files. Which bug are you seeing? Error message or reproduction steps would help.\" |\n\n**Key behavior:** I ask for clarification rather than picking one arbitrarily. The skill says \"quickly assess bug depth\" but it cannot assess what it hasn't identified. I present what I found and let the user confirm.\n\n### Assuming User Clarifies (or Single Bug Found)\n\n**Depth assessment:** Based on file count and subsystem spread:\n- Auth route + one middleware \u2192 **SIMPLE** or **MODERATE**\n- Auth + database + session + multiple routes \u2192 **MODERATE** or **COMPLEX**\n\n**Announcement:** e.g., \"Multi-file issue in auth subsystem. Full investigation.\"\n\n**Anti-drift rule activates:** I commit to the chosen depth. I don't escalate unless new evidence demands it. Adjacent issues (e.g., unrelated CSRF weakness spotted during investigation) get logged to `{phase_dir}/deferred-items.md`, not fixed.\n\n### Step 2: TDD Fix\n\n- **RED:** Write a failing test that reproduces the exact bug. If it's an API auth issue, test the endpoint. If Playwright is configured and it's a login UI bug, use Page Object Model with role-based locators.\n- **GREEN:** Minimal fix only. No refactoring adjacent code.\n- **REFACTOR:** Cleanup if needed, but scoped to the fix.\n- **Commit:** `fix(auth): {root cause description}`\n\n### Step 3: Frontend Check\n\nOnly if fix touches `.tsx`/`.css`. Read `DESIGN.md`, check visual consistency, flag AI slop patterns.\n\n### Step 4: Post-Fix Review\n\n- **Verification gate:** Run the new test + related auth test suite. Read full output. Confirm fix and no regressions.\n- **SUMMARY.md:** Generated in phase directory with root cause, fix, test, commit hash.\n- **STATE.md:** Updated with fix notation.\n- **DECISIONS.md:** Scanned for entries affecting modified files. Corrected if the decision caused the bug.\n- **Suggest** `/fh:review --quick` (SIMPLE) or `/fh:review` (MODERATE+). Do NOT auto-invoke.\n\n### What I Explicitly Do NOT Do\n\n- **Don't guess which bug** \u2014 ask if ambiguous\n- **Don't fix adjacent issues** \u2014 log to deferred-items.md\n- **Don't escalate depth** without new evidence\n- **Don't auto-invoke `/fh:review`** \u2014 suggest only\n- **Don't skip the failing test** \u2014 RED phase is mandatory\n- **Don't claim done before verification passes**\n- **Don't add error handling, comments, or type annotations** to code I didn't change\n\n### Artifacts Produced\n\n| Artifact | Condition |\n|----------|-----------|\n| Failing test \u2192 passing test | Always |\n| `fix(auth):` commit | Always |\n| `SUMMARY.md` in phase dir | Always |\n| `deferred-items.md` entries | If adjacent issues found |\n| `DECISIONS.md` correction | If a decision caused the bug |\n| `.planning/debug/{slug}.md` | Only if COMPLEX path taken |",
+    "duration_ms": 44330,
+    "assertions": [
+      {
+        "text": "Searches for auth-related errors or test failures to narrow down",
+        "type": "behavioral"
+      },
+      {
+        "text": "Does not guess \u2014 investigates to find the specific bug",
+        "type": "behavioral"
+      }
+    ],
+    "expected": "Should search for recent auth-related errors, check git log for recent auth changes, look at error logs or test failures to narrow down the specific bug.",
+    "tokens": {
+      "input_tokens": 3,
+      "output_tokens": 1320,
+      "cache_creation_tokens": 21959,
+      "cache_read_tokens": 12203,
+      "cost_usd": 0.17636025,
+      "total_tokens": 35485
+    },
+    "checks": [
+      {
+        "type": "regex",
+        "pattern": "search|investigat|error|log|narrow"
+      }
+    ]
+  }
+]

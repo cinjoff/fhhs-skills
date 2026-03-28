@@ -1,0 +1,71 @@
+{
+  "run_date": "2026-03-28T19:36:52.179892",
+  "total_evals": 39,
+  "successful": 39,
+  "errors": 0,
+  "timeouts": 0,
+  "check_failures": 0,
+  "total_assertions": 115,
+  "passed_assertions": 113,
+  "overall_pass_rate": 0.9826086956521739,
+  "token_usage": {
+    "total_tokens": 1605973,
+    "input_tokens": 122,
+    "output_tokens": 47423,
+    "cache_creation_tokens": 1103332,
+    "cache_read_tokens": 455096,
+    "total_cost_usd": 8.3959,
+    "avg_tokens_per_eval": 41178,
+    "avg_cost_per_eval": 0.2153
+  },
+  "by_command": {
+    "auto": {
+      "evals": 27,
+      "assertions": 85,
+      "passed": 84,
+      "pass_rate": 0.9882352941176471,
+      "errors": 0,
+      "check_failures": 0,
+      "avg_duration_ms": 48962,
+      "total_tokens": 1162631,
+      "avg_tokens": 43060,
+      "total_cost_usd": 5.9153
+    },
+    "build": {
+      "evals": 5,
+      "assertions": 12,
+      "passed": 12,
+      "pass_rate": 1.0,
+      "errors": 0,
+      "check_failures": 0,
+      "avg_duration_ms": 51221,
+      "total_tokens": 192061,
+      "avg_tokens": 38412,
+      "total_cost_usd": 1.0934
+    },
+    "fix": {
+      "evals": 3,
+      "assertions": 7,
+      "passed": 7,
+      "pass_rate": 1.0,
+      "errors": 0,
+      "check_failures": 0,
+      "avg_duration_ms": 36963,
+      "total_tokens": 106560,
+      "avg_tokens": 35520,
+      "total_cost_usd": 0.6664
+    },
+    "review": {
+      "evals": 4,
+      "assertions": 11,
+      "passed": 10,
+      "pass_rate": 0.9090909090909091,
+      "errors": 0,
+      "check_failures": 0,
+      "avg_duration_ms": 73794,
+      "total_tokens": 144721,
+      "avg_tokens": 36180,
+      "total_cost_usd": 0.7209
+    }
+  }
+}

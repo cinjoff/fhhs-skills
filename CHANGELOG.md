@@ -8,6 +8,17 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.52.0] - 2026-03-28
+
+### Added
+- **Auto quick sanity check** — validates planning artifacts even when workshop is skipped, warns on gaps without blocking execution
+- **Auto failure diagnostics** — classifies orchestrator failures (API error, logic error, stuck session) and provides actionable recovery guidance
+- **Fix pattern search** — searches codebase for similar vulnerable patterns after verifying a fix to prevent recurrence
+
+### Changed
+- **Auto final reporting** — clearer summary format with explicit next actions for the user
+- **Eval coverage** — expanded test suite from 10-cycle auto-improve run with updated baselines
+
 ## [1.51.0] - 2026-03-28
 
 ### Added
