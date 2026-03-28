@@ -3,13 +3,11 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
-const os = require('os');
 
 // Import parse functions from parser.
 // Individual exports are added by the parser-v2 enhancement (parallel task).
 // Fall back to parsePlanning-based wrappers if individual exports aren't available yet.
 const parser = require('./parser.cjs');
-const { handleMetrics } = require('./metrics.cjs');
 
 const parseProject = parser.parseProject || ((dir) => parser.parsePlanning(dir).project);
 const parseRoadmap = parser.parseRoadmap || ((dir) => {
@@ -39,206 +37,40 @@ const parseQuickTasks = parser.parseQuickTasks || ((dir) => {
 });
 const parseConcerns = parser.parseConcerns || (() => ({ categories: [], totalCount: 0 }));
 const parseCodebaseFreshness = parser.parseCodebaseFreshness || (() => ({ lastUpdated: null, isStale: false }));
-const parseAutoState = parser.parseAutoState || (() => null);
-const parseDecisions = parser.parseDecisions || (() => []);
-const parsePendingDecisions = parser.parsePendingDecisions || (() => []);
 
 // ---------------------------------------------------------------------------
 // Configuration
 // ---------------------------------------------------------------------------
-const BASE_PORT = 4111;
+const BASE_PORT = 3847;
 const MAX_PORT_ATTEMPTS = 3;
 const DEBOUNCE_MS = 300;
 const CACHE_VERSION = 1;
-const INACTIVE_THRESHOLD_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+// Resolve .planning/ relative to CWD (user's project root)
+const planningDir = path.resolve(process.cwd(), '.planning');
+const cacheDir = path.resolve(process.cwd(), '.project-tracker');
+const cachePath = path.join(cacheDir, 'cache.json');
 
 // ---------------------------------------------------------------------------
-// Registry
+// Startup validation
 // ---------------------------------------------------------------------------
-const REGISTRY_PATH = path.join(os.homedir(), '.claude', 'tracker', 'projects.json');
-const REGISTRY_LOCK_PATH = REGISTRY_PATH + '.lock';
-
-/**
- * Load registry from disk, filter to entries whose paths exist, return array.
- */
-function loadRegistry() {
-  try {
-    const raw = fs.readFileSync(REGISTRY_PATH, 'utf8');
-    const data = JSON.parse(raw);
-    if (!Array.isArray(data)) return [];
-    return data.filter(entry => entry && entry.path && fs.existsSync(entry.path));
-  } catch {
-    return [];
-  }
-}
-
-/**
- * Atomic write helper: write content to filePath.tmp, then rename to filePath.
- * Throws on error — callers should handle.
- */
-function atomicWriteFile(filePath, content) {
-  const tmpPath = filePath + '.tmp';
-  fs.writeFileSync(tmpPath, content, 'utf8');
-  fs.renameSync(tmpPath, filePath);
-}
-
-/**
- * Atomic write: write to .tmp, rename to final path.
- */
-function saveRegistry(projects) {
-  try {
-    const dir = path.dirname(REGISTRY_PATH);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    atomicWriteFile(REGISTRY_PATH, JSON.stringify(projects, null, 2));
-  } catch (err) {
-    console.error('  Warning: Could not save registry:', err.message);
-  }
-}
-
-/**
- * Save registry with simple .lock file pattern — retry once after 500ms if locked,
- * proceed without lock on second failure (graceful degradation).
- */
-function saveRegistryWithLock(projects) {
-  function tryWrite() {
-    try {
-      // Try to create lock (exclusive)
-      fs.writeFileSync(REGISTRY_LOCK_PATH, String(process.pid), { flag: 'wx' });
-    } catch {
-      // Lock exists — return false to signal we should retry
-      return false;
-    }
-    try {
-      saveRegistry(projects);
-    } finally {
-      try { fs.unlinkSync(REGISTRY_LOCK_PATH); } catch { /* ignore */ }
-    }
-    return true;
-  }
-
-  if (!tryWrite()) {
-    // Retry once after 500ms
-    setTimeout(() => {
-      if (!tryWrite()) {
-        // Graceful degradation: proceed without lock
-        saveRegistry(projects);
-      }
-    }, 500);
-  }
-}
-
-/**
- * Register a project. Add if not present; update lastSeen if present.
- * Returns updated registry array.
- */
-function registerProject(projectPath, name, extra) {
-  const projects = loadRegistry();
-  const now = new Date().toISOString();
-  const existing = projects.find(p => p.path === projectPath);
-  if (existing) {
-    existing.lastSeen = now;
-    if (name) existing.name = name;
-    if (extra) Object.assign(existing, extra);
-  } else {
-    const entry = { path: projectPath, name: name || path.basename(projectPath), lastSeen: now };
-    if (extra) Object.assign(entry, extra);
-    projects.push(entry);
-  }
-  saveRegistryWithLock(projects);
-  return projects;
+if (!fs.existsSync(planningDir)) {
+  console.error(
+    '\n  Error: No .planning/ directory found in the current directory.\n\n' +
+    '  The project tracker needs a .planning/ directory to read project data.\n' +
+    '  Make sure you run this server from your project root.\n\n' +
+    '  Expected: ' + planningDir + '\n'
+  );
+  process.exit(1);
 }
 
 // ---------------------------------------------------------------------------
-// Conductor Auto-Discovery
+// Cache Management
 // ---------------------------------------------------------------------------
 
 /**
- * Discover projects under ~/conductor/workspaces/{repo}/{worktree}/.planning/
- * Auto-register each with conductorWorkspace: repoName.
+ * Create an empty cache structure.
  */
-function discoverConductorProjects() {
-  const conductorBase = path.join(os.homedir(), 'conductor', 'workspaces');
-  if (!fs.existsSync(conductorBase)) return;
-
-  let repos;
-  try {
-    repos = fs.readdirSync(conductorBase, { withFileTypes: true });
-  } catch {
-    return;
-  }
-
-  for (const repoEntry of repos) {
-    if (!repoEntry.isDirectory()) continue;
-    const repoName = repoEntry.name;
-    const repoDir = path.join(conductorBase, repoName);
-
-    let worktrees;
-    try {
-      worktrees = fs.readdirSync(repoDir, { withFileTypes: true });
-    } catch {
-      continue;
-    }
-
-    for (const worktreeEntry of worktrees) {
-      if (!worktreeEntry.isDirectory()) continue;
-      const worktreeName = worktreeEntry.name;
-      const projectPath = path.join(repoDir, worktreeName);
-      const planningPath = path.join(projectPath, '.planning');
-
-      if (fs.existsSync(planningPath)) {
-        const name = `${repoName}/${worktreeName}`;
-        registerProject(projectPath, name, { conductorWorkspace: repoName });
-      }
-    }
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Per-project state
-// ---------------------------------------------------------------------------
-
-/**
- * Create per-project state container.
- */
-function createProjectState(projectPath) {
-  const planningDir = path.join(projectPath, '.planning');
-  const cacheDir = path.join(projectPath, '.project-tracker');
-  const cachePath = path.join(cacheDir, 'cache.json');
-
-  return {
-    projectPath,
-    planningDir,
-    cacheDir,
-    cachePath,
-    cache: null,       // loaded lazily
-    lastState: null,
-    lastCompletionEvents: [],
-    lastRetros: [],
-    debounceTimer: null,
-  };
-}
-
-// Map of projectPath → projectState
-const projectStates = new Map();
-// Map of projectPath → fs.FSWatcher
-const watchers = new Map();
-
-/**
- * Get or create project state for a path.
- */
-function getProjectState(projectPath) {
-  if (!projectStates.has(projectPath)) {
-    projectStates.set(projectPath, createProjectState(projectPath));
-  }
-  return projectStates.get(projectPath);
-}
-
-// ---------------------------------------------------------------------------
-// Cache Management (per-project)
-// ---------------------------------------------------------------------------
-
 function emptyCache() {
   return {
     version: CACHE_VERSION,
@@ -251,9 +83,12 @@ function emptyCache() {
   };
 }
 
-function loadCache(ps) {
+/**
+ * Load cache from disk, returning empty cache if missing or invalid.
+ */
+function loadCache() {
   try {
-    const raw = fs.readFileSync(ps.cachePath, 'utf8');
+    const raw = fs.readFileSync(cachePath, 'utf8');
     const data = JSON.parse(raw);
     if (data && data.version === CACHE_VERSION) {
       return data;
@@ -264,20 +99,17 @@ function loadCache(ps) {
   return emptyCache();
 }
 
-function saveCache(ps) {
+/**
+ * Save cache to disk.
+ */
+function saveCache(cache) {
   try {
-    if (!fs.existsSync(ps.cacheDir)) {
-      fs.mkdirSync(ps.cacheDir, { recursive: true });
+    if (!fs.existsSync(cacheDir)) {
+      fs.mkdirSync(cacheDir, { recursive: true });
     }
-    fs.writeFileSync(ps.cachePath, JSON.stringify(ps.cache, null, 2), 'utf8');
+    fs.writeFileSync(cachePath, JSON.stringify(cache, null, 2), 'utf8');
   } catch (err) {
     console.error('  Warning: Could not save cache:', err.message);
-  }
-}
-
-function ensureCache(ps) {
-  if (!ps.cache) {
-    ps.cache = loadCache(ps);
   }
 }
 
@@ -285,6 +117,9 @@ function ensureCache(ps) {
 // Mtime Scanning
 // ---------------------------------------------------------------------------
 
+/**
+ * Walk a directory recursively, returning a map of relative paths → mtimeMs.
+ */
 function scanMtimes(dir, baseDir) {
   if (!baseDir) baseDir = dir;
   const result = {};
@@ -315,15 +150,21 @@ function scanMtimes(dir, baseDir) {
   return result;
 }
 
+/**
+ * Compare old and new mtime maps.
+ * Returns a Set of relative paths that are new, changed, or deleted.
+ */
 function getChangedFiles(oldMtimes, newMtimes) {
   const changed = new Set();
 
+  // Check new/changed files
   for (const [filePath, mtime] of Object.entries(newMtimes)) {
     if (!oldMtimes[filePath] || oldMtimes[filePath] !== mtime) {
       changed.add(filePath);
     }
   }
 
+  // Check deleted files
   for (const filePath of Object.keys(oldMtimes)) {
     if (!(filePath in newMtimes)) {
       changed.add(filePath);
@@ -337,6 +178,9 @@ function getChangedFiles(oldMtimes, newMtimes) {
 // Tiered State Builder
 // ---------------------------------------------------------------------------
 
+/**
+ * Determine which data categories need re-parsing based on changed files.
+ */
 function categorizeChanges(changedFiles) {
   const needs = {
     state: false,
@@ -347,22 +191,13 @@ function categorizeChanges(changedFiles) {
     quickTasks: false,
     concerns: false,
     codebaseFreshness: false,
-    autoState: false,
-    decisions: false,
-    pendingDecisions: false,
-    changedPhaseDirs: new Set(),
+    changedPhaseDirs: new Set(), // Set of phase dir names that need re-parse
   };
 
   for (const filePath of changedFiles) {
     const parts = filePath.split(path.sep);
 
-    if (parts[0] === '.auto-state.json') {
-      needs.autoState = true;
-    } else if (parts[0] === 'DECISIONS.md') {
-      needs.decisions = true;
-    } else if (parts[0] === 'phases' && parts[2] === '.decisions-pending.md') {
-      needs.pendingDecisions = true;
-    } else if (parts[0] === 'STATE.md') {
+    if (parts[0] === 'STATE.md') {
       needs.state = true;
     } else if (parts[0] === 'PROJECT.md') {
       needs.project = true;
@@ -382,6 +217,7 @@ function categorizeChanges(changedFiles) {
     } else if (parts[0] === 'phases' && parts.length >= 2) {
       needs.changedPhaseDirs.add(parts[1]);
     } else if (parts[0] === 'milestones' && parts.length >= 3) {
+      // milestones/{milestone-name}/{phase-dir}/... → treat as phase change
       needs.changedPhaseDirs.add(parts[2]);
     }
   }
@@ -389,16 +225,26 @@ function categorizeChanges(changedFiles) {
   return needs;
 }
 
+// In-memory state cache (latest computed result)
+let cache = loadCache();
+let lastState = null;
+let lastCompletionEvents = []; // Stored separately to avoid heuristic reconstruction
+let lastRetros = [];
+
 /**
- * Build the full state for a project, using tiered re-parsing based on changed files.
+ * Build the full state, using tiered re-parsing based on changed files.
+ * On first call (no previous state), parses everything.
+ * On subsequent calls, only re-parses what changed.
+ *
+ * @param {Set|null} changedFiles - Set of changed file paths, or null for full parse
+ * @returns {object} The full state object
  */
-function buildState(ps, changedFiles) {
-  ensureCache(ps);
-  const { planningDir } = ps;
-  const isFullParse = !ps.lastState || !changedFiles;
+function buildState(changedFiles) {
+  const isFullParse = !lastState || !changedFiles;
 
   let needs;
   if (isFullParse) {
+    // Parse everything on first call
     needs = {
       state: true,
       project: true,
@@ -408,9 +254,6 @@ function buildState(ps, changedFiles) {
       quickTasks: true,
       concerns: true,
       codebaseFreshness: true,
-      autoState: true,
-      decisions: true,
-      pendingDecisions: true,
       changedPhaseDirs: new Set(['__ALL__']),
     };
   } else {
@@ -419,46 +262,50 @@ function buildState(ps, changedFiles) {
 
   let cacheChanged = false;
 
+  // --- STATE.md, pending todos, retros: re-parse only when changed ---
   const state = (needs.state || isFullParse)
     ? parseState(planningDir)
-    : (ps.lastState ? { currentPhase: ps.lastState.stages?.find(s => s.status === 'active')?.number, lastActivity: ps.lastState.lastActivity } : parseState(planningDir));
+    : (lastState ? { currentPhase: lastState.stages?.find(s => s.status === 'active')?.number, lastActivity: lastState.lastActivity } : parseState(planningDir));
 
   const todos = (needs.todos || isFullParse)
     ? parseTodos(planningDir)
-    : (ps.lastState ? ps.lastState.todos : parseTodos(planningDir));
+    : (lastState ? lastState.todos : parseTodos(planningDir));
 
   let retros;
   if (needs.retros || isFullParse) {
     retros = parseRetros(planningDir);
-    ps.lastRetros = retros;
+    lastRetros = retros;
   } else {
-    retros = ps.lastRetros;
+    retros = lastRetros;
   }
 
+  // --- Re-parse if mtime changed: PROJECT.md ---
   let project;
   if (needs.project || isFullParse) {
     project = parseProject(planningDir);
-    ps.cache.project = project;
+    cache.project = project;
     cacheChanged = true;
     console.log('  [cache] Re-parsed PROJECT.md');
   } else {
-    project = ps.cache.project && Object.keys(ps.cache.project).length > 0
-      ? ps.cache.project
+    project = cache.project && Object.keys(cache.project).length > 0
+      ? cache.project
       : parseProject(planningDir);
   }
 
+  // --- Re-parse if mtime changed: ROADMAP.md ---
   let roadmapData;
   if (needs.roadmap || isFullParse) {
     roadmapData = parseRoadmap(planningDir);
-    ps.cache.roadmap = roadmapData;
+    cache.roadmap = roadmapData;
     cacheChanged = true;
     console.log('  [cache] Re-parsed ROADMAP.md');
   } else {
-    roadmapData = ps.cache.roadmap && ps.cache.roadmap.phases
-      ? ps.cache.roadmap
+    roadmapData = cache.roadmap && cache.roadmap.phases
+      ? cache.roadmap
       : parseRoadmap(planningDir);
   }
 
+  // --- Re-parse if mtime changed: codebase/CONCERNS.md ---
   let concerns;
   if (needs.concerns || isFullParse) {
     try {
@@ -466,15 +313,16 @@ function buildState(ps, changedFiles) {
     } catch {
       concerns = { categories: [], totalCount: 0 };
     }
-    ps.cache.concerns = concerns;
+    cache.concerns = concerns;
     cacheChanged = true;
     console.log('  [cache] Re-parsed CONCERNS.md');
   } else {
-    concerns = ps.cache.concerns && Object.keys(ps.cache.concerns).length > 0
-      ? ps.cache.concerns
+    concerns = cache.concerns && Object.keys(cache.concerns).length > 0
+      ? cache.concerns
       : { categories: [], totalCount: 0 };
   }
 
+  // --- Re-parse if mtime changed: codebase freshness ---
   let codebaseFreshness;
   if (needs.codebaseFreshness || isFullParse) {
     try {
@@ -482,50 +330,38 @@ function buildState(ps, changedFiles) {
     } catch {
       codebaseFreshness = { lastUpdated: null, isStale: false };
     }
-    ps.cache.codebaseFreshness = codebaseFreshness;
+    cache.codebaseFreshness = codebaseFreshness;
     cacheChanged = true;
     console.log('  [cache] Re-parsed codebase freshness');
   } else {
-    codebaseFreshness = ps.cache.codebaseFreshness && Object.keys(ps.cache.codebaseFreshness).length > 0
-      ? ps.cache.codebaseFreshness
+    codebaseFreshness = cache.codebaseFreshness && Object.keys(cache.codebaseFreshness).length > 0
+      ? cache.codebaseFreshness
       : { lastUpdated: null, isStale: false };
   }
 
-  const phaseResult = buildPhases(ps, planningDir, roadmapData, state, needs, isFullParse);
+  // --- Phases: cache completed, re-parse only changed ---
+  const phaseResult = buildPhases(
+    planningDir, roadmapData, state, needs, isFullParse
+  );
   const stages = phaseResult.phases;
   const completionEvents = phaseResult.completionEvents;
-  ps.lastCompletionEvents = completionEvents;
+  lastCompletionEvents = completionEvents;
 
-  const autoState = parseAutoState(planningDir);
-
-  let decisions;
-  if (needs.decisions || isFullParse) {
-    decisions = parseDecisions(planningDir);
-    console.log('  [cache] Re-parsed DECISIONS.md');
-  } else {
-    decisions = ps.lastState ? ps.lastState.decisions : parseDecisions(planningDir);
-  }
-
-  let pendingDecisions;
-  if (needs.pendingDecisions || isFullParse) {
-    pendingDecisions = parsePendingDecisions(planningDir);
-    console.log('  [cache] Re-parsed pending decisions');
-  } else {
-    pendingDecisions = ps.lastState ? (ps.lastState.pendingDecisions || []) : parsePendingDecisions(planningDir);
-  }
-
+  // Quick tasks
   let quickTasks;
   if (needs.quickTasks || isFullParse) {
     quickTasks = parseQuickTasks(planningDir);
     console.log('  [cache] Re-parsed quick tasks');
   } else {
-    quickTasks = ps.lastState ? ps.lastState.quickTasks : parseQuickTasks(planningDir);
+    quickTasks = lastState ? lastState.quickTasks : parseQuickTasks(planningDir);
   }
 
+  // Recent activity: retros + completion events
   const recentActivity = retros.concat(completionEvents);
   recentActivity.sort((a, b) => (b.time || '').localeCompare(a.time || ''));
   recentActivity.splice(10);
 
+  // Assemble final state
   const result = {
     project,
     milestone: roadmapData.milestone,
@@ -535,30 +371,38 @@ function buildState(ps, changedFiles) {
     quickTasks,
     concerns,
     codebaseFreshness,
-    autoState,
-    decisions,
-    pendingDecisions,
     lastActivity: state.lastActivity || null,
   };
 
-  ps.lastState = result;
+  // Update caches
+  lastState = result;
 
   if (cacheChanged) {
-    saveCache(ps);
+    saveCache(cache);
   }
 
   return result;
 }
 
-function buildPhases(ps, planningDir, roadmapData, state, needs, isFullParse) {
+/**
+ * Build phases with caching for completed phases.
+ * Only re-parses phases whose directories have changed files.
+ */
+function buildPhases(planningDir, roadmapData, state, needs, isFullParse) {
   const allPhaseDirsChanged = needs.changedPhaseDirs.has('__ALL__');
 
+  // Get the full phases result from parsePhases
+  // But we can optimize: if no phase dirs changed and we have cached completed phases,
+  // we can potentially skip re-parsing completed phases.
+
   if (isFullParse || allPhaseDirsChanged || needs.roadmap) {
+    // Full parse of all phases
     const result = parsePhases(planningDir, roadmapData.phases, state);
 
+    // Cache completed phases
     for (const phase of result.phases) {
       if (phase.status === 'complete' && phase.tasks) {
-        ps.cache.completedPhases[phase.number] = {
+        cache.completedPhases[phase.number] = {
           tasks: phase.tasks,
           goal: phase.goal,
           name: phase.name,
@@ -571,16 +415,21 @@ function buildPhases(ps, planningDir, roadmapData, state, needs, isFullParse) {
     return result;
   }
 
-  if (needs.changedPhaseDirs.size === 0 && ps.lastState) {
+  // No phase files changed — reuse last state's phases
+  if (needs.changedPhaseDirs.size === 0 && lastState) {
     console.log('  [cache] Phases unchanged, using cached data');
-    return { phases: ps.lastState.stages || [], completionEvents: ps.lastCompletionEvents };
+    return { phases: lastState.stages || [], completionEvents: lastCompletionEvents };
   }
 
+  // Some phases changed — do a full re-parse but cache the results
+  // (A partial re-parse would require splitting parsePhases, which adds complexity
+  //  for marginal benefit since phase parsing is already fast)
   const result = parsePhases(planningDir, roadmapData.phases, state);
 
+  // Update completed phases cache
   for (const phase of result.phases) {
     if (phase.status === 'complete' && phase.tasks) {
-      ps.cache.completedPhases[phase.number] = {
+      cache.completedPhases[phase.number] = {
         tasks: phase.tasks,
         goal: phase.goal,
         name: phase.name,
@@ -593,292 +442,6 @@ function buildPhases(ps, planningDir, roadmapData, state, needs, isFullParse) {
   console.log(`  [cache] Re-parsed phases (changed: ${changedList})`);
 
   return result;
-}
-
-// ---------------------------------------------------------------------------
-// Project summary (for /api/state projects array)
-// ---------------------------------------------------------------------------
-
-function buildProjectSummary(entry, ps) {
-  const state = ps.lastState;
-  const stages = state ? (state.stages || []) : [];
-  const activeStage = stages.find(s => s.status === 'active');
-  const completedStages = stages.filter(s => s.status === 'complete');
-  const nextStage = activeStage || stages.find(s => s.status === 'up next');
-  const totalPhases = stages.length;
-  const completedPhases = completedStages.length;
-  const progressPct = totalPhases > 0 ? Math.round((completedPhases / totalPhases) * 100) : 0;
-  const nextItem = nextStage ? nextStage.goal || nextStage.name || null : null;
-  const lastActivity = state ? (state.lastActivity || entry.lastSeen) : entry.lastSeen;
-
-  // Use folder name (last path segment) as display name
-  const folderName = path.basename(entry.path);
-
-  return {
-    id: entry.path,
-    path: entry.path,
-    name: folderName,
-    lastSeen: entry.lastSeen,
-    lastActivity: typeof lastActivity === 'object' ? lastActivity.date : lastActivity,
-    conductorWorkspace: entry.conductorWorkspace || null,
-    currentPhase: activeStage ? (activeStage.name || `Phase ${activeStage.number}`) : null,
-    totalPhases,
-    completedPhases,
-    progressPct,
-    nextItem,
-    status: activeStage ? 'active' : (completedPhases === totalPhases && totalPhases > 0 ? 'complete' : 'unknown'),
-  };
-}
-
-// ---------------------------------------------------------------------------
-// Watcher setup
-// ---------------------------------------------------------------------------
-
-/**
- * Check if a project has had recent git activity (uses .planning/STATE.md mtime as proxy).
- */
-function hasRecentActivity(projectPath) {
-  const statePath = path.join(projectPath, '.planning', 'STATE.md');
-  try {
-    const stat = fs.statSync(statePath);
-    return (Date.now() - stat.mtimeMs) < INACTIVE_THRESHOLD_MS;
-  } catch {
-    // If STATE.md doesn't exist, treat as active (new project)
-    return true;
-  }
-}
-
-/**
- * Set up a per-project watcher on its .planning/ directory.
- */
-function setupWatcher(entry) {
-  const { path: projectPath } = entry;
-  if (watchers.has(projectPath)) return; // already watching
-
-  const planDir = path.join(projectPath, '.planning');
-  if (!fs.existsSync(planDir)) return;
-
-  const ps = getProjectState(projectPath);
-
-  let debounceTimer = null;
-  let watcher;
-  try {
-    watcher = fs.watch(planDir, { recursive: true }, () => {
-      if (debounceTimer) clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => {
-        try {
-          ensureCache(ps);
-          const newMtimes = scanMtimes(planDir);
-          const changedFiles = getChangedFiles(ps.cache.mtimes, newMtimes);
-
-          if (changedFiles.size === 0) return;
-
-          ps.cache.mtimes = newMtimes;
-          console.log(`  [sse] ${entry.name}: ${changedFiles.size} file(s) changed`);
-
-          buildState(ps, changedFiles);
-
-          // Broadcast to all SSE clients
-          broadcastRefresh(projectPath);
-        } catch {
-          // Ignore watcher errors
-        }
-      }, DEBOUNCE_MS);
-    });
-  } catch (err) {
-    console.error(`  Warning: Could not watch ${planDir}:`, err.message);
-    return;
-  }
-
-  watchers.set(projectPath, { watcher, debounceTimer: null });
-  console.log(`  [watch] Watching ${entry.name}`);
-}
-
-/**
- * Initialize watchers for all registered projects.
- * Skips projects with no git activity in 7 days (lazy optimization).
- */
-function initializeWatchers() {
-  const projects = loadRegistry();
-  for (const entry of projects) {
-    if (!fs.existsSync(entry.path)) continue;
-    if (!hasRecentActivity(entry.path)) {
-      console.log(`  [watch] Skipping inactive project: ${entry.name}`);
-      continue;
-    }
-    setupWatcher(entry);
-  }
-}
-
-/**
- * Initialize per-project state (cache + initial parse) for active watchers.
- */
-function initializeProjectStates() {
-  const projects = loadRegistry();
-  for (const entry of projects) {
-    if (!watchers.has(entry.path)) continue;
-    const ps = getProjectState(entry.path);
-    ensureCache(ps);
-    ps.cache.mtimes = scanMtimes(ps.planningDir);
-    try {
-      buildState(ps, null);
-      console.log(`  [cache] Initial state built for: ${entry.name}`);
-    } catch (err) {
-      console.error(`  Warning: Could not build initial state for ${entry.name}:`, err.message);
-    }
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Activity ring buffer (max 200)
-// ---------------------------------------------------------------------------
-const ACTIVITY_RING_MAX = 200;
-const activityRing = [];
-
-function pushActivity(event) {
-  activityRing.push(event);
-  if (activityRing.length > ACTIVITY_RING_MAX) {
-    activityRing.shift();
-  }
-}
-
-/**
- * Parse JSONL lines from a Claude session output chunk.
- * Returns array of human-readable strings.
- */
-function parseJSONLActivity(raw) {
-  const lines = [];
-  for (const line of raw.split('\n')) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-    try {
-      const obj = JSON.parse(trimmed);
-      if (obj.type === 'tool_use' && obj.name) {
-        // Show tool name and first input value if present
-        const inputVals = obj.input ? Object.values(obj.input) : [];
-        const firstVal = inputVals.length > 0 ? String(inputVals[0]).slice(0, 60) : '';
-        lines.push(`\u26a1 ${obj.name}${firstVal ? '  ' + firstVal : ''}`);
-      } else if (obj.type === 'assistant') {
-        // Extract text content
-        const content = Array.isArray(obj.message && obj.message.content)
-          ? obj.message.content.find(c => c.type === 'text')
-          : null;
-        const text = content ? content.text : (typeof obj.text === 'string' ? obj.text : null);
-        if (text) {
-          lines.push(text.slice(0, 100));
-        }
-      }
-      // tool_result: skip
-    } catch {
-      // unparseable — skip silently
-    }
-  }
-  return lines;
-}
-
-/**
- * Watch Claude session .output files in tmpBase for activity.
- * Returns a cleanup function.
- */
-function watchClaudeSessions(tmpBase, onActivity) {
-  if (!tmpBase) return () => {};
-  try {
-    if (!fs.existsSync(tmpBase)) return () => {};
-  } catch {
-    return () => {};
-  }
-
-  // Find 5 most recent session dirs by mtime
-  function getRecentSessionDirs() {
-    try {
-      const entries = fs.readdirSync(tmpBase, { withFileTypes: true })
-        .filter(e => e.isDirectory());
-      const withMtime = entries.map(e => {
-        try {
-          const stat = fs.statSync(path.join(tmpBase, e.name));
-          return { name: e.name, mtime: stat.mtimeMs };
-        } catch {
-          return { name: e.name, mtime: 0 };
-        }
-      });
-      withMtime.sort((a, b) => b.mtime - a.mtime);
-      return withMtime.slice(0, 5).map(e => e.name);
-    } catch {
-      return [];
-    }
-  }
-
-  // Batch buffer: collect events for 100ms then flush
-  let batchBuffer = [];
-  let flushTimer = null;
-
-  function scheduleFlush() {
-    if (flushTimer) return;
-    flushTimer = setTimeout(() => {
-      flushTimer = null;
-      const batch = batchBuffer.splice(0);
-      for (const evt of batch) {
-        onActivity(evt);
-      }
-    }, 100);
-  }
-
-  const watcher = { close: () => {} };
-  const sessionDirs = getRecentSessionDirs();
-
-  for (const sessionId of sessionDirs) {
-    const sessionDir = path.join(tmpBase, sessionId);
-    try {
-      const w = fs.watch(sessionDir, { recursive: true }, (eventType, filename) => {
-        if (!filename || !filename.endsWith('.output')) return;
-        const filePath = path.join(sessionDir, filename);
-        let raw;
-        try {
-          const buf = Buffer.alloc(1024);
-          const fd = fs.openSync(filePath, 'r');
-          const stat = fs.fstatSync(fd);
-          const offset = Math.max(0, stat.size - 1024);
-          const bytesRead = fs.readSync(fd, buf, 0, 1024, offset);
-          fs.closeSync(fd);
-          raw = buf.slice(0, bytesRead).toString('utf8');
-        } catch (err) {
-          if (err.code === 'ENOENT' || err.code === 'EBADF') return; // file deleted or dangling symlink
-          return;
-        }
-        const lines = raw.split('\n').filter(l => l.trim()).slice(-5);
-        const parsed = parseJSONLActivity(lines.join('\n'));
-        batchBuffer.push({
-          sessionId,
-          phaseHint: null,
-          lines: parsed.length > 0 ? parsed : lines,
-          timestamp: new Date().toISOString(),
-        });
-        scheduleFlush();
-      });
-      // Keep ref so we can close
-      const origClose = watcher.close.bind(watcher);
-      watcher.close = () => { try { w.close(); } catch {} origClose(); };
-    } catch {
-      // can't watch this session dir — skip
-    }
-  }
-
-  return () => {
-    if (flushTimer) { clearTimeout(flushTimer); flushTimer = null; }
-    try { watcher.close(); } catch {}
-  };
-}
-
-// ---------------------------------------------------------------------------
-// SSE clients
-// ---------------------------------------------------------------------------
-const sseClients = new Set();
-
-function broadcastRefresh(projectId) {
-  const payload = `event: refresh\ndata: ${JSON.stringify({ projectId })}\n\n`;
-  for (const res of sseClients) {
-    try { res.write(payload); } catch { /* client disconnected */ }
-  }
 }
 
 // ---------------------------------------------------------------------------
@@ -899,53 +462,24 @@ function serveIndex(res) {
 }
 
 // ---------------------------------------------------------------------------
-// API: /api/state  (dual-shape)
+// API: /api/state
 // ---------------------------------------------------------------------------
-function serveState(res, requestedProjectId) {
+function serveState(res) {
   try {
-    const projects = loadRegistry();
+    const newMtimes = scanMtimes(planningDir);
+    const changedFiles = getChangedFiles(cache.mtimes, newMtimes);
+    cache.mtimes = newMtimes;
 
-    // Build summaries for all registered projects
-    const summaries = projects.map(entry => {
-      const ps = projectStates.get(entry.path);
-      return buildProjectSummary(entry, ps || { lastState: null });
-    });
-
-    // Active project: requested project, or first with a watcher, or first in registry
-    let activeState = null;
-    const targetEntries = requestedProjectId
-      ? projects.filter(e => e.path === requestedProjectId)
-      : projects;
-
-    for (const entry of targetEntries) {
-      const ps = projectStates.get(entry.path);
-      if (ps && ps.lastState) {
-        activeState = ps.lastState;
-        break;
-      }
+    let data;
+    if (changedFiles.size > 0 || !lastState) {
+      // Files changed or no previous state — rebuild
+      data = buildState(changedFiles.size > 0 ? changedFiles : null);
+    } else {
+      // No changes — serve cached state
+      data = lastState;
     }
 
-    // Count unique conductorWorkspace values (exclude null/undefined)
-    const repoCount = new Set(
-      projects.map(e => e.conductorWorkspace).filter(w => w != null)
-    ).size;
-
-    // Collect all projects with active auto-mode
-    const autoJobs = projects
-      .map(entry => {
-        const ps = projectStates.get(entry.path);
-        const autoState = ps && ps.lastState ? ps.lastState.autoState : null;
-        return { entry, autoState };
-      })
-      .filter(({ autoState }) => autoState && autoState.active === true)
-      .map(({ entry, autoState }) => ({
-        projectPath: entry.path,
-        projectName: path.basename(entry.path),
-        repoName: entry.conductorWorkspace || null,
-        autoState,
-      }));
-
-    const json = JSON.stringify({ projects: summaries, active: activeState, repoCount, autoJobs });
+    const json = JSON.stringify(data);
     res.writeHead(200, {
       'Content-Type': 'application/json',
       'Cache-Control': 'no-cache',
@@ -956,226 +490,6 @@ function serveState(res, requestedProjectId) {
     res.writeHead(500, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: err.message }));
   }
-}
-
-// ---------------------------------------------------------------------------
-// API: /api/register
-// ---------------------------------------------------------------------------
-function serveRegister(req, res) {
-  let body = '';
-  let tooLarge = false;
-  req.on('data', chunk => { body += chunk; if (body.length > 4096) tooLarge = true; });
-  req.on('end', () => {
-    if (tooLarge) {
-      res.writeHead(413, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'request body too large' }));
-      return;
-    }
-    try {
-      const { path: projectPath, name } = JSON.parse(body);
-      if (!projectPath || typeof projectPath !== 'string' || !path.isAbsolute(projectPath)) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'path must be an absolute path' }));
-        return;
-      }
-      // Validate: path must contain .planning/ to be a tracked project
-      const planningCheck = path.join(projectPath, '.planning');
-      if (!fs.existsSync(planningCheck)) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'path does not contain .planning/' }));
-        return;
-      }
-      registerProject(projectPath, name);
-      // Set up watcher for the new project if path exists
-      const projects = loadRegistry();
-      const entry = projects.find(p => p.path === projectPath);
-      if (entry && fs.existsSync(projectPath)) {
-        setupWatcher(entry);
-        const ps = getProjectState(projectPath);
-        ensureCache(ps);
-        ps.cache.mtimes = scanMtimes(ps.planningDir);
-        try { buildState(ps, null); } catch { /* ignore parse errors for new project */ }
-      }
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ ok: true }));
-    } catch (err) {
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: err.message }));
-    }
-  });
-}
-
-// ---------------------------------------------------------------------------
-// API: /api/decision
-// ---------------------------------------------------------------------------
-function serveDecision(req, res) {
-  let body = '';
-  let tooLarge = false;
-  req.on('data', chunk => { body += chunk; if (body.length > 4096) tooLarge = true; });
-  req.on('end', () => {
-    if (tooLarge) {
-      res.writeHead(413, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'request body too large' }));
-      return;
-    }
-    try {
-      const { projectPath, decisionId, action, rationale } = JSON.parse(body);
-
-      // Validate inputs
-      if (!projectPath || typeof projectPath !== 'string') {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'projectPath is required' }));
-        return;
-      }
-      if (!decisionId || typeof decisionId !== 'string') {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'decisionId is required' }));
-        return;
-      }
-      if (action !== 'accept' && action !== 'dispute') {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'action must be "accept" or "dispute"' }));
-        return;
-      }
-
-      // SECURITY: Validate projectPath against registry before any fs access
-      const registry = loadRegistry();
-      const registryEntry = registry.find(e => e.path === projectPath);
-      if (!registryEntry) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'projectPath not found in registry' }));
-        return;
-      }
-
-      // Read DECISIONS.md
-      const decisionsPath = path.join(projectPath, '.planning', 'DECISIONS.md');
-      if (!fs.existsSync(decisionsPath)) {
-        res.writeHead(404, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'DECISIONS.md not found' }));
-        return;
-      }
-
-      const content = fs.readFileSync(decisionsPath, 'utf8');
-
-      // Split by --- separator lines (lines that are exactly ---)
-      const blocks = content.split(/\n---\n/);
-
-      // Find the block containing ## decisionId:
-      const headerPattern = new RegExp('^##\\s+' + decisionId.replace(/[-]/g, '\\$&') + ':', 'm');
-      const blockIndex = blocks.findIndex(block => headerPattern.test(block));
-
-      if (blockIndex === -1) {
-        res.writeHead(404, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: `Decision ${decisionId} not found` }));
-        return;
-      }
-
-      let block = blocks[blockIndex];
-
-      if (action === 'accept') {
-        block = block.replace(/\*\*Status:\*\*[^\n]*/m, () => '**Status:** ACCEPTED');
-      } else {
-        // dispute: update status and insert rationale line after it
-        const rationaleText = rationale || '';
-        block = block.replace(/(\*\*Status:\*\*[^\n]*)/m, () => {
-          return `**Status:** DISPUTED\n**Dispute Rationale:** '${rationaleText}'`;
-        });
-      }
-
-      blocks[blockIndex] = block;
-      const updatedContent = blocks.join('\n---\n');
-
-      // Atomic write
-      atomicWriteFile(decisionsPath, updatedContent);
-
-      // Trigger re-parse for this project if cached
-      const ps = projectStates.get(projectPath);
-      if (ps) {
-        try { buildState(ps, new Set(['DECISIONS.md'])); } catch { /* ignore */ }
-      }
-
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ ok: true, decisionId, action }));
-    } catch (err) {
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: err.message }));
-    }
-  });
-}
-
-// ---------------------------------------------------------------------------
-// API: /api/claude-mem proxy
-// ---------------------------------------------------------------------------
-function proxyClaudeMem(targetPath, res) {
-  const options = {
-    hostname: '127.0.0.1',
-    port: 37777,
-    path: targetPath,
-    method: 'GET',
-  };
-
-  let finished = false;
-
-  const proxyReq = http.request(options, (proxyRes) => {
-    if (finished) return;
-    finished = true;
-    let data = '';
-    proxyRes.on('data', chunk => { data += chunk; });
-    proxyRes.on('end', () => {
-      try {
-        const parsed = JSON.parse(data);
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify(parsed));
-      } catch {
-        res.writeHead(502, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'invalid response from claude-mem' }));
-      }
-    });
-  });
-
-  proxyReq.on('error', (err) => {
-    if (finished) return;
-    finished = true;
-    if (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND') {
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ available: false }));
-    } else {
-      res.writeHead(502, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ available: false, error: err.message }));
-    }
-  });
-
-  // 2s timeout
-  const timer = setTimeout(() => {
-    if (finished) return;
-    finished = true;
-    proxyReq.destroy();
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ available: false }));
-  }, 2000);
-
-  proxyReq.on('close', () => clearTimeout(timer));
-  proxyReq.end();
-}
-
-// ---------------------------------------------------------------------------
-// API: /api/metrics  (delegates to metrics.cjs)
-// ---------------------------------------------------------------------------
-function serveMetrics(res) {
-  const projects = loadRegistry();
-  handleMetrics(projects, res);
-}
-
-// ---------------------------------------------------------------------------
-// API: /api/activity
-// ---------------------------------------------------------------------------
-function serveActivity(res) {
-  const last50 = activityRing.slice(-50);
-  res.writeHead(200, {
-    'Content-Type': 'application/json',
-    'Cache-Control': 'no-cache',
-  });
-  res.end(JSON.stringify(last50));
 }
 
 // ---------------------------------------------------------------------------
@@ -1191,28 +505,41 @@ function serveEvents(req, res) {
   // Send initial comment to establish connection
   res.write(':connected\n\n');
 
-  sseClients.add(res);
+  let debounceTimer = null;
 
-  // Check if any active project has autoState.active
-  const projects = loadRegistry();
-  const hasActiveAuto = projects.some(entry => {
-    const ps = projectStates.get(entry.path);
-    return ps && ps.lastState && ps.lastState.autoState && ps.lastState.autoState.active === true;
+  // NOTE: { recursive: true } only works on macOS and Windows.
+  // On Linux, only top-level .planning/ changes will trigger updates.
+  const watcher = fs.watch(planningDir, { recursive: true }, () => {
+    // Debounce rapid file changes
+    if (debounceTimer) clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      try {
+        // Scan for changes and selectively rebuild
+        const newMtimes = scanMtimes(planningDir);
+        const changedFiles = getChangedFiles(cache.mtimes, newMtimes);
+
+        if (changedFiles.size === 0) {
+          return; // No actual file content changes
+        }
+
+        cache.mtimes = newMtimes;
+        console.log(`  [sse] ${changedFiles.size} file(s) changed: ${Array.from(changedFiles).slice(0, 5).join(', ')}`);
+
+        // Rebuild state selectively
+        buildState(changedFiles);
+
+        // Push refresh event to client
+        res.write('event: refresh\ndata: {}\n\n');
+      } catch {
+        // Connection may have closed
+      }
+    }, DEBOUNCE_MS);
   });
 
-  let cleanupSessions = () => {};
-  if (hasActiveAuto) {
-    const tmpBase = path.join(os.tmpdir(), 'claude');
-    cleanupSessions = watchClaudeSessions(tmpBase, (event) => {
-      pushActivity(event);
-      const payload = `event: activity\ndata: ${JSON.stringify(event)}\n\n`;
-      try { res.write(payload); } catch { /* client disconnected */ }
-    });
-  }
-
+  // Clean up on connection close
   req.on('close', () => {
-    sseClients.delete(res);
-    cleanupSessions();
+    if (debounceTimer) clearTimeout(debounceTimer);
+    watcher.close();
   });
 }
 
@@ -1228,36 +555,7 @@ const server = http.createServer((req, res) => {
   }
 
   if (req.method === 'GET' && pathname === '/api/state') {
-    return serveState(res, url.searchParams.get('project') || null);
-  }
-
-  if (req.method === 'POST' && pathname === '/api/register') {
-    return serveRegister(req, res);
-  }
-
-  if (req.method === 'POST' && pathname === '/api/decision') {
-    return serveDecision(req, res);
-  }
-
-  if (req.method === 'GET' && pathname === '/api/claude-mem/observations') {
-    const project = url.searchParams.get('project');
-    const limit = url.searchParams.get('limit') || '10';
-    const upstream = project
-      ? `/api/observations?project=${encodeURIComponent(project)}&limit=${encodeURIComponent(limit)}`
-      : `/api/observations?limit=${encodeURIComponent(limit)}`;
-    return proxyClaudeMem(upstream, res);
-  }
-
-  if (req.method === 'GET' && pathname === '/api/claude-mem/stats') {
-    return proxyClaudeMem('/api/stats', res);
-  }
-
-  if (req.method === 'GET' && pathname === '/api/metrics') {
-    return serveMetrics(res);
-  }
-
-  if (req.method === 'GET' && pathname === '/api/activity') {
-    return serveActivity(res);
+    return serveState(res);
   }
 
   if (req.method === 'GET' && pathname === '/api/events') {
@@ -1270,7 +568,7 @@ const server = http.createServer((req, res) => {
 });
 
 // ---------------------------------------------------------------------------
-// Start with port fallback + EADDRINUSE graceful handling
+// Start with port fallback
 // ---------------------------------------------------------------------------
 function tryListen(port, attempt) {
   if (attempt > MAX_PORT_ATTEMPTS) {
@@ -1284,45 +582,25 @@ function tryListen(port, attempt) {
   server.removeAllListeners('error');
   server.on('error', (err) => {
     if (err.code === 'EADDRINUSE') {
-      // Check if an existing tracker server is already running on this port
-      const existingUrl = `http://127.0.0.1:${port}/api/state`;
-      http.get(existingUrl, (probeRes) => {
-        if (probeRes.statusCode === 200) {
-          console.log(`\n  Project Tracker is already running at http://127.0.0.1:${port}\n`);
-          process.exit(0);
-        } else {
-          console.log(`  Port ${port} is busy, trying ${port + 1}...`);
-          tryListen(port + 1, attempt + 1);
-        }
-        probeRes.resume(); // drain response
-      }).on('error', () => {
-        // Port is busy but not our server — try next port
-        console.log(`  Port ${port} is busy, trying ${port + 1}...`);
-        tryListen(port + 1, attempt + 1);
-      });
+      console.log(`  Port ${port} is busy, trying ${port + 1}...`);
+      tryListen(port + 1, attempt + 1);
     } else {
       throw err;
     }
   });
 
   server.listen(port, '127.0.0.1', () => {
-    console.log('  [startup] Discovering Conductor worktrees...');
-    discoverConductorProjects();
-
-    const projects = loadRegistry();
-    console.log(`  [startup] Registry: ${projects.length} project(s) registered`);
-
-    console.log('  [startup] Initializing watchers...');
-    initializeWatchers();
-
-    console.log('  [startup] Building initial project states...');
-    initializeProjectStates();
+    // Do initial mtime scan and state build on startup
+    console.log('  [cache] Initial state build...');
+    cache.mtimes = scanMtimes(planningDir);
+    buildState(null); // Full parse on startup
 
     console.log(
       '\n  Project Tracker is running!\n\n' +
       `  Dashboard:  http://127.0.0.1:${port}\n` +
       `  API:        http://127.0.0.1:${port}/api/state\n` +
-      `  Registry:   ${REGISTRY_PATH}\n\n` +
+      `  Watching:   ${planningDir}\n` +
+      `  Cache:      ${cachePath}\n\n` +
       '  Press Ctrl+C to stop.\n'
     );
   });

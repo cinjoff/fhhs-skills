@@ -2,7 +2,6 @@
 
 @source "./components/**/*.jsx";
 @source "./app.jsx";
-@source "./lib/chart-theme.js";
 
 @theme {
   --color-bg: #0a0a0a;
@@ -21,12 +20,6 @@
 }
 
 /* Base */
-html, body, #app {
-  height: 100vh;
-  margin: 0;
-  overflow: hidden;
-}
-
 html {
   font-size: 15px;
   scrollbar-color: var(--color-dim) transparent;
@@ -36,13 +29,9 @@ body {
   font-family: var(--font-family-mono);
   background: var(--color-bg);
   color: var(--color-text);
+  min-height: 100vh;
   line-height: 1.6;
 }
-
-/* Contrast hierarchy */
-.text-active { color: #e0e0e0; }
-.text-complete { color: #888888; }
-.text-inactive { color: #555555; }
 
 /* Details marker reset */
 details summary::-webkit-details-marker {
@@ -94,73 +83,6 @@ details[open] .arrow {
 
 .blink {
   animation: bl 1s step-end infinite;
-}
-
-/* Pulse green for auto-mode indicators */
-@keyframes pulse-green {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
-}
-
-.pulse-green {
-  animation: pulse-green 2s ease-in-out infinite;
-}
-
-/* === Design System Additions === */
-
-/* Timing function variable */
-:root {
-  --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-/* Staggered slide-in entry */
-@keyframes slideIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.stagger-item {
-  animation: slideIn 0.3s var(--ease-expo) both;
-  animation-delay: calc(var(--index, 0) * 50ms);
-}
-
-/* Skeleton shimmer loading */
-.skeleton {
-  background: var(--color-surface);
-  border-radius: 3px;
-  position: relative;
-  overflow: hidden;
-}
-.skeleton::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, transparent 0%, oklch(0.3 0.005 285 / 0.3) 50%, transparent 100%);
-  animation: shimmer 1.5s ease-in-out infinite;
-}
-@keyframes shimmer {
-  from { transform: translateX(-100%); }
-  to { transform: translateX(100%); }
-}
-
-/* Value change flash */
-@keyframes valueFlash {
-  0% { background-color: oklch(0.65 0.20 280 / 0.15); }
-  100% { background-color: transparent; }
-}
-.value-updated {
-  animation: valueFlash 0.8s ease-out;
-}
-
-/* Progress pulse for active items */
-@keyframes progressPulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
-}
-
-/* Tabular nums utility */
-.tabular-nums {
-  font-variant-numeric: tabular-nums;
 }
 
 /* Reduced motion */

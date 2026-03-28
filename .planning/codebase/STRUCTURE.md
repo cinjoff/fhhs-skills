@@ -1,366 +1,360 @@
 # Codebase Structure
 
-**Analysis Date:** 2026-03-12
+**Analysis Date:** 2026-03-27
 
 ## Directory Layout
 
 ```
-sun-valley/
-├── .claude-plugin/
-│   ├── plugin.json                    # Plugin metadata (name: "fh", version, author, keywords)
-│   └── marketplace.json               # Marketplace listing (separate from plugin.json)
+fhhs-skills/
+├── .claude/                    # Claude Code plugin integration
+│   ├── commands/               # Maintainer-only slash commands (NOT shipped)
+│   ├── hooks/                  # Claude Code hook config (settings.json)
+│   └── skills/                 # ★ SHIPPING BOUNDARY — user-facing skills
+│       ├── build/              # Plan execution orchestrator
+│       │   └── references/     # Co-located templates (implementer-prompt, spec-gate, etc.)
+│       ├── plan-work/          # Planning workflow
+│       ├── plan-review/        # Plan stress-testing
+│       ├── fix/                # Bug triage + TDD fix
+│       ├── refactor/           # Scoped refactoring
+│       ├── review/             # Code review
+│       │   └── references/     # Co-located review templates
+│       ├── auto/               # Autonomous multi-phase execution
+│       ├── map-codebase/       # Parallel codebase analysis
+│       ├── new-project/        # Project bootstrapping
+│       ├── progress/           # Status + session resume
+│       ├── setup/              # One-time plugin orientation
+│       ├── settings/           # Workflow config UI
+│       ├── update/             # Self-update
+│       ├── tracker/            # Visual project dashboard
+│       ├── health/             # .planning/ integrity check
+│       ├── help/               # Command reference
+│       ├── research/           # Web search → GSD output
+│       ├── learnings/          # claude-mem analysis → GitHub issues
+│       │   └── references/     # Co-located learnings templates
+│       ├── secure/             # Security audit
+│       │   └── references/     # Co-located security checklists
+│       ├── todos/              # Task management
+│       ├── onboard/            # First-time UX
+│       ├── optimize/           # Performance optimization
+│       ├── revise-claude-md/   # CLAUDE.md maintenance
+│       ├── observability/      # Monitoring setup
+│       ├── nextjs-perf/        # Next.js specific perf
+│       ├── playwright-testing/ # Playwright test patterns
+│       │   └── references/     # Co-located Playwright refs
+│       ├── ui-test/            # Visual testing
+│       │   └── references/     # Co-located UI test refs
+│       ├── ui-critique/        # Design evaluation
+│       ├── ui-redesign/        # Full redesign workflow
+│       ├── ui-animate/         # Motion design
+│       ├── ui-branding/        # DESIGN.md setup
+│       ├── polish/             # Alignment/spacing
+│       ├── normalize/          # Design system consistency
+│       ├── harden/             # Error/i18n/edge cases
+│       ├── simplify/           # Code complexity reduction
+│       ├── distill/            # Remove complexity
+│       ├── adapt/              # Responsive design
+│       ├── bolder/             # Amplify visual impact
+│       ├── quieter/            # Reduce visual intensity
+│       ├── extract/            # Design system extraction
+│       ├── colorize/           # Strategic color
+│       ├── audit/              # Accessibility/perf audit
+│       ├── clarify/            # UX copy improvement
+│       └── delight/            # Personality/joy
 │
-├── .claude/
-│   ├── skills/                        # User-facing skills (shipped to plugin installs)
-│   │   ├── adapt/                     # Responsive design skill
-│   │   ├── add-todo/                  # Task capture
-│   │   ├── animate/                   # Motion design
-│   │   ├── audit/                     # Accessibility/perf audit
-│   │   ├── bolder/                    # Amplify visual impact
-│   │   ├── build/                     # Orchestrate plan execution
-│   │   ├── check-todos/               # Task review
-│   │   ├── clarify/                   # UX copy improvement
-│   │   ├── colorize/                  # Add strategic color
-│   │   ├── critique/                  # Design evaluation
-│   │   ├── delight/                   # Personality/joy
-│   │   ├── distill/                   # Remove complexity
-│   │   ├── extract/                   # Design system extraction
-│   │   ├── fix/                       # Triage → debug → TDD fix
-│   │   ├── harden/                    # Error/i18n/edge cases
-│   │   ├── map-codebase/              # Parallel codebase analysis
-│   │   ├── nextjs-perf/               # Next.js performance optimization
-│   │   ├── normalize/                 # Design system consistency
-│   │   ├── onboard/                   # First-time UX design
-│   │   ├── optimize/                  # Performance optimization
-│   │   ├── plan-work/                 # Brainstorm → research → plan
-│   │   ├── playwright-testing/        # Playwright testing framework
-│   │   ├── polish/                    # Alignment and spacing
-│   │   ├── progress/                  # Status + routing
-│   │   ├── quick/                     # Ad-hoc task execution
-│   │   ├── quieter/                   # Reduce visual intensity
-│   │   ├── refactor/                  # Scope → baseline → atomic steps
-│   │   ├── research/                  # Web search → GSD output
-│   │   ├── resume-work/               # Context restore → routing
-│   │   ├── review/                    # Code review dispatch
-│   │   ├── secure/                    # Security hardening
-│   │   ├── simplify/                  # Code reuse/quality/efficiency
-│   │   ├── teach-impeccable/          # Design language setup (DESIGN.md)
-│   │   ├── tracker/                   # Visual project dashboard
-│   │   ├── verify/                    # Goal-backward verification
-│   │   └── verify-ui/                 # Visual verification with screenshots
-│   │
-│   ├── commands/                      # System commands (setup, project init)
-│   │   ├── setup.md                   # Tooling setup (Node, GitHub CLI, TypeScript LSP)
-│   │   ├── new-project.md             # GSD project initialization
-│   │   ├── update.md                  # Plugin self-update
-│   │   ├── settings.md                # Workflow config (model profiles, auto-advance)
-│   │   ├── health.md                  # .planning/ integrity check
-│   │   ├── help.md                    # Command reference
-│   │   ├── revise-claude-md.md        # Session learning capture
-│   │   └── (shell scripts for `/fh:` routing)
-│   │
-│   ├── hooks/                         # Git hooks (post-receive, etc.)
-│   │   └── (enforcement and tracking helpers)
-│   │
-│   └── worktrees/                     # Git worktree templates (for isolated branches)
+├── skills/                     # Internal skills (invoked by composites, NOT shipped)
+│   ├── brainstorming/
+│   ├── test-driven-development/
+│   ├── systematic-debugging/
+│   ├── dispatching-parallel-agents/
+│   ├── verification-before-completion/
+│   ├── requesting-code-review/
+│   ├── receiving-code-review/
+│   ├── finishing-a-development-branch/
+│   ├── using-superpowers/
+│   ├── using-git-worktrees/
+│   ├── writing-plans/
+│   ├── writing-skills/
+│   ├── subagent-driven-development/
+│   ├── executing-plans/
+│   ├── simplify/
+│   ├── frontend-design/
+│   └── claude-md-improver/
 │
-├── commands/                          # Legacy/admin commands (not shipped, maintainer-only)
-│   ├── new-project.md
-│   ├── setup.md
-│   ├── settings.md
-│   └── ...
+├── agents/                     # Subagent persona definitions (for Task tool)
+│   ├── code-reviewer.md
+│   ├── code-explorer.md
+│   ├── code-architect.md
+│   ├── gsd-executor.md
+│   ├── gsd-planner.md
+│   ├── gsd-verifier.md
+│   ├── gsd-debugger.md
+│   ├── gsd-plan-checker.md
+│   ├── gsd-codebase-mapper.md
+│   ├── gsd-phase-researcher.md
+│   ├── gsd-project-researcher.md
+│   ├── gsd-research-synthesizer.md
+│   ├── gsd-roadmapper.md
+│   ├── gsd-nyquist-auditor.md
+│   └── gsd-integration-checker.md
 │
-├── agents/                            # Agent type definitions (used with Task tool)
-│   ├── code-reviewer.md               # Spec verification + quality review
-│   ├── code-explorer.md               # Code comprehension
-│   ├── code-architect.md              # Architecture evaluation
-│   ├── gsd-planner.md                 # Plan creation (1309 lines)
-│   ├── gsd-executor.md                # Plan execution (489 lines)
-│   ├── gsd-verifier.md                # Verification (581 lines)
-│   ├── gsd-debugger.md                # Scientific debugging (1257 lines)
-│   ├── gsd-plan-checker.md            # Plan quality gate
-│   ├── gsd-codebase-mapper.md         # Codebase analysis (772 lines)
-│   ├── gsd-phase-researcher.md        # Pre-planning research
-│   ├── gsd-project-researcher.md      # Domain research
-│   ├── gsd-research-synthesizer.md    # Research aggregation
-│   ├── gsd-roadmapper.md              # Roadmap creation
-│   ├── gsd-nyquist-auditor.md         # Test coverage analysis
-│   └── gsd-integration-checker.md     # Cross-phase wiring validation
+├── references/                 # Shared templates/prompts (NOT shipped — dev-only)
+│   ├── dependency-check.md
+│   ├── gsd-state-updates.md
+│   ├── gsd/                    # GSD reference docs (checkpoints, git, profiles, etc.)
+│   └── gsd-templates/          # GSD file templates (project.md, roadmap.md, state.md, etc.)
 │
-├── skills/                            # Internal skills (co-located reference docs, NOT shipped)
-│   ├── brainstorming/SKILL.md         # Collaborative design methodology
-│   ├── test-driven-development/SKILL.md # RED-GREEN-REFACTOR with examples
-│   ├── systematic-debugging/SKILL.md  # Scientific debugging steps
-│   ├── dispatching-parallel-agents/SKILL.md # Parallel work coordination
-│   ├── verification-before-completion/SKILL.md # Evidence-based verification
-│   ├── requesting-code-review/SKILL.md # Code review dispatch
-│   ├── receiving-code-review/SKILL.md # Handling review feedback
-│   ├── finishing-a-development-branch/SKILL.md # Merge/PR workflow
-│   ├── using-superpowers/SKILL.md     # Superpowers skill discovery
-│   ├── using-git-worktrees/SKILL.md   # Isolated branch workflows
-│   ├── writing-plans/SKILL.md         # Plan authoring guidelines
-│   ├── writing-skills/SKILL.md        # Skill definition patterns
-│   ├── subagent-driven-development/SKILL.md # Subagent patterns (includes agents/workflows)
-│   ├── executing-plans/SKILL.md       # Plan execution choreography
-│   ├── simplify/SKILL.md              # 3-agent code cleanup
-│   ├── frontend-design/SKILL.md       # Design principles + anti-patterns
-│   └── claude-md-improver/SKILL.md    # CLAUDE.md audit + improvement
+├── bin/                        # Bundled GSD CLI tooling
+│   ├── gsd-tools.cjs           # Main CLI entry point (~60+ commands)
+│   ├── fhhs-banner.js          # ASCII art banner utility
+│   ├── VERSION                 # GSD version tracker (1.22.4)
+│   └── lib/                    # CLI modules
+│       ├── commands.cjs        # Command definitions and CONTEXT.md contract
+│       ├── state.cjs           # STATE.md parser/writer
+│       ├── phase.cjs           # Phase lifecycle operations
+│       ├── roadmap.cjs         # ROADMAP.md parser/operations
+│       ├── config.cjs          # config.json management
+│       ├── milestone.cjs       # Milestone archive operations
+│       ├── changelog.cjs       # CHANGELOG.md generation
+│       ├── core.cjs            # Shared utilities
+│       ├── frontmatter.cjs     # YAML frontmatter parser
+│       ├── init.cjs            # Init context loader
+│       ├── template.cjs        # Template scaffolding
+│       └── verify.cjs          # Verification helpers
 │
-├── references/                        # Shared templates and prompts (co-located, NOT shipped)
-│   ├── implementer-prompt.md          # Task subagent template (filled per task)
-│   ├── spec-gate-prompt.md            # Per-wave spec review template
-│   ├── summary-template.md            # SUMMARY.md scaffold
-│   ├── checkpoint-protocol.md         # State checkpoint helpers
-│   ├── dependency-check.md            # .planning/PROJECT.md validation
-│   ├── gsd-state-updates.md           # State modification commands
-│   ├── gsd/                           # GSD documentation (upstream reference)
-│   └── gsd-templates/                 # GSD file scaffolds
-│       ├── project.md                 # PROJECT.md template
-│       ├── state.md                   # STATE.md template
-│       ├── context.md                 # CONTEXT.md template
-│       ├── summary.md                 # SUMMARY.md template
-│       ├── debug-subagent-prompt.md   # Debug task template
-│       └── (other GSD templates)
+├── hooks/                      # Claude Code hook scripts
+│   ├── fhhs-context-monitor.js # PostToolUse: context window warnings at 35%/25%
+│   ├── fhhs-statusline.js      # Statusline: phase/progress display
+│   ├── fhhs-check-update.js    # Session start: version update check
+│   └── fhhs-learnings.js       # Session end: learnings capture
 │
-├── bin/                               # GSD CLI and tools (bundled with plugin)
-│   ├── gsd-tools.cjs                  # Main GSD state/config entry point
-│   ├── lib/                           # CLI modules
-│   └── VERSION                        # GSD version (1.22.4)
+├── upstream/                   # Verbatim upstream snapshots (NEVER edit)
+│   ├── superpowers-4.3.1/
+│   ├── impeccable-1.2.0/
+│   ├── gsd-1.22.4/
+│   ├── feature-dev-55b58ec6/
+│   ├── claude-md-management-1.0.0/
+│   ├── gstack-0.3.3/
+│   ├── playwright-best-practices-b4b0fd3c/
+│   └── vercel-react-best-practices-64bee5b7/
 │
-├── upstream/                          # Upstream project snapshots (NEVER EDIT)
-│   ├── superpowers-4.3.1/             # Verbatim copy for diff baseline
-│   │   ├── .claude-plugin/
-│   │   ├── .claude/
-│   │   ├── CHANGELOG.md
-│   │   └── ... (complete upstream)
-│   ├── impeccable-1.2.0/              # Verbatim copy for diff baseline
-│   ├── gsd-1.22.4/                    # Verbatim copy for diff baseline
-│   ├── feature-dev-55b58ec6/          # Reference copy (agents adapted but not forked verbatim)
-│   ├── claude-md-management-1.0.0/    # Verbatim copy for diff baseline
-│   ├── playwright-best-practices-b4b0fd3c/ # Reference copy
-│   └── vercel-react-best-practices-64bee5b7/ # Reference copy
+├── templates/                  # Runtime templates (NOT shipped — copied by skills)
+│   └── project-tracker/        # Visual tracker HTML/JS (copied by /fh:tracker)
 │
-├── evals/                             # Skill evaluation definitions and fixtures
-│   ├── fixtures/                      # Mock projects for testing
-│   │   ├── nextjs-app-deep/           # Full Next.js app fixture
-│   │   └── ...
-│   ├── run_all_evals.py               # Test runner
-│   └── (eval definitions 1-130+)
+├── evals/                      # Eval suite (210+ evals)
+│   ├── evals.json              # Eval definitions
+│   └── fixtures/               # Mock project fixtures for evals
 │
-├── fhhs-skills-workspace/             # Eval workspace and test runs
-│   ├── full-run-1/                    # Eval execution results
-│   └── ...
+├── fhhs-skills-workspace/      # Eval workspace and test harness
+│   ├── run_all_evals.py
+│   ├── llm_grader.py
+│   ├── verify_command_map.py
+│   ├── mock-project/
+│   └── evals/
 │
-├── .planning/                         # Plugin's own planning artifacts (not project artifacts)
-│   ├── codebase/                      # Codebase analysis (ARCHITECTURE.md, STRUCTURE.md, etc.)
-│   ├── PLAN.md                        # Plugin dev plans
-│   ├── STATE.md                       # Plugin dev state
-│   └── ...
+├── .claude-plugin/             # Plugin metadata
+│   ├── plugin.json             # Name ("fh"), version, skills path
+│   └── marketplace.json        # Marketplace listing
 │
-├── .context/                          # Claude context attachments
+├── .planning/                  # This plugin's own project tracking
+│   ├── PROJECT.md
+│   ├── ROADMAP.md
+│   ├── STATE.md
+│   ├── REQUIREMENTS.md
+│   ├── config.json
+│   ├── codebase/               # Codebase analysis docs (this file lives here)
+│   ├── phases/                 # Phase plan/summary directories
+│   ├── research/               # Research artifacts
+│   ├── retros/                 # Retrospectives
+│   └── designs/                # Design docs
+│
+├── .context/                   # Session context (notes, todos, attachments)
+│   ├── notes.md
+│   ├── todos.md
 │   └── attachments/
 │
-├── hooks/                             # Git hooks (deprecated, moved to .claude/hooks/)
+├── .research/                  # Research artifacts
+│   └── session-profiling/
 │
-├── templates/                         # Project templates (not shipped, reference only)
-│   ├── project-tracker/               # Example tracker UI template
-│   └── ...
-│
-├── SPEC.md                            # Architecture specification
-├── README.md                           # User documentation (install, quick start, commands)
-├── CHANGELOG.md                        # Version history (v1.12.5 current)
-├── COMPATIBILITY.md                    # Upstream versions and attribution
-├── PATCHES.md                          # All modifications from upstream projects
-└── .gitignore                          # Excludes node_modules, .env, etc.
+├── CLAUDE.md                   # Project instructions for Claude Code
+├── SPEC.md                     # Architecture specification
+├── README.md                   # User-facing documentation
+├── CHANGELOG.md                # Version history (Keep a Changelog format)
+├── PATCHES.md                  # All upstream modifications with rationale
+├── COMPATIBILITY.md            # Upstream attribution and version tracking
+└── .gitignore
 ```
 
 ## Directory Purposes
 
-**`.claude-plugin/`:**
-- Purpose: Plugin metadata for Claude Code marketplace and installation
-- Contains: `plugin.json` (name: "fh", version, skills path), `marketplace.json` (separate listing)
-- Key files: `plugin.json` defines shipping boundary (`./.claude/skills`)
-- Note: **CRITICAL: Both must stay in sync — version drift breaks `/fh:update`**
+**.claude/skills/:**
+- Purpose: The plugin shipping boundary — everything here is delivered to plugin installs
+- Contains: User-facing skill SKILL.md files, each defining a `/fh:{name}` command
+- Key constraint: All runtime-read files MUST be co-located here. Skills cannot reference `references/`, `templates/`, or repo-root dirs at install time.
+- Key files: `build/SKILL.md`, `plan-work/SKILL.md`, `fix/SKILL.md`, `auto/SKILL.md`
 
-**`.claude/skills/`:**
-- Purpose: User-facing skills shipped to plugin installations
-- Contains: 37 SKILL.md files (each defines command behavior)
-- Pattern: `/fh:{skill-name}` maps to `.claude/skills/{skill-name}/SKILL.md`
-- Design commands: 23 skills for visual/UX quality (critique, polish, normalize, harden, etc.)
-- Workflow commands: 14 skills for engineering (build, plan-work, fix, refactor, verify, etc.)
-- Key structure: Each skill has SKILL.md frontmatter (name, description, user-invokable flag)
+**.claude/commands/:**
+- Purpose: Maintainer-only commands available only in this repo (not shipped)
+- Contains: Release management, upstream sync, phase operations, debugging tools
+- Key files: `release.md`, `sync-upstream.md`, `add-phase.md`, `update-gsd.md`
 
-**`.claude/commands/`:**
-- Purpose: System setup and project management commands
-- Contains: setup.md, new-project.md, health.md, update.md, settings.md, help.md, revise-claude-md.md
-- Note: These are available at install time (non-skill commands)
+**skills/:**
+- Purpose: Internal skills referenced by composites — behavioral patterns, not workflows
+- Contains: Engineering discipline definitions (TDD, debugging, verification, code review)
+- Key files: `test-driven-development/SKILL.md`, `systematic-debugging/SKILL.md`, `verification-before-completion/SKILL.md`
 
-**`.claude/hooks/`:**
-- Purpose: Git hooks for state enforcement and tracking
-- Contains: Hooks for post-receive, pre-commit, etc. (automation of GSD state updates)
+**agents/:**
+- Purpose: Subagent persona definitions for Claude Code Task tool dispatch
+- Contains: One .md file per agent type with YAML frontmatter + role instructions
+- Key files: `gsd-executor.md`, `gsd-planner.md`, `code-reviewer.md`, `gsd-codebase-mapper.md`
 
-**`agents/`:**
-- Purpose: Persona definitions for Task tool subagent dispatch
-- Contains: 15 agent definitions (code-reviewer, gsd-planner, gsd-executor, gsd-verifier, gsd-debugger, etc.)
-- Each file: Detailed system prompt, behavioral directives, context requirements
-- Usage: Composites fill these prompts and dispatch via Task tool with `subagent_type: "code-reviewer"` etc.
-- Key agents:
-  - `gsd-planner.md` (1309 lines): Creates execution plans from requirements
-  - `gsd-debugger.md` (1257 lines): Scientific debugging methodology
-  - `gsd-codebase-mapper.md` (772 lines): Architecture and structure analysis
+**references/:**
+- Purpose: Dev-time shared templates and GSD documentation (NOT shipped)
+- Contains: Prompt templates, state update instructions, GSD reference docs, file templates
+- Key constraint: At runtime (installed plugin), these are NOT accessible. Skills that need templates must co-locate them in `.claude/skills/{skill}/references/`
 
-**`skills/`:**
-- Purpose: Internal skill definitions (co-located reference docs, NOT shipped to installs)
-- Contains: 17 SKILL.md files for methodology guidance (TDD, debugging, brainstorming, code review, etc.)
-- Usage: Composites reference these in their step definitions (e.g., "Follow `skills/test-driven-development/`")
-- Key skills:
-  - `test-driven-development/`: RED-GREEN-REFACTOR with code examples
-  - `systematic-debugging/`: 6-step scientific debugging methodology
-  - `dispatching-parallel-agents/`: How to spawn and coordinate parallel workers
-  - `brainstorming/`: Collaborative design and discovery
-  - `frontend-design/`: Design principles, anti-patterns, token usage
+**bin/:**
+- Purpose: Bundled GSD CLI for state management and workflow operations
+- Contains: Node.js CLI entry point + modular library files
+- Key files: `gsd-tools.cjs` (main), `lib/state.cjs`, `lib/phase.cjs`, `lib/commands.cjs`
 
-**`references/`:**
-- Purpose: Reusable prompt templates and file scaffolds (co-located, NOT shipped)
-- Contains: 5 core templates + `gsd-templates/` (28 GSD file scaffolds)
-- Key files:
-  - `implementer-prompt.md`: Task subagent template (filled with task context, CLAUDE.md sections, TDD flag, design guidance)
-  - `spec-gate-prompt.md`: Per-wave spec review template (filled after each wave)
-  - `summary-template.md`: SUMMARY.md output format (results, issues, next steps)
-  - `gsd-state-updates.md`: Command reference for state modifications (phase updates, completed plans, etc.)
-  - `gsd-templates/`: Scaffolds for PROJECT.md, STATE.md, CONTEXT.md, PLAN.md, SUMMARY.md, DEBUG.md, UAT.md, etc.
+**hooks/:**
+- Purpose: Claude Code lifecycle hooks for session monitoring
+- Contains: Node.js scripts for PostToolUse, session start/end events
+- Key files: `fhhs-context-monitor.js` (context window warnings), `fhhs-statusline.js` (progress display)
 
-**`bin/`:**
-- Purpose: GSD CLI for state and config management (bundled with plugin)
-- Contains: `gsd-tools.cjs` (main entry point), `lib/` (modules), `VERSION` (1.22.4)
-- Used by: All composites for state reads, state writes, template scaffolding
-- Commands: `config-get`, `config-set`, `state-read`, `state-update`, `verify-project`, etc.
+**upstream/:**
+- Purpose: Verbatim snapshots of forked upstream projects — diff baselines only
+- Contains: Unmodified copies at specific versions
+- Key constraint: NEVER edit these files. Used by `/fh:sync-upstream` for diff comparison.
 
-**`upstream/`:**
-- Purpose: Verbatim snapshots of upstream projects for diff baselines
-- Contains: Complete copies of Superpowers 4.3.1, Impeccable 1.2.0, GSD 1.22.4
-- Note: **NEVER EDIT** — used only for `git diff upstream/ .` to find all deviations
-- Reference copies: feature-dev, playwright-best-practices, vercel-react-best-practices (adapted, not forked verbatim)
-- Update process: Save snapshot BEFORE forking, then diff shows exactly what changed and why
+**templates/:**
+- Purpose: Runtime templates copied to user projects by skills (NOT shipped directly)
+- Contains: Project tracker HTML/JS app
+- Key files: `project-tracker/server.cjs`, `project-tracker/index.html`
 
-**`evals/`:**
-- Purpose: Skill evaluation and validation
-- Contains: 130+ eval definitions, fixtures (mock projects), test runner
-- Fixtures: `nextjs-app-deep/` (full Next.js app for testing), other project templates
-- Usage: `run_all_evals.py` executes evals to validate skill behavior
-
-**`.planning/`:**
-- Purpose: Plugin's own planning artifacts (separate from user projects' `.planning/`)
-- Contains: PLAN.md, STATE.md, codebase analysis, designs
-- Subdirectory `codebase/`: ARCHITECTURE.md, STRUCTURE.md, CONVENTIONS.md, TESTING.md, CONCERNS.md
+**evals/:**
+- Purpose: Skill evaluation definitions and mock fixtures
+- Contains: `evals.json` with 210+ eval definitions, fixture directories
+- Key files: `evals.json`, `fixtures/nextjs-app-deep/`
 
 ## Key File Locations
 
 **Entry Points:**
-- `.claude-plugin/plugin.json`: Plugin name and metadata
-- `.claude/commands/`: System commands (setup.md, new-project.md)
-- `.claude/skills/{name}/SKILL.md`: User-facing skill definitions (37 total)
+- `.claude-plugin/plugin.json`: Plugin metadata — name `"fh"`, version, skills path `./.claude/skills/`
+- `.claude/skills/*/SKILL.md`: Each file is a user-invocable slash command
+- `bin/gsd-tools.cjs`: CLI entry point for all state management operations
 
 **Configuration:**
-- `.claude-plugin/plugin.json`: Plugin manifest (version, skills path)
-- `.claude-plugin/marketplace.json`: Marketplace listing
-- `bin/gsd-tools.cjs`: GSD state and config API
+- `.claude-plugin/plugin.json`: Plugin identity and version
+- `.claude-plugin/marketplace.json`: Marketplace listing (must stay version-synced with plugin.json)
+- `.planning/config.json`: Per-project workflow config (model profiles, auto-advance)
+- `CLAUDE.md`: Project instructions for Claude Code sessions
 
 **Core Logic:**
-- `agents/*.md`: Subagent personas and behavioral prompts
-- `skills/*/SKILL.md`: Internal methodology guides (TDD, debugging, brainstorming, etc.)
-- `references/implementer-prompt.md`: Task execution template
-- `references/spec-gate-prompt.md`: Quality review template
+- `.claude/skills/build/SKILL.md`: Plan execution orchestrator (dispatches subagents per wave)
+- `.claude/skills/plan-work/SKILL.md`: Planning workflow (research → brainstorm → plan)
+- `.claude/skills/auto/SKILL.md`: Autonomous pipeline (loops plan → review → build → review)
+- `bin/gsd-tools.cjs`: State management CLI (60+ commands)
+- `bin/lib/commands.cjs`: CONTEXT.md contract and command definitions
 
-**Testing/Validation:**
-- `evals/`: Eval definitions and fixtures
-- `evals/fixtures/nextjs-app-deep/`: Full Next.js project for testing
+**State Files (per user project):**
+- `.planning/PROJECT.md`: Project vision and scope
+- `.planning/ROADMAP.md`: Phased plan with progress tracking
+- `.planning/STATE.md`: Current position (active phase, plan status)
+- `.planning/REQUIREMENTS.md`: Work items and success criteria
+- `.planning/config.json`: Workflow preferences
+- `.planning/phases/{N}-{slug}/PLAN.md`: Phase plan
+- `.planning/phases/{N}-{slug}/CONTEXT.md`: Locked decisions, discretion areas, deferred ideas
+- `.planning/phases/{N}-{slug}/SUMMARY.md`: Phase completion evidence
+
+**Testing:**
+- `evals/evals.json`: All eval definitions
+- `fhhs-skills-workspace/run_all_evals.py`: Eval runner
+- `fhhs-skills-workspace/llm_grader.py`: LLM-based eval grading
 
 ## Naming Conventions
 
 **Files:**
-- Skill definitions: `.claude/skills/{kebab-case}/SKILL.md` (e.g., `plan-work/SKILL.md`, `teach-impeccable/SKILL.md`)
-- Agent definitions: `agents/{kebab-case}.md` (e.g., `code-reviewer.md`, `gsd-planner.md`)
-- Internal skills: `skills/{kebab-case}/SKILL.md` (e.g., `test-driven-development/SKILL.md`)
-- System commands: `commands/{kebab-case}.md` (e.g., `new-project.md`, `setup.md`)
-- References: `references/{kebab-case}.md` (e.g., `implementer-prompt.md`, `spec-gate-prompt.md`)
+- Skills: `SKILL.md` (always uppercase, always inside a named directory)
+- Agents: `{role-name}.md` in kebab-case (e.g., `gsd-executor.md`, `code-reviewer.md`)
+- CLI modules: `{module}.cjs` (CommonJS, e.g., `state.cjs`, `phase.cjs`)
+- Hooks: `fhhs-{purpose}.js` (prefixed with plugin name, e.g., `fhhs-context-monitor.js`)
+- Planning files: UPPERCASE.md (e.g., `PROJECT.md`, `ROADMAP.md`, `PLAN.md`, `SUMMARY.md`)
+- Config: lowercase (e.g., `config.json`, `plugin.json`)
 
 **Directories:**
-- Top level: `agents/`, `skills/`, `references/`, `bin/`, `upstream/`, `evals/`, `.planning/`, `.claude/`, `commands/`
-- Subdirs: Use kebab-case (e.g., `.claude/skills/plan-work/`, `upstream/superpowers-4.3.1/`)
-
-**Invocation:**
-- Plugin skills: `/fh:{name}` (e.g., `/fh:build`, `/fh:plan-work`, `/fh:teach-impeccable`)
-- System commands: `/fh:{name}` (e.g., `/fh:setup`, `/fh:new-project`)
-- Note: Plugin name is "fh" in plugin.json — Claude Code automatically prefixes all invocations
+- Skills (shipped): lowercase kebab-case matching the command name (e.g., `plan-work/`, `map-codebase/`)
+- Skills (internal): lowercase with hyphens, descriptive (e.g., `test-driven-development/`, `systematic-debugging/`)
+- Phases: `{N}-{slug}/` with zero-padded number and kebab-case slug (e.g., `02-upstream-sync/`, `05-context-mode/`)
+- Upstream snapshots: `{name}-{version}/` (e.g., `superpowers-4.3.1/`, `gsd-1.22.4/`)
 
 ## Where to Add New Code
 
-**New Workflow Skill (user-facing):**
-- Primary code: Create `.claude/skills/{name}/SKILL.md` with frontmatter (name, description, user-invokable: true)
-- Step definition: Follow composite orchestrator pattern (read context → analyze → delegate → aggregate)
-- Agent references: Link to subagent types by name (e.g., "dispatch code-reviewer agent")
-- Template references: Include path to shared templates used (e.g., `references/implementer-prompt.md`)
-- References: Co-locate skill-specific references in `.claude/skills/{name}/references/` if needed
-- Test/eval: Add eval definition to `evals/` with fixture and assertions
+**New User-Facing Skill:**
+- Skill definition: `.claude/skills/{name}/SKILL.md`
+- Co-located references (if needed): `.claude/skills/{name}/references/`
+- YAML frontmatter must include: `name: fh:{name}`, `description:`, `user-invocable: true`
+- Spelling: use `user-invocable` (with c), NOT `user-invokable`
+- Add at least 1 eval in `evals/evals.json`
+- Update `/fh:help` if it maintains a command listing
 
-**New Design Command (user-facing):**
-- Primary code: Create `.claude/skills/{name}/SKILL.md`
-- Diagnostic section: Follow audit pattern (check for issues, categorize by severity)
-- Frontend guidance: Reference `skills/frontend-design/SKILL.md` for design principles
-- Template references: Use `references/` templates for report generation
-- Invocation: Include in design quality gate chains (e.g., critique → polish → normalize)
+**New Internal Skill:**
+- Skill definition: `skills/{name}/SKILL.md`
+- NOT shipped to plugin installs — only referenced by composites
+- Follow existing naming: lowercase-with-hyphens directory name
 
-**New Internal Skill (referenced by composites):**
-- Primary code: Create `skills/{name}/SKILL.md` with full step-by-step methodology
-- Usage: Composites reference this in their steps with `Follow skills/{name}/` inline instruction
-- Examples: Include code snippets, patterns, anti-patterns
-- Not shipped: This stays in repo only; composites embed the guidance inline
+**New Agent:**
+- Agent definition: `agents/{name}.md`
+- YAML frontmatter: `name`, `description`, `tools`, `color`
+- Follow naming: `gsd-{role}.md` for GSD agents, `code-{role}.md` for code agents
 
-**New Agent Type (subagent dispatch):**
-- Primary code: Create `agents/{name}.md` with system prompt and behavioral directives
-- System prompt: Include context requirements, success criteria, error handling
-- Usage: Reference from composites that dispatch this agent type
-- Testing: Verify agent can access co-located references in `.claude/skills/{dispatch-skill}/references/`
+**New CLI Command:**
+- Add handler in `bin/gsd-tools.cjs` (command dispatch switch)
+- Module code in `bin/lib/{module}.cjs`
+- Update help text in gsd-tools.cjs header comment
+
+**New Maintainer Command:**
+- File: `.claude/commands/{name}.md`
+- NOT shipped — repo-local only
 
 **New Reference Template:**
-- Primary code: Create `references/{name}.md` with placeholders
-- Placeholders: Use `{UPPERCASE_PLACEHOLDER}` format
-- Usage: Composites fill placeholders before dispatch or output
-- GSD templates: Store file scaffolds in `references/gsd-templates/{filename}.md`
+- If needed at runtime: co-locate in `.claude/skills/{skill}/references/`
+- If dev-only: place in `references/`
 
-**Utilities/Helpers:**
-- Shared functions: Add to `bin/lib/` modules (Node.js)
-- GSD CLI commands: Add to `bin/gsd-tools.cjs` with arg parsing
-- Git hooks: Add to `.claude/hooks/` with shell scripts
+**New Upstream Source:**
+- Snapshot: `upstream/{name}-{version}/` (verbatim, never edit)
+- Document in `PATCHES.md` and `COMPATIBILITY.md`
+- Update upstream registry in `.claude/commands/upstream-registry.md`
 
 ## Special Directories
 
-**`upstream/`:**
-- Purpose: Baseline snapshots for diff tracking
-- Generated: No (manually saved before forking)
-- Committed: Yes (historical record for PATCHES.md)
-- Update: When bumping upstream version, save NEW snapshot before applying patches
-- Never edit: These are read-only baselines — all changes go elsewhere
+**.planning/:**
+- Purpose: Per-project GSD state (also used for this plugin's own planning)
+- Generated: Yes, by `/fh:new-project`
+- Committed: Yes (project state is versioned)
 
-**`evals/`:**
-- Purpose: Skill evaluation and validation
-- Generated: Test runs create new subdirs under `fhhs-skills-workspace/`
-- Committed: No (eval results and test artifacts ignored)
-- Update: Add new eval definition (e.g., eval-124.md) and add fixtures as needed
+**.planning/codebase/:**
+- Purpose: Codebase analysis documents generated by `/fh:map-codebase`
+- Generated: Yes, by mapper subagents
+- Committed: Yes
+- Staleness tracked via `.planning/codebase/.last-mapped` (git SHA)
 
-**`.planning/codebase/`:**
-- Purpose: Codebase analysis documents (ARCHITECTURE.md, STRUCTURE.md, CONVENTIONS.md, etc.)
-- Generated: By `map-codebase` agent
-- Committed: Yes (reference for future development)
-- Update: Run `/fh:map-codebase` to regenerate analysis
+**upstream/:**
+- Purpose: Verbatim upstream snapshots for diff baselines
+- Generated: No — manually placed during upstream sync
+- Committed: Yes
+- Constraint: NEVER edit files here
 
-**`.context/attachments/`:**
-- Purpose: Session context files and attachments
-- Generated: By Claude Code sessions
-- Committed: No (.gitignore)
-- Update: Automatic (session-level only)
+**templates/project-tracker/:**
+- Purpose: Visual tracker app copied to user projects by `/fh:tracker`
+- Generated: No — maintained by developers
+- Committed: Yes (in this repo), but copied to `.project-tracker/` in user projects (gitignored there)
+
+**fhhs-skills-workspace/:**
+- Purpose: Eval workspace with mock projects and test harness
+- Generated: Partially — mock projects are fixtures
+- Committed: Yes
 
 ---
 
-*Structure analysis: 2026-03-12*
+*Structure analysis: 2026-03-27*

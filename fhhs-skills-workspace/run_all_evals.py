@@ -624,8 +624,8 @@ def main():
                         help="Output directory (default: full-run-N)")
     parser.add_argument("--commands", type=str, default=None,
                         help="Comma-separated list of commands to filter evals (e.g., 'build,review,fix')")
-    parser.add_argument("--tier", choices=["smoke", "full", "all"], default="all",
-                        help="Eval tier to run: smoke (tier=smoke only), full/all (all evals, default: all)")
+    parser.add_argument("--tier", choices=["micro", "smoke", "full", "all"], default="all",
+                        help="Eval tier to run: micro (micro only), smoke (smoke+micro), full/all (all evals, default: all)")
     parser.add_argument("--tags", type=str, default=None,
                         help="Comma-separated tags — only run evals that have ALL specified tags (AND logic)")
     parser.add_argument("--update-baselines", action="store_true", default=False,
@@ -666,9 +666,12 @@ def main():
     log(f"Loaded {len(evals)} evals across {len(set(e['command'] for e in evals))} commands")
 
     # Filter by --tier
-    if args.tier == "smoke":
-        evals = [e for e in evals if e.get("tier") == "smoke"]
-        log(f"Filtered to {len(evals)} smoke-tier evals")
+    if args.tier == "micro":
+        evals = [e for e in evals if e.get("tier") == "micro"]
+        log(f"Filtered to {len(evals)} micro-tier evals")
+    elif args.tier == "smoke":
+        evals = [e for e in evals if e.get("tier") in ("smoke", "micro")]
+        log(f"Filtered to {len(evals)} smoke-tier evals (includes micro)")
     # tier == "full" or "all" => keep all (same as current behavior)
 
     # Filter by --tags if provided (AND logic — eval must have ALL tags)

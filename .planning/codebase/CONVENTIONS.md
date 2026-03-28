@@ -1,155 +1,220 @@
 # Coding Conventions
 
-**Analysis Date:** 2026-03-12
+**Analysis Date:** 2026-03-27
 
 ## Naming Patterns
 
 **Files:**
-- `.js` for CommonJS/ES modules in script utilities and hooks
-- `.ts` for TypeScript source code with strict typing
-- `.md` for skill/command documentation (SKILL.md for skills, command frontmatter for commands)
-- Test files: `*.test.js` or `*.spec.ts` pattern
+- JavaScript modules: `kebab-case.cjs` (e.g., `bin/lib/core.cjs`, `bin/lib/frontmatter.cjs`)
+- Skill definitions: `SKILL.md` inside named directories (e.g., `.claude/skills/build/SKILL.md`)
+- Agent definitions: `kebab-case.md` (e.g., `agents/gsd-codebase-mapper.md`)
+- Commands: `kebab-case.md` (e.g., `.claude/commands/audit-upstream.md`)
+- Hooks: `fhhs-kebab-case.js` (e.g., `hooks/fhhs-check-update.js`)
+- Planning artifacts: `UPPERCASE.md` (e.g., `STATE.md`, `ROADMAP.md`, `PLAN.md`, `SUMMARY.md`)
 
 **Functions:**
-- camelCase for all function names: `parseFrontmatter`, `transformCursor`, `isValidId`
-- Async functions use `async` keyword: `async function getSkills()`
-- Named exports preferred over default exports: `export function waitForEvent(...)`
-- Higher-order/factory functions follow camelCase: `transformClaudeCode`, `readSourceFiles`
+- Use `camelCase` for all function names
+- Prefix command handler functions with `cmd`: `cmdGenerateSlug()`, `cmdStateLoad()`, `cmdVerifySummary()`
+- Internal/shared utility functions use plain camelCase: `safeReadFile()`, `loadConfig()`, `extractFrontmatter()`
+- Exported entry points match CLI subcommands: `cmdPhasesList`, `cmdRoadmapGetPhase`, `cmdRequirementsMarkComplete`
 
 **Variables:**
-- camelCase for all variable names and constants
-- Constants from external data (validation rules) use UPPER_SNAKE_CASE: `VALID_ID`, `ALLOWED_PROVIDERS`, `ALLOWED_TYPES`
-- Descriptive names with context: `threadManager`, `timeoutMs`, `matchingEvents`, not abbreviated forms
-- Boolean variables prefix with `is`, `has`, `should`, `can`: `isValidId`, `existsSync`, `userInvokable`
+- Use `camelCase` for local variables: `phaseInfo`, `reqContent`, `selfCheck`
+- Use `UPPER_SNAKE_CASE` for constants/tables: `MODEL_PROFILES`
+- Config keys use `snake_case` in JSON: `model_profile`, `commit_docs`, `branching_strategy`
 
 **Types:**
-- TypeScript strict mode enforced in NextJS fixture (e.g., `evals/fixtures/nextjs-app-deep/`)
-- Import types on same line as implementation when used together
-- Type paths use `@/` alias for app-relative imports: `import { signToken, verifyToken } from '@/lib/auth'`
+- No TypeScript — all JavaScript (CommonJS). No type annotations.
 
 ## Code Style
 
 **Formatting:**
-- Biome formatter configured in `upstream/impeccable-1.2.0/biome.json` (minimal config, CSS Tailwind directives enabled)
-- Indentation: 2 spaces (not enforced but observed in all files)
-- No semicolons enforced by Biome (clean code style)
-- Max line length not explicitly enforced in linting config
+- No automated formatter configured (no Prettier, ESLint, or Biome config files detected)
+- Consistent 2-space indentation across all `.cjs` files
+- Single quotes for strings in JavaScript
+- Semicolons always present
+- Max line length ~120 characters (soft convention)
 
 **Linting:**
-- Biome for code quality and formatting (primary tool)
-- ESLint patterns not detected in recent code — Biome is the standard
-- No type checking configuration in package.json for transformation scripts
+- No linter configured. Code quality is enforced through eval suite and manual review.
 
 ## Import Organization
 
-**Order:**
-1. Node.js built-in modules: `import fs from 'fs'`, `import path from 'path'`
-2. Third-party packages: `import { readFileSync } from 'fs'`, `import { build } from 'esbuild'`
-3. Relative project imports: `import { parseFrontmatter } from './utils.js'`, `import { transformCursor } from '../transformers/cursor.js'`
-4. Type imports in TypeScript: `import type { ThreadManager, LaceEvent } from '~/threads/...'`
+**Order (CommonJS):**
+1. Node.js built-ins: `fs`, `path`, `child_process`, `os`
+2. Local modules from `./core.cjs`, `./frontmatter.cjs`, `./state.cjs`
+
+**Pattern:**
+```javascript
+const fs = require('fs');
+const path = require('path');
+const { execSync } = require('child_process');
+const { safeReadFile, loadConfig, output, error } = require('./core.cjs');
+const { extractFrontmatter } = require('./frontmatter.cjs');
+```
 
 **Path Aliases:**
-- `@/` used in Next.js fixtures for app-relative paths: `import { signToken } from '@/lib/auth'`
-- `~/` used in TypeScript skills for root project paths: `import type { ThreadManager } from '~/threads/thread-manager'`
-- Relative imports (no alias) used in upstream scripts and utilities
-
-**Module Resolution:**
-- ES modules throughout (`.js` files use `import`/`export`)
-- Type: "module" declared in package.json for ES module support
-- File extensions included in relative imports: `import { utils } from '../utils.js'`
+- None. All imports use relative paths.
+- CLI entry point `bin/gsd-tools.cjs` requires from `./lib/` subdirectory.
 
 ## Error Handling
 
 **Patterns:**
-- Try/catch blocks for file I/O operations: `try { readFile(...) } catch (error) { console.error(...) }`
-- Promise-based error handling in async functions: `catch (error) => { return { error: message, status } }`
-- Return tuple pattern for error states: `{ error: "Invalid ID", status: 400 }` or `null` for missing data
-- Validation before operations: `if (!isValidId(id)) { return { error: ... } }`
-- Throwing errors only in critical utility functions, not in business logic paths
 
-**Logging:**
-- `console.error()` for exception logs: `console.error("Error reading skill source:", error)`
-- `console.log()` for summary/status output: `console.log('✓ Claude Code: 1 commands, 1 skills')`
-- No logging library dependency — plain console methods used throughout
+1. **Fatal errors in CLI commands** use the `error()` helper which writes to stderr and exits with code 1:
+```javascript
+// bin/lib/core.cjs
+function error(message) {
+  process.stderr.write('Error: ' + message + '\n');
+  process.exit(1);
+}
+```
+
+2. **Graceful degradation** with empty catch blocks for optional operations:
+```javascript
+try {
+  const content = fs.readFileSync(filePath, 'utf-8');
+} catch {}
+```
+This is intentional for optional file reads (e.g., checking if STATE.md exists). The pattern appears in `bin/lib/commands.cjs`, `bin/lib/state.cjs`, `bin/lib/core.cjs`.
+
+3. **Safe file reading** via `safeReadFile()` that returns `null` on failure:
+```javascript
+function safeReadFile(filePath) {
+  try {
+    return fs.readFileSync(filePath, 'utf-8');
+  } catch {
+    return null;
+  }
+}
+```
+
+4. **Structured error output** — command failures return JSON with error fields rather than throwing:
+```javascript
+output({ found: false, error: 'ROADMAP.md not found' }, raw, '');
+```
+
+## Output Conventions
+
+**CLI output** always uses the `output()` helper from `bin/lib/core.cjs`:
+```javascript
+function output(result, raw, rawValue) {
+  if (raw && rawValue !== undefined) {
+    process.stdout.write(String(rawValue));
+  } else {
+    const json = JSON.stringify(result, null, 2);
+    if (json.length > 50000) {
+      // Write to tmpfile for large payloads
+      const tmpPath = path.join(require('os').tmpdir(), `gsd-${Date.now()}.json`);
+      fs.writeFileSync(tmpPath, json, 'utf-8');
+      process.stdout.write('@file:' + tmpPath);
+    } else {
+      process.stdout.write(json);
+    }
+  }
+  process.exit(0);
+}
+```
+
+**Dual output mode:** Every command supports `--raw` flag for plain text output (consumed by bash scripts in skills) and JSON output (default, consumed by skill orchestrators).
+
+## SKILL.md Authoring Conventions
+
+**Frontmatter (YAML):**
+```yaml
+---
+name: fh:skill-name
+description: One-line description of what the skill does.
+user-invocable: true          # or false for internal-only skills
+disable-model-invocation: true # optional, prevents auto-triggering
+---
+```
+
+- Field is `user-invocable` (with a **c**), NOT `user-invokable` — misspelling silently defaults to `true`
+- All user-facing skills use `fh:` prefix in the `name` field
+- Skills reference other skills as `/fh:name` in prose, never `/name`
+
+**Skill structure:**
+1. Description paragraph with `$ARGUMENTS` placeholder
+2. Dependency checks (`.planning/PROJECT.md` existence)
+3. Numbered steps with markdown headers (`## Step N: Name`)
+4. Inline bash code blocks for CLI tool invocations
+5. XML-style tags for structured sections: `<required_reading>`, `<process>`, `<step name="...">`, `<role>`
+
+**Agent definition frontmatter:**
+```yaml
+---
+name: gsd-agent-name
+description: What the agent does.
+tools: Read, Bash, Grep, Glob, Write
+color: cyan
+skills:
+  - internal-skill-name
+---
+```
+
+## Logging
+
+**Framework:** `console` is not used in CLI code. All output goes through `process.stdout.write()` and `process.stderr.write()` via the `output()` and `error()` helpers.
+
+**Skills:** Use inline `echo` in bash code blocks for status messages. No logging framework.
 
 ## Comments
 
 **When to Comment:**
-- Document complex logic (e.g., YAML parser in `parseFrontmatter` function)
-- Explain workarounds or non-obvious decisions
-- Document integration points between modules
+- Section dividers using box-drawing characters: `// --- Section Name ---` or `// ─── Section Name ────`
+- JSDoc-style block comments at the top of each module file describing purpose
+- Inline comments for non-obvious regex patterns or migration logic
+- No JSDoc on individual functions
 
-**JSDoc/TSDoc:**
-- Parameters documented with `@param` tags
-- Return types documented with `@returns`
-- Descriptions include context and examples
-- Example format from `condition-based-waiting-example.ts`:
-  ```typescript
-  /**
-   * Wait for a specific event type to appear in thread
-   *
-   * @param threadManager - The thread manager to query
-   * @param threadId - Thread to check for events
-   * @param eventType - Type of event to wait for
-   * @param timeoutMs - Maximum time to wait (default 5000ms)
-   * @returns Promise resolving to the first matching event
-   *
-   * Example:
-   *   await waitForEvent(threadManager, agentThreadId, 'TOOL_RESULT');
-   */
-  ```
-- TSDoc in TypeScript files, plain comment blocks in JavaScript
+**Module header pattern:**
+```javascript
+/**
+ * ModuleName — Brief description of module purpose
+ */
+```
 
 ## Function Design
 
-**Size:**
-- Functions typically 10-50 lines
-- Utility functions extracted to separate files (e.g., `parseFrontmatter`, `readFilesRecursive`)
-- Validation logic separated from business logic
+**Size:** Functions are typically 20-80 lines. Larger functions (100+) exist for complex parsing (frontmatter, roadmap).
 
-**Parameters:**
-- Parameters named descriptively, not abbreviated
-- Default parameters used for optional values: `timeoutMs = 5000`
-- No more than 4 parameters per function (use object for multiple related options)
-- Prefer explicit parameters over implicit dependencies
+**Parameters:** Command handlers follow the pattern `cmdName(cwd, ...specificArgs, raw)` where:
+- `cwd` is always the first parameter (working directory)
+- `raw` is always the last parameter (boolean for --raw output mode)
+- Specific args come between
 
-**Return Values:**
-- Single value returns for transformations: `{ frontmatter, body }`
-- Tuple pattern for optional values: `Promise<LaceEvent | null>`
-- Explicit null for "not found" states rather than undefined
-- Objects destructured at call site when needed
+**Return Values:** Functions don't return values. They call `output()` or `error()` which exits the process. This is a CLI-specific pattern — every function is an endpoint.
 
 ## Module Design
 
-**Exports:**
-- Named exports only (no default exports in utility modules)
-- Barrel files not used — direct path imports preferred
-- Each module has focused responsibility (e.g., `validation.js` only contains validation helpers)
+**Exports:** Each module in `bin/lib/` exports all its public functions via `module.exports`:
+```javascript
+module.exports = { cmdGenerateSlug, cmdCurrentTimestamp, cmdListTodos, ... };
+```
 
-**Barrel Files:**
-- Not used in this codebase
-- Direct imports from source modules favored
+**Barrel Files:** None. The entry point `bin/gsd-tools.cjs` imports directly from each module and dispatches based on CLI args.
 
-## Async Patterns
+## Commit Messages
 
-**Promise Usage:**
-- Async/await preferred over `.then()` chains
-- New Promise constructor used for polling loops: `return new Promise((resolve, reject) => { ... })`
-- Timeout detection using `Date.now()` comparisons
-- Polling intervals explicit (e.g., `setTimeout(check, 10)` for 10ms poll)
+**Format:** Conventional commits required:
+- `feat:` — new feature
+- `fix:` — bug fix
+- `docs:` — documentation
+- `chore:` — maintenance
+- `refactor:` — code restructuring
+- `release:` — version bumps
 
-## Cross-Module Patterns
+## String Safety
 
-**Configuration:**
-- Configuration as constants in utility files (`VALID_ID`, `ALLOWED_PROVIDERS`)
-- Runtime options passed as function parameters with defaults
-- Environment variables not used in transform/validation logic
+**Critical rule:** Always use function form for `str.replace()` with dynamic content:
+```javascript
+// WRONG — $& in content corrupts replacement
+str.replace(pattern, dynamicContent);
 
-**Validation:**
-- Centralized in dedicated modules: `server/lib/validation.js`
-- Functions export both validator functions and regex patterns
-- Return boolean or error tuples, not throw on invalid input
+// CORRECT — function form avoids special replacement patterns
+str.replace(pattern, () => dynamicContent);
+```
 
 ---
 
-*Convention analysis: 2026-03-12*
+*Convention analysis: 2026-03-27*

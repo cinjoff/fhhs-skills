@@ -17,35 +17,20 @@ export function useToast() {
   return [toast, show];
 }
 
-export function useSSE(onData, onEvent) {
+export function useSSE(onData) {
   const [connected, setConnected] = useState(false);
   const esRef = useRef(null);
   const rtRef = useRef(null);
   const unmountedRef = useRef(false);
   const onDataRef = useRef(onData);
   onDataRef.current = onData;
-  const onEventRef = useRef(onEvent);
-  onEventRef.current = onEvent;
 
-  const fetchState = useCallback((projectId) => {
-    const url = projectId ? `/api/state?project=${encodeURIComponent(projectId)}` : '/api/state';
-    fetch(url)
+  const fetchState = useCallback(() => {
+    fetch('/api/state')
       .then(r => r.json())
       .then(d => {
         if (unmountedRef.current) return;
-        if (projectId && d && !d.projects) {
-          // Partial update: server returned single-project data; merge into existing state
-          onDataRef.current((prev) => {
-            if (!prev || !prev.projects) return d;
-            const projects = prev.projects.map(p => p.name === projectId || p.path === projectId ? { ...p, ...d } : p);
-            const active = prev.active && (prev.active.project && (prev.active.project.name === projectId || prev.active.project.path === projectId))
-              ? d
-              : prev.active;
-            return { ...prev, projects, active };
-          });
-        } else {
-          onDataRef.current(d);
-        }
+        onDataRef.current(d);
       })
       .catch(() => {});
   }, []);
@@ -60,19 +45,7 @@ export function useSSE(onData, onEvent) {
       setConnected(true);
       if (rtRef.current) { clearTimeout(rtRef.current); rtRef.current = null; }
     };
-    es.addEventListener('refresh', (e) => {
-      let projectId = null;
-      try { projectId = e.data ? JSON.parse(e.data).projectId || null : null; } catch (_) {}
-      fetchState(projectId);
-    });
-    es.addEventListener('activity', (e) => {
-      if (onEventRef.current) {
-        try {
-          const parsed = e.data ? JSON.parse(e.data) : null;
-          if (parsed) onEventRef.current('activity', parsed);
-        } catch (_) {}
-      }
-    });
+    es.addEventListener('refresh', fetchState);
     es.onerror = () => {
       setConnected(false);
       es.close();

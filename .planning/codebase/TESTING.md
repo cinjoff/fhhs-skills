@@ -1,301 +1,248 @@
 # Testing Patterns
 
-**Analysis Date:** 2026-03-12
+**Analysis Date:** 2026-03-27
 
 ## Test Framework
 
 **Runner:**
-- Bun test (`bun:test`) for JavaScript tests
-- Vitest for TypeScript tests (Next.js fixture)
-- Playwright for E2E tests (browser automation)
-- Config files: `bun` uses inline imports, Vitest/Playwright configs not explicitly defined in root
+- Custom eval suite (Python-based runner + JSON eval definitions)
+- No unit test framework (no Jest, Vitest, or Mocha configured)
+- Config: `evals/evals.json` (6456 lines, 220 evals)
+- Runner: `python3 evals/run_all_evals.py`
 
 **Assertion Library:**
-- Bun built-in expect API: `expect(...).toBe()`, `expect(...).toHaveLength()`
-- Vitest expect API: same interface as Bun
-- Playwright expect API: async matchers like `await expect(locator).toBeVisible()`
+- Custom assertion model defined in `evals/evals.json` — no standard assertion library
 
 **Run Commands:**
 ```bash
-bun test                    # Run all tests using Bun test runner
-bun run test                # From scripts if defined in package.json
+python3 evals/run_all_evals.py   # Run all 220 evals
 ```
 
-Tests in TypeScript fixture run with Vitest (implied by `vitest` import pattern in `evals/fixtures/nextjs-app-deep/`)
+No watch mode. No coverage tool. Evals are behavioral, not code-coverage-based.
 
 ## Test File Organization
 
 **Location:**
-- `upstream/impeccable-1.2.0/tests/lib/transformers/` - Transformer unit tests
-- `upstream/impeccable-1.2.0/tests/` - Root test directory
-- `evals/fixtures/nextjs-app-deep/src/__tests__/` - Co-located with source in fixtures
-- `evals/fixtures/nextjs-app-deep/e2e/` - E2E tests in separate directory
+- All evals defined in a single JSON file: `evals/evals.json`
+- Mock project fixtures in `evals/fixtures/` (e.g., `evals/fixtures/nextjs-app-deep/`)
+- No co-located test files alongside source code
+- Test files in `evals/fixtures/` are mock project structures, not test suites
 
 **Naming:**
-- `.test.js` suffix for Bun tests
-- `.spec.ts` suffix for Playwright E2E tests
-- `.test.ts` suffix for Vitest unit tests
-- Descriptive test names reflecting scenario being tested
+- Single eval definition file, not per-skill test files
+- Fixture directories named after the mock project type: `nextjs-app-deep`
 
 **Structure:**
 ```
-upstream/impeccable-1.2.0/
-├── tests/
-│   ├── build.test.js           # Integration tests for build pipeline
-│   └── lib/transformers/
-│       ├── claude-code.test.js  # Transformer unit tests
-│       ├── cursor.test.js
-│       └── gemini.test.js
-evals/fixtures/nextjs-app-deep/
-├── src/__tests__/
-│   └── auth.test.ts             # Co-located unit tests
-└── e2e/
-    └── login.spec.ts            # E2E browser tests
+evals/
+├── evals.json                    # All 220 eval definitions
+├── run_all_evals.py              # Python runner script
+└── fixtures/
+    └── nextjs-app-deep/          # Mock project for eval scenarios
+        ├── .planning/            # Mock planning state
+        ├── src/                  # Mock source files
+        └── e2e/                  # Mock e2e test stubs
 ```
 
-## Test Structure
+## Eval Structure
 
-**Suite Organization:**
-```typescript
-// Bun/Vitest pattern - from upstream/impeccable-1.2.0/tests/build.test.js
-import { describe, test, expect, beforeEach, afterEach, mock } from 'bun:test';
-
-describe('build orchestration', () => {
-  beforeEach(() => {
-    // Setup: create temp directories
-    if (fs.existsSync(TEST_DIR)) {
-      fs.rmSync(TEST_DIR, { recursive: true, force: true });
+**Single eval definition:**
+```json
+{
+  "id": 1,
+  "command": "build",
+  "prompt": "ok i just finished planning phase 13...",
+  "expected_output": "Should detect GSD mode, find the plan...",
+  "files": [],
+  "assertions": [
+    {
+      "text": "Identifies 2 waves from task dependencies",
+      "type": "behavioral"
+    },
+    {
+      "text": "Dispatches general-purpose subagents",
+      "type": "behavioral"
+    },
+    {
+      "text": "Does NOT invoke finishing-a-development-branch directly",
+      "type": "guard"
     }
-    fs.mkdirSync(TEST_DIR, { recursive: true });
-  });
-
-  afterEach(() => {
-    // Teardown: cleanup temp files
-    if (fs.existsSync(TEST_DIR)) {
-      fs.rmSync(TEST_DIR, { recursive: true, force: true });
-    }
-  });
-
-  test('should call readSourceFiles with root directory', () => {
-    // Arrange
-    const readSourceFilesSpy = spyOn(utils, 'readSourceFiles').mockReturnValue({
-      commands: [],
-      skills: []
-    });
-
-    // Act
-    const { commands, skills } = utils.readSourceFiles(ROOT_DIR);
-
-    // Assert
-    expect(readSourceFilesSpy).toHaveBeenCalledWith(ROOT_DIR);
-    readSourceFilesSpy.mockRestore();
-  });
-});
+  ],
+  "scenario_requires": []
+}
 ```
 
-**Patterns:**
-- Setup: `beforeEach` creates isolated test directories (`TEST_DIR`)
-- Teardown: `afterEach` removes test artifacts synchronously
-- Mocking: `spyOn(module, 'function').mockReturnValue()`
-- Restoration: `spy.mockRestore()` cleans up after each test
-- Temporary file management essential for filesystem-heavy tests
+**Fields:**
+- `id`: Unique numeric identifier (1-243, with gaps)
+- `command`: Which skill/command is being tested (matches skill directory name)
+- `prompt`: Natural language user input simulating real usage
+- `expected_output`: Human-readable description of correct behavior
+- `files`: Additional files to seed for the eval scenario
+- `assertions`: Structured checks with type classification
+- `scenario_requires`: Optional preconditions (e.g., `"gsd_project"`, `"no_gsd_project"`)
+
+## Assertion Types
+
+**Six assertion types used across all evals:**
+
+| Type | Count | Purpose |
+|------|-------|---------|
+| `behavioral` | 498 | Verifies the skill follows the correct process/workflow |
+| `output` | 306 | Checks for specific content in the output |
+| `guard` | 159 | Ensures something does NOT happen (negative assertion) |
+| `ordering` | 31 | Verifies steps happen in correct sequence |
+| `context_discipline` | 9 | Checks context window management behavior |
+| `routing` | 3 | Verifies correct skill/agent dispatch |
+
+**Pattern examples:**
+
+```json
+// behavioral — checks process adherence
+{ "text": "Detects research-first need from 'never used Stripe API'", "type": "behavioral" }
+
+// output — checks visible result
+{ "text": "Creates PLAN.md with must_haves frontmatter", "type": "output" }
+
+// guard — checks for absence (negative test)
+{ "text": "Does NOT proceed with execution", "type": "guard" }
+
+// ordering — checks sequence
+{ "text": "Runs research before brainstorming", "type": "ordering" }
+
+// context_discipline — checks efficient context usage
+{ "text": "Stays under 15% context usage", "type": "context_discipline" }
+```
+
+## Eval Coverage by Command
+
+**High coverage (10+ evals):**
+- `build`: 29 evals
+- `plan-work`: 19 evals
+- `review`: 18 evals
+- `progress`: 12 evals
+- `plan-review`: 12 evals
+- `fix`: 10 evals
+
+**Medium coverage (3-9 evals):**
+- `map-codebase`: 9 evals
+- `refactor`: 7 evals
+- `new-project`: 7 evals
+- `simplify`: 7 evals
+- `secure`: 7 evals
+- `health`: 6 evals
+- `auto`: 6 evals
+- `update`: 5 evals
+- `research`: 5 evals
+- `observability`: 5 evals
+- `revise-claude-md`: 4 evals
+- `todos`: 4 evals
+- `learnings`: 4 evals
+
+**Low coverage (1-2 evals):**
+- `setup`: 3, `ui-critique`: 3, `polish`: 3, `ui-animate`: 3, `tracker`: 3, `ui-redesign`: 3
+- `audit`: 2, `ui-test`: 2, `help`: 2, `normalize`: 2, `playwright-testing`: 2, `nextjs-perf`: 2, `ui-branding`: 2
+- `settings`: 1, `adapt`: 1, `bolder`: 1, `clarify`: 1, `colorize`: 1, `delight`: 1, `distill`: 1, `extract`: 1, `harden`: 1, `onboard`: 1, `optimize`: 1, `quieter`: 1
 
 ## Mocking
 
-**Framework:** Bun's `spyOn` API (built-in, no external dependency)
+**Framework:** No mocking library. Evals use fixture directories to simulate project state.
 
 **Patterns:**
-```typescript
-// From upstream/impeccable-1.2.0/tests/build.test.js
-const readSourceFilesSpy = spyOn(utils, 'readSourceFiles').mockReturnValue({
-  commands: [],
-  skills: []
-});
-
-const transformCursorSpy = spyOn(transformers, 'transformCursor').mockImplementation(() => {});
-
-// Track call order
-const callOrder = [];
-spyOn(transformers, 'transformCursor').mockImplementation(() => {
-  callOrder.push('cursor');
-});
-
-// Assertions on mocks
-expect(readSourceFilesSpy).toHaveBeenCalledWith(ROOT_DIR);
-expect(transformCursorSpy).toHaveBeenCalledWith(commands, skills, DIST_DIR);
-expect(callOrder).toEqual(['cursor', 'claude-code', 'gemini', 'codex']);
-
-// Mock restoration
-readSourceFilesSpy.mockRestore();
-transformCursorSpy.mockRestore();
-```
+- `evals/fixtures/nextjs-app-deep/` contains a complete mock Next.js project structure
+- Mock `.planning/` directories with `PROJECT.md`, `STATE.md`, `ROADMAP.md`, phase directories
+- Mock source files (`.ts`, `.tsx`) for realistic codebase scanning
+- `scenario_requires` field controls which fixture state applies
 
 **What to Mock:**
-- External function calls: `readSourceFiles`, `transformCursor`
-- System operations that would be slow: actual filesystem writes
-- Integration points between modules
-- Dependencies to isolate unit under test
+- Project directory structures (`.planning/`, `src/`, configs)
+- Planning state files (STATE.md, ROADMAP.md, PLAN.md, SUMMARY.md)
+- Source code files for codebase analysis evals
 
 **What NOT to Mock:**
-- Filesystem operations in integration tests (explicitly test the actual I/O)
-- Actual validation logic (test real validation rules)
-- Core business logic (test real transformations)
-- Parser functions (test actual YAML/markdown parsing)
+- The skills themselves are tested as-is (behavioral testing of skill instructions)
+- No function-level mocking — evals test end-to-end skill behavior
 
-## Fixtures and Factories
+## Fixtures
 
 **Test Data:**
-```typescript
-// From upstream/impeccable-1.2.0/tests/lib/transformers/claude-code.test.js
-const commands = [
-  {
-    name: 'test-command',
-    description: 'A test command',
-    args: [
-      { name: 'target', description: 'The target', required: false },
-      { name: 'output', description: 'Output format', required: true }
-    ],
-    body: 'Command body here.'
-  }
-];
-
-const skills = [
-  {
-    name: 'test-skill',
-    description: 'A test skill',
-    license: 'MIT',
-    body: 'Skill instructions.'
-  }
-];
+```
+evals/fixtures/nextjs-app-deep/
+├── .planning/
+│   ├── codebase/         # Mock codebase analysis docs
+│   ├── todos/            # Mock todo items
+│   └── phases/
+│       ├── 01-auth/      # Completed phase fixture
+│       └── 02-dashboard/ # In-progress phase fixture
+├── src/
+│   ├── app/              # Next.js app router pages
+│   ├── components/       # React components
+│   ├── hooks/            # Custom hooks
+│   ├── lib/              # Utility libraries
+│   ├── types/            # TypeScript types
+│   └── __tests__/        # Mock test files
+└── e2e/                  # Mock E2E test directory
 ```
 
-**Location:**
-- Inline in test files (small, focused datasets)
-- Test utilities: `path.join(TEST_DIR, 'source/commands/test-command.md')` for file fixtures
-- No separate fixture factory files — data embedded in test cases
+**Location:** `evals/fixtures/`
 
-## Coverage
+## No Unit Tests for CLI
 
-**Requirements:** Not enforced
+The `bin/gsd-tools.cjs` CLI (6466 lines across 13 modules) has **no unit tests**. There is one test file at `templates/project-tracker/parser.test.cjs` for the project tracker parser, but the core CLI modules (`core.cjs`, `state.cjs`, `frontmatter.cjs`, `verify.cjs`, etc.) have no dedicated test coverage.
 
-**View Coverage:** No coverage reporting configuration detected in codebase
+Testing relies entirely on the behavioral eval suite which tests skills end-to-end rather than testing individual JavaScript functions.
 
 ## Test Types
 
-**Unit Tests:**
-- Scope: Single function or module in isolation
-- Approach: Mock external dependencies, test specific behavior
-- Examples: `claude-code.test.js` tests `transformClaudeCode` with various input combinations
-- Files: `upstream/impeccable-1.2.0/tests/lib/transformers/*.test.js`
+**Behavioral Evals (primary):**
+- Test skill behavior given natural language prompts
+- Verify correct process adherence, output content, and guardrails
+- 220 evals covering 43 commands/skills
+- Assertion-based validation with 6 assertion types
 
-**Integration Tests:**
-- Scope: Multiple modules working together
-- Approach: Actual filesystem I/O, real parsing, real transformation pipeline
-- Example from `build.test.js` line 124-174: Creates real files, runs all transformers, verifies outputs exist with correct structure
-- Pattern: Write test files to temp directory, run full pipeline, assert directory structure and file contents
+**No Unit Tests:**
+- No Jest/Vitest/Mocha for JavaScript modules
+- No function-level testing of `bin/lib/*.cjs` utilities
 
-```typescript
-// Integration test pattern - from build.test.js
-test('integration: full build creates all expected outputs', () => {
-  const commandContent = `---\nname: test-command\n---\n\nBody`;
-  const skillContent = `---\nname: test-skill\n---\n\nSkill body`;
+**No Integration Tests:**
+- No tests that exercise the CLI end-to-end with real filesystem operations
 
-  // Write real files
-  utils.writeFile(path.join(TEST_DIR, 'source/commands/test-command.md'), commandContent);
-  utils.writeFile(path.join(TEST_DIR, 'source/skills/test-skill.md'), skillContent);
+**No E2E Tests:**
+- Eval fixtures contain mock E2E directories but no actual E2E test runner
 
-  // Run full pipeline
-  const { commands, skills } = utils.readSourceFiles(TEST_DIR);
-  transformers.transformCursor(commands, skills, DIST_DIR);
-  transformers.transformClaudeCode(commands, skills, DIST_DIR);
-  transformers.transformGemini(commands, skills, DIST_DIR);
-  transformers.transformCodex(commands, skills, DIST_DIR);
+## Adding New Evals
 
-  // Assert all outputs created correctly
-  expect(fs.existsSync(path.join(DIST_DIR, 'cursor/commands/test-command.md'))).toBe(true);
-  expect(fs.existsSync(path.join(DIST_DIR, 'claude-code/commands/test-command.md'))).toBe(true);
-});
-```
+**When to add:**
+- Every shipped skill needs at least 1 eval (per CLAUDE.md)
+- After upstream changes, re-run the full eval suite
 
-**E2E Tests:**
-- Framework: Playwright (browser automation)
-- Scope: Full user workflows in a real browser
-- Files: `evals/fixtures/nextjs-app-deep/e2e/login.spec.ts`
-- Pattern: Navigate to page, interact with elements, assert outcomes
+**How to add:**
+1. Add a new entry to `evals/evals.json` with a unique `id`
+2. Include `command` matching the skill directory name
+3. Write a realistic `prompt` simulating user input
+4. Describe `expected_output` in plain English
+5. Add `assertions` with appropriate types:
+   - `behavioral` for process checks
+   - `output` for content checks
+   - `guard` for negative checks (things that must NOT happen)
+   - `ordering` for sequence checks
+6. Add `scenario_requires` if the eval needs specific fixture state
+7. Add fixture files to `evals/fixtures/` if needed
 
-```typescript
-// E2E test pattern - from login.spec.ts
-test('should login successfully', async ({ page }) => {
-  await page.goto('/login');
-  await page.fill('.email-input', 'admin@acme.com');
-  await page.fill('input[type="password"]', 'SecurePass123');
-  await page.click('.btn-primary');
-
-  await page.waitForURL('/');
-  expect(page.url()).toContain('/');
-});
-```
-
-## Common Patterns
-
-**Async Testing:**
-- Async test functions with `async ({ page })` for E2E tests
-- `await` for page navigation: `await page.goto('/login')`
-- `await` for interactions: `await page.fill()`, `await page.click()`
-- Waiters for state changes: `await page.waitForURL('/')`
-- Promise-based in unit tests with synchronous assertions
-
-**Error Testing:**
-- Mock validation failures and assert error returns
-- Integration tests verify error conditions create expected outputs (e.g., empty arrays)
-- No explicit error/exception assertions detected in test suite
-
-```typescript
-// Error condition testing pattern - from claude-code.test.js
-test('should handle empty arrays', () => {
-  transformClaudeCode([], [], TEST_DIR);
-
-  const commandFiles = fs.readdirSync(path.join(TEST_DIR, 'claude-code/commands'));
-  const skillDirs = fs.readdirSync(path.join(TEST_DIR, 'claude-code/skills'));
-
-  expect(commandFiles).toHaveLength(0);
-  expect(skillDirs).toHaveLength(0);
-});
-```
-
-## Test Data Verification
-
-**Frontmatter Parsing:**
-Tests verify complex YAML parsing works correctly:
-```typescript
-// From claude-code.test.js
-const parsed = parseFrontmatter(content);
-
-expect(parsed.frontmatter.name).toBe('test-command');
-expect(parsed.frontmatter.args).toHaveLength(2);
-expect(parsed.frontmatter.args[0].name).toBe('target');
-expect(parsed.frontmatter.args[1].required).toBe(true);
-expect(parsed.body).toBe('Command body here.');
-```
-
-**Multiline Content Preservation:**
-Tests ensure formatting is preserved through transformations:
-```typescript
-// From claude-code.test.js
-test('should preserve multiline body content', () => {
-  const commands = [{
-    body: `First paragraph.\n\nSecond paragraph.\n\n- List item 1`
-  }];
-  transformClaudeCode(commands, [], TEST_DIR);
-
-  const content = fs.readFileSync(outPath, 'utf-8');
-  const parsed = parseFrontmatter(content);
-
-  expect(parsed.body).toContain('First paragraph.');
-  expect(parsed.body).toContain('- List item 1');
-});
+**Eval JSON schema:**
+```json
+{
+  "id": <unique integer>,
+  "command": "<skill-directory-name>",
+  "prompt": "<natural language user input>",
+  "expected_output": "<human-readable expected behavior>",
+  "files": [],
+  "assertions": [
+    { "text": "<assertion description>", "type": "behavioral|output|guard|ordering|context_discipline|routing" }
+  ],
+  "scenario_requires": ["<optional precondition>"]
+}
 ```
 
 ---
 
-*Testing analysis: 2026-03-12*
+*Testing analysis: 2026-03-27*

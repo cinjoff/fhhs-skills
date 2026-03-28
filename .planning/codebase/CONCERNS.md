@@ -1,238 +1,147 @@
 # Codebase Concerns
 
-**Analysis Date:** 2026-03-12
+**Analysis Date:** 2026-03-27
 
 ## Tech Debt
 
-**Plugin Version Sync Risk (RESOLVED):**
-- Issue: `plugin.json` and `marketplace.json` can drift in version numbers, breaking updates
-- Files: `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`
-- Impact: `/fh:update` fails or loads wrong versions; users stuck on outdated plugin
-- Current status: Both files at v1.12.5 (in sync). Monitoring required.
-- Fix approach: `/release` command enforces dual-file update; pre-release checklist must verify version match in both files before tagging
+**Duplicated utility functions across auto-orchestrator and core CLI:**
+- Issue: `comparePhaseNum`, `normalizePhaseName`, and `findPhaseDir` are reimplemented in both `bin/lib/core.cjs` and `.claude/skills/auto/auto-orchestrator.cjs` instead of sharing from a single source
+- Files: `bin/lib/core.cjs` (lines 193-228, 230-273), `.claude/skills/auto/auto-orchestrator.cjs` (lines 147-192)
+- Impact: Bug fixes to phase comparison logic must be applied in two places. Divergence risk is high since they are slightly different implementations (e.g., the auto-orchestrator version uses `Number()` instead of `Number.isFinite` for decimal parts)
+- Fix approach: The auto-orchestrator runs in the installed plugin context where `bin/` is not available. Either (a) move shared utilities into `.claude/skills/auto/lib/` and have both import from there, or (b) inline the orchestrator's copy but add a comment anchoring it to the canonical implementation
 
-**Parallel Read Cascade Errors (FIXED in v1.12.5):**
-- Issue: Batching optional files with required reads caused cascade cancellations when optional files missing
-- Files: `.claude/skills/build/SKILL.md`, `.claude/skills/quick/SKILL.md`
-- Impact: Subagent invocations fail with "Cancelled: parallel tool call" when CLAUDE.md or skills/ directory missing
-- Resolution: v1.12.5 separates optional reads from required reads in all subagent prompts
-- Prevention: All skill dispatches now batch optionals separately or load them conditionally
+**No unit tests for CLI tooling (gsd-tools):**
+- Issue: The `bin/lib/` directory contains 5,827 lines of JavaScript across 12 modules with zero unit tests. Only `templates/project-tracker/parser.test.cjs` has tests, and it covers a template parser not used by the core CLI
+- Files: `bin/lib/core.cjs`, `bin/lib/state.cjs`, `bin/lib/phase.cjs`, `bin/lib/verify.cjs`, `bin/lib/init.cjs`, `bin/lib/commands.cjs`, `bin/lib/roadmap.cjs`, `bin/lib/frontmatter.cjs`, `bin/lib/milestone.cjs`, `bin/lib/changelog.cjs`, `bin/lib/template.cjs`, `bin/lib/config.cjs`
+- Impact: Regressions in phase numbering, frontmatter parsing, state updates, or roadmap manipulation can go unnoticed. The eval suite (`evals/evals.json`) tests behavioral outcomes of skills but does not exercise the CLI modules directly
+- Fix approach: Add a test runner (vitest or plain Node test runner) with unit tests for critical functions: `comparePhaseNum`, `normalizePhaseName`, `loadConfig`, `extractFrontmatter`, `reconstructFrontmatter`, frontmatter CRUD, and state update operations
 
-**GSD Tools Path (FIXED in v1.12.4):**
-- Issue: Skills used relative path `./gsd-tools.cjs` instead of `$HOME/` path
-- Files: All `.claude/skills/*.md` files that reference gsd-tools
-- Impact: "GSD tools not found" errors in user projects when plugin installs outside working directory
-- Resolution: v1.12.4 changed all references to `$HOME/.claude/get-shit-done/bin/gsd-tools.cjs`
-- Prevention: Symlink created by `/fh:setup` during installation
-
-**Reference Files Not Shipped (FIXED in v1.12.2):**
-- Issue: `references/*.md` files (implementer-prompt, spec-gate-prompt) not copied to plugin cache, causing subagent failures
-- Files: `references/implementer-prompt.md`, `references/spec-gate-prompt.md`, `references/gsd-state-updates.md`
-- Impact: `/build` and `/plan-work` subagent prompts fail with "File does not exist" errors
-- Resolution: v1.12.2 ensures all reference files ship with plugin; skill build process copies them into `.claude/skills/` for accessibility
-- Prevention: Plugin manifest includes all `references/` files in shipping boundary
-
-**String.replace() Corruption (FIXED in v1.11.2):**
-- Issue: `String.replace(pattern, dynamicContent)` interpreted `$&` in minified JS as replacement pattern, corrupting bundled output
-- Files: `templates/project-tracker/` (tracker bundling)
-- Impact: Build process generates syntactically invalid JavaScript; tracker fails to start
-- Resolution: v1.11.2 replaced all dynamic injections with function form: `str.replace(pattern, () => dynamicContent)`
-- Prevention: Code review checks for `.replace()` with dynamic/minified content; uses function form exclusively
+**Large monolithic CLI router:**
+- Issue: `bin/gsd-tools.cjs` is a 639-line switch statement routing to 12 modules. The arg-parsing logic is repeated per-command with manual `indexOf` patterns
+- Files: `bin/gsd-tools.cjs`
+- Impact: Adding new commands requires duplicating the same arg-parsing boilerplate. Easy to introduce bugs (e.g., forgetting to handle `--raw`, missing value after flag)
+- Fix approach: Extract a lightweight arg-parser helper or adopt a minimal CLI framework. Low priority since the router works and changes are infrequent
 
 ## Known Bugs
 
-**Tracker Bugs (FIXED in v1.11.0):**
-- Symptoms: Concerns count mismatches, milestone names missing, buttons not rendering, body extract truncation
-- Files: `templates/project-tracker/` (Preact components)
-- Cause: Stale parser state, missing regex boundaries, overflow constraints
-- Resolution: v1.11.0 rewrite with tiered caching, regex improvements, grid overflow constraints
-- Status: No outstanding tracker bugs reported since v1.11.0
-
-## Architectural Concerns
-
-**Setup Re-linking Shortcut (FIXED in v1.5.1):**
-- Issue: `/fh:setup` would skip linking when symlinks already existed, even if target paths changed after plugin upgrade
-- Files: `commands/setup.md` (linking logic)
-- Impact: After upgrade, old banner scripts remain; "banner script not available" errors
-- Resolution: v1.5.1 always re-links to latest cached plugin version, never short-circuits
-- Prevention: Linking logic runs unconditionally in setup
-
-**LSP Plugin Dependency (MITIGATED):**
-- Risk: TypeScript LSP requires manual two-step install: `npm install -g` + `claude plugin install`
-- Files: `commands/setup.md`, `commands/help.md`
-- Impact: Users can skip plugin install; workflow loses LSP features (code navigation in `/build`, `/fix`, `/refactor`, `/plan-work`)
-- Current mitigation: `/fh:setup` walks through both steps explicitly; documentation emphasizes TypeScript LSP as recommended
-- Limitation: No automatic postinstall hooks in Claude Code plugins — can't force plugin install at plugin-install time
-- Improvement path: Mention LSP prominently in `/help` and add LSP-optional fallback patterns in skills that need it
-
-**Design System Coupling:**
-- Risk: Design skills (`/critique`, `/polish`, `/normalize`) expect `.planning/DESIGN.md` to exist; missing file = degraded quality review
-- Files: `.claude/skills/fix/SKILL.md` (Step 3), `.claude/skills/build/SKILL.md` (design gates)
-- Impact: Frontend fixes and builds without design context produce inconsistent visuals
-- Safeguard: Skills check for DESIGN.md existence; gracefully skip design checks if missing (no blocking)
-- Fix approach: `/teach-impeccable` creates DESIGN.md during `/fh:new-project` setup; design skills document fallback behavior clearly
+**Regex `.test()` then `.replace()` with global flag resets lastIndex:**
+- Symptoms: In `bin/lib/milestone.cjs` (line 44-45), `checkboxPattern.test(reqContent)` advances `lastIndex` for the global regex, then `reqContent.replace(checkboxPattern, ...)` starts from the advanced position, potentially missing the first match
+- Files: `bin/lib/milestone.cjs` (lines 40-57)
+- Trigger: When the first requirement ID in the file matches, `.test()` moves `lastIndex` past it, so `.replace()` may skip it
+- Workaround: The code partially handles this for the table pattern (line 52-54, recreating the regex) but not for the checkbox pattern on line 45. Reset `checkboxPattern.lastIndex = 0` before `.replace()`, or use a non-global regex for the `.test()` check
 
 ## Security Considerations
 
-**Environment Variable Exposure (PROTECTED):**
-- Risk: `.env*` files contain secrets (API keys, database URLs, service credentials)
-- Files: `.env`, `.env.local`, `.env.production` (gitignored, not committed)
-- Current safeguard: `.gitignore` excludes all `.env*` patterns; no secrets committed
-- Dependency: Git hooks enforce this; `/fh:setup` documents secret safety
-- Limitation: Subagents can read `.env` files during task execution; must not log or commit them
-- Prevention: Implementer prompts warn against `.env` references; skills log only sanitized values
+**Auto-orchestrator runs with `--permission-mode bypassPermissions`:**
+- Risk: The `auto-orchestrator.cjs` spawns `claude -p` with `--permission-mode bypassPermissions` (line 362), giving spawned sessions unrestricted tool access. A malicious or confused plan could execute arbitrary shell commands, delete files, or push to remote repos
+- Files: `.claude/skills/auto/auto-orchestrator.cjs` (line 362)
+- Current mitigation: The orchestrator is gated behind explicit `/fh:auto` invocation and cost budget. DECISIONS.md provides an audit trail
+- Recommendations: (1) Document the security model in the SKILL.md so users understand what `bypassPermissions` means. (2) Consider an allowlist-based permission mode if Claude Code supports it in future. (3) Add a `--safe-mode` flag that uses `acceptEdits` instead of `bypassPermissions` for less risky runs
 
-**Seed Data in Fixtures (CONTAINED):**
-- Risk: Eval fixture `evals/fixtures/nextjs-app-deep/` contains mock auth tokens, test user data
-- Files: `evals/fixtures/nextjs-app-deep/src/lib/auth.ts`, `.planning/STATE.md` (test timestamps)
-- Impact: Fixtures could be confused with real project code if accidentally deployed
-- Safeguard: Fixtures are test-only, gitignored from main workspace; clearly marked "EVAL FIXTURE"
-- Prevention: Fixtures have no production build path; `/fh:new-project` uses separate templates, not fixtures
+**Shell command construction in `execGit` and `isGitIgnored`:**
+- Risk: `isGitIgnored` in `bin/lib/core.cjs` (line 156) sanitizes paths with a character allowlist (`/[^a-zA-Z0-9._\-/]/g`), and `execGit` (line 168-170) uses shell-safe escaping. However, `isGitIgnored` strips characters silently rather than erroring, which could cause false negatives on paths with special characters
+- Files: `bin/lib/core.cjs` (lines 150-164, 166-185)
+- Current mitigation: The character stripping in `isGitIgnored` is conservative. `execGit` properly quotes arguments with single quotes and escapes embedded single quotes
+- Recommendations: Use `execFileSync` with argument arrays instead of string concatenation to eliminate injection surface entirely
+
+**Cost estimation is heuristic-based and unbounded:**
+- Risk: The auto-orchestrator's cost tracking (`estimateSessionCost` in `auto-orchestrator.cjs` lines 248-254) uses rough `4 chars/token` heuristic with hardcoded Opus pricing. Actual costs could be significantly higher than estimates, and the budget check may not halt execution promptly
+- Files: `.claude/skills/auto/auto-orchestrator.cjs` (lines 37-43, 248-254)
+- Current mitigation: Budget is optional and advisory
+- Recommendations: Add a warning when estimated cost exceeds 80% of budget. Consider using Claude API's actual usage reporting if available
 
 ## Performance Bottlenecks
 
-**Context Budget Distribution:**
-- Concern: `/build` orchestrator uses ~15% context, leaves 85% for subagents. Large plans (10+ tasks) may exhaust context midway
-- Files: `.claude/skills/build/SKILL.md` (Step 1-6), `references/implementer-prompt.md`
-- Problem: Each task dispatch loads full implementer prompt + all CLAUDE.md sections + design context — compounding overhead per task
-- Current behavior: Spec gate runs after each wave; if later waves exhaust context, gate becomes unreliable
-- Mitigation: Waves are designed shallow (3-4 tasks per wave max); plan checker validates task count pre-build
-- Improvement path: Implement task prioritization (high-risk tasks first), lazy-load CLAUDE.md sections (only include relevant parts per task), cache design context once instead of per-task
+**Synchronous file I/O throughout CLI:**
+- Problem: All file operations in `bin/lib/*.cjs` use synchronous `fs.readFileSync`/`fs.writeFileSync`. For single-file operations this is fine, but `init` commands that read 5-10 files serially could benefit from parallel reads
+- Files: `bin/lib/init.cjs`, `bin/lib/verify.cjs`, `bin/lib/state.cjs`
+- Cause: CLI was designed for simplicity; async would add complexity
+- Improvement path: Low priority. The CLI runs as a subprocess from Claude Code, and total I/O is small (reading markdown files). Only matters if users report slow `gsd-tools init` commands
 
-**Codebase Mapper Parallelization:**
-- Concern: `/map-codebase` spawns 4 parallel explorer agents; if codebase is very large (10k+ files), agents may OOM or timeout
-- Files: `.claude/skills/map-codebase/SKILL.md` (Step 1)
-- Problem: No feedback loop on agent progress; orchestrator waits for all 4 agents before proceeding
-- Current behavior: Agents explore independently; results may vary in depth/quality
-- Mitigation: Explorers have exploration budgets (max files to read per agent); shallow mode skips deep traversal
-- Improvement path: Add agent health monitoring, graceful degradation if agent returns early, parallel result aggregation feedback
+**`init.cjs` spawns `find` subprocess for language detection:**
+- Problem: `cmdInitMapCodebase` (line 174) runs `find . -maxdepth 3 ... | grep -v node_modules | head -5` via `execSync` to detect source files. On large repos, this could be slow
+- Files: `bin/lib/init.cjs` (line 174)
+- Cause: Quick heuristic approach, not a concern for typical repos
+- Improvement path: Replace with `fs.readdirSync` recursive walk with early termination. Low priority
 
 ## Fragile Areas
 
-**Subagent Interruption Handling:**
-- Files: `.claude/skills/build/SKILL.md` (Step 3), `.claude/skills/fix/SKILL.md` (Step 1)
-- Why fragile: Subagents can get stuck with "what should I do next?" when task spec is ambiguous. Orchestrator must re-dispatch, but re-dispatch logic is manual (not automated)
-- Safe modification: Always include example-driven spec in task prompts; if subagent reports interruption, add a "Decision" checkpoint to clarify ambiguity before re-dispatching
-- Test coverage: Evals 39, 56, 89 test recovery from blocked tasks; evals 92-95 test misrouting guards
-- Gap: No automated retry logic for interrupted agents — user must manually approve re-dispatch
+**ROADMAP.md regex-based parsing:**
+- Files: `bin/lib/core.cjs` (lines 349-381), `bin/lib/roadmap.cjs`, `.claude/skills/auto/auto-orchestrator.cjs` (lines 130-145)
+- Why fragile: The ROADMAP.md format is parsed with multiple regex patterns that assume specific heading formats (`## Phase N:`, `**Goal:**`, `**Plans:**`, progress tables). Any user reformatting (e.g., using `###` instead of `##`, or changing bold markers) breaks parsing silently
+- Safe modification: When changing ROADMAP.md parsing, test with multiple format variations. The `escapeRegex` helper in `core.cjs` properly handles special characters in phase numbers
+- Test coverage: Zero unit tests for roadmap parsing
 
-**GSD State Synchronization:**
-- Files: `references/gsd-state-updates.md`, `.claude/skills/build/SKILL.md` (Step 6)
-- Why fragile: Multiple skills write to `.planning/STATE.md` and `.planning/ROADMAP.md`. Concurrent writes risk corruption or race conditions
-- Safe modification: STATE updates happen only in Step 6 of `/build` (once, after all waves complete); `/fix` updates happen after TDD completes; never during task execution
-- Test coverage: Evals 27-29, 50 test corrupted STATE.md recovery; evals 119-121 test phase transitions
-- Gap: No file locking; if two orchestrators write simultaneously, last-write-wins silently corrupts state
+**STATE.md frontmatter and body parsing:**
+- Files: `bin/lib/state.cjs`, `bin/lib/frontmatter.cjs`
+- Why fragile: STATE.md uses a custom YAML-like frontmatter format parsed by `extractFrontmatter` in `frontmatter.cjs`. The parser handles indentation, arrays, and nested objects but is not a full YAML parser. Edge cases (multi-line strings, comments, quoted colons) could break
+- Safe modification: Always test frontmatter changes against the actual STATE.md format used by `gsd-tools scaffold context`. Read `bin/lib/frontmatter.cjs` before modifying any frontmatter-related code
+- Test coverage: Zero unit tests for frontmatter extraction/reconstruction
 
-**Spec Gate Strictness vs. Pragmatism:**
-- Files: `references/spec-gate-prompt.md`, `.claude/skills/build/SKILL.md` (Step 3b)
-- Why fragile: Spec gate blocks promotion if code deviates from requirements, but "deviation" is subjective. Threshold is set to confidence >= 75 (from feature-dev upstream); lower than typical reviews (80), but still filters out low-signal issues
-- Safe modification: Confidence scoring is strict but transparent — each issue includes "Why this matters" section for user context
-- Test coverage: Evals 41-45, 51 test spec gate blocking and auto-fix paths
-- Gap: Confidence scoring can't account for domain-specific trade-offs (e.g., "it's OK to use this pattern in this codebase")
-
-**Simplify Agent Quality Variance:**
-- Files: `.claude/skills/simplify/` (3 parallel agents: reuse, quality, efficiency)
-- Why fragile: Each agent has independent prompt; they may contradict or over-count issues. Results depend on agent model variation and prompt randomness
-- Safe modification: Simplify runs after waves complete, not during execution — it's advisory, not blocking. User can skip or iterate
-- Test coverage: Evals 35-38 test simplify output; eval 62 tests extreme edge case (empty diff)
-- Gap: No de-duplication across agent findings; user may see same issue reported 2-3 times
-
-## Dependencies at Risk
-
-**Upstream Version Drift:**
-- Risk: Upstream projects (Superpowers v4.3.1, GSD v1.22.4, Impeccable v1.2.0) may release breaking changes; fhhs-skills would need patches
-- Files: `COMPATIBILITY.md`, `PATCHES.md`
-- Impact: Patches become stale; behavior diverges from upstream
-- Current status: Snapshots preserved in `upstream/` for diff tracking; compatibility table documents which versions are locked
-- Prevention: PATCHES.md must be reviewed before any upstream bump; COMPATIBILITY.md updated together with PATCHES.md
-- Improvement path: Automated upstream version checker (CI) that alerts when new releases available
-
-**TypeScript LSP Plugin Availability:**
-- Risk: `typescript-lsp@claude-plugins-official` is first-party Claude plugin; if deprecated, `/fh:setup` installation will fail
-- Files: `commands/setup.md` (Step 7), `commands/help.md` (documentation)
-- Impact: New users can't install LSP; workflow degrades to grep-based code navigation
-- Current status: Plugin is official (maintained by Anthropic); no deprecation planned
-- Prevention: `/help` documents LSP as optional (workflow still works without it, just slower)
-- Improvement path: Build grep-based fallbacks for all LSP operations
-
-**GSD CLI (bin/gsd-tools.cjs) Maintenance:**
-- Risk: gsd-tools.cjs bundles state management, config helpers, template scaffolding. If GSD upstream changes significantly, tool becomes incompatible
-- Files: `bin/gsd-tools.cjs` (v1.22.4 from upstream/gsd-1.22.4/)
-- Impact: `/plan-work`, `/build`, `/fix` state operations fail; phase management breaks
-- Current status: Bundled snapshot from GSD v1.22.4; no live dependency
-- Limitation: Can't get GSD bug fixes without re-bundling entire tool
-- Prevention: `/release` process includes GSD tool version check; release notes document version
-- Improvement path: Consider splitting state management into minimal fhhs-specific layer to reduce GSD dependency
-
-## Test Coverage Gaps
-
-**Plugin-Level Integration Tests (MISSING):**
-- What's not tested: End-to-end plugin installation, `/fh:setup` tooling verification, cross-plugin interactions
-- Files: `evals/evals.json` (118 evals exist, but few test setup/installation paths)
-- Risk: Plugin may fail to install or symlink correctly on certain platforms; users discover via broken `/fh:help`
-- Coverage: Evals 1-5 test setup commands; eval 1 tests `/fh:setup` itself
-- Gap: No eval tests Windows-specific setup behavior; no eval tests symlink collision handling
-
-**Subagent Failure Recovery (PARTIAL):**
-- What's not tested: PARALLEL debugger agents failing independently (eval 23 is isolated); some edge cases in BLOCKED report handling
-- Files: `.claude/skills/fix/SKILL.md` (Step 1), `.claude/skills/build/SKILL.md` (Step 3)
-- Risk: Multi-subsystem bugs where one debugger fails could leave inconsistent state
-- Coverage: Evals 22-24 test PARALLEL path; eval 92-95 test failure recovery and misrouting
-- Gap: No eval tests cleanup after interrupted PARALLEL agents
-
-**Design System Validation (MINIMAL):**
-- What's not tested: Frontend code that violates design system after `/normalize`; visual regression between versions
-- Files: `skills/frontend-design/` (reference-only, no executable checks)
-- Risk: Design drifts over time; `/normalize` may not catch all inconsistencies
-- Coverage: Design skills have thin assertions (2-3 vs 15+ for `/build`)
-- Gap: No visual regression tests; design assertions recently enriched in v1.12.5 to 5+ per skill
-
-**Eval Coverage Improvement Plan (IN PROGRESS):**
-- Current status: 130 evals (105 baseline + 18 skill-specific + 7 fixture-backed evals 106-130)
-- Gaps addressed in recent commits: 5 previously uncovered skills, failure recovery, state corruption scenarios
-- Outstanding: No evals for `/secure` OWASP scan detail (e.g., SQL injection detection); no evals for TypeScript strictness violations
-- Plan: Evals 131-140 target security detail; evals 141-145 target TS strictness edge cases
+**CONTEXT.md section names are load-bearing:**
+- Files: `bin/lib/commands.cjs`, `.claude/skills/plan-work/SKILL.md`, `.claude/skills/plan-review/SKILL.md`, `.claude/skills/build/SKILL.md`
+- Why fragile: The three canonical CONTEXT.md sections (Decisions, Discretion Areas, Deferred Ideas) are referenced by name in multiple skills and the CLI. Renaming a section requires updating all consumers simultaneously. Old section names (`Design Decisions`, `Review Decisions`, `Locked Decisions`, `NOT in scope`) must NOT appear in shipped skills
+- Safe modification: Grep for both old and new section names before any rename. The CLAUDE.md documents this constraint
+- Test coverage: Evals test behavioral outcomes but not section name matching directly
 
 ## Scaling Limits
 
-**Parallel Subagent Scaling:**
-- Current capacity: `/build` supports up to ~10 tasks per wave (4 subagents in parallel per wave is typical)
-- Limit: Beyond 10 tasks, orchestrator context usage climbs; wave tracking becomes error-prone
-- Scaling path: Implement task batching (group small tasks), multi-wave chains (pipelined waves), and deeper parallelism (more subagents per wave with careful context budgeting)
+**Eval suite runs via Python, not integrated with Node tooling:**
+- Current capacity: 210+ evals in `evals/evals.json`, run via `python3 evals/run_all_evals.py`
+- Limit: As eval count grows, the Python runner becomes a bottleneck. No parallelism, no incremental runs, no CI integration documented
+- Scaling path: Move to a Node-based eval runner that can parallelize, cache results, and integrate with the existing CJS tooling
 
-**Codebase Size:**
-- Current capacity: `/map-codebase` tested up to ~2,000 files; 4 parallel explorers scale well
-- Limit: Monorepos with 10k+ files may cause explorer timeouts or incomplete traversal
-- Scaling path: Implement directory-first filtering (let user specify exploration scope), agent batching (more agents for larger codebases), and streaming results (don't wait for all agents)
+**Plugin size grows with each upstream absorption:**
+- Current capacity: 44 skills in `.claude/skills/`, plus references directories. The playwright-testing skill alone has 35 reference files
+- Limit: Claude Code plugin install copies the entire `.claude/skills/` tree. Large plugins slow install and increase context when skills are auto-discovered
+- Scaling path: Monitor total skill payload size. Consider lazy-loading references (read on demand vs. bundled). The `disable-model-invocation: true` frontmatter on 21 skills already mitigates auto-discovery noise
 
-**Phase Count in ROADMAP:**
-- Current capacity: Tested up to 15 phases; UI updates are O(n)
-- Limit: 30+ phases may cause phase tracking slowness; milestone rendering lags in tracker UI
-- Scaling path: Phase grouping (collapse completed phases), lazy loading in tracker, pagination
+## Dependencies at Risk
+
+**Upstream drift across 7 forked projects:**
+- Risk: The plugin forks from 7 upstream projects (Superpowers v4.3.1, Impeccable v1.2.0, GSD v1.22.4, gstack v0.3.3, feature-dev, vercel-react-best-practices, claude-md-management, playwright-best-practices). Each upstream may release breaking changes. `PATCHES.md` (432 lines) and `COMPATIBILITY.md` track modifications but re-applying patches during upstream bumps is manual and error-prone
+- Files: `PATCHES.md`, `COMPATIBILITY.md`, `upstream/`
+- Impact: Falling behind on upstream security fixes or capability improvements. Patch conflicts during bumps
+- Migration plan: Maintain the current snapshot+patch model. When bumping, diff the new upstream against the snapshot, identify conflicts with PATCHES.md entries, and re-run the full eval suite. Consider automating the diff+patch process
+
+**`claude -p` CLI interface dependency:**
+- Risk: The auto-orchestrator depends on `claude -p` (process mode) CLI interface including `--permission-mode`, `--plugin-dir`, and `--append-system-prompt` flags. These are Claude Code internal APIs that could change without notice
+- Files: `.claude/skills/auto/auto-orchestrator.cjs` (lines 354-407)
+- Impact: Any Claude Code CLI update that changes flag names or behavior breaks autonomous mode
+- Migration plan: Pin to known-good Claude Code versions in documentation. Add version check at orchestrator startup
 
 ## Missing Critical Features
 
-**Automated Rollback (NOT IMPLEMENTED):**
-- Problem: `/build` can fail mid-wave; no automatic rollback to pre-build state
-- Blocks: Complex multi-phase builds that must be atomic
-- Workaround: User manually `git revert` or uses `git worktree` to isolate changes
-- Fix approach: Capture pre-build SHA in Step 3, offer "Rollback to {SHA}" button if build fails
-- Complexity: Medium (requires worktree cleanup, state reset)
+**No automated cross-reference validation for shipped skills:**
+- Problem: Skills reference other skills, internal prompts, and references by path (e.g., `references/implementer-prompt.md`, `skills/test-driven-development/PROMPT.md`). There is no automated check that all referenced paths exist within the shipping boundary
+- Blocks: After skill renames or restructuring, broken references can ship to users. The CLAUDE.md warns to "grep for old paths" but this is manual
+- Fix approach: Add a `validate references` command to `gsd-tools` that scans all `.claude/skills/**/*.md` files, extracts path references, and verifies they resolve relative to the skill's directory or the plugin root
 
-**Dependency Upgrade Automation (NOT IMPLEMENTED):**
-- Problem: No built-in command to audit, update, or bump npm/pip dependencies
-- Blocks: Keeping dependencies current, security patching workflow
-- Workaround: Manual `npm update` or `npm audit fix`
-- Fix approach: New `/upgrade-deps` command that runs audit, proposes updates, creates PR with changelog
-- Complexity: High (requires testing updated versions, changelog generation, security assessment)
+**No health check for gsd-tools symlink:**
+- Problem: `/fh:setup` symlinks `bin/gsd-tools.cjs` to `$HOME/.claude/get-shit-done/bin/`. If the symlink breaks (e.g., plugin directory moves after update), all GSD workflows fail with cryptic errors
+- Blocks: Users see "node: cannot find module" errors with no guidance
+- Fix approach: Add a symlink health check to `/fh:health` that verifies the symlink target exists and is executable
 
-**Visual Regression Tests (NOT IMPLEMENTED):**
-- Problem: No automated visual diff checks between builds
-- Blocks: Design changes that create unintended visual drift
-- Workaround: `/verify-ui` screenshots (manual inspection)
-- Fix approach: Integrate with screenshot service (Percy, Chromatic); track diffs between branches
-- Complexity: High (external service integration, baseline management)
+## Test Coverage Gaps
+
+**CLI modules have zero unit tests:**
+- What's not tested: All 12 modules in `bin/lib/` — phase numbering, frontmatter CRUD, state progression, roadmap parsing, milestone operations, verification suite, template filling, changelog reconciliation
+- Files: `bin/lib/*.cjs` (5,827 lines total)
+- Risk: Regressions in core workflow operations (phase numbering comparison, frontmatter merge, state update atomicity) go undetected. The eval suite covers end-to-end behavior but cannot isolate CLI bugs
+- Priority: High — these modules are the mechanical backbone of all GSD workflows
+
+**Auto-orchestrator untested:**
+- What's not tested: Session spawning, stuck detection, cost estimation, crash recovery, decision correction cascade
+- Files: `.claude/skills/auto/auto-orchestrator.cjs` (1,160 lines)
+- Risk: The orchestrator manages autonomous multi-phase execution with real cost implications. A bug in stuck detection or budget checking could lead to runaway sessions
+- Priority: Medium — `/fh:auto` is an advanced feature with limited user base currently
+
+**Frontmatter edge cases untested:**
+- What's not tested: Nested YAML objects, arrays with quoted strings, multi-line values, frontmatter with no closing `---`, frontmatter with embedded `---` in values
+- Files: `bin/lib/frontmatter.cjs` (299 lines)
+- Risk: Silent data corruption when reading/writing STATE.md or PLAN.md frontmatter
+- Priority: High — frontmatter operations are used by every GSD command
 
 ---
 
-*Concerns audit: 2026-03-12*
+*Concerns audit: 2026-03-27*

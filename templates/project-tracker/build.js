@@ -18,11 +18,6 @@ async function buildJS(ctx) {
       jsx: 'automatic',
       jsxImportSource: 'preact',
       outfile: '.build/app.js',
-      alias: {
-        'react': '@preact/compat',
-        'react-dom': '@preact/compat',
-        'react/jsx-runtime': '@preact/compat/jsx-runtime',
-      },
     });
   }
 }
@@ -53,11 +48,6 @@ async function run() {
       jsx: 'automatic',
       jsxImportSource: 'preact',
       outfile: '.build/app.js',
-      alias: {
-        'react': '@preact/compat',
-        'react-dom': '@preact/compat',
-        'react/jsx-runtime': '@preact/compat/jsx-runtime',
-      },
     });
 
     async function rebuild() {
