@@ -10391,6 +10391,11 @@
           "type": "guard"
         }
       ],
+      "checks": [
+        {"type": "regex", "pattern": "\\.planning|planning"},
+        {"type": "regex", "pattern": "new-project|fh:auto|fh:new"},
+        {"type": "regex", "pattern": "walk.away|autonomous|new project"}
+      ],
       "tier": "smoke",
       "tags": [
         "auto",
@@ -10421,6 +10426,10 @@
           "text": "Falls back to fresh run or STATE.md inference",
           "type": "behavioral"
         }
+      ],
+      "checks": [
+        {"type": "regex", "pattern": "corrupt|invalid|malform"},
+        {"type": "regex", "pattern": "corrupt|rename|fresh|fallback"}
       ],
       "tier": "micro",
       "tags": [
@@ -10453,6 +10462,11 @@
           "type": "guard"
         }
       ],
+      "checks": [
+        {"type": "regex", "pattern": "[Mm]ilestone"},
+        {"type": "regex", "pattern": "complet|COMPLETE|shipped"},
+        {"type": "regex", "pattern": "gsd.tools|milestone complete"}
+      ],
       "tier": "micro",
       "tags": [
         "auto",
@@ -10479,6 +10493,10 @@
           "text": "Does NOT ask the user to manually run new-project first",
           "type": "guard"
         }
+      ],
+      "checks": [
+        {"type": "regex", "pattern": "new.project|new-project"},
+        {"type": "regex", "pattern": "auto|walk.away|autonomous"}
       ],
       "tier": "smoke",
       "tags": [
@@ -10511,6 +10529,10 @@
           "type": "guard"
         }
       ],
+      "checks": [
+        {"type": "regex", "pattern": "SUMMARY|missing|inconsist"},
+        {"type": "regex", "pattern": "downgrad|re.execut|rebuild|planned|re-plan"}
+      ],
       "tier": "micro",
       "tags": [
         "auto",
@@ -10538,6 +10560,11 @@
           "type": "output"
         }
       ],
+      "checks": [
+        {"type": "regex", "pattern": "cost|token"},
+        {"type": "regex", "pattern": "[Pp]hase|per.phase|breakdown"},
+        {"type": "regex", "pattern": "total"}
+      ],
       "tier": "micro",
       "tags": [
         "auto",
@@ -10561,6 +10588,10 @@
           "type": "guard"
         }
       ],
+      "checks": [
+        {"type": "regex", "pattern": "phase.cost|cost|token"},
+        {"type": "regex", "pattern": "resum|state|continu"}
+      ],
       "tier": "micro",
       "tags": [
         "auto",
@@ -10583,6 +10614,10 @@
           "text": "Output references context-mode savings",
           "type": "behavioral"
         }
+      ],
+      "checks": [
+        {"type": "regex", "pattern": "PHASE_METRICS|metric|measur"},
+        {"type": "regex", "pattern": "context.mode|ctx|saving|search"}
       ],
       "tier": "micro",
       "tags": [

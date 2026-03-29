@@ -305,19 +305,15 @@ Confirm the config was set successfully before proceeding.
 
 ## Step 6: Shell Out to Orchestrator
 
-**Find the orchestrator path first** — it lives in the plugin cache, not in the project:
+**Run the find and invocation in a single bash call** (shell state does not persist between tool calls):
 
 ```bash
-ORCHESTRATOR=$(find "$HOME/.claude/plugins/cache/fhhs-skills" -name "auto-orchestrator.cjs" 2>/dev/null | sort -V | tail -1)
+ORCHESTRATOR=$(find "$HOME/.claude/plugins/cache" -name "auto-orchestrator.cjs" 2>/dev/null | sort -V | tail -1)
 if [ -z "$ORCHESTRATOR" ]; then
-  echo "ERROR: auto-orchestrator.cjs not found in plugin cache"
+  echo "ERROR: auto-orchestrator.cjs not found in plugin cache at $HOME/.claude/plugins/cache"
+  echo "Run /fh:update to install the latest version of the fh plugin."
   exit 1
 fi
-```
-
-Then invoke it:
-
-```bash
 node "$ORCHESTRATOR" \
   --project-dir "$(pwd)" \
   --start-phase "${START_PHASE}" \
@@ -482,7 +478,8 @@ When invoked with `--check-corrections`, the orchestrator runs in a separate mod
 
 Invoke via:
 ```bash
-node .claude/skills/auto/auto-orchestrator.cjs --project-dir "$(pwd)" --check-corrections
+ORCHESTRATOR=$(find "$HOME/.claude/plugins/cache" -name "auto-orchestrator.cjs" 2>/dev/null | sort -V | tail -1)
+node "$ORCHESTRATOR" --project-dir "$(pwd)" --check-corrections
 ```
 
 This mode is useful after a human reviews DECISIONS.md and marks entries as CORRECTED — the cascade propagates those corrections to affected artifacts automatically where possible.
