@@ -170,8 +170,8 @@ function PhaseStepRow({ phaseNum, phaseName, phaseState, isCurrentPhase, current
 
 // -- LogTail -----------------------------------------------------------------
 
-function LogTail({ logBuffer, lastLogLine }) {
-  const [collapsed, setCollapsed] = useState(true);
+function LogTail({ logBuffer, lastLogLine, autoExpand }) {
+  const [collapsed, setCollapsed] = useState(!autoExpand);
   const scrollRef = useRef(null);
 
   const entries = Array.isArray(logBuffer) && logBuffer.length > 0
@@ -248,6 +248,91 @@ function formatLogTimestamp(ts) {
   }
 }
 
+// -- FreshnessIndicator -------------------------------------------------------
+
+function FreshnessIndicator({ lastActivityAt, now }) {
+  if (!lastActivityAt) return null;
+
+  const silenceMs = now - new Date(lastActivityAt).getTime();
+  if (isNaN(silenceMs) || silenceMs < 0) return null;
+
+  let color, label;
+  if (silenceMs < 60000) {
+    color = 'var(--color-status-done)'; // green
+    label = Math.round(silenceMs / 1000) + 's ago';
+  } else if (silenceMs < 180000) {
+    color = 'var(--color-status-warning)'; // yellow
+    label = Math.round(silenceMs / 60000) + 'm ago';
+  } else if (silenceMs < 480000) {
+    color = 'oklch(0.7 0.15 70)'; // amber
+    label = Math.round(silenceMs / 60000) + 'm ago (silent)';
+  } else {
+    color = 'var(--color-status-error)'; // red
+    label = Math.round(silenceMs / 60000) + 'm ago (silent)';
+  }
+
+  return (
+    <span style={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: '4px',
+      fontFamily: 'var(--font-family-mono)',
+      fontSize: '11px',
+      color,
+    }}>
+      <span style={{
+        width: '6px',
+        height: '6px',
+        borderRadius: '50%',
+        background: color,
+        flexShrink: 0,
+      }} />
+      {label}
+    </span>
+  );
+}
+
+// -- KillButton ---------------------------------------------------------------
+
+function KillButton({ silenceMs }) {
+  const [sent, setSent] = useState(false);
+
+  if (!silenceMs || silenceMs < 180000) return null; // only show after 3min silence
+
+  const handleKill = () => {
+    fetch('/api/kill', { method: 'POST' })
+      .then(() => setSent(true))
+      .catch(() => setSent(true));
+  };
+
+  if (sent) {
+    return (
+      <span style={{
+        fontSize: '11px',
+        fontFamily: 'var(--font-family-mono)',
+        color: 'var(--color-status-warning)',
+      }}>Kill signal sent</span>
+    );
+  }
+
+  return (
+    <button
+      onClick={handleKill}
+      style={{
+        fontSize: '11px',
+        fontFamily: 'var(--font-family-mono)',
+        color: 'var(--color-status-error)',
+        background: 'transparent',
+        border: '1px solid var(--color-status-error)',
+        borderRadius: '3px',
+        padding: '1px 6px',
+        cursor: 'pointer',
+        lineHeight: '16px',
+      }}
+    >Kill</button>
+  );
+}
+
 // -- AutoPipeline (main) -----------------------------------------------------
 
 export function AutoPipeline({ autoState }) {
@@ -277,6 +362,7 @@ export function AutoPipeline({ autoState }) {
     step_history = [],
     log_buffer,
     last_log_line,
+    last_activity_at,
     build_order = [],
   } = autoState;
 
@@ -361,17 +447,21 @@ export function AutoPipeline({ autoState }) {
           )}
         </div>
 
-        <span style={{
-          fontFamily: 'var(--font-family-mono)',
-          fontSize: '12px',
-          fontVariantNumeric: 'tabular-nums',
-          color: 'var(--color-text-secondary)',
-        }}>
-          {formatDuration(liveElapsed)}
-          {total_cost_estimate != null && (
-            <span> \u00B7 {formatCost(total_cost_estimate)}</span>
-          )}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <FreshnessIndicator lastActivityAt={last_activity_at} now={now} />
+          <span style={{
+            fontFamily: 'var(--font-family-mono)',
+            fontSize: '12px',
+            fontVariantNumeric: 'tabular-nums',
+            color: 'var(--color-text-secondary)',
+          }}>
+            {formatDuration(liveElapsed)}
+            {total_cost_estimate != null && (
+              <span> \u00B7 {formatCost(total_cost_estimate)}</span>
+            )}
+          </span>
+          <KillButton silenceMs={last_activity_at ? now - new Date(last_activity_at).getTime() : 0} />
+        </div>
       </div>
 
       {/* Wave label */}
@@ -417,7 +507,7 @@ export function AutoPipeline({ autoState }) {
       )}
 
       {/* Log tail */}
-      <LogTail logBuffer={log_buffer} lastLogLine={last_log_line} />
+      <LogTail logBuffer={log_buffer} lastLogLine={last_log_line} autoExpand={true} />
     </div>
   );
 }

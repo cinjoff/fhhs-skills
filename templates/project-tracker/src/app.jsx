@@ -326,7 +326,18 @@ function App() {
                 <CostChart data={costData} title="Session Costs" />
               )}
 
-              <ActivityFeed activities={activities} />
+              <ActivityFeed activities={(() => {
+                const autoActivities = (autoState && autoState.activity_events) || [];
+                const merged = [...activities];
+                for (const evt of autoActivities) {
+                  const isDup = merged.some(a => a.timestamp === evt.timestamp && a.text === evt.text);
+                  if (!isDup) {
+                    merged.push({ type: evt.type, text: evt.text, timestamp: evt.timestamp });
+                  }
+                }
+                merged.sort((a, b) => (b.timestamp || b.time || '').localeCompare(a.timestamp || a.time || ''));
+                return merged.slice(0, 20);
+              })()} />
             </ProjectDetail>
           </div>
         )}

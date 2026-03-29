@@ -585,10 +585,22 @@ function buildState(changedFiles) {
   }
 
   const recentActivity = retros.concat(completionEvents);
-  recentActivity.sort((a, b) => (b.time || '').localeCompare(a.time || ''));
-  recentActivity.splice(10);
 
+  // Merge auto activity events from auto-state
   const autoState = readAutoState(activePlanningDir);
+  if (autoState && Array.isArray(autoState.activity_events)) {
+    for (const evt of autoState.activity_events) {
+      recentActivity.push({
+        type: evt.type || 'auto',
+        text: evt.text || evt.msg || '',
+        time: evt.timestamp || '',
+        timestamp: evt.timestamp || '',
+      });
+    }
+  }
+
+  recentActivity.sort((a, b) => (b.time || b.timestamp || '').localeCompare(a.time || a.timestamp || ''));
+  recentActivity.splice(20);
 
   const result = {
     project,
@@ -727,11 +739,12 @@ function serveState(req, res) {
 // API: /api/activity — returns recent activity (stub for now)
 // ---------------------------------------------------------------------------
 function serveActivity(res) {
+  const activities = lastState ? (lastState.recentActivity || []) : [];
   res.writeHead(200, {
     'Content-Type': 'application/json',
     'Cache-Control': 'no-cache',
   });
-  res.end('[]');
+  res.end(JSON.stringify(activities));
 }
 
 // ---------------------------------------------------------------------------
@@ -887,6 +900,25 @@ const server = http.createServer((req, res) => {
         res.end(JSON.stringify({ error: 'invalid JSON' }));
       }
     });
+    return;
+  }
+
+  // POST /api/kill — write .auto-kill sentinel to stop an active auto job
+  if (req.method === 'POST' && pathname === '/api/kill') {
+    if (!activePlanningDir) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'No active project' }));
+      return;
+    }
+    try {
+      const killFile = path.join(activePlanningDir, '.auto-kill');
+      fs.writeFileSync(killFile, new Date().toISOString(), 'utf8');
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true }));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
     return;
   }
 

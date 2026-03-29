@@ -1,0 +1,8 @@
+{
+  "scripts": {
+    "setup": "sh -c '[ -d /Users/konstantin/conductor/fhhs-planning/.planning ] && { [ -L .planning ] || rm -rf .planning; ln -sf /Users/konstantin/conductor/fhhs-planning/.planning .planning; echo \"Symlinked .planning → private repo\"; } || echo \"WARN: fhhs-planning repo not found — .planning not symlinked\"; node -e \"var fs=require(\\\"fs\\\"),p=require(\\\"path\\\"),f=\\\".claude/settings.json\\\",s={};try{s=JSON.parse(fs.readFileSync(f,\\\"utf8\\\"))}catch{}s.env=Object.assign(s.env||{},{CLAUDE_CODE_TASK_LIST_ID:process.env.CONDUCTOR_WORKSPACE_NAME||\\\"default\\\",CLAUDE_MEM_PROJECT:p.basename(process.env.CONDUCTOR_ROOT_PATH||process.cwd())});fs.writeFileSync(f,JSON.stringify(s,null,2)+\\\"\\\\n\\\")\"'"
+  },
+  "env": {
+    "CLAUDE_CODE_ENABLE_TASKS": "true"
+  }
+}
