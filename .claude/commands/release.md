@@ -43,12 +43,53 @@ Run `/fh:review --quick` against the current diff (unless the user already ran a
 
 > Pre-ship validation and bisectable commits adapted from gstack /ship (v0.3.3).
 
+### 0d. Eval smoke check
+
+```bash
+if [ -f "fhhs-skills-workspace/run_all_evals.py" ]; then
+  echo "Running eval smoke tier..."
+  python3 fhhs-skills-workspace/run_all_evals.py --tier smoke 2>&1 | tail -5
+else
+  echo "WARN: Eval runner not found — skipping eval check"
+fi
+```
+
+**If any evals fail:** STOP and show failures. Do not proceed until fixed or user acknowledges.
+**If eval runner not found:** WARN and continue (not all environments have the eval workspace).
+
+### 0e. Plugin health check
+
+```bash
+SKILLS_SIZE=$(du -sh .claude/skills/ | cut -f1)
+SKILLS_COUNT=$(ls -d .claude/skills/*/ 2>/dev/null | wc -l | tr -d ' ')
+# macOS du lacks -b; use -sk (kilobytes) portably
+SKILLS_KB=$(du -sk .claude/skills/ | cut -f1)
+echo "Plugin: $SKILLS_COUNT skills, $SKILLS_SIZE total"
+if [ "$SKILLS_KB" -gt 3072 ]; then
+  echo "WARN: Plugin exceeds 3MB ($SKILLS_SIZE). Consider removing unused skills."
+  echo "Largest skills:"
+  du -sh .claude/skills/*/ 2>/dev/null | sort -rh | head -5
+fi
+```
+
+This is advisory (WARN, not STOP) — large plugins still work, but maintainer should be aware.
+
+Also verify shipping boundary:
+
+```bash
+# Check no skill references files outside .claude/skills/
+if grep -r 'references/' .claude/skills/*/SKILL.md 2>/dev/null | grep -v 'references/gsd/' | grep -v '#'; then
+  echo "WARN: Skills reference files outside shipping boundary"
+fi
+```
+
 ---
 
 ## Step 1: Gather Changes
 
 ```bash
-cd /Users/konstantin/Documents/github.nosync/fhhs-skills
+REPO_ROOT=$(git rev-parse --show-toplevel)
+cd "$REPO_ROOT"
 LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null)
 echo "Current tag: $LAST_TAG"
 echo "Current plugin.json version: $(python3 -c "import json; print(json.load(open('.claude-plugin/plugin.json'))['version'])")"
@@ -238,7 +279,8 @@ Each commit message: `<type>: <summary>` (feat/fix/chore/refactor/docs). Only th
 ### Commit and push
 
 ```bash
-cd /Users/konstantin/Documents/github.nosync/fhhs-skills
+REPO_ROOT=$(git rev-parse --show-toplevel)
+cd "$REPO_ROOT"
 git add .claude-plugin/plugin.json .claude-plugin/marketplace.json CHANGELOG.md
 git commit -m "release: vA.B.C"
 git push
@@ -252,7 +294,8 @@ records a `gitCommitSha` that diverges from main's merge commit, causing stale
 skill registration on future updates.
 
 ```bash
-cd /Users/konstantin/Documents/github.nosync/fhhs-skills
+REPO_ROOT=$(git rev-parse --show-toplevel)
+cd "$REPO_ROOT"
 # Merge via PR (preferred) or locally
 gh pr create --title "release: vA.B.C" --body "Version bump and changelog for vA.B.C" --base main
 gh pr merge --merge
@@ -269,7 +312,8 @@ git push --tags
 Extract the changelog entry for this version and enhance with highlight and install sections.
 
 ```bash
-cd /Users/konstantin/Documents/github.nosync/fhhs-skills
+REPO_ROOT=$(git rev-parse --show-toplevel)
+cd "$REPO_ROOT"
 gh release create vA.B.C --title "vA.B.C" --notes "$(cat <<'RELEASE_EOF'
 ## Highlight
 
@@ -279,13 +323,13 @@ gh release create vA.B.C --title "vA.B.C" --notes "$(cat <<'RELEASE_EOF'
 
 ## Install / Update
 
-```
+\`\`\`
 # First install
 claude plugin install fhhs-skills
 
 # Update existing
 /fh:update
-```
+\`\`\`
 RELEASE_EOF
 )"
 ```
