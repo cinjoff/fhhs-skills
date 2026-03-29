@@ -1,6 +1,6 @@
 ---
 name: fh:setup
-description: Welcome to fhhs-skills. Run once after installing this plugin for an overview. Use when the user says 'setup', 'get started', or 'what is this plugin'.
+description: Welcome to fhhs-skills. Run once after installing for an overview. Use --check to verify setup status.
 user-invocable: true
 disable-model-invocation: true
 ---
@@ -8,6 +8,47 @@ disable-model-invocation: true
 $ARGUMENTS
 
 Use the UI patterns from `references/gsd/ui-brand.md` for all output in this command, but use `FHHS ►` prefix in stage banners instead of `GSD ►`.
+
+## Quick Check Mode
+
+If the user passes `--check` (or says "check setup", "verify setup", "is setup ok"):
+
+Run all detection commands from Steps 2-9 but DO NOT install anything. Present results
+as a single status table:
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ FHHS ► SETUP STATUS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+| Component                  | Status                        |
+|----------------------------|-------------------------------|
+| Platform                   | {platform}                    |
+| Node.js                    | ✓ {version} / ✗ missing       |
+| TypeScript LSP             | ✓ {version} / ✗ missing       |
+| LSP Plugin                 | ✓ installed / ✗ not installed |
+| LSP Enabled                | ✓ / ✗ CLAUDE_CODE_ENABLE_LSP not set |
+| CLI Tools                  | ✓ linked / ✗ not linked       |
+| Hooks                      | ✓ configured / ✗ not configured |
+| claude-mem                 | ✓ installed / ○ not installed |
+| context-mode               | ✓ installed / ○ not installed |
+| Fallow                     | ✓ installed / ○ not installed |
+| shadcn skills              | ✓ installed / ○ not installed |
+```
+
+If any required component (Node, LSP, CLI tools, hooks) is missing:
+```
+⚠ {N} required components need setup.
+
+→ Run /fh:setup — full setup with installation
+```
+
+If everything is configured:
+```
+✓ All components configured. Ready to use.
+```
+
+Then STOP — do not proceed to Step 1.
 
 ---
 

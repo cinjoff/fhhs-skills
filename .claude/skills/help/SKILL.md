@@ -10,6 +10,22 @@ Output ONLY the reference content below. Do NOT add project-specific analysis, g
 <reference>
 # fhhs-skills Command Reference
 
+## Getting Started
+
+**First time?** Follow these steps:
+
+1. `/fh:setup` — Install tools, configure LSP, set up hooks (~2 min, once)
+2. `/fh:new-project` — Define your project vision, tech stack, and roadmap
+3. `/fh:plan` — Plan your first feature or phase
+4. `/fh:build` — Execute the plan with tests, quality checks, and verification
+
+**Returning?** Run `/fh:progress` to see where you left off and what's next.
+
+**Need help?** You're reading it. See command tables below, or ask any question
+about a specific command.
+
+---
+
 ## Build Pipeline
 
 | Command | What it does |
@@ -80,7 +96,7 @@ Phase management, milestone lifecycle, and test generation are handled automatic
 ## Common Workflows
 
 ```
-First time:   /fh:setup → /fh:new-project → /fh:plan → /fh:build → /fh:verify
+First time:   See "Getting Started" above
 Feature:      /fh:plan → /fh:build → /fh:verify → /fh:verify-ui
 Bug fix:      /fh:fix
 Refactoring:  /fh:refactor (includes /fh:simplify automatically)

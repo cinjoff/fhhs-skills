@@ -9956,6 +9956,83 @@
           "health"
         ]
       }
+    },
+    {
+      "id": 300,
+      "command": "progress",
+      "prompt": "/fh:progress",
+      "expected_output": "When run in a project with no .planning/ directory and no gsd-tools symlink (new install with no tracked project), /fh:progress should detect the uninitialized state and direct the user to run /fh:setup. The output must include a clear routing message pointing to /fh:setup as the required next step before any project work can begin.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects missing .planning/ directory (new install state)",
+          "type": "behavioral"
+        },
+        {
+          "text": "Outputs routing message directing user to /fh:setup",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT attempt to show project status or phase info",
+          "type": "guard"
+        },
+        {
+          "text": "Does NOT crash or show a stack trace",
+          "type": "guard"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "onboarding",
+        "phase-04"
+      ],
+      "checks": {
+        "type": "required_terms",
+        "terms": [
+          "/fh:setup"
+        ]
+      }
+    },
+    {
+      "id": 301,
+      "command": "setup",
+      "prompt": "/fh:setup --check",
+      "expected_output": "When invoked with --check, /fh:setup should validate the current environment and display a status table showing each component (node, npm, gh, TypeScript LSP, GSD symlink, etc.) with pass/fail indicators. It must NOT run any installation steps — no brew install, no npm install -g, no plugin install, no symlink creation. The output must include a SETUP STATUS section or equivalent component table. The check-only mode is purely diagnostic.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Outputs SETUP STATUS section or component status table",
+          "type": "output"
+        },
+        {
+          "text": "Lists individual components with pass/fail or present/missing status",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT run brew install or any package installation",
+          "type": "guard"
+        },
+        {
+          "text": "Does NOT run npm install -g or TypeScript LSP installation",
+          "type": "guard"
+        },
+        {
+          "text": "Does NOT create GSD symlink or modify filesystem",
+          "type": "guard"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "onboarding",
+        "phase-04"
+      ],
+      "checks": {
+        "type": "required_terms",
+        "terms": [
+          "SETUP STATUS",
+          "check"
+        ]
+      }
     }
   ]
 }

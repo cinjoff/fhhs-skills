@@ -10,7 +10,12 @@ What to build or which plan to execute: $ARGUMENTS
 
 You are a **lean orchestrator**. Stay under 15% context usage. Delegate all heavy work to subagents.
 
-> **Dependency check:** Verify `.planning/PROJECT.md` exists (required — if missing, tell user to run `/fh:new-project` first).
+> **Dependency check:** Verify `.planning/PROJECT.md` exists (required — if missing, tell user: "No project found.
+
+→ Run /fh:new-project — set up project tracking before building").
+> If no unexecuted plan exists in the current phase, tell user: "No plan to execute.
+
+→ Run /fh:plan-work — create a plan first".
 
 > **Execution pipeline:**
 > Task execution: **`general-purpose`** subagents using `references/implementer-prompt.md`. Model is resolved from config via `gsd-tools resolve-model gsd-executor --raw`. Fresh context per task.

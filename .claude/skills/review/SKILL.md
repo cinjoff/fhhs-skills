@@ -4,6 +4,8 @@ description: Code review. Checks quality, architecture, and whether the code act
 user-invocable: true
 ---
 
+> **Project context check:** If `.planning/PROJECT.md` exists, read it for project context. If missing, show a one-time note: "Tip: Run `/fh:new-project` to set up project tracking for richer reviews." — then continue with the review normally using git diffs. Do NOT block the review.
+
 Comprehensive code review — quality, architecture, spec verification, goal verification, gap analysis.
 
 Context or flags: $ARGUMENTS

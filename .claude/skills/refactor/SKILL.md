@@ -8,7 +8,9 @@ Restructure existing code safely. Not a bug (use /fh:fix). Not new functionality
 
 The refactoring goal: $ARGUMENTS
 
-> **Dependency check:** Verify `.planning/PROJECT.md` exists (required — if missing, tell user to run `/fh:new-project` first). Engineering disciplines (verification, review) are built into this plugin.
+> **Dependency check:** Verify `.planning/PROJECT.md` exists (required — if missing, tell user: "No project found.
+
+→ Run /fh:new-project — set up project tracking before refactoring"). Engineering disciplines (verification, review) are built into this plugin.
 
 This command runs in a single context by default. For large refactors (10+ files), write a PLAN.md and delegate to subagents.
 
