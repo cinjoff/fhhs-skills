@@ -10405,6 +10405,111 @@
           "pattern": "autoState.activity_events"
         }
       ]
+    },
+    {
+      "id": 312,
+      "command": "new-project",
+      "prompt": "When using the default stack (cinjoff/fh-starter-project template), does Step 3 customize the template for the actual project? Check that package.json name, supabase config, and other template references are updated after cloning.",
+      "expected_output": "Step 3a should customize the cloned template: update package.json name from 'fh-starter-project' to the actual project name (derived from directory basename), update supabase/config.toml project_id, replace the template README.md, remove template CLAUDE.md (Step 5 generates a new one), and scrub remaining 'fh-starter-project' references from all source files.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Updates package.json name from fh-starter-project to project name",
+          "type": "output"
+        },
+        {
+          "text": "Updates supabase config.toml project_id",
+          "type": "output"
+        },
+        {
+          "text": "Removes or replaces template README.md",
+          "type": "output"
+        },
+        {
+          "text": "Scrubs remaining fh-starter-project references",
+          "type": "output"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "happy-path",
+        "template-customization"
+      ],
+      "deterministic_checks": [
+        {
+          "type": "file_contains",
+          "path": ".claude/skills/new-project/SKILL.md",
+          "pattern": "Customize Template"
+        },
+        {
+          "type": "file_contains",
+          "path": ".claude/skills/new-project/SKILL.md",
+          "pattern": "fh-starter-project"
+        }
+      ]
+    },
+    {
+      "id": 313,
+      "command": "new-project",
+      "prompt": "For brownfield sync mode (existing project), does the audit check for stale template references like package.json still saying 'fh-starter-project'?",
+      "expected_output": "The brownfield sync audit should include a 'Template identity cleanup' section that checks if package.json name is still 'fh-starter-project', if supabase/config.toml has stale template references, and if any source files still reference the template name. If stale, update them to the actual project name.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Checks package.json name for stale template name",
+          "type": "output"
+        },
+        {
+          "text": "Includes template identity cleanup in sync mode audit",
+          "type": "output"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "edge-case",
+        "template-customization"
+      ],
+      "deterministic_checks": [
+        {
+          "type": "file_contains",
+          "path": ".claude/skills/new-project/SKILL.md",
+          "pattern": "Template identity cleanup"
+        }
+      ]
+    },
+    {
+      "id": 314,
+      "command": "new-project",
+      "prompt": "When using the default stack with local Supabase, does Step 8e handle the starter template's TypeScript seed script (scripts/seed.ts) in addition to the standard supabase/seed.sql?",
+      "expected_output": "Step 8e section 7 should check for both supabase/seed.sql (standard Supabase seed) and scripts/seed.ts (starter template TypeScript seed). If scripts/seed.ts exists, it should run it via npx tsx after supabase db reset. The TS seed creates Better Auth tables and test data (users, orgs, members).",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Checks for scripts/seed.ts TypeScript seed file",
+          "type": "output"
+        },
+        {
+          "text": "Runs TypeScript seed via npx tsx",
+          "type": "output"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "happy-path",
+        "template-customization"
+      ],
+      "deterministic_checks": [
+        {
+          "type": "file_contains",
+          "path": ".claude/skills/new-project/SKILL.md",
+          "pattern": "scripts/seed.ts"
+        },
+        {
+          "type": "file_contains",
+          "path": ".claude/skills/new-project/SKILL.md",
+          "pattern": "npx tsx"
+        }
+      ]
     }
   ]
 }
