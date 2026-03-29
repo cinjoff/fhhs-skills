@@ -8,6 +8,12 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.57.1] - 2026-03-29
+
+### Changed
+- **claude-mem auto-CLAUDE.md disabled** — `FOLDER_CLAUDEMD_ENABLED` explicitly set to `false` in `/fh:setup` and `/fh:update` configs to prevent claude-mem from auto-generating CLAUDE.md files
+- **Codebase mapping legacy cleanup** — `/fh:map-codebase` now removes old multi-document files (ARCHITECTURE.md, STRUCTURE.md, CONVENTIONS.md, etc.) before writing the single CODEBASE.md
+
 ## [1.57.0] - 2026-03-29
 
 ### Added

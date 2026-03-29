@@ -443,7 +443,7 @@ After installing `claude-mem@thedotmack` successfully, also apply fhhs-skills co
   "CLAUDE_MEM_CONTEXT_SESSION_COUNT": "50",
   "CLAUDE_MEM_CONTEXT_FULL_COUNT": "15",
   "CLAUDE_MEM_CONTEXT_FULL_FIELD": "narrative",
-  "CLAUDE_MEM_FOLDER_CLAUDEMD_ENABLED": "true",
+  "CLAUDE_MEM_FOLDER_CLAUDEMD_ENABLED": "false",
   "CLAUDE_MEM_CONTEXT_SHOW_LAST_SUMMARY": "true",
   "CLAUDE_MEM_CONTEXT_SHOW_LAST_MESSAGE": "false",
   "CLAUDE_MEM_CONTEXT_SHOW_READ_TOKENS": "true",
