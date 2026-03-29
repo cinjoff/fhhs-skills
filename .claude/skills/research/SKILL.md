@@ -29,11 +29,12 @@ Based on the topic, identify:
 ### 1b. Past Learnings Check
 
 If claude-mem is available, check for prior research on the same or related topics:
-1. Call `mcp__plugin_claude-mem_mcp-search__smart_search` with 2-3 keywords from the research topic, limit=5
-2. Filter for: research, investigated, evaluated, compared, "decided on", recommendation, pitfall
-3. If relevant: "**Prior research on this topic:** - {summary}" — max 3 items
-4. If prior research covers the exact topic, present it and ask: "Prior research exists — want to build on it or start fresh?"
-5. Skip silently if unavailable
+1. Derive project name from `.planning/PROJECT.md` name field (fall back to basename of cwd). Use this as the `project` parameter for all claude-mem calls.
+2. Call `mcp__plugin_claude-mem_mcp-search__search` with query=2-3 keywords from the research topic, limit=5, project=<project-name>
+3. Filter for: research, investigated, evaluated, compared, "decided on", recommendation, pitfall
+4. If relevant: "**Prior research on this topic:** - {summary}" — max 3 items
+5. If prior research covers the exact topic, present it and ask: "Prior research exists — want to build on it or start fresh?"
+6. Skip silently if unavailable
 
 ### 2. Dispatch Research Subagent
 

@@ -324,3 +324,55 @@ Pre-indexed content (Step 3 manifest):
    for files being actively edited. Pre-indexed manifest includes source files,
    per-task files from `<files>` elements, and test files discovered by convention
    matching. Metrics tracked per-session in stepHistory enable before/after comparison.
+
+## Measurement & Verification
+
+### Reading PHASE_METRICS
+
+Each `claude -p` session emits a log line on completion:
+
+```
+PHASE_METRICS: phase=07-auto-mode step=build elapsed=542000ms tokens_in=45000 tokens_out=12000 reads=3 ctx_hits=18
+```
+
+Fields:
+- `phase`: phase directory name
+- `step`: pipeline step (plan-work | plan-review | build | review)
+- `elapsed`: wall-clock time in ms
+- `tokens_in/out`: total tokens from claude API usage
+- `reads`: count of Read tool calls (lower = better with ctx_search)
+- `ctx_hits`: count of ctx_search/ctx_batch_execute calls
+
+### Per-Phase Cost Aggregation
+
+The orchestrator aggregates stepHistory into `phase_costs` in `.auto-state.json`:
+
+```json
+{
+  "phase_costs": {
+    "07-auto-mode": {
+      "tokens_in": 120000,
+      "tokens_out": 35000,
+      "cost_estimate": 1.85,
+      "elapsed_ms": 1420000,
+      "steps": 4
+    }
+  }
+}
+```
+
+The tracker dashboard reads `phase_costs` to display per-phase cost bars.
+
+### Verifying Context-Mode Savings
+
+Compare runs with and without context-mode:
+- **reads metric**: Should drop from ~40 (no ctx) to <10 (with ctx) per build
+- **tokens_in**: Lower when agents use ctx_search (smaller prompts — see Agent Prompt comparison above)
+- **ctx_hits**: Should be >0 in every step except possibly plan-work bootstrap
+
+Baseline from Phase 14 execution (see Performance Baseline above):
+| Metric | Before ctx_search | After ctx_search | Target |
+|--------|-------------------|------------------|--------|
+| Read calls per build | 41 | <10 | <10 |
+| Redundant reads | 10 (page.tsx) | 0 | 0 |
+| Prompt size per agent | 7.7 KB | 3.8 KB | <4 KB |

@@ -53,7 +53,11 @@ ctx_batch_execute([
   { label: "ROADMAP", cmd: "cat .planning/ROADMAP.md" },
   { label: "REQUIREMENTS", cmd: "cat .planning/REQUIREMENTS.md" },
   { label: "DESIGN", cmd: "cat .planning/DESIGN.md" },
-  { label: "CODEBASE", cmd: "cat .planning/codebase/CODEBASE.md 2>/dev/null || cat .planning/codebase/ARCHITECTURE.md .planning/codebase/STRUCTURE.md .planning/codebase/CONVENTIONS.md .planning/codebase/TESTING.md .planning/codebase/STACK.md 2>/dev/null" },
+  { label: "ARCHITECTURE", cmd: "cat .planning/codebase/CODEBASE.md 2>/dev/null || cat .planning/codebase/ARCHITECTURE.md 2>/dev/null || echo ''" },
+  { label: "STRUCTURE", cmd: "cat .planning/codebase/STRUCTURE.md 2>/dev/null || echo ''" },
+  { label: "CONVENTIONS", cmd: "cat .planning/codebase/CONVENTIONS.md 2>/dev/null || echo ''" },
+  { label: "TESTING", cmd: "cat .planning/codebase/TESTING.md 2>/dev/null || echo ''" },
+  { label: "STACK", cmd: "cat .planning/codebase/STACK.md 2>/dev/null || echo ''" },
 ], queries: [
   "project vision and scope",
   "architecture patterns and boundaries",
@@ -147,16 +151,17 @@ Check whether the user's request involves unfamiliar APIs, external services, li
 ### Past Learnings Check
 
 Before researching, check claude-mem for relevant past learnings:
-1. If claude-mem is available, call `mcp__plugin_claude-mem_mcp-search__smart_search` with 2-3 keywords from the user's task description, limit=5
-2. Filter results for observations containing: mistake, pitfall, learning, retro, "should have", "next time", warning, regression
-3. If relevant results found, present as:
+1. Derive project name from `.planning/PROJECT.md` name field (fall back to basename of cwd). Use this as the `project` parameter for all claude-mem calls.
+2. If claude-mem is available, call `mcp__plugin_claude-mem_mcp-search__search` with query=2-3 keywords from the user's task description, limit=5, project=<project-name>
+3. Filter results for observations containing: mistake, pitfall, learning, retro, "should have", "next time", warning, regression
+4. If relevant results found, present as:
 
    **Past learnings relevant to this work:**
    - {observation summary} (from {date})
 
    Max 3 items, <2% context budget.
-4. Feed these into the brainstorm/design context so past mistakes inform decisions
-5. Skip silently if claude-mem not installed or no relevant results
+5. Feed these into the brainstorm/design context so past mistakes inform decisions
+6. Skip silently if claude-mem not installed or no relevant results
 
 The complexity assessment from Step 0.5 determines the research path:
 
@@ -515,6 +520,25 @@ After plan approval:
 3. **Continue planning** — Plan more phases before building.
 
 **Review is the default for ALL plans.** Only skip review for trivially obvious work where the risk of a missed edge case is near zero. When in doubt, review.
+
+---
+
+## Step 9.5: Index Source Files for Downstream Steps
+
+If ctx_batch_execute is available AND the plan has a `files_modified` list in frontmatter:
+
+1. Parse `files_modified` from the plan frontmatter
+2. Filter to files that exist on disk
+3. Index them for downstream consumption (plan-review, build):
+
+```
+ctx_batch_execute([
+  // For each existing file in files_modified:
+  { label: "<basename>", cmd: "cat <filepath>" },
+], queries: ["implementation patterns in modified files"])
+```
+
+This ensures plan-review and build can access the relevant source code via ctx_search without redundant file reads. If files_modified is empty or ctx_batch_execute is unavailable, skip silently.
 
 ---
 

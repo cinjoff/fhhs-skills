@@ -10,13 +10,39 @@ What to run autonomously: $ARGUMENTS
 
 ---
 
+## Walk-Away Guide
+
+`/fh:auto` plans, reviews, builds, and reviews each phase without human intervention.
+
+**Prerequisites:** `.planning/` directory with `PROJECT.md`, `ROADMAP.md`, `STATE.md` (created by `/fh:new-project`).
+
+**Quick start:**
+1. Describe your project → run `/fh:new-project` → run `/fh:auto`
+2. Or from scratch: `/fh:auto "build a SaaS for X"` (runs new-project first, then executes)
+
+**What happens:** Each phase gets a plan, plan-review, build, and quick-review — all autonomous. Decisions are logged to `.planning/DECISIONS.md` with confidence levels.
+
+**Monitor progress:**
+- Live dashboard: `http://127.0.0.1:4111` (auto-started if tracker is installed)
+- State file: `.auto-state.json` in project root (phase-by-phase status)
+- Stdout: real-time logs with per-phase cost and timing
+
+**Resume after interruption:** `/fh:auto --resume` — picks up exactly where it stopped.
+
+**Review when done:**
+- `.planning/DECISIONS.md` — check entries marked `LOW` confidence or `⚠ NEEDS REVIEW`
+- `.planning/phases/*/SUMMARY.md` — per-phase execution reports
+- Run `/fh:auto --check-corrections` after correcting any decisions
+
+---
+
 ## Step 1: Validate Prerequisites
 
 Check that the project is set up for autonomous execution:
 
 1. **`.planning/PROJECT.md` exists** — if missing, check for startup artifacts first:
    - If `.planning/startup/` exists: "Found startup validation artifacts but no project setup. Run `/fh:new-project` to create the project — it will auto-populate from your startup data." Stop.
-   - If no `.planning/` at all: "No project found. Consider running `/fh:startup-design` first to validate your idea, then `/fh:new-project` to set up the project. Or run `/fh:new-project` directly if you're ready to build." Stop.
+   - If no `.planning/` at all: "No project found. Consider running `/fh:startup-design` first to validate your idea, then `/fh:new-project` to set up the project. Or run `/fh:new-project` directly if you're ready to build. Or provide a project description: `/fh:auto 'build a task management app with teams and real-time updates'`" Stop.
 2. **`.planning/ROADMAP.md` exists** — if missing: "No roadmap found. Run `/fh:new-project` to generate a roadmap." Stop.
 3. **`.planning/STATE.md` exists** — if missing: "No state tracking found. Run `/fh:new-project` to initialize state." Stop.
 

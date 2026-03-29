@@ -10405,6 +10405,230 @@
           "pattern": "autoState.activity_events"
         }
       ]
+    },
+    {
+      "id": 312,
+      "command": "auto",
+      "prompt": "build me a todo app with auth",
+      "expected_output": "Should detect no .planning/ directory, suggest using `/fh:auto 'build a todo app with auth'` with a project description or `/fh:new-project` to bootstrap first, and mention the walk-away experience where the user can provide a description and let auto handle everything end-to-end.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects missing .planning/ directory",
+          "type": "behavioral"
+        },
+        {
+          "text": "Suggests /fh:auto with a project description or /fh:new-project",
+          "type": "output"
+        },
+        {
+          "text": "Mentions walk-away or autonomous end-to-end execution",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT attempt to create .planning/ directly without user confirmation",
+          "type": "guard"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "auto",
+        "lifecycle",
+        "guard"
+      ]
+    },
+    {
+      "id": 313,
+      "command": "auto",
+      "prompt": "Resume my auto run. Note: the .auto-state.json file exists but contains `{invalid json garbage` — it is malformed.",
+      "expected_output": "Should detect the corrupt/malformed .auto-state.json, rename it to .auto-state.json.corrupt, log a warning about the corruption, and start a fresh run instead of crashing. The orchestrator's validateAutoState function handles this gracefully.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects corrupt or malformed .auto-state.json",
+          "type": "behavioral"
+        },
+        {
+          "text": "Renames corrupt file to .auto-state.json.corrupt",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT crash on invalid JSON state",
+          "type": "guard"
+        },
+        {
+          "text": "Falls back to fresh run or STATE.md inference",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "micro",
+      "tags": [
+        "auto",
+        "resume",
+        "edge-case"
+      ]
+    },
+    {
+      "id": 314,
+      "command": "auto",
+      "prompt": "All 5 phases have completed successfully during the /fh:auto run. The orchestrator is printing its final summary. Verify it includes milestone completion awareness.",
+      "expected_output": "The final summary should include a milestone completion message like 'Milestone: COMPLETE — all 5 phases shipped', display a banner suggesting 'gsd-tools milestone complete <version>', and set milestone_complete: true in the final auto-state. Should NOT auto-run gsd-tools milestone complete.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Summary includes milestone completion message",
+          "type": "output"
+        },
+        {
+          "text": "Suggests gsd-tools milestone complete command",
+          "type": "output"
+        },
+        {
+          "text": "Reports all phases shipped count",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT auto-run gsd-tools milestone complete",
+          "type": "guard"
+        }
+      ],
+      "tier": "micro",
+      "tags": [
+        "auto",
+        "milestone",
+        "lifecycle"
+      ]
+    },
+    {
+      "id": 315,
+      "command": "auto",
+      "prompt": "Run /fh:auto with arguments: 'build a SaaS analytics dashboard with team workspaces and billing'",
+      "expected_output": "Should detect no existing .planning/ (or treat the description as a new project request), chain to /fh:new-project --auto with the provided description to create the project and roadmap, then proceed to autonomous execution of all phases. The walk-away flow handles everything from description to working codebase.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Chains to /fh:new-project --auto with the project description",
+          "type": "behavioral"
+        },
+        {
+          "text": "Proceeds to autonomous execution after project creation",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT ask the user to manually run new-project first",
+          "type": "guard"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "auto",
+        "lifecycle",
+        "new-project"
+      ]
+    },
+    {
+      "id": 316,
+      "command": "auto",
+      "prompt": "Resume my auto run. The .auto-state.json shows phase 03 as 'built' in phase_states, but the SUMMARY.md file for that phase doesn't exist on disk.",
+      "expected_output": "The orchestrator should detect the inconsistency during resume validation — phase 03 is marked 'built' but has no SUMMARY.md. It should downgrade phase 03 from 'built' to 'planned' and re-execute the build step for that phase, since the build was incomplete despite state claiming success.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects missing SUMMARY.md for phase marked as built",
+          "type": "behavioral"
+        },
+        {
+          "text": "Downgrades phase from built to planned",
+          "type": "behavioral"
+        },
+        {
+          "text": "Re-executes build for the downgraded phase",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT skip the phase assuming it's complete",
+          "type": "guard"
+        }
+      ],
+      "tier": "micro",
+      "tags": [
+        "auto",
+        "resume",
+        "edge-case"
+      ]
+    },
+    {
+      "id": 317,
+      "command": "auto",
+      "prompt": "I just ran /fh:auto and all phases completed. The orchestrator prints its final summary. I want to see per-phase cost breakdown showing how much each phase cost in tokens and dollars.",
+      "expected_output": "Final summary includes a per-phase cost breakdown table with columns for phase, steps, tokens in, tokens out, cost estimate, and elapsed time for each phase executed. Also shows total cost estimate.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Output mentions Per-phase breakdown",
+          "type": "output"
+        },
+        {
+          "text": "Output contains table with token counts per phase",
+          "type": "output"
+        },
+        {
+          "text": "Output includes total cost estimate",
+          "type": "output"
+        }
+      ],
+      "tier": "micro",
+      "tags": [
+        "auto",
+        "observability",
+        "measurement"
+      ]
+    },
+    {
+      "id": 318,
+      "command": "auto",
+      "prompt": "Resume my auto run. The .auto-state.json from a previous run is loaded. It should contain phase_costs with per-phase token and cost data.",
+      "expected_output": "Auto skill recognizes phase_costs in state file, uses it for resume status reporting. Does not crash on phase_costs field.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Output references phase_costs or per-phase cost data",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does not crash on phase_costs field",
+          "type": "guard"
+        }
+      ],
+      "tier": "micro",
+      "tags": [
+        "auto",
+        "observability",
+        "resume"
+      ]
+    },
+    {
+      "id": 319,
+      "command": "auto",
+      "prompt": "How do I measure token efficiency in the auto pipeline? CONTEXT-SHARING.md should document the measurement approach.",
+      "expected_output": "References PHASE_METRICS log format, mentions ctx_search savings vs Read, mentions measurement baselines.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Output mentions PHASE_METRICS or per-phase metrics",
+          "type": "output"
+        },
+        {
+          "text": "Output references context-mode savings",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "micro",
+      "tags": [
+        "auto",
+        "observability",
+        "measurement"
+      ]
     }
   ]
 }

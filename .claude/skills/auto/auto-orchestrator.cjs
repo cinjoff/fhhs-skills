@@ -89,6 +89,42 @@ function writeAutoStatus(projectDir, status) {
   }).catch(() => {});
 }
 
+/**
+ * Cascade plan failures: mark dependents of plan-failed phases as rescheduled-sequential.
+ * Never overwrites 'built' or 'reviewed' phase states.
+ * @param {Array} phasesToRun - phases in the pipeline
+ * @param {Object} phase_states - mutable map of phase id → state string
+ * @param {Object} depGraph - dependency graph from buildDependencyGraph
+ * @param {Function} [log] - optional logger (defaults to no-op)
+ * @returns {Array} rescheduled phases
+ */
+function cascadePlanFailures(phasesToRun, phase_states, depGraph, log) {
+  if (!log) log = () => {};
+  const rescheduled = [];
+  for (const phase of phasesToRun) {
+    if (phase_states[phase.id] !== 'plan-failed') continue;
+    for (const otherPhase of phasesToRun) {
+      if (otherPhase.id === phase.id) continue;
+      if ((depGraph[otherPhase.id] || []).includes(phase.id)) {
+        // Don't reschedule phases that already succeeded
+        if (phase_states[otherPhase.id] === 'built' || phase_states[otherPhase.id] === 'reviewed') {
+          log(`  Phase ${otherPhase.id} depends on failed phase ${phase.id} but is already '${phase_states[otherPhase.id]}' — keeping`);
+          continue;
+        }
+        log(`  Phase ${otherPhase.id} depends on failed phase ${phase.id} — rescheduling to sequential`);
+        phase_states[otherPhase.id] = 'rescheduled-sequential';
+        rescheduled.push(otherPhase);
+      }
+    }
+    // Only reschedule the failed phase itself if it wasn't already successful
+    if (phase_states[phase.id] !== 'built' && phase_states[phase.id] !== 'reviewed') {
+      phase_states[phase.id] = 'rescheduled-sequential';
+      rescheduled.push(phase);
+    }
+  }
+  return rescheduled;
+}
+
 function buildAutoStatus(_projectDir, overrides) {
   const now = Date.now();
 
@@ -142,12 +178,13 @@ function buildAutoStatus(_projectDir, overrides) {
     project_dir: _autoStatus.projectDir,
     claude_tmp_base: _autoStatus.projectDir ? getClaudeTmpBase(_autoStatus.projectDir) : null,
     current_wave,
-    concurrency: { max: 1, active: concurrencyActive },
+    concurrency: { max: (overrides && overrides.concurrency_max) || 1, active: concurrencyActive },
     phase_states,
     dep_graph: {},
     build_order: [],
     last_activity_at: _autoStatus.lastActivityAt,
     activity_events: [..._activityEvents],
+    phase_costs: aggregatePhaseMetrics(_autoStatus.stepHistory),
   }, overrides);
 }
 
@@ -155,7 +192,7 @@ function buildAutoStatus(_projectDir, overrides) {
 
 const SOFT_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
 const HARD_TIMEOUT_MS = 45 * 60 * 1000; // 45 minutes
-const STUCK_SILENCE_MS = 3 * 60 * 1000; // 3 min no output → warn
+const STUCK_SILENCE_MS = 5 * 60 * 1000; // 5 min no output → warn (was 3 min, caused false alarms)
 const STUCK_KILL_MS = 8 * 60 * 1000;    // 8 min no output → kill (stuck session, default)
 
 // Per-step stuck-kill thresholds: build agents go silent during long tool calls
@@ -416,12 +453,53 @@ function autoStatePath(projectDir) {
   return path.join(projectDir, '.planning', '.auto-state.json');
 }
 
+function validateAutoState(state) {
+  if (!state || typeof state !== 'object' || Array.isArray(state)) {
+    return { valid: false, reason: 'State is not a valid object' };
+  }
+  if (state.phase !== null && state.phase !== undefined && typeof state.phase !== 'string') {
+    return { valid: false, reason: `state.phase must be a string or null, got ${typeof state.phase}` };
+  }
+  if (state.phase_states !== undefined && (typeof state.phase_states !== 'object' || Array.isArray(state.phase_states) || state.phase_states === null)) {
+    return { valid: false, reason: 'state.phase_states must be an object' };
+  }
+  if (state.total_cost_estimate !== undefined && (typeof state.total_cost_estimate !== 'number' || state.total_cost_estimate < 0)) {
+    return { valid: false, reason: `state.total_cost_estimate must be a non-negative number, got ${state.total_cost_estimate}` };
+  }
+  if (state.retry_count !== undefined) {
+    const rc = state.retry_count;
+    if (typeof rc === 'number' && rc < 0) {
+      return { valid: false, reason: `state.retry_count must be non-negative, got ${rc}` };
+    }
+    if (typeof rc === 'object' && (Array.isArray(rc) || rc === null)) {
+      return { valid: false, reason: 'state.retry_count must be a number or object map' };
+    }
+  }
+  if (state.phase_plan_paths !== undefined && (typeof state.phase_plan_paths !== 'object' || Array.isArray(state.phase_plan_paths) || state.phase_plan_paths === null)) {
+    return { valid: false, reason: 'state.phase_plan_paths must be an object' };
+  }
+  return { valid: true };
+}
+
 function loadAutoState(projectDir) {
   const p = autoStatePath(projectDir);
   if (!fs.existsSync(p)) return null;
   try {
-    return JSON.parse(fs.readFileSync(p, 'utf-8'));
+    const raw = fs.readFileSync(p, 'utf-8');
+    const state = JSON.parse(raw);
+    const validation = validateAutoState(state);
+    if (!validation.valid) {
+      const corruptPath = p + '.corrupt';
+      process.stderr.write(`Warning: corrupt .auto-state.json — ${validation.reason}. Renaming to ${corruptPath}\n`);
+      try { fs.renameSync(p, corruptPath); } catch { /* best-effort */ }
+      return null;
+    }
+    return state;
   } catch {
+    // JSON parse failed — file is malformed
+    const corruptPath = p + '.corrupt';
+    process.stderr.write(`Warning: .auto-state.json is not valid JSON. Renaming to ${corruptPath}\n`);
+    try { fs.renameSync(p, corruptPath); } catch { /* best-effort */ }
     return null;
   }
 }
@@ -440,11 +518,6 @@ function saveAutoState(projectDir, state) {
     // Log to stderr instead of silently swallowing — helps diagnose disk/perm issues
     process.stderr.write(`Warning: saveAutoState failed: ${err.message}\n`);
   });
-}
-
-function clearAutoState(projectDir) {
-  const p = autoStatePath(projectDir);
-  if (fs.existsSync(p)) fs.unlinkSync(p);
 }
 
 // ─── Cost Estimation ─────────────────────────────────────────────────────────
@@ -627,6 +700,27 @@ function parseSessionMetrics(stdout) {
     ? Math.round((metrics.tokens_in / CONTEXT_LIMIT) * 100)
     : 0;
   return metrics;
+}
+
+// ─── Per-Phase Cost Aggregation ───────────────────────────────────────────────
+
+function aggregatePhaseMetrics(stepHistory) {
+  const phases = {};
+  for (const entry of stepHistory) {
+    if (!entry.phase) continue;
+    if (!phases[entry.phase]) {
+      phases[entry.phase] = { tokens_in: 0, tokens_out: 0, cost_estimate: 0, elapsed_ms: 0, steps: 0, read_calls: 0, ctx_search_hits: 0 };
+    }
+    const p = phases[entry.phase];
+    p.tokens_in += (entry.metrics && entry.metrics.tokens_in) || 0;
+    p.tokens_out += (entry.metrics && entry.metrics.tokens_out) || 0;
+    p.read_calls += (entry.metrics && entry.metrics.read_calls) || 0;
+    p.ctx_search_hits += (entry.metrics && entry.metrics.ctx_search_hits) || 0;
+    p.cost_estimate += entry.cost_estimate || 0;
+    p.elapsed_ms += entry.elapsed_ms || 0;
+    p.steps++;
+  }
+  return phases;
 }
 
 // ─── Project Name Resolution ──────────────────────────────────────────────────
@@ -900,6 +994,7 @@ async function executeStep(projectDir, phaseId, step, planPath) {
         `Plan phase ${phaseId}. Phase goal: "${phaseGoal}". ` +
         `Use /fh:plan-work to create the plan. Auto-decide all gray areas using best judgment. ` +
         `Write the plan to .planning/phases/ directory. Do not ask questions — make decisions autonomously.` +
+        ` Prefer ctx_search over Read for planning docs that were pre-indexed.` +
         researchHint,
         { cwd: projectDir, sessionId, stepName: 'plan-work' }
       );
@@ -927,7 +1022,8 @@ async function executeStep(projectDir, phaseId, step, planPath) {
       const relPlan = path.relative(projectDir, latestPlan);
       return await runClaudeSession(
         `You are in auto mode. Execute the plan at ${relPlan} using /fh:build. ` +
-        `Phase goal: "${phaseGoal}". Build all tasks, run tests, commit changes. Do not ask questions.`,
+        `Phase goal: "${phaseGoal}". Build all tasks, run tests, commit changes. Do not ask questions.` +
+        ` Prefer ctx_search over Read for planning and source files that were pre-indexed.`,
         { cwd: projectDir, sessionId, stepName: 'build' }
       );
     }
@@ -1576,7 +1672,7 @@ async function main() {
   const endPhase = opts.endPhase || allPhases[allPhases.length - 1].id;
 
   // Filter phases to run
-  const phasesToRun = allPhases.filter(p => {
+  let phasesToRun = allPhases.filter(p => {
     return comparePhaseNum(p.id, startPhase) >= 0 && comparePhaseNum(p.id, endPhase) <= 0;
   });
 
@@ -1673,6 +1769,19 @@ async function main() {
         if (idx + 1 < phasesToRun.length) {
           resumeState = { phase: phasesToRun[idx + 1].id, step: PHASE_STEPS[0], steps_completed: [] };
           log(`Resuming from phase ${resumeState.phase} instead`);
+        }
+      }
+    }
+
+    // Verify SUMMARY.md existence for phases marked as 'built' in phase_states
+    if (resumeState.phase_states && typeof resumeState.phase_states === 'object') {
+      for (const [phaseId, phaseStatus] of Object.entries(resumeState.phase_states)) {
+        if (phaseStatus === 'built') {
+          const plan = findLatestPlan(projectDir, phaseId);
+          if (plan && !summaryExists(plan)) {
+            log(`Phase ${phaseId} marked as 'built' but SUMMARY.md missing — downgrading to 'planned'`);
+            resumeState.phase_states[phaseId] = 'planned';
+          }
         }
       }
     }
@@ -2136,21 +2245,26 @@ async function main() {
     const ctxDbHash = crypto.createHash('sha256').update(projectDir).digest('hex').slice(0, 16);
     log(`  Context-mode DB: ~/.claude/context-mode/sessions/${ctxDbHash}.db (shared across all steps)`);
 
+    // ── Exclude already-complete phases from pipeline entirely ──────────────────
+    const completedPhaseIds = new Set();
+    for (const phase of phasesToRun) {
+      const plan = findLatestPlan(projectDir, phase.id);
+      if (plan && summaryExists(plan)) {
+        completedPhaseIds.add(phase.id);
+        log(`  Phase ${phase.id}: already complete — excluding from pipeline`);
+      }
+    }
+    if (completedPhaseIds.size > 0) {
+      phasesToRun = phasesToRun.filter(p => !completedPhaseIds.has(p.id));
+      log(`  ${completedPhaseIds.size} phase(s) excluded, ${phasesToRun.length} remaining`);
+    }
+
     // ── Phase states map ───────────────────────────────────────────────────────
     // Possible values: 'pending' | 'planned' | 'plan-failed' | 'reviewed' |
     //                  'review-failed' | 'built' | 'build-failed' | 'blocked' |
     //                  'rescheduled-sequential'
     const phase_states = {};
     for (const phase of phasesToRun) phase_states[phase.id] = 'pending';
-
-    // ── Pre-scan: mark phases with SUMMARY.md as 'built' (completed in previous runs) ──
-    for (const phase of phasesToRun) {
-      const plan = findLatestPlan(projectDir, phase.id);
-      if (plan && summaryExists(plan)) {
-        phase_states[phase.id] = 'built';
-        log(`  Phase ${phase.id}: already completed (SUMMARY.md exists) — skipping`);
-      }
-    }
 
     // ── Resume: restore phase_states from auto-state ───────────────────────────
     if (opts.resume && resumeState && resumeState.phase_states) {
@@ -2196,6 +2310,7 @@ async function main() {
       active: true,
       phase: null,
       step: 'plan-work',
+      concurrency_max: opts.concurrency,
       total_cost_estimate: totalCostEstimate,
       budget: opts.budget || null,
       phase_states,
@@ -2280,10 +2395,9 @@ async function main() {
         return;
       }
 
-      // Cost tracking
+      // Cost tracking (written to step_history only — no log line to avoid buffer clutter)
       const sessionCost = estimateSessionCost(stepResult.promptText || '', stepResult.stdout || '');
       totalCostEstimate += sessionCost;
-      log(`    Phase ${phase.id} plan cost: ~$${sessionCost.toFixed(4)}`);
 
       const planPath = findLatestPlan(projectDir, phase.id);
       if (!planPath) {
@@ -2294,6 +2408,21 @@ async function main() {
 
       phasePlanPaths[phase.id] = planPath;
       phase_states[phase.id] = 'planned';
+
+      // Record step in step_history for post-mortem analysis
+      const planStdout = (stepResult && stepResult.stdout) || '';
+      const planMetrics = parseSessionMetrics(planStdout);
+      _autoStatus.stepHistory.push({
+        phase: phase.id,
+        step: 'plan-work',
+        status: 'success',
+        elapsed_ms: 0,
+        cost_estimate: sessionCost,
+        started_at: new Date().toISOString(),
+        completed_at: new Date().toISOString(),
+        metrics: planMetrics,
+      });
+
       log(`  ✓ Phase ${phase.id} planned: ${path.relative(projectDir, planPath)}`);
     }));
 
@@ -2390,19 +2519,8 @@ async function main() {
     }
 
     // ── Handle plan-failed phases: mark dependents as rescheduled ─────────────
-    for (const phase of phasesToRun) {
-      if (phase_states[phase.id] !== 'plan-failed') continue;
-      for (const otherPhase of phasesToRun) {
-        if (otherPhase.id === phase.id) continue;
-        if ((depGraph[otherPhase.id] || []).includes(phase.id)) {
-          log(`  Phase ${otherPhase.id} depends on failed phase ${phase.id} — rescheduling to sequential`);
-          phase_states[otherPhase.id] = 'rescheduled-sequential';
-          rescheduledPhases.push(otherPhase);
-        }
-      }
-      phase_states[phase.id] = 'rescheduled-sequential';
-      rescheduledPhases.push(phase);
-    }
+    const cascadeResult = cascadePlanFailures(phasesToRun, phase_states, depGraph, log);
+    for (const p of cascadeResult) rescheduledPhases.push(p);
 
     writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
       active: true,
@@ -2442,6 +2560,17 @@ async function main() {
         if (!rescheduledPhases.find(p => p.id === phase.id)) rescheduledPhases.push(phase);
       } else {
         phase_states[phase.id] = 'reviewed';
+        // Record step in step_history
+        _autoStatus.stepHistory.push({
+          phase: phase.id,
+          step: 'plan-review',
+          status: 'success',
+          elapsed_ms: 0,
+          cost_estimate: outcome.cost || 0,
+          started_at: new Date().toISOString(),
+          completed_at: new Date().toISOString(),
+          metrics: parseSessionMetrics((outcome.result && outcome.result.stdout) || ''),
+        });
         log(`  ✓ Phase ${phase.id} reviewed`);
       }
     }));
@@ -2640,6 +2769,17 @@ async function main() {
             _autoStatus.phasesCompleted++;
             plansExecuted++;
             builtPhasesForReview.push(phase);
+            // Record step in step_history
+            _autoStatus.stepHistory.push({
+              phase: phase.id,
+              step: 'build',
+              status: 'success',
+              elapsed_ms: 0,
+              cost_estimate: outcome.cost || 0,
+              started_at: new Date().toISOString(),
+              completed_at: new Date().toISOString(),
+              metrics: parseSessionMetrics((outcome.result && outcome.result.stdout) || ''),
+            });
             log(`  ✓ Phase ${phase.id} built — SUMMARY.md verified`);
           }
         }
@@ -2703,7 +2843,12 @@ async function main() {
       }
 
       for (const phase of uniqueRescheduled) {
-        log(`═══ Phase ${phase.id}: ${phase.name} (rescheduled) ═══`);
+        // Skip phases that are already complete
+        if (phase_states[phase.id] === 'built') {
+          log(`  ↷ Skipping phase ${phase.id} (already built)`);
+          continue;
+        }
+        log(`���══ Phase ${phase.id}: ${phase.name} (rescheduled) ═══`);
         _autoStatus.phaseStartedAt = new Date().toISOString();
 
         const completedSteps = [];
@@ -2714,6 +2859,13 @@ async function main() {
           if (opts.budget && totalCostEstimate >= opts.budget) {
             log(`Budget ceiling reached — stopping`);
             break;
+          }
+
+          // Skip plan-work if a valid plan already exists from planning wave
+          if (step === 'plan-work' && currentPlanPath && fs.existsSync(currentPlanPath)) {
+            log(`  ↷ Reusing existing plan from planning wave: ${path.relative(projectDir, currentPlanPath)}`);
+            completedSteps.push(step);
+            continue;
           }
 
           writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
@@ -2739,6 +2891,22 @@ async function main() {
           }
 
           completedSteps.push(step);
+
+          // Record step metrics for post-mortem analysis
+          const seqStepStdout = (outcome.result && outcome.result.stdout) || '';
+          const seqMetrics = parseSessionMetrics(seqStepStdout);
+          const seqStepElapsedMs = _autoStatus.stepStartedAt
+            ? Date.now() - new Date(_autoStatus.stepStartedAt).getTime() : 0;
+          _autoStatus.stepHistory.push({
+            phase: phase.id,
+            step,
+            status: 'success',
+            elapsed_ms: seqStepElapsedMs,
+            cost_estimate: outcome.cost || 0,
+            started_at: _autoStatus.stepStartedAt || new Date().toISOString(),
+            completed_at: new Date().toISOString(),
+            metrics: seqMetrics,
+          });
 
           if (step === 'plan-work') {
             currentPlanPath = findLatestPlan(projectDir, phase.id);
@@ -2792,12 +2960,17 @@ async function main() {
   // Write session history before final status
   appendSessionHistory(projectDir);
 
+  // Determine milestone completion
+  const milestoneComplete = _autoStatus.phasesCompleted === phasesToRun.length && _autoStatus.phasesFailed === 0;
+
   // Write final inactive status on successful completion
   writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
     active: false,
     total_cost_estimate: totalCostEstimate,
     budget: opts.budget || null,
-    last_log_line: 'Auto-execution complete',
+    step_history: _autoStatus.stepHistory,
+    milestone_complete: milestoneComplete,
+    last_log_line: milestoneComplete ? 'Milestone complete — all phases shipped' : 'Auto-execution complete',
   }));
 
   // Print summary
@@ -2813,16 +2986,98 @@ async function main() {
   log(`  Cost estimate: $${totalCostEstimate.toFixed(2)}${opts.budget ? ` / $${opts.budget} budget` : ''}`);
   log(`  Duration: ${durationMin}m`);
 
+  // Per-phase cost breakdown table with ctx_search efficiency
+  const phaseCosts = aggregatePhaseMetrics(_autoStatus.stepHistory);
+  printMilestoneCostSummary(phaseCosts);
+
+  // Milestone completion awareness
+  if (milestoneComplete) {
+    log(`  Milestone: COMPLETE — all ${phasesToRun.length} phases shipped`);
+    log('');
+    log('══════════════════════════════════════');
+    log('ALL PHASES COMPLETE — Milestone ready for archive');
+    log('Run: gsd-tools milestone complete <version>');
+    log('══════════════════════════════════════');
+  } else {
+    log(`  Milestone: PARTIAL — ${_autoStatus.phasesCompleted}/${phasesToRun.length} phases completed, ${_autoStatus.phasesFailed} failed`);
+  }
+
   // Write completed_at timestamp but keep the file — tracker shows "completed" status.
   // The file has active:false so --resume won't treat it as in-progress.
   // Next auto run overwrites it. No cleanup needed.
 }
 
-main().catch((err) => {
-  writeAutoStatus(_autoStatus.projectDir || process.cwd(), {
-    active: false,
-    last_log_line: `Fatal error: ${err.message.slice(0, 200)}`,
-    errors: [{ phase: null, step: null, attempt: 1, error_type: 'fatal', message: err.message.slice(0, 300), timestamp: new Date().toISOString() }],
+// ─── Milestone Cost Summary ───────────────────────────────────────────────────
+
+/**
+ * Print a formatted cost summary table with ctx_search efficiency per phase.
+ * Flags phases below 50% efficiency with a warning suffix.
+ */
+function printMilestoneCostSummary(phaseCosts) {
+  const phaseIds = Object.keys(phaseCosts || {});
+  if (phaseIds.length === 0) return;
+
+  log('');
+  log('=== Milestone Cost Summary ===');
+  log('  Phase                | Steps | Tokens In | Tokens Out | Reads | ctx Hits | Efficiency | Cost    | Time');
+  log('  ---------------------|-------|-----------|------------|-------|----------|------------|---------|------');
+
+  let totSteps = 0, totIn = 0, totOut = 0, totReads = 0, totCtx = 0, totCost = 0, totMs = 0;
+  const lowEfficiency = [];
+
+  for (const pid of phaseIds) {
+    const pc = phaseCosts[pid];
+    const reads = pc.read_calls || 0;
+    const ctxHits = pc.ctx_search_hits || 0;
+    const denom = reads + ctxHits;
+    const efficiency = denom > 0 ? Math.round((ctxHits / denom) * 100) : 0;
+    const flag = (denom > 0 && efficiency < 50) ? ' \u26A0' : '';
+    if (denom > 0 && efficiency < 50) lowEfficiency.push(pid);
+
+    const padPhase = pid.padEnd(21);
+    const padSteps = String(pc.steps).padStart(5);
+    const padIn = String(pc.tokens_in).padStart(9);
+    const padOut = String(pc.tokens_out).padStart(10);
+    const padReads = String(reads).padStart(5);
+    const padCtx = String(ctxHits).padStart(8);
+    const padEff = (efficiency + '%' + flag).padStart(10 + flag.length);
+    const padCost = ('$' + pc.cost_estimate.toFixed(2)).padStart(7);
+    const padTime = (Math.round(pc.elapsed_ms / 60000) + 'm').padStart(5);
+    log(`  ${padPhase} | ${padSteps} | ${padIn} | ${padOut} | ${padReads} | ${padCtx} | ${padEff} | ${padCost} | ${padTime}`);
+
+    totSteps += pc.steps;
+    totIn += pc.tokens_in;
+    totOut += pc.tokens_out;
+    totReads += reads;
+    totCtx += ctxHits;
+    totCost += pc.cost_estimate;
+    totMs += pc.elapsed_ms;
+  }
+
+  const totDenom = totReads + totCtx;
+  const totEff = totDenom > 0 ? Math.round((totCtx / totDenom) * 100) : 0;
+  log('  ---------------------|-------|-----------|------------|-------|----------|------------|---------|------');
+  log(`  ${'TOTAL'.padEnd(21)} | ${String(totSteps).padStart(5)} | ${String(totIn).padStart(9)} | ${String(totOut).padStart(10)} | ${String(totReads).padStart(5)} | ${String(totCtx).padStart(8)} | ${(totEff + '%').padStart(10)} | ${('$' + totCost.toFixed(2)).padStart(7)} | ${(Math.round(totMs / 60000) + 'm').padStart(5)}`);
+
+  if (lowEfficiency.length > 0) {
+    log('');
+    log(`  Phases below 50% ctx efficiency may benefit from better pre-indexing`);
+  }
+}
+
+// Export for testing when required as a module
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { parseSessionMetrics, aggregatePhaseMetrics, parsePlanFrontmatter, buildDependencyGraph, assignWaves, comparePhaseNum, estimateSessionCost, printMilestoneCostSummary, cascadePlanFailures };
+}
+
+// Only run main() when executed directly (not when required for testing)
+if (require.main === module) {
+  main().catch((err) => {
+    writeAutoStatus(_autoStatus.projectDir || process.cwd(), {
+      active: false,
+      last_log_line: `Fatal error: ${err.message.slice(0, 200)}`,
+      errors: [{ phase: null, step: null, attempt: 1, error_type: 'fatal', message: err.message.slice(0, 300), timestamp: new Date().toISOString() }],
+    });
+    fatal(err.message);
   });
-  fatal(err.message);
-});
+}

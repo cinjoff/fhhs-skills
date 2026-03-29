@@ -77,11 +77,12 @@ Budget: less than 2% context. Don't deep-dive errors — just surface file match
 ### Past Learnings Check
 
 If claude-mem is available, check for recurring review patterns:
-1. Call `mcp__plugin_claude-mem_mcp-search__smart_search` with keywords from the diff scope (primary module/feature name, file paths), limit=5
-2. Filter for: review, gap, anti-pattern, regression, quality, "missed in review"
-3. If relevant: "**Recurring patterns from prior reviews:** - {summary}" — max 3 items
-4. Use these to bias agent dispatch queries toward known weak spots
-5. Skip silently if unavailable
+1. Derive project name from `.planning/PROJECT.md` name field (fall back to basename of cwd). Use this as the `project` parameter for all claude-mem calls.
+2. Call `mcp__plugin_claude-mem_mcp-search__search` with query=keywords from the diff scope (primary module/feature name, file paths), limit=5, project=<project-name>
+3. Filter for: review, gap, anti-pattern, regression, quality, "missed in review"
+4. If relevant: "**Recurring patterns from prior reviews:** - {summary}" — max 3 items
+5. Use these to bias agent dispatch queries toward known weak spots
+6. Skip silently if unavailable
 
 ---
 
@@ -312,11 +313,12 @@ Generate a structured report. For each finding above Minor, include a **Next act
 ### Learnings Digest
 
 If claude-mem is available, update the learnings digest at `~/.claude/cache/learnings-digest.json`:
-1. Call `smart_search` with key review findings (Critical/Important items), limit=5
-2. Call `timeline` with window=7d, limit=10
-3. Merge into existing digest using the algorithm defined in `/fh:build` (Step 4, "Learnings Digest"). Use `generated_by: "review"`.
-4. Recurring review findings (same pattern flagged across multiple reviews) are high-value — prioritize these when filtering for improvement themes.
-5. Skip silently if claude-mem not installed, review found no issues, or any MCP call fails.
+1. Derive project name from `.planning/PROJECT.md` name field (fall back to basename of cwd). Use this as the `project` parameter for all claude-mem calls.
+2. Call `search` with query=key review findings (Critical/Important items), limit=5, project=<project-name>
+3. Call `timeline` with window=7d, limit=10
+4. Merge into existing digest using the algorithm defined in `/fh:build` (Step 4, "Learnings Digest"). Use `generated_by: "review"`.
+5. Recurring review findings (same pattern flagged across multiple reviews) are high-value — prioritize these when filtering for improvement themes.
+6. Skip silently if claude-mem not installed, review found no issues, or any MCP call fails.
 
 Budget: <2% context.
 
