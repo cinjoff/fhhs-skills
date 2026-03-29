@@ -8,6 +8,21 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.54.0] - 2026-03-29
+
+### Added
+- **Auto orchestrator activity events** — structured event stream for tracker dashboard visibility
+- **Kill sentinel** — write `.planning/.auto-kill` to gracefully stop a running `/fh:auto` session
+- **Per-step stuck thresholds** — build steps get 15min timeout (was 8min uniform), preventing premature kills during long compilations
+- **Fallow CLI integration** — static analysis (unused exports, circular deps, complexity) wired into map-codebase, review, simplify, fix, extract, refactor with graceful fallback [setup:tool:fallow]
+- **Serena MCP integration** — symbol navigation wired into fix, refactor, extract with graceful fallback when not installed [setup:tool:serena]
+- **Onboarding UX** — `/fh:setup` detects first-run via symlink check, `/fh:progress` routes new users to setup, standardized error messages with next-step suggestions
+- **Getting Started flow** — `/fh:help` enhanced with structured onboarding guidance
+
+### Changed
+- **Auto orchestrator step tracking** — step name propagated to `runClaudeSession` for correct threshold selection
+- **Progress skill** — routes uninitialized users to `/fh:setup` instead of showing empty state
+
 ## [1.53.0] - 2026-03-29
 
 ### Changed
