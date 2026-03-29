@@ -10471,6 +10471,170 @@
         "guard"
       ],
       "checks": []
+    },
+    {
+      "id": 316,
+      "command": "plan-work",
+      "prompt": "Plan a feature to add user notifications. context-mode is installed and the codebase was recently mapped.",
+      "expected_output": "Should use ctx_search for codebase pattern queries and reference the workflow decision matrix",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Prefers ctx_search over direct Read/Grep for codebase pattern queries when context-mode is installed",
+          "type": "behavioral"
+        },
+        {
+          "text": "References the workflow decision matrix for tool selection",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "context-mode",
+        "token-efficiency"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "ctx_search",
+            "workflow"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 317,
+      "command": "build",
+      "prompt": "Build the plan. .planning/codebase/.last-mapped exists with a SHA from 50 commits ago.",
+      "expected_output": "Should detect stale mapping via SHA comparison, warn but not block, and suggest /fh:map-codebase",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects stale codebase mapping via SHA comparison with current HEAD",
+          "type": "behavioral"
+        },
+        {
+          "text": "Issues an advisory warning about stale mapping without blocking execution",
+          "type": "behavioral"
+        },
+        {
+          "text": "Suggests running /fh:map-codebase to refresh the mapping",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "context-mode",
+        "freshness"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "last-mapped",
+            "stale"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 318,
+      "command": "map-codebase",
+      "prompt": "Map the codebase. fallow CLI is installed.",
+      "expected_output": "Should run fallow check, fallow dupes, fallow health before spawning mapper agent and inject results",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Runs fallow check before spawning the mapper agent",
+          "type": "behavioral"
+        },
+        {
+          "text": "Runs fallow health as part of the static analysis pass",
+          "type": "behavioral"
+        },
+        {
+          "text": "Injects Fallow tool results into the mapper agent context under Static Analysis",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "context-mode",
+        "fallow"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "fallow check",
+            "fallow health",
+            "Static Analysis"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 319,
+      "command": "plan-work",
+      "prompt": "Plan a feature. context-mode plugin is NOT installed.",
+      "expected_output": "Should skip ctx_search silently, fall back to direct Read/Grep, no error",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Falls back to direct Read/Grep without surfacing an error when context-mode is absent",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does not attempt to invoke ctx_search or fail when context-mode is not installed",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "full",
+      "tags": [
+        "context-mode",
+        "degradation"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "Grep",
+            "Read"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 320,
+      "command": "build",
+      "prompt": "Build the plan. context-mode is installed.",
+      "expected_output": "Should include token efficiency guidance and prefer ctx_search over Read for convention lookups",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Includes token efficiency guidance when context-mode is installed",
+          "type": "behavioral"
+        },
+        {
+          "text": "Prefers ctx_search over Read for convention and pattern lookups",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "full",
+      "tags": [
+        "context-mode",
+        "token-efficiency"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "ctx_search",
+            "Token Efficiency"
+          ]
+        }
+      ]
     }
   ]
 }

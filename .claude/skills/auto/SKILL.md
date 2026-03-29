@@ -382,6 +382,13 @@ During the concurrent planning wave, multiple sessions may attempt to update `.p
 
 Shared documents (PROJECT.md, ROADMAP.md, research files, codebase mapping) are indexed once before any wave begins using context-mode's `ctx_batch_execute`. Concurrent sessions then use `ctx_search` in read-only mode to query the shared index. This prevents SQLite write contention that would occur if each parallel session independently indexed the same files.
 
+### Per-Step Token Awareness
+
+Track tool call efficiency across steps:
+- Count Read tool calls vs ctx_search calls per step — ctx_search should be preferred for indexed docs
+- If a step re-reads files that were indexed in the shared context, note it as waste
+- Report tool call patterns in the step completion log for cost optimization analysis
+
 ### Partial Failure Handling
 
 If a phase fails during the build wave:
