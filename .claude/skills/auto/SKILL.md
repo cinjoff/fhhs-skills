@@ -408,6 +408,13 @@ During the concurrent planning wave, multiple sessions may attempt to update `.p
 
 Shared documents (PROJECT.md, ROADMAP.md, research files, codebase mapping) are indexed once before any wave begins using context-mode's `ctx_batch_execute`. Concurrent sessions then use `ctx_search` in read-only mode to query the shared index. This prevents SQLite write contention that would occur if each parallel session independently indexed the same files.
 
+### Per-Step Token Awareness
+
+Track tool call efficiency across steps:
+- Count Read tool calls vs ctx_search calls per step — ctx_search should be preferred for indexed docs
+- If a step re-reads files that were indexed in the shared context, note it as waste
+- Report tool call patterns in the step completion log for cost optimization analysis
+
 ### Partial Failure Handling
 
 If a phase fails during the build wave:
@@ -446,14 +453,19 @@ Whether the orchestrator completes successfully or is interrupted, always:
    - Any LOW confidence decisions that need human review (flagged with `⚠ NEEDS REVIEW`)
    - If interrupted: the exact stop point so `--resume` can pick up
 
-3. **If orchestrator failed**, provide actionable diagnostics:
+3. **Milestone completion:** If the orchestrator reports all phases complete:
+   - Confirm all SUMMARY.md files exist for each executed phase
+   - Suggest: "All phases complete. Run `gsd-tools milestone complete` to archive this milestone."
+   - If there were LOW confidence decisions, remind: "Review DECISIONS.md before archiving — N decisions flagged for review."
+
+4. **If orchestrator failed**, provide actionable diagnostics:
    - Read the error output and any `{step}-error.log` files in the failed phase directory
    - Classify the failure: API error (suggest retry with `--resume`), logic error (show the error and suggest investigating), stuck session (note the phase and suggest `--resume`)
    - If PARTIAL-SUMMARY.md exists, read it and summarize what was completed before failure
    - Always end with: "Run `/fh:auto --resume` to continue from where it stopped."
    - Never leave the user without a clear next action
 
-4. **Read final STATE.md** and confirm it reflects the orchestrator's last successful step.
+5. **Read final STATE.md** and confirm it reflects the orchestrator's last successful step.
 
 ---
 

@@ -478,12 +478,13 @@ function validateAutoState(state) {
   if (state.phase_plan_paths !== undefined && (typeof state.phase_plan_paths !== 'object' || Array.isArray(state.phase_plan_paths) || state.phase_plan_paths === null)) {
     return { valid: false, reason: 'state.phase_plan_paths must be an object' };
   }
-  return { valid: true };
+  return { valid: true, state };
 }
 
 function loadAutoState(projectDir) {
   const p = autoStatePath(projectDir);
   if (!fs.existsSync(p)) return null;
+  let parsed;
   try {
     const raw = fs.readFileSync(p, 'utf-8');
     const state = JSON.parse(raw);
@@ -603,9 +604,9 @@ function checkApiHealth() {
     _optimizations.health_checks_cached++;
     return lastHealthResult;
   }
-  const { execSync } = require('child_process');
+  const { execFileSync } = require('child_process');
   try {
-    execSync('claude --version', { stdio: 'pipe', timeout: API_HEALTH_TIMEOUT_MS });
+    execFileSync('claude', ['--version'], { stdio: 'pipe', timeout: API_HEALTH_TIMEOUT_MS });
     lastHealthResult = true;
   } catch {
     lastHealthResult = false;
@@ -704,9 +705,23 @@ function parseSessionMetrics(stdout) {
 
 // ─── Per-Phase Cost Aggregation ───────────────────────────────────────────────
 
-function aggregatePhaseMetrics(stepHistory) {
+function aggregatePhaseMetrics(stepHistory, phaseId) {
+  // If phaseId provided, filter and return single-phase aggregation
+  if (phaseId !== undefined) {
+    const entries = (stepHistory || []).filter(e => e.phase === phaseId);
+    let tokens_in = 0, tokens_out = 0, elapsed_ms = 0;
+    for (const entry of entries) {
+      if (entry.metrics) {
+        tokens_in += entry.metrics.tokens_in || 0;
+        tokens_out += entry.metrics.tokens_out || 0;
+      }
+      elapsed_ms += entry.elapsed_ms || 0;
+    }
+    return { tokens_in, tokens_out, elapsed_ms, step_count: entries.length };
+  }
+  // No phaseId: aggregate all phases into a map
   const phases = {};
-  for (const entry of stepHistory) {
+  for (const entry of (stepHistory || [])) {
     if (!entry.phase) continue;
     if (!phases[entry.phase]) {
       phases[entry.phase] = { tokens_in: 0, tokens_out: 0, cost_estimate: 0, elapsed_ms: 0, steps: 0, read_calls: 0, ctx_search_hits: 0 };
@@ -727,7 +742,7 @@ function aggregatePhaseMetrics(stepHistory) {
 
 function resolveProjectName(cwd) {
   try {
-    const { execSync } = require('child_process');
+    const { execFileSync } = require('child_process');
 
     // Tier 1: Check for CLAUDE_MEM_PROJECT already set (e.g., via .claude/settings.json)
     if (process.env.CLAUDE_MEM_PROJECT && process.env.CLAUDE_MEM_PROJECT.trim()) {
@@ -742,7 +757,7 @@ function resolveProjectName(cwd) {
     }
 
     // Tier 3: Git common dir for worktree support (returns /path/to/repo/.git)
-    const commonDir = execSync('git rev-parse --git-common-dir', {
+    const commonDir = execFileSync('git', ['rev-parse', '--git-common-dir'], {
       cwd,
       timeout: 5000,
       stdio: ['ignore', 'pipe', 'ignore'],
@@ -939,9 +954,9 @@ function runClaudeSession(prompt, opts) {
 function updateStateViaGsd(projectDir, phaseId) {
   // gsd-tools lives at $HOME/.claude/get-shit-done/bin/ (symlink created by /fh:setup)
   const gsdPath = path.join(os.homedir(), '.claude', 'get-shit-done', 'bin', 'gsd-tools.cjs');
-  const { execSync } = require('child_process');
+  const { execFileSync } = require('child_process');
   try {
-    execSync(`node "${gsdPath}" phase complete ${phaseId} --cwd "${projectDir}"`, {
+    execFileSync('node', [gsdPath, 'phase', 'complete', phaseId, '--cwd', projectDir], {
       stdio: 'pipe',
       encoding: 'utf-8',
     });
@@ -1700,7 +1715,7 @@ async function main() {
 
   // Preflight: verify claude CLI is available
   try {
-    require('child_process').execSync('claude --version', { stdio: 'pipe' });
+    require('child_process').execFileSync('claude', ['--version'], { stdio: 'pipe' });
   } catch {
     fatal('claude CLI not found on PATH. Install Claude Code first.');
   }
@@ -1931,6 +1946,8 @@ async function main() {
 
     return { skipped: false, succeeded: stepSucceeded, result: stepResult, cost: sessionCost };
   }
+
+  const phase_costs = {};
 
   if (opts.noSpeculative) {
     // ─── SEQUENTIAL FALLBACK (--no-speculative) ───────────────────────────────
@@ -2191,6 +2208,7 @@ async function main() {
       // Persist for --resume in sequential mode
       saveAutoState(projectDir, {
         phase: phase.id,
+        active: true,
         step: criticalsMissing[0],
         steps_completed: completedSteps,
         total_cost_estimate: totalCostEstimate,
@@ -2219,6 +2237,16 @@ async function main() {
       extra: { duration_ms: _autoStatus.phaseStartedAt ? Date.now() - new Date(_autoStatus.phaseStartedAt).getTime() : 0 },
     });
     updateStateViaGsd(projectDir, phase.id);
+    phase_costs[phase.id] = aggregatePhaseMetrics(_autoStatus.stepHistory, phase.id);
+    saveAutoState(projectDir, {
+      phase: phase.id,
+      active: true,
+      steps_completed: completedSteps,
+      total_cost_estimate: totalCostEstimate,
+      retry_count: retryCount,
+      phase_plan_paths: currentPlanPath ? { [phase.id]: path.relative(projectDir, currentPlanPath) } : {},
+      phase_costs,
+    });
     _autoStatus.phasesCompleted++;
     writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
       phase: phase.id,
@@ -2435,6 +2463,7 @@ async function main() {
     }
     saveAutoState(projectDir, {
       phase: null,
+      active: true,
       step: 'planning-wave-complete',
       phase_states: Object.assign({}, phase_states),
       total_cost_estimate: totalCostEstimate,
@@ -2585,6 +2614,7 @@ async function main() {
       }
       saveAutoState(projectDir, {
         phase: null,
+        active: true,
         step: 'review-wave-complete',
         phase_states: Object.assign({}, phase_states),
         total_cost_estimate: totalCostEstimate,
@@ -2720,6 +2750,7 @@ async function main() {
           _optimizations.state_writes_saved++;
           saveAutoState(projectDir, {
             phase: phase.id,
+            active: true,
             phase_states: Object.assign({}, phase_states),
             total_cost_estimate: totalCostEstimate,
             retry_count: retryCount,
@@ -2793,6 +2824,7 @@ async function main() {
           }
           saveAutoState(projectDir, {
             phase: phase.id,
+            active: true,
             phase_states: Object.assign({}, phase_states),
             total_cost_estimate: totalCostEstimate,
             retry_count: retryCount,
@@ -2827,6 +2859,7 @@ async function main() {
     for (const phase of phasesToRun) {
       if (phase_states[phase.id] === 'built') {
         updateStateViaGsd(projectDir, phase.id);
+        phase_costs[phase.id] = aggregatePhaseMetrics(_autoStatus.stepHistory, phase.id);
       }
     }
 
@@ -2938,6 +2971,7 @@ async function main() {
           _autoStatus.phasesFailed++;
         } else {
           updateStateViaGsd(projectDir, phase.id);
+          phase_costs[phase.id] = aggregatePhaseMetrics(_autoStatus.stepHistory, phase.id);
           phase_states[phase.id] = 'built';
           log(`Phase ${phase.id} complete\n`);
         }
@@ -3067,7 +3101,7 @@ function printMilestoneCostSummary(phaseCosts) {
 
 // Export for testing when required as a module
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { parseSessionMetrics, aggregatePhaseMetrics, parsePlanFrontmatter, buildDependencyGraph, assignWaves, comparePhaseNum, estimateSessionCost, printMilestoneCostSummary, cascadePlanFailures };
+  module.exports = { validateAutoState, parseSessionMetrics, aggregatePhaseMetrics, parsePlanFrontmatter, buildDependencyGraph, assignWaves, comparePhaseNum, estimateSessionCost, printMilestoneCostSummary, cascadePlanFailures };
 }
 
 // Only run main() when executed directly (not when required for testing)

@@ -1,11 +1,11 @@
 'use strict';
-const { describe, it } = require('node:test');
+const { describe, it, test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const {
-  parseSessionMetrics, aggregatePhaseMetrics,
+  validateAutoState, parseSessionMetrics, aggregatePhaseMetrics,
   parsePlanFrontmatter, buildDependencyGraph, assignWaves,
   comparePhaseNum, estimateSessionCost, printMilestoneCostSummary,
   cascadePlanFailures,
@@ -409,5 +409,63 @@ describe('cascadePlanFailures', () => {
     cascadePlanFailures(phases, phase_states, depGraph, (msg) => logs.push(msg));
 
     assert.ok(logs.length === 0 || logs.length > 0); // just verifies no crash
+  });
+});
+
+// ─── validateAutoState tests (from origin/main) ──────────────────────────────
+
+describe('validateAutoState', () => {
+  it('accepts valid state with phase field', () => {
+    const result = validateAutoState({ phase: 'phase-01', phase_states: { 'phase-01': 'done' } });
+    assert.equal(result.valid, true);
+  });
+
+  it('rejects null input', () => {
+    const result = validateAutoState(null);
+    assert.equal(result.valid, false);
+    assert.ok(typeof result.reason === 'string' && result.reason.length > 0);
+  });
+
+  it('rejects string input', () => {
+    const result = validateAutoState('some string');
+    assert.equal(result.valid, false);
+    assert.ok(typeof result.reason === 'string');
+  });
+
+  it('rejects number input', () => {
+    const result = validateAutoState(42);
+    assert.equal(result.valid, false);
+    assert.ok(typeof result.reason === 'string');
+  });
+});
+
+// ─── aggregatePhaseMetrics with phaseId filter ───────────────────────────────
+
+describe('aggregatePhaseMetrics (single-phase mode)', () => {
+  it('sums entries for a specific phase', () => {
+    const stepHistory = [
+      { phase: 'phase-01', metrics: { tokens_in: 100, tokens_out: 50 }, elapsed_ms: 1000 },
+      { phase: 'phase-01', metrics: { tokens_in: 200, tokens_out: 75 }, elapsed_ms: 2000 },
+    ];
+    const result = aggregatePhaseMetrics(stepHistory, 'phase-01');
+    assert.equal(result.tokens_in, 300);
+    assert.equal(result.tokens_out, 125);
+    assert.equal(result.elapsed_ms, 3000);
+    assert.equal(result.step_count, 2);
+  });
+
+  it('returns zeroes for non-matching phase', () => {
+    const stepHistory = [
+      { phase: 'phase-02', metrics: { tokens_in: 100, tokens_out: 50 }, elapsed_ms: 1000 },
+    ];
+    const result = aggregatePhaseMetrics(stepHistory, 'phase-01');
+    assert.equal(result.tokens_in, 0);
+    assert.equal(result.step_count, 0);
+  });
+
+  it('returns zeroes for empty stepHistory', () => {
+    const result = aggregatePhaseMetrics([], 'phase-01');
+    assert.equal(result.tokens_in, 0);
+    assert.equal(result.step_count, 0);
   });
 });

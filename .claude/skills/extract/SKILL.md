@@ -11,7 +11,7 @@ Identify reusable patterns, components, and design tokens, then extract and cons
 
 Analyze the target area to identify extraction opportunities:
 
-1. **Find the design system**: Use LSP `workspaceSymbol` to search for existing component and utility names before falling back to grep. If Serena MCP is connected, prefer `find_symbol` (name-path lookup, more flexible than workspaceSymbol) and `find_referencing_symbols` for usage analysis. Locate your design system, component library, or shared UI directory. Understand its structure:
+1. **Find the design system**: Use LSP `workspaceSymbol` to search for existing component and utility names before falling back to grep. Locate your design system, component library, or shared UI directory. Understand its structure:
    - Component organization and naming conventions
    - Design token structure (if any)
    - Documentation patterns

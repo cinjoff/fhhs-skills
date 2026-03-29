@@ -44,6 +44,16 @@ Claude Code plugin composing upstream skills (Superpowers, Impeccable, GSD) into
 - Every shipped skill needs at least 1 eval
 - Upstream changes: re-run full eval suite to catch regressions
 
+## Measurement Workflow
+
+Every skill change must be measured:
+1. **Before:** `python3 fhhs-skills-workspace/run_all_evals.py --update-baselines` (save current state)
+2. **Change:** Make skill modifications
+3. **After:** `python3 fhhs-skills-workspace/run_all_evals.py` (auto-compares against baselines)
+
+Coverage gaps: `python3 fhhs-skills-workspace/run_all_evals.py --coverage`
+Iterative improvement: `/auto-improve [--tier smoke] [--max 5] [--target 0.98]`
+
 ## Planning
 
 - `.planning/PROJECT.md` — vision and scope

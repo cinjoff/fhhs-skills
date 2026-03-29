@@ -218,6 +218,8 @@ When scouting the codebase for reusable assets, existing patterns, or prior deci
 
 ctx_search is faster for broad "what exists?" queries. Use Grep/Glob for precise "where exactly?" lookups.
 
+See @.claude/skills/plan-work/references/workflow-matrix.md for the full tool selection guide — when to use ctx_search vs Read vs Grep vs LSP vs Fallow vs claude-mem.
+
 ### Skip research (simple tasks)
 
 **If the feature uses well-known patterns**, skip this step and say so. When skipping: `TaskUpdate(researchId, status="completed", metadata={skipped: true, reason: "Well-known patterns, no research needed"})` — skip if TASKS_AVAILABLE=false.
@@ -295,6 +297,8 @@ When scouting the codebase for reusable assets, existing patterns, or prior deci
 - If not available: use the existing Grep/Glob/Read pattern.
 
 ctx_search is faster for broad "what exists?" queries. Use Grep/Glob for precise "where exactly?" lookups.
+
+See @.claude/skills/plan-work/references/workflow-matrix.md for the full tool selection guide — when to use ctx_search vs Read vs Grep vs LSP vs Fallow vs claude-mem.
 
 1. **Scout codebase** for reusable assets — existing components, utilities, patterns that could be leveraged. Use LSP `workspaceSymbol` to find relevant abstractions by name, and `findReferences` to see how existing patterns are used. Also check for `playwright.config.*` in the project root. If present, note it — frontend interactive features should consider E2E test tasks during planning.
 2. **Identify 3-4 gray areas** specific to this phase — layout choices, data flow decisions, error handling approaches, integration patterns
