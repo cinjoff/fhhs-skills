@@ -8,6 +8,16 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.58.3] - 2026-03-30
+
+### Fixed
+- **`/fh:auto` orchestrator path** — uses `$FHHS_SKILLS_ROOT` env var instead of runtime `find`; clearer error messages when unset
+- **`/fh:plan-work` Playwright prompt path** — uses `$FHHS_SKILLS_ROOT` instead of runtime `find`
+
+### Changed
+- **`/fh:setup`** — now writes `FHHS_SKILLS_ROOT` to `~/.claude/settings.json` after linking bin so all skills know the plugin root without searching
+- **`/fh:update`** — refreshes `FHHS_SKILLS_ROOT` after re-linking so the path stays current after updates [setup:env:FHHS_SKILLS_ROOT]
+
 ## [1.58.2] - 2026-03-30
 
 ### Fixed
