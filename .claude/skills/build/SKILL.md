@@ -210,6 +210,14 @@ The ctx_search results replace the file reads — they provide the same informat
 
 The template tells subagents to self-discover relevant skill context (Playwright, Next.js, frontend design) by reading skill files when their task involves those domains. No orchestrator pre-processing needed.
 
+### Token Efficiency Notes
+
+When executing tasks, be aware of tool call efficiency:
+- **Prefer ctx_search** over Read for CONTEXT.md, DECISIONS.md, and convention lookups — returns snippets, not full files
+- **Avoid re-reading** files already in context from earlier steps (freshness check, plan read, CONTEXT.md injection)
+- **Fallow output is authoritative** — do not re-derive dead code, complexity, or duplication findings that Fallow already provided
+- **Note tool call patterns:** If you find yourself reading the same file multiple times across tasks, flag it as a context optimization opportunity in the SUMMARY.md
+
 ### Checkpoint protocol
 
 If a task has `type="checkpoint:*"`, handle inline:

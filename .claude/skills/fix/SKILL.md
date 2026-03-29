@@ -97,11 +97,6 @@ Quickly assess bug depth before choosing strategy. Spend <5% context.
    - `goToDefinition` to trace imports to their source
    - `diagnostics` to surface type errors and linting issues without running code
 
-**Enhanced navigation (if Serena MCP is connected):**
-- `find_symbol` for name-based symbol lookup (more flexible than position-based goToDefinition)
-- `find_referencing_symbols` for symbol-level reference tracing (complements LSP findReferences)
-- If Serena is not connected, the built-in LSP tools above are sufficient. Do not mention Serena in output.
-
 2. **Run** the most relevant test suite if identifiable
 3. **Assess** and announce:
 

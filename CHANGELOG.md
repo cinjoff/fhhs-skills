@@ -8,6 +8,22 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.57.0] - 2026-03-29
+
+### Added
+- **Eval framework enhancements** — coverage analysis, baseline comparison, fixture-backed auto evals with tiered test suites (micro/smoke/full)
+- **Auto skill evals** — resume validation, phase cost aggregation, milestone detection, and lifecycle evals
+- **Context-mode evals** — workflow matrix and token guidance coverage
+- **Learnings edge-case evals** — empty observation set handling and guard rails
+
+### Changed
+- **Serena MCP removed** — all Serena references removed from extract, fix, refactor, setup, and plan-work skills; built-in LSP tools are sufficient
+- **Auto state tracking** — all `saveAutoState` calls now include `active: true` for consistent state tracking
+
+### Fixed
+- **Command injection prevention** — migrated all `execSync` shell-string calls to `execFileSync` with array arguments in auto-orchestrator and global-reconcile
+- **Hook schema format** — global-reconcile now writes hooks in the current Claude Code nested format (`hooks: [{ type, command }]`)
+
 ## [1.56.0] - 2026-03-29
 
 ### Added

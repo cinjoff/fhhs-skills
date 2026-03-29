@@ -9697,7 +9697,7 @@
     {
       "id": 293,
       "command": "update",
-      "prompt": "update --global — I have 5 projects across 3 Conductor workspaces, but 2 of the projects were deleted from disk last week. What happens to those stale entries?",
+      "prompt": "update --global \u2014 I have 5 projects across 3 Conductor workspaces, but 2 of the projects were deleted from disk last week. What happens to those stale entries?",
       "expected_output": "Should discover all 5 registered projects, detect that 2 paths no longer exist on disk (fs.existsSync returns false), skip reconciliation for those 2, auto-remove the stale entries from ~/.claude/tracker/projects.json, and report the cleanup in the summary. Should NOT error out or stop processing because of missing paths.",
       "files": [],
       "assertions": [
@@ -9739,8 +9739,8 @@
     {
       "id": 294,
       "command": "update",
-      "prompt": "update --global — some of my projects don't have a .planning/ directory yet (they're just regular repos with .claude/settings.json). How does global update handle those?",
-      "expected_output": "Projects without .planning/ should still receive environment reconciliation (post-update-reconcile.sh for claude-mem patch and env vars, changelog reconcile for tool/hook/env gap checks). Health --repair should be skipped since there's no .planning/ to validate. The results table should show health as 'skipped' or '—' for those projects.",
+      "prompt": "update --global \u2014 some of my projects don't have a .planning/ directory yet (they're just regular repos with .claude/settings.json). How does global update handle those?",
+      "expected_output": "Projects without .planning/ should still receive environment reconciliation (post-update-reconcile.sh for claude-mem patch and env vars, changelog reconcile for tool/hook/env gap checks). Health --repair should be skipped since there's no .planning/ to validate. The results table should show health as 'skipped' or '\u2014' for those projects.",
       "files": [],
       "assertions": [
         {
@@ -9777,8 +9777,8 @@
     {
       "id": 295,
       "command": "update",
-      "prompt": "update --global — I use Conductor with worktrees. I have 3 worktrees for the same repo (fh-starter-project/havana, fh-starter-project/kyoto, fh-starter-project/tokyo). Will each worktree get its own reconciliation pass?",
-      "expected_output": "Yes — each Conductor worktree is treated as a separate project because each has its own .claude/settings.json and potentially different .planning/ state. The global reconcile discovers them individually (from tracker registry or Conductor scan) and runs reconciliation on each. The CLAUDE_MEM_PROJECT env var is set correctly per-worktree using git rev-parse --git-common-dir to resolve the actual repo name. Results table should show each worktree with its Conductor workspace group.",
+      "prompt": "update --global \u2014 I use Conductor with worktrees. I have 3 worktrees for the same repo (fh-starter-project/havana, fh-starter-project/kyoto, fh-starter-project/tokyo). Will each worktree get its own reconciliation pass?",
+      "expected_output": "Yes \u2014 each Conductor worktree is treated as a separate project because each has its own .claude/settings.json and potentially different .planning/ state. The global reconcile discovers them individually (from tracker registry or Conductor scan) and runs reconciliation on each. The CLAUDE_MEM_PROJECT env var is set correctly per-worktree using git rev-parse --git-common-dir to resolve the actual repo name. Results table should show each worktree with its Conductor workspace group.",
       "files": [],
       "assertions": [
         {
@@ -9816,7 +9816,7 @@
     {
       "id": 296,
       "command": "update",
-      "prompt": "update --global — what if a project has env gaps that the global reconcile detects but can't auto-fix (like missing tool installs or hooks)? How does it report that?",
+      "prompt": "update --global \u2014 what if a project has env gaps that the global reconcile detects but can't auto-fix (like missing tool installs or hooks)? How does it report that?",
       "expected_output": "The global reconcile script runs changelog reconcile which detects env gaps but does NOT auto-remediate them (tool installs, hook additions require the full SKILL.md remediation logic). It reports the gap count per project in the results table. For projects with remaining gaps, suggests running /fh:update individually in each project to apply the full remediation. The summary shows total env gaps across all projects.",
       "files": [],
       "assertions": [
@@ -9854,7 +9854,7 @@
     {
       "id": 297,
       "command": "update",
-      "prompt": "update --global — what if the tracker registry doesn't exist yet (fresh install, no projects tracked)?",
+      "prompt": "update --global \u2014 what if the tracker registry doesn't exist yet (fresh install, no projects tracked)?",
       "expected_output": "Should fall back to Conductor workspace scan as the secondary discovery source. If ~/conductor/workspaces/ exists, scan all subdirectories for .planning/ or .claude/settings.json. If neither source finds any projects, report 'No projects found' and suggest running /fh:new-project. Should NOT error out or crash when projects.json is missing.",
       "files": [],
       "assertions": [
@@ -9997,7 +9997,7 @@
       "id": 301,
       "command": "setup",
       "prompt": "/fh:setup --check",
-      "expected_output": "When invoked with --check, /fh:setup should validate the current environment and display a status table showing each component (node, npm, gh, TypeScript LSP, GSD symlink, etc.) with pass/fail indicators. It must NOT run any installation steps — no brew install, no npm install -g, no plugin install, no symlink creation. The output must include a SETUP STATUS section or equivalent component table. The check-only mode is purely diagnostic.",
+      "expected_output": "When invoked with --check, /fh:setup should validate the current environment and display a status table showing each component (node, npm, gh, TypeScript LSP, GSD symlink, etc.) with pass/fail indicators. It must NOT run any installation steps \u2014 no brew install, no npm install -g, no plugin install, no symlink creation. The output must include a SETUP STATUS section or equivalent component table. The check-only mode is purely diagnostic.",
       "files": [],
       "assertions": [
         {
@@ -10077,7 +10077,7 @@
       "id": 303,
       "command": "map-codebase",
       "prompt": "When fallow is NOT installed, /fh:map-codebase should skip static analysis silently and produce the same CODEBASE.md output without mentioning Fallow",
-      "expected_output": "Should detect that fallow is not available, skip static analysis without error, and proceed to map the codebase normally. The resulting CODEBASE.md output should be identical in structure to a run without Fallow — no error messages about missing fallow, no 'fallow not found' warnings in the output.",
+      "expected_output": "Should detect that fallow is not available, skip static analysis without error, and proceed to map the codebase normally. The resulting CODEBASE.md output should be identical in structure to a run without Fallow \u2014 no error messages about missing fallow, no 'fallow not found' warnings in the output.",
       "files": [],
       "assertions": [
         {
@@ -10145,45 +10145,6 @@
           "Fallow Scope Augmentation",
           "circular dependency",
           "unused exports"
-        ]
-      }
-    },
-    {
-      "id": 305,
-      "command": "fix",
-      "prompt": "/fh:fix, /fh:refactor, and /fh:extract should reference Serena MCP tools (find_symbol, find_referencing_symbols, rename_symbol) as enhanced alternatives but explicitly fall back to built-in LSP when Serena is not connected",
-      "expected_output": "Skills /fh:fix, /fh:refactor, and /fh:extract should mention Serena MCP tools (find_symbol, find_referencing_symbols, rename_symbol) as enhanced alternatives for symbol navigation and renaming. Each skill must also include an explicit fallback pattern that uses built-in LSP tools when Serena is not connected, ensuring the skill works correctly without Serena.",
-      "files": [],
-      "assertions": [
-        {
-          "text": "References Serena MCP tool find_symbol",
-          "type": "behavioral"
-        },
-        {
-          "text": "References Serena MCP tool find_referencing_symbols",
-          "type": "behavioral"
-        },
-        {
-          "text": "References Serena MCP tool rename_symbol",
-          "type": "behavioral"
-        },
-        {
-          "text": "Includes explicit fallback to built-in LSP when Serena is not connected",
-          "type": "behavioral"
-        }
-      ],
-      "tier": "smoke",
-      "tags": [
-        "serena",
-        "degradation"
-      ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "find_symbol",
-          "find_referencing_symbols",
-          "rename_symbol",
-          "fallback"
         ]
       }
     },
@@ -10408,6 +10369,583 @@
     },
     {
       "id": 312,
+      "command": "learnings",
+      "prompt": "/fh:learnings --days 7",
+      "expected_output": "Should handle case where claude-mem returns zero observations gracefully \u2014 present empty dashboard with no issues to file, not crash or show errors",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Handles empty observation set gracefully",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT attempt to file GitHub issues when there are no observations",
+          "type": "guard"
+        },
+        {
+          "text": "Suggests extending window or checking claude-mem for more observations",
+          "type": "output"
+        }
+      ],
+      "tier": "full",
+      "tags": [
+        "edge-case"
+      ],
+      "checks": []
+    },
+    {
+      "id": 313,
+      "command": "learnings",
+      "prompt": "analyze learnings and file issues",
+      "expected_output": "Should detect gh auth failure and stop with clear guidance to run gh auth login, before attempting any issue creation",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects gh auth failure before attempting issue creation",
+          "type": "behavioral"
+        },
+        {
+          "text": "Stops before creating any GitHub issues",
+          "type": "guard"
+        },
+        {
+          "text": "Suggests running gh auth login to fix authentication",
+          "type": "output"
+        }
+      ],
+      "scenario_requires": [
+        "no_gh_auth"
+      ],
+      "tier": "full",
+      "tags": [
+        "guard",
+        "edge-case"
+      ],
+      "checks": []
+    },
+    {
+      "id": 314,
+      "command": "learnings",
+      "prompt": "/fh:learnings --days 30",
+      "expected_output": "Should parse --days 30 flag and use 30-day window instead of default 14 days",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Parses --days flag from the prompt",
+          "type": "behavioral"
+        },
+        {
+          "text": "Uses 30-day window for observation query",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT use default 14-day window",
+          "type": "guard"
+        }
+      ],
+      "tier": "full",
+      "tags": [
+        "happy-path"
+      ],
+      "checks": []
+    },
+    {
+      "id": 315,
+      "command": "learnings",
+      "prompt": "what did I learn about React hooks?",
+      "expected_output": "Should NOT trigger /fh:learnings \u2014 this is a general knowledge question, not a request to analyze claude-mem workflow observations",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Does not trigger the learnings skill for a general knowledge question",
+          "type": "guard"
+        },
+        {
+          "text": "Recognizes question is about general knowledge, not workflow observation analysis",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "full",
+      "tags": [
+        "misroute",
+        "guard"
+      ],
+      "checks": []
+    },
+    {
+      "id": 316,
+      "command": "plan-work",
+      "prompt": "Plan a feature to add user notifications. context-mode is installed and the codebase was recently mapped.",
+      "expected_output": "Should use ctx_search for codebase pattern queries and reference the workflow decision matrix",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Prefers ctx_search over direct Read/Grep for codebase pattern queries when context-mode is installed",
+          "type": "behavioral"
+        },
+        {
+          "text": "References the workflow decision matrix for tool selection",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "context-mode",
+        "token-efficiency"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "ctx_search",
+            "workflow"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 317,
+      "command": "build",
+      "prompt": "Build the plan. .planning/codebase/.last-mapped exists with a SHA from 50 commits ago.",
+      "expected_output": "Should detect stale mapping via SHA comparison, warn but not block, and suggest /fh:map-codebase",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects stale codebase mapping via SHA comparison with current HEAD",
+          "type": "behavioral"
+        },
+        {
+          "text": "Issues an advisory warning about stale mapping without blocking execution",
+          "type": "behavioral"
+        },
+        {
+          "text": "Suggests running /fh:map-codebase to refresh the mapping",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "context-mode",
+        "freshness"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "last-mapped",
+            "stale"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 318,
+      "command": "map-codebase",
+      "prompt": "Map the codebase. fallow CLI is installed.",
+      "expected_output": "Should run fallow check, fallow dupes, fallow health before spawning mapper agent and inject results",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Runs fallow check before spawning the mapper agent",
+          "type": "behavioral"
+        },
+        {
+          "text": "Runs fallow health as part of the static analysis pass",
+          "type": "behavioral"
+        },
+        {
+          "text": "Injects Fallow tool results into the mapper agent context under Static Analysis",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "context-mode",
+        "fallow"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "fallow check",
+            "fallow health",
+            "Static Analysis"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 319,
+      "command": "plan-work",
+      "prompt": "Plan a feature. context-mode plugin is NOT installed.",
+      "expected_output": "Should skip ctx_search silently, fall back to direct Read/Grep, no error",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Falls back to direct Read/Grep without surfacing an error when context-mode is absent",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does not attempt to invoke ctx_search or fail when context-mode is not installed",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "full",
+      "tags": [
+        "context-mode",
+        "degradation"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "Grep",
+            "Read"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 320,
+      "command": "build",
+      "prompt": "Build the plan. context-mode is installed.",
+      "expected_output": "Should include token efficiency guidance and prefer ctx_search over Read for convention lookups",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Includes token efficiency guidance when context-mode is installed",
+          "type": "behavioral"
+        },
+        {
+          "text": "Prefers ctx_search over Read for convention and pattern lookups",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "full",
+      "tags": [
+        "context-mode",
+        "token-efficiency"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "ctx_search",
+            "Token Efficiency"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 321,
+      "command": "auto",
+      "fixture": "nextjs-app-deep",
+      "prompt": "I have a corrupted .auto-state.json file and I want to resume my auto run. What happens?",
+      "expected_output": "Should explain corrupt state detection: the orchestrator detects JSON parse failure, renames the corrupt file to .auto-state.json.corrupt, then starts a fresh run. The --resume flag can be used to attempt recovery, but corrupt state will be discarded safely.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Mentions corrupt state detection via JSON parse failure",
+          "type": "behavioral"
+        },
+        {
+          "text": "Describes renaming corrupt file to .auto-state.json.corrupt",
+          "type": "behavioral"
+        },
+        {
+          "text": "Explains fresh start after corrupt detection",
+          "type": "behavioral"
+        },
+        {
+          "text": "Mentions --resume flag in context of state recovery",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "full",
+      "tags": [
+        "auto",
+        "edge-case"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "corrupt",
+            ".corrupt",
+            "fresh",
+            "--resume"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 322,
+      "command": "auto",
+      "fixture": "nextjs-app-deep",
+      "prompt": "All phases in my roadmap are complete after an auto run. What should I do next?",
+      "expected_output": "Should explain the milestone complete workflow: the auto run signals milestone completion, the user should run gsd-tools to archive the milestone, review DECISIONS.md for audit trail, and consider what the next milestone or project phase looks like.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Mentions milestone complete signal or state",
+          "type": "behavioral"
+        },
+        {
+          "text": "Mentions gsd-tools for milestone management",
+          "type": "behavioral"
+        },
+        {
+          "text": "Mentions archiving the completed milestone",
+          "type": "behavioral"
+        },
+        {
+          "text": "Mentions reviewing DECISIONS.md as audit trail",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "full",
+      "tags": [
+        "auto",
+        "lifecycle"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "milestone",
+            "gsd-tools",
+            "archive",
+            "DECISIONS.md"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 323,
+      "command": "auto",
+      "fixture": "nextjs-app-deep",
+      "prompt": "I want to see how much each phase cost in my auto run. Where do I find per-phase cost data?",
+      "expected_output": "Should explain that per-phase cost data is stored in the phase_costs field of .auto-state.json, displayed as a per-phase table in the auto run output, and logged as PHASE_METRICS log lines that can be reviewed after the run.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Mentions phase_costs field in .auto-state.json",
+          "type": "behavioral"
+        },
+        {
+          "text": "Describes per-phase cost table in run output",
+          "type": "behavioral"
+        },
+        {
+          "text": "Mentions PHASE_METRICS log line",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "full",
+      "tags": [
+        "auto",
+        "observability"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "phase_costs",
+            ".auto-state.json",
+            "PHASE_METRICS"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 324,
+      "command": "auto",
+      "fixture": "nextjs-app-deep",
+      "prompt": "I have a project description but no planning artifacts. Can I just say 'auto' and walk away?",
+      "expected_output": "Should explain the new-project --auto workflow: run /fh:new-project --auto with a project description, the skill runs a strategic workshop to produce planning artifacts, then kicks off the plan\u2192review\u2192build loop automatically. DECISIONS.md provides an audit trail of all decisions made during the autonomous run.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Mentions new-project --auto for bootstrapping from a description",
+          "type": "behavioral"
+        },
+        {
+          "text": "Describes the strategic workshop phase for generating planning artifacts",
+          "type": "behavioral"
+        },
+        {
+          "text": "Explains the plan\u2192review\u2192build loop that runs autonomously",
+          "type": "behavioral"
+        },
+        {
+          "text": "Mentions DECISIONS.md as the audit trail",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "full",
+      "tags": [
+        "auto",
+        "lifecycle"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "new-project",
+            "--auto",
+            "strategic",
+            "DECISIONS.md"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 325,
+      "command": "auto",
+      "fixture": "auto-corrupt-state",
+      "prompt": "continue the auto run",
+      "expected_output": "Should detect corrupt .auto-state.json, rename to .auto-state.json.corrupt, and start fresh",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects that .auto-state.json is corrupt or invalid",
+          "type": "behavioral"
+        },
+        {
+          "text": "Renames or removes the corrupt state file",
+          "type": "behavioral"
+        },
+        {
+          "text": "Starts a fresh run rather than failing",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "fixture",
+        "edge-case",
+        "lifecycle"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "corrupt",
+            "fresh"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 326,
+      "command": "auto",
+      "fixture": "auto-milestone-done",
+      "prompt": "run auto mode on this project",
+      "expected_output": "Should detect all phases complete, suggest milestone archive/completion",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects that all phases are complete",
+          "type": "behavioral"
+        },
+        {
+          "text": "Suggests milestone completion or archive",
+          "type": "output"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "fixture",
+        "lifecycle"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "complete",
+            "milestone"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 327,
+      "command": "auto",
+      "fixture": "auto-walk-away",
+      "prompt": "run this project autonomously, walk away mode",
+      "expected_output": "Should read project, identify Phase 1 as starting point, begin plan-work",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Reads PROJECT.md and ROADMAP.md",
+          "type": "behavioral"
+        },
+        {
+          "text": "Identifies Phase 1 as the starting point",
+          "type": "behavioral"
+        },
+        {
+          "text": "Starts plan-work or planning for Phase 1",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "fixture",
+        "happy-path",
+        "lifecycle"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "phase",
+            "plan"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 328,
+      "command": "fix",
+      "prompt": "/fh:fix, /fh:refactor, and /fh:extract should reference Serena MCP tools (find_symbol, find_referencing_symbols, rename_symbol) as enhanced alternatives but explicitly fall back to built-in LSP when Serena is not connected",
+      "expected_output": "Skills /fh:fix, /fh:refactor, and /fh:extract should mention Serena MCP tools (find_symbol, find_referencing_symbols, rename_symbol) as enhanced alternatives for symbol navigation and renaming. Each skill must also include an explicit fallback pattern that uses built-in LSP tools when Serena is not connected, ensuring the skill works correctly without Serena.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "References Serena MCP tool find_symbol",
+          "type": "behavioral"
+        },
+        {
+          "text": "References Serena MCP tool find_referencing_symbols",
+          "type": "behavioral"
+        },
+        {
+          "text": "References Serena MCP tool rename_symbol",
+          "type": "behavioral"
+        },
+        {
+          "text": "Includes explicit fallback to built-in LSP when Serena is not connected",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "serena",
+        "degradation"
+      ],
+      "checks": {
+        "type": "required_terms",
+        "terms": [
+          "find_symbol",
+          "find_referencing_symbols",
+          "rename_symbol",
+          "fallback"
+        ]
+      }
+    },
+    {
+      "id": 329,
       "command": "new-project",
       "prompt": "When using the default stack (cinjoff/fh-starter-project template), does Step 3 customize the template for the actual project? Check that package.json name, supabase config, and other template references are updated after cloning.",
       "expected_output": "Step 3a should customize the cloned template: update package.json name from 'fh-starter-project' to the actual project name (derived from directory basename), update supabase/config.toml project_id, replace the template README.md, remove template CLAUDE.md (Step 5 generates a new one), and scrub remaining 'fh-starter-project' references from all source files.",
@@ -10449,7 +10987,7 @@
       ]
     },
     {
-      "id": 313,
+      "id": 330,
       "command": "new-project",
       "prompt": "For brownfield sync mode (existing project), does the audit check for stale template references like package.json still saying 'fh-starter-project'?",
       "expected_output": "The brownfield sync audit should include a 'Template identity cleanup' section that checks if package.json name is still 'fh-starter-project', if supabase/config.toml has stale template references, and if any source files still reference the template name. If stale, update them to the actual project name.",
@@ -10478,7 +11016,7 @@
       ]
     },
     {
-      "id": 314,
+      "id": 331,
       "command": "new-project",
       "prompt": "When using the default stack with local Supabase, does Step 8e handle the starter template's TypeScript seed script (scripts/seed.ts) in addition to the standard supabase/seed.sql?",
       "expected_output": "Step 8e section 7 should check for both supabase/seed.sql (standard Supabase seed) and scripts/seed.ts (starter template TypeScript seed). If scripts/seed.ts exists, it should run it via npx tsx after supabase db reset. The TS seed creates Better Auth tables and test data (users, orgs, members).",

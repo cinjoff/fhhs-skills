@@ -303,7 +303,7 @@ function reconcileProject(project) {
             } else if (id === 'CLAUDE_MEM_PROJECT') {
               // Derive from git common dir (worktree-safe)
               try {
-                const gitDir = execSync('git rev-parse --git-common-dir', {
+                const gitDir = execFileSync('git', ['rev-parse', '--git-common-dir'], {
                   cwd: project.path, timeout: 5000, stdio: ['pipe', 'pipe', 'pipe'],
                 }).toString().trim();
                 const gitRoot = path.resolve(project.path, gitDir, '..');
@@ -347,9 +347,12 @@ function reconcileProject(project) {
             if (cmd) {
               if (!globalSettings.hooks) globalSettings.hooks = {};
               if (!globalSettings.hooks[event]) globalSettings.hooks[event] = [];
-              const existing = globalSettings.hooks[event].some(h => h.command && h.command.includes(hookId));
+              const existing = globalSettings.hooks[event].some(h =>
+                (h.hooks && h.hooks.some(hh => hh.command && hh.command.includes(hookId))) ||
+                (h.command && h.command.includes(hookId))
+              );
               if (!existing) {
-                globalSettings.hooks[event].push({ command: cmd });
+                globalSettings.hooks[event].push({ hooks: [{ type: 'command', command: cmd }] });
                 fs.writeFileSync(globalSettingsPath, JSON.stringify(globalSettings, null, 2) + '\n');
                 remediated.push({ ...item, action: `hook added to ${event}` });
               } else {
