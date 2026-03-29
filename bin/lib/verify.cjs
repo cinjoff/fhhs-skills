@@ -850,6 +850,52 @@ function cmdValidateHealth(cwd, options, raw) {
   }, raw);
 }
 
+function cmdVerifyPathConsistency(cwd, raw) {
+  const violations = [];
+  const checkedFiles = [];
+
+  const scanDirs = [
+    path.join(cwd, '.claude', 'skills'),
+    path.join(cwd, 'bin'),
+  ];
+
+  function scanDir(dir) {
+    if (!fs.existsSync(dir)) return;
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        scanDir(fullPath);
+      } else if (entry.isFile() && entry.name.endsWith('.cjs')) {
+        checkedFiles.push(fullPath);
+        const lines = fs.readFileSync(fullPath, 'utf-8').split('\n');
+        // Detect gsd tool path constructed from projectDir instead of $HOME.
+        // Pattern strings are split to prevent self-match during scan.
+        const p1 = 'path.join(project' + 'Dir';
+        const p2 = 'get-shit-' + 'done';
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i];
+          if (line.includes(p1) && line.includes(p2)) {
+            violations.push({ file: fullPath, line: i + 1, pattern: line.trim() });
+          }
+        }
+      }
+    }
+  }
+
+  for (const dir of scanDirs) {
+    scanDir(dir);
+  }
+
+  const result = {
+    passed: violations.length === 0,
+    violations,
+    checked_files: checkedFiles.length,
+  };
+
+  output(result, raw, violations.length === 0 ? 'passed' : 'failed');
+}
+
 module.exports = {
   cmdVerifySummary,
   cmdVerifyPlanStructure,
@@ -860,4 +906,5 @@ module.exports = {
   cmdVerifyKeyLinks,
   cmdValidateConsistency,
   cmdValidateHealth,
+  cmdVerifyPathConsistency,
 };

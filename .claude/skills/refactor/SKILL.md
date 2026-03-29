@@ -95,10 +95,11 @@ Run the existing test suite for the affected area. Record: X tests, all GREEN.
 ### Past Learnings Check
 
 If claude-mem is available, recall prior refactoring outcomes:
-1. Call `mcp__plugin_claude-mem_mcp-search__smart_search` with the target module/pattern name, limit=5
-2. Filter for: refactor, extract, simplify, "blast radius", coupling, migration
-3. If relevant: "**Prior refactoring context:** - {summary}" — max 3 items
-4. Skip silently if unavailable
+1. Derive project name from `.planning/PROJECT.md` name field (fall back to basename of cwd). Use this as the `project` parameter for all claude-mem calls.
+2. Call `mcp__plugin_claude-mem_mcp-search__search` with query=the target module/pattern name, limit=5, project=<project-name>
+3. Filter for: refactor, extract, simplify, "blast radius", coupling, migration
+4. If relevant: "**Prior refactoring context:** - {summary}" — max 3 items
+5. Skip silently if unavailable
 
 ---
 

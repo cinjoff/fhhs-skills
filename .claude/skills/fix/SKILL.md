@@ -35,11 +35,12 @@ Advisory only — never block.
 ### Past Learnings Check
 
 If claude-mem is available, search for prior bugs in the same area:
-1. Call `mcp__plugin_claude-mem_mcp-search__smart_search` with 2-3 keywords from the error/bug description (e.g., file name, error message fragment, subsystem), limit=5
-2. Filter for observations containing: bug, fix, root cause, regression, "caused by", workaround, pitfall
-3. If relevant results found, present: "**Prior fixes in this area:** - {summary} (from {date})" — max 3 items
-4. Feed into triage context so past root causes inform the current investigation
-5. Skip silently if claude-mem not installed or no relevant results
+1. Derive project name from `.planning/PROJECT.md` name field (fall back to basename of cwd). Use this as the `project` parameter for all claude-mem calls.
+2. Call `mcp__plugin_claude-mem_mcp-search__search` with query=2-3 keywords from the error/bug description (e.g., file name, error message fragment, subsystem), limit=5, project=<project-name>
+3. Filter for observations containing: bug, fix, root cause, regression, "caused by", workaround, pitfall
+4. If relevant results found, present: "**Prior fixes in this area:** - {summary} (from {date})" — max 3 items
+5. Feed into triage context so past root causes inform the current investigation
+6. Skip silently if claude-mem not installed or no relevant results
 
 ---
 
@@ -222,7 +223,7 @@ If `.planning/DECISIONS.md` exists, scan active decisions for entries whose Affe
 ### Learnings Digest
 
 If claude-mem is available, update the learnings digest at `~/.claude/cache/learnings-digest.json`:
-1. Call `smart_search` with the root cause description, limit=5
+1. Call `search` with query=the root cause description, limit=5, project=<project-name>
 2. Call `timeline` with window=7d, limit=10
 3. Merge into existing digest using the algorithm defined in `/fh:build` (Step 4, "Learnings Digest"). Use `generated_by: "fix"`.
 4. The root cause and any "should have caught this earlier" observations are high-value learning items — prioritize these when filtering for improvement themes.

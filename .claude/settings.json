@@ -1,7 +1,7 @@
 {
   "env": {
     "CLAUDE_MEM_PROJECT": "fhhs-skills",
-    "CLAUDE_CODE_TASK_LIST_ID": "hartford"
+    "CLAUDE_CODE_TASK_LIST_ID": "lahore-v1"
   },
   "hooks": {
     "PostToolUse": [

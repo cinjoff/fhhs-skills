@@ -77,6 +77,25 @@ AUTO_MODE=$(node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs config-get workfl
 
 If `AUTO_MODE` is `"true"` AND `.planning/DECISIONS.md` exists, include the last 10 entries for this phase as `{DECISIONS_CONTEXT}`. Otherwise empty string.
 
+### Verify stable context exists
+
+Before building the pre-indexing manifest, check if stable docs are already indexed from a prior step:
+
+```
+ctx_search(queries: ["project vision", "architecture patterns", "conventions"])
+```
+
+If results are returned with content from PROJECT.md, ARCHITECTURE.md, and CONVENTIONS.md:
+- Stable context is available from plan-work Step -0.5 — skip re-indexing planning docs
+- Only index: source files, test files, and mutable docs (PLAN.md, CONTEXT.md)
+- This saves re-reading ~70KB of stable planning docs
+
+If no results or sparse results:
+- Run full bootstrap — index everything including stable planning docs
+- This is the fallback for when plan-work was skipped, failed, or ran without context-mode
+
+The probe is a single ctx_search call (~100ms) that can save indexing 9+ files (~2s + context window space).
+
 ### Pre-Index Source Files + Test Files
 
 If ctx_batch_execute is available, build a comprehensive file manifest for pre-indexing:
@@ -319,10 +338,11 @@ This is advisory only — never block completion. Budget: <1% context.
 ### Learnings Digest (after SUMMARY.md)
 
 If claude-mem is available, generate a learnings digest:
-1. Call `mcp__plugin_claude-mem_mcp-search__timeline` with window=7d, limit=20
-2. Call `mcp__plugin_claude-mem_mcp-search__smart_search` with current phase name, limit=10
-3. Read existing `~/.claude/cache/learnings-digest.json` if present
-4. Merge observations into digest using this deterministic algorithm:
+1. Derive project name from `.planning/PROJECT.md` name field (fall back to basename of cwd). Use this as the `project` parameter for all claude-mem calls.
+2. Call `mcp__plugin_claude-mem_mcp-search__timeline` with window=7d, limit=20, project=<project-name>
+3. Call `mcp__plugin_claude-mem_mcp-search__search` with query=current phase name, limit=10, project=<project-name>
+4. Read existing `~/.claude/cache/learnings-digest.json` if present
+5. Merge observations into digest using this deterministic algorithm:
    a. Load existing digest items (empty array if no file or corrupt)
    b. For each new observation, check if it matches improvement themes (keywords: mistake, pitfall, learning, retro, regression, "should have", "next time", bug, broke, failed):
       - If no theme match → skip
@@ -331,8 +351,8 @@ If claude-mem is available, generate a learnings digest:
    c. Priority escalation: times_seen >= 3 → "medium", times_seen >= 5 → "high" (never downgrade)
    d. Items addressed by this build session (if the build's work matches an item's suggested_action) → mark addressed=true, addressed_at=ISO timestamp
    e. Compute stats: scanned = total observations checked, pending = items where addressed is falsy, addressed_since_last = items addressed in this merge
-5. Write updated digest to `~/.claude/cache/learnings-digest.json`
-6. Skip silently if claude-mem not installed or any MCP call fails
+6. Write updated digest to `~/.claude/cache/learnings-digest.json`
+7. Skip silently if claude-mem not installed or any MCP call fails
 
 Digest schema: `{ generated: ISO string, generated_by: "build"|"context-critical", project: cwd path, phase: current phase name, items: [{ id: string, priority: "low"|"medium"|"high", category: "retro"|"pattern"|"theme", summary: string, detail: string, suggested_action: string, times_seen: number, first_seen: ISO string, addressed: boolean, addressed_at?: ISO string }], stats: { scanned: number, pending: number, addressed_since_last: number } }`
 

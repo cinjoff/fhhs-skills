@@ -47,12 +47,14 @@ If any corruption or mismatch is detected, flag it and store `state_corruption =
 
 ### claude-mem Cross-Session Context
 
-Try calling `mcp__plugin_claude-mem_mcp-search__timeline` with a short recent window (e.g. last 7 days).
+Derive project name from `.planning/PROJECT.md` name field (fall back to basename of cwd). Use this as the `project` parameter for all claude-mem calls.
+
+Try calling `mcp__plugin_claude-mem_mcp-search__timeline` with a short recent window (e.g. last 7 days), project=<project-name>.
 
 - If the MCP tool call returns an error or is not available (plugin not installed), skip this entire substep -- add nothing to the report.
 - If results are returned: take only the first 5 observations (hard cap). Store as `claude_mem_timeline`.
 
-If a current phase name is known (from `.planning/STATE.md` or later from GSD init), also try `mcp__plugin_claude-mem_mcp-search__smart_search` with the current phase name to surface related past work.
+If a current phase name is known (from `.planning/STATE.md` or later from GSD init), also try `mcp__plugin_claude-mem_mcp-search__search` with query=the current phase name, project=<project-name> to surface related past work.
 
 - Same error handling: if unavailable or errors, skip silently.
 - Take only the first 5 results (hard cap). Store as `claude_mem_related`.
