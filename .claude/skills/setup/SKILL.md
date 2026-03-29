@@ -29,6 +29,7 @@ as a single status table:
 | LSP Plugin                 | ✓ installed / ✗ not installed |
 | LSP Enabled                | ✓ / ✗ CLAUDE_CODE_ENABLE_LSP not set |
 | CLI Tools                  | ✓ linked / ✗ not linked       |
+| FHHS_SKILLS_ROOT           | ✓ {path} / ✗ not set          |
 | Hooks                      | ✓ configured / ✗ not configured |
 | claude-mem                 | ✓ installed / ○ not installed |
 | context-mode               | ✓ installed / ○ not installed |

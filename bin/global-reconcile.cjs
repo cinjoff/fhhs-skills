@@ -291,14 +291,36 @@ function reconcileProject(project) {
           });
           remediated.push({ ...item, action: `installed via ${mgr}` });
         } else if (check.startsWith('setup:env:')) {
-          // Add env var to project's .claude/settings.json
-          const settingsPath = path.join(project.path, '.claude', 'settings.json');
+          // FHHS_SKILLS_ROOT is global (same plugin root for all projects) — write to ~/.claude/settings.json
+          // All other env vars are per-project — write to project/.claude/settings.json
+          const isGlobal = id === 'FHHS_SKILLS_ROOT';
+          const settingsPath = isGlobal
+            ? path.join(os.homedir(), '.claude', 'settings.json')
+            : path.join(project.path, '.claude', 'settings.json');
           let settings = {};
           try { settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8')); } catch { /* new file */ }
           if (!settings.env) settings.env = {};
           // Only set if not already present
           if (!(id in settings.env)) {
-            if (id === 'CLAUDE_CWD') {
+            if (id === 'FHHS_SKILLS_ROOT') {
+              // Discover the plugin root from cache (same logic as setup/update)
+              const cacheDir = path.join(os.homedir(), '.claude', 'plugins', 'cache', 'fhhs-skills', 'fh');
+              let pluginRoot = '';
+              if (fs.existsSync(cacheDir)) {
+                const versions = fs.readdirSync(cacheDir).filter(d =>
+                  fs.statSync(path.join(cacheDir, d)).isDirectory()
+                ).sort();
+                if (versions.length > 0) {
+                  pluginRoot = path.join(cacheDir, versions[versions.length - 1]);
+                }
+              }
+              if (pluginRoot) {
+                settings.env[id] = pluginRoot;
+              } else {
+                failed.push({ ...item, error: 'plugin cache not found — run /fh:setup' });
+                continue;
+              }
+            } else if (id === 'CLAUDE_CWD') {
               settings.env[id] = project.path;
             } else if (id === 'CLAUDE_MEM_PROJECT') {
               // Derive from git common dir (worktree-safe)
@@ -314,9 +336,13 @@ function reconcileProject(project) {
             } else {
               settings.env[id] = id === 'CLAUDE_CODE_ENABLE_TASKS' ? 'true' : '1';
             }
-            fs.mkdirSync(path.join(project.path, '.claude'), { recursive: true });
-            fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n');
-            remediated.push({ ...item, action: `set in settings.json` });
+            if (isGlobal) {
+              fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n');
+            } else {
+              fs.mkdirSync(path.join(project.path, '.claude'), { recursive: true });
+              fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n');
+            }
+            remediated.push({ ...item, action: `set in ${isGlobal ? 'global' : 'project'} settings.json` });
           } else {
             remediated.push({ ...item, action: 'already set' });
           }

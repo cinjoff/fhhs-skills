@@ -19,13 +19,48 @@ while [ $# -gt 0 ]; do
   esac
 done
 
+# --- 5a⅓: Enforce fhhs-skills claude-mem settings ---
+# Re-apply required settings on every update to prevent drift (e.g. claude-mem updates
+# resetting CLAUDE_MEM_FOLDER_CLAUDEMD_ENABLED back to "true").
+
+CMEM_SETTINGS="$HOME/.claude-mem/settings.json"
+if [ -f "$CMEM_SETTINGS" ]; then
+  python3 -c "
+import json, sys
+f = sys.argv[1]
+required = {
+  'CLAUDE_MEM_FOLDER_CLAUDEMD_ENABLED': 'false',
+}
+try:
+    s = json.load(open(f))
+except:
+    s = {}
+changed = []
+for k, v in required.items():
+    if s.get(k) != v:
+        changed.append(k + ': ' + repr(s.get(k)) + ' -> ' + repr(v))
+        s[k] = v
+if changed:
+    with open(f, 'w') as fh: json.dump(s, fh, indent=2); fh.write('\n')
+    print('✓ claude-mem settings enforced: ' + ', '.join(changed))
+else:
+    print('✓ claude-mem settings already correct')
+" "$CMEM_SETTINGS" 2>/dev/null || echo "⚠ Could not enforce claude-mem settings"
+else
+  echo "⊘ ~/.claude-mem/settings.json not found — skipping settings enforcement"
+fi
+
 # --- 5a½: Re-apply claude-mem project-env patch ---
 
-PATCH=$(find "$HOME/.claude/plugins/cache/fhhs-skills" -name patch-claude-mem-project-env.cjs -print -quit 2>/dev/null)
-if [ -n "$PATCH" ]; then
+if [ -n "$FHHS_SKILLS_ROOT" ]; then
+  PATCH="$FHHS_SKILLS_ROOT/.claude/skills/patches/patch-claude-mem-project-env.cjs"
+else
+  PATCH=$(find "$HOME/.claude/plugins/cache/fhhs-skills" -name patch-claude-mem-project-env.cjs -print -quit 2>/dev/null)
+fi
+if [ -n "$PATCH" ] && [ -f "$PATCH" ]; then
   node "$PATCH" 2>&1
 else
-  echo "⚠ Project-env patch not found (expected in fhhs-skills plugin cache)"
+  echo "⚠ Project-env patch not found (run /fh:setup to set FHHS_SKILLS_ROOT)"
 fi
 
 # --- 5a¾: Set CLAUDE_MEM_PROJECT env var ---

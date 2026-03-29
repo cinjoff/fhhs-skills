@@ -412,7 +412,16 @@
       "tags": [
         "happy-path"
       ],
-      "checks": []
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "PROJECT.md|ROADMAP.md|STATE.md|REQUIREMENTS.md"
+        },
+        {
+          "type": "regex",
+          "pattern": "Next.js|React|Supabase|stack"
+        }
+      ]
     },
     {
       "id": 10,
@@ -1091,7 +1100,16 @@
         "guard",
         "happy-path"
       ],
-      "checks": []
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "CLI|Commander|yargs|npm package"
+        },
+        {
+          "type": "regex",
+          "pattern": "PROJECT.md|ROADMAP.md|planning"
+        }
+      ]
     },
     {
       "id": 27,
@@ -3294,7 +3312,16 @@
         "guard",
         "happy-path"
       ],
-      "checks": []
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "must_haves|scope.*challenge|Nuclear Scope"
+        },
+        {
+          "type": "regex",
+          "pattern": "SCOPE EXPANSION|HOLD SCOPE|SCOPE REDUCTION"
+        }
+      ]
     },
     {
       "id": 65,
@@ -3339,7 +3366,16 @@
       "tags": [
         "edge-case"
       ],
-      "checks": []
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "HOLD SCOPE|Architecture Review|Section 1"
+        },
+        {
+          "type": "regex",
+          "pattern": "Error.*Rescue|rescue.*map|error.*table|TimeoutError|RateLimitError"
+        }
+      ]
     },
     {
       "id": 66,
@@ -3385,7 +3421,16 @@
         "guard",
         "happy-path"
       ],
-      "checks": []
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "AskUserQuestion|issue.*question|question.*issue"
+        },
+        {
+          "type": "regex",
+          "pattern": "option|[Aa].|[Bb].|[Cc].|lettered|numbered"
+        }
+      ]
     },
     {
       "id": 67,
@@ -4151,7 +4196,16 @@
       "tags": [
         "edge-case"
       ],
-      "checks": []
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "architecture|code quality|test coverage|performance"
+        },
+        {
+          "type": "regex",
+          "pattern": "business|scope|failure|error.*map|rescue"
+        }
+      ]
     },
     {
       "id": 83,
@@ -4197,7 +4251,16 @@
         "edge-case",
         "guard"
       ],
-      "checks": []
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "HOLD SCOPE|failure.*modes|error.*path"
+        },
+        {
+          "type": "regex",
+          "pattern": "CRITICAL GAP|failure.*registry|Failure Modes"
+        }
+      ]
     },
     {
       "id": 84,
@@ -4294,7 +4357,16 @@
         "guard",
         "happy-path"
       ],
-      "checks": []
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "existing|package.json|detect"
+        },
+        {
+          "type": "regex",
+          "pattern": "PROJECT.md|ROADMAP.md|planning"
+        }
+      ]
     },
     {
       "id": 87,
@@ -4325,7 +4397,16 @@
         "edge-case",
         "guard"
       ],
-      "checks": []
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "Rust|rust|cargo|CLI"
+        },
+        {
+          "type": "regex",
+          "pattern": "skip.*branding|no frontend|no.*web|ui-branding"
+        }
+      ]
     },
     {
       "id": 88,
@@ -4616,7 +4697,16 @@
         "guard",
         "happy-path"
       ],
-      "checks": []
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "SCOPE REDUCTION|deadline|minimum.*viable|cuttable"
+        },
+        {
+          "type": "regex",
+          "pattern": "architecture|code quality|test coverage|performance"
+        }
+      ]
     },
     {
       "id": 97,
@@ -4657,7 +4747,16 @@
       "tags": [
         "edge-case"
       ],
-      "checks": []
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "Error.*Rescue|Rescue.*Registry|rescue.*table"
+        },
+        {
+          "type": "regex",
+          "pattern": "CRITICAL GAP|failure.*modes|Failure Modes"
+        }
+      ]
     },
     {
       "id": 98,
@@ -5229,7 +5328,16 @@
         "guard",
         "happy-path"
       ],
-      "checks": []
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "architecture|code quality|test coverage|performance"
+        },
+        {
+          "type": "regex",
+          "pattern": "Elasticsearch|search|scope.*challenge|business.*align"
+        }
+      ]
     },
     {
       "id": 111,
@@ -5568,7 +5676,16 @@
       "tags": [
         "happy-path"
       ],
-      "checks": []
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "gsd-project-researcher|project-researcher"
+        },
+        {
+          "type": "regex",
+          "pattern": "gsd-research-synthesizer|research-synthesizer"
+        }
+      ]
     },
     {
       "id": 119,
@@ -6246,7 +6363,16 @@
         "edge-case",
         "guard"
       ],
-      "checks": []
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "--auto|AUTO_PROJECT|auto.*flag"
+        },
+        {
+          "type": "regex",
+          "pattern": "artisan|marketplace|vision|description"
+        }
+      ]
     },
     {
       "id": 138,
@@ -6272,7 +6398,16 @@
       "tags": [
         "happy-path"
       ],
-      "checks": []
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "auto-orchestrator|orchestrator|handoff|auto.*advance"
+        },
+        {
+          "type": "regex",
+          "pattern": "auto_advance|chain|workflow|seamless"
+        }
+      ]
     },
     {
       "id": 139,
@@ -8319,6 +8454,16 @@
           "text": "Presents derived answers for user confirmation",
           "type": "behavioral"
         }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "startup|startup-design|Step 0.5"
+        },
+        {
+          "type": "regex",
+          "pattern": "PROJECT.md|vision|auto-populate"
+        }
       ]
     },
     {
@@ -8339,6 +8484,16 @@
         {
           "text": "Does NOT proceed with autonomous execution",
           "type": "guard"
+        }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "startup-design|startup|no .planning"
+        },
+        {
+          "type": "regex",
+          "pattern": "PROJECT.md|setup|project"
         }
       ]
     },
@@ -10185,6 +10340,16 @@
           "path": ".claude/skills/auto/auto-orchestrator.cjs",
           "pattern": "lastActivityAt"
         }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "activity_events|last_activity_at"
+        },
+        {
+          "type": "regex",
+          "pattern": "writeAutoState|auto-state|_autoStatus"
+        }
       ]
     },
     {
@@ -10218,6 +10383,16 @@
           "type": "file_contains",
           "path": ".claude/skills/auto/auto-orchestrator.cjs",
           "pattern": "'build': 15 * 60"
+        }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "STUCK_KILL_BY_STEP|stuck.*threshold|15.min|900000"
+        },
+        {
+          "type": "regex",
+          "pattern": "build.*step|step.*build|STUCK_KILL_MS"
         }
       ]
     },
@@ -10262,6 +10437,16 @@
           "type": "file_contains",
           "path": "templates/project-tracker/server.cjs",
           "pattern": "/api/kill"
+        }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": ".auto-kill|sentinel|kill.*file"
+        },
+        {
+          "type": "regex",
+          "pattern": "/api/kill|POST.*kill|server.cjs"
         }
       ]
     },
@@ -10392,9 +10577,18 @@
         }
       ],
       "checks": [
-        {"type": "regex", "pattern": "\\.planning|planning"},
-        {"type": "regex", "pattern": "new-project|fh:auto|fh:new"},
-        {"type": "regex", "pattern": "walk.away|autonomous|new project"}
+        {
+          "type": "regex",
+          "pattern": "\\.planning|planning"
+        },
+        {
+          "type": "regex",
+          "pattern": "new-project|fh:auto|fh:new"
+        },
+        {
+          "type": "regex",
+          "pattern": "walk.away|autonomous|new project"
+        }
       ],
       "tier": "smoke",
       "tags": [
@@ -10428,8 +10622,14 @@
         }
       ],
       "checks": [
-        {"type": "regex", "pattern": "corrupt|invalid|malform"},
-        {"type": "regex", "pattern": "corrupt|rename|fresh|fallback"}
+        {
+          "type": "regex",
+          "pattern": "corrupt|invalid|malform"
+        },
+        {
+          "type": "regex",
+          "pattern": "corrupt|rename|fresh|fallback"
+        }
       ],
       "tier": "micro",
       "tags": [
@@ -10463,9 +10663,18 @@
         }
       ],
       "checks": [
-        {"type": "regex", "pattern": "[Mm]ilestone"},
-        {"type": "regex", "pattern": "complet|COMPLETE|shipped"},
-        {"type": "regex", "pattern": "gsd.tools|milestone complete"}
+        {
+          "type": "regex",
+          "pattern": "[Mm]ilestone"
+        },
+        {
+          "type": "regex",
+          "pattern": "complet|COMPLETE|shipped"
+        },
+        {
+          "type": "regex",
+          "pattern": "gsd.tools|milestone complete"
+        }
       ],
       "tier": "micro",
       "tags": [
@@ -10495,8 +10704,14 @@
         }
       ],
       "checks": [
-        {"type": "regex", "pattern": "new.project|new-project"},
-        {"type": "regex", "pattern": "auto|walk.away|autonomous"}
+        {
+          "type": "regex",
+          "pattern": "new.project|new-project"
+        },
+        {
+          "type": "regex",
+          "pattern": "auto|walk.away|autonomous"
+        }
       ],
       "tier": "smoke",
       "tags": [
@@ -10530,8 +10745,14 @@
         }
       ],
       "checks": [
-        {"type": "regex", "pattern": "SUMMARY|missing|inconsist"},
-        {"type": "regex", "pattern": "downgrad|re.execut|rebuild|planned|re-plan"}
+        {
+          "type": "regex",
+          "pattern": "SUMMARY|missing|inconsist"
+        },
+        {
+          "type": "regex",
+          "pattern": "downgrad|re.execut|rebuild|planned|re-plan"
+        }
       ],
       "tier": "micro",
       "tags": [
@@ -10561,9 +10782,18 @@
         }
       ],
       "checks": [
-        {"type": "regex", "pattern": "cost|token"},
-        {"type": "regex", "pattern": "[Pp]hase|per.phase|breakdown"},
-        {"type": "regex", "pattern": "total"}
+        {
+          "type": "regex",
+          "pattern": "cost|token"
+        },
+        {
+          "type": "regex",
+          "pattern": "[Pp]hase|per.phase|breakdown"
+        },
+        {
+          "type": "regex",
+          "pattern": "total"
+        }
       ],
       "tier": "micro",
       "tags": [
@@ -10589,8 +10819,14 @@
         }
       ],
       "checks": [
-        {"type": "regex", "pattern": "phase.cost|cost|token"},
-        {"type": "regex", "pattern": "resum|state|continu"}
+        {
+          "type": "regex",
+          "pattern": "phase.cost|cost|token"
+        },
+        {
+          "type": "regex",
+          "pattern": "resum|state|continu"
+        }
       ],
       "tier": "micro",
       "tags": [
@@ -10616,8 +10852,14 @@
         }
       ],
       "checks": [
-        {"type": "regex", "pattern": "PHASE_METRICS|metric|measur"},
-        {"type": "regex", "pattern": "context.mode|ctx|saving|search"}
+        {
+          "type": "regex",
+          "pattern": "PHASE_METRICS|metric|measur"
+        },
+        {
+          "type": "regex",
+          "pattern": "context.mode|ctx|saving|search"
+        }
       ],
       "tier": "micro",
       "tags": [
@@ -11005,6 +11247,16 @@
           "path": ".claude/skills/new-project/SKILL.md",
           "pattern": "fh-starter-project"
         }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "template|scaffold"
+        },
+        {
+          "type": "regex",
+          "pattern": "[Ss]tep.?3|step 3"
+        }
       ]
     },
     {
@@ -11033,6 +11285,16 @@
           "type": "file_contains",
           "path": ".claude/skills/new-project/SKILL.md",
           "pattern": "Template identity cleanup"
+        }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "audit"
+        },
+        {
+          "type": "regex",
+          "pattern": "stale|brownfield|sync"
         }
       ]
     },
@@ -11067,6 +11329,16 @@
           "type": "file_contains",
           "path": ".claude/skills/new-project/SKILL.md",
           "pattern": "npx tsx"
+        }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "[Ss]tep.?8|step 8"
+        },
+        {
+          "type": "regex",
+          "pattern": "supabase|database|seed"
         }
       ]
     }

@@ -314,7 +314,8 @@ if [ -z "$FHHS_SKILLS_ROOT" ]; then
 fi
 ORCHESTRATOR="$FHHS_SKILLS_ROOT/.claude/skills/auto/auto-orchestrator.cjs"
 if [ ! -f "$ORCHESTRATOR" ]; then
-  echo "ERROR: orchestrator not found at $ORCHESTRATOR. Run /fh:update to reinstall."
+  echo "ERROR: orchestrator not found at $ORCHESTRATOR"
+  echo "FHHS_SKILLS_ROOT=$FHHS_SKILLS_ROOT may be stale. Run /fh:setup to reconfigure."
   exit 1
 fi
 node "$ORCHESTRATOR" \

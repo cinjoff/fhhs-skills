@@ -86,12 +86,14 @@ function autoRegisterProject(projectPath) {
   const registry = readRegistry();
   if (registry.some(e => e.path === projectPath)) return;
 
-  const name = path.basename(projectPath);
   const now = new Date().toISOString();
+
+  // Detect Conductor workspace pattern: ~/conductor/workspaces/{repo}/{worktree}
+  // Use the repo directory name as the project name for conductor workspaces
+  const conductorMatch = projectPath.match(/\/conductor\/workspaces\/([^/]+)\//);
+  const name = conductorMatch ? conductorMatch[1] : path.basename(projectPath);
   const entry = { path: projectPath, name, addedAt: now, lastSeen: now };
 
-  // Detect Conductor workspace pattern
-  const conductorMatch = projectPath.match(/\/conductor\/workspaces\/([^/]+)\//);
   if (conductorMatch) {
     entry.conductorWorkspace = conductorMatch[1];
   }
@@ -202,9 +204,11 @@ function buildProjectSummary(entry) {
     else if (hasActive) status = 'active';
     else if (completedPhases > 0) status = 'active';
 
+    // Always use the registry name (repo dirname) for sidebar consistency.
+    // PROJECT.md name is available as projectTitle for the detail view.
     return {
       ...base,
-      name: project.name || base.name,
+      projectTitle: project.name || null,
       status,
       progressPct: totalPhases > 0 ? Math.round((completedPhases / totalPhases) * 100) : 0,
       totalPhases,
@@ -243,13 +247,15 @@ function cleanRegistry() {
       changed = true;
     }
 
-    // Fix auto-generated name that's missing workspace prefix
-    if (entry.conductorWorkspace && entry.name && !entry.name.includes('/')) {
+    // Normalize conductor workspace names: use repo name, not worktree path
+    if (entry.conductorWorkspace && entry.name) {
+      // If name is a worktree dirname or workspace/worktree format, normalize to repo name
       const dirName = path.basename(entry.path);
-      // Only reformat if name is the auto-generated default (just dirname)
-      if (entry.name === dirName) {
-        entry.name = `${entry.conductorWorkspace}/${dirName}`;
-        changed = true;
+      if (entry.name === dirName || entry.name === `${entry.conductorWorkspace}/${dirName}`) {
+        if (entry.name !== entry.conductorWorkspace) {
+          entry.name = entry.conductorWorkspace;
+          changed = true;
+        }
       }
     }
 
@@ -264,6 +270,25 @@ function cleanRegistry() {
       console.error(`  Warning: Could not write cleaned registry: ${err.message}`);
     }
   }
+}
+
+// De-duplicate conductor workspaces: when multiple worktrees exist for the
+// same repo, keep only the most recently seen entry for the sidebar.
+function deduplicateEntries(entries) {
+  const deduped = [];
+  const seenWorkspaces = new Map();
+  for (const e of entries) {
+    if (e.conductorWorkspace) {
+      const existing = seenWorkspaces.get(e.conductorWorkspace);
+      if (!existing || (e.lastSeen && (!existing.lastSeen || e.lastSeen > existing.lastSeen))) {
+        seenWorkspaces.set(e.conductorWorkspace, e);
+      }
+    } else {
+      deduped.push(e);
+    }
+  }
+  deduped.push(...seenWorkspaces.values());
+  return deduped;
 }
 
 // Refresh the projects list from the registry (only re-reads if file changed).
@@ -291,7 +316,8 @@ function refreshProjectsList() {
       const planDir = path.join(e.path, '.planning');
       return fs.existsSync(planDir);
     });
-    projectsList = activeEntries.map(e => buildProjectSummary(e));
+
+    projectsList = deduplicateEntries(activeEntries).map(e => buildProjectSummary(e));
     const skipped = entries.length - activeEntries.length;
     console.log(`  [registry] ${activeEntries.length} project(s) loaded${skipped > 0 ? ` (${skipped} without .planning/ hidden)` : ''}`);
   }
@@ -302,7 +328,8 @@ function refreshProjectsList() {
 function refreshAllSummaries() {
   const entries = readRegistry();
   const activeEntries = entries.filter(e => fs.existsSync(path.join(e.path, '.planning')));
-  projectsList = activeEntries.map(e => buildProjectSummary(e));
+
+  projectsList = deduplicateEntries(activeEntries).map(e => buildProjectSummary(e));
 }
 
 // ---------------------------------------------------------------------------
@@ -967,6 +994,37 @@ function tryListen(port, attempt) {
         registryMtime = 0; // Force re-read
         refreshProjectsList();
       }
+    }
+
+    // Auto-discover conductor workspaces with .planning/ dirs
+    const conductorBase = path.join(HOME, 'conductor', 'workspaces');
+    if (fs.existsSync(conductorBase)) {
+      try {
+        const knownPaths = new Set(readRegistry().map(e => e.path));
+        let discovered = 0;
+        const repos = fs.readdirSync(conductorBase, { withFileTypes: true })
+          .filter(d => d.isDirectory());
+        for (const repo of repos) {
+          const repoDir = path.join(conductorBase, repo.name);
+          try {
+            const worktrees = fs.readdirSync(repoDir, { withFileTypes: true })
+              .filter(d => d.isDirectory());
+            for (const wt of worktrees) {
+              const wtPath = path.join(repoDir, wt.name);
+              if (!knownPaths.has(wtPath) && fs.existsSync(path.join(wtPath, '.planning'))) {
+                console.log(`  [startup] Auto-discovered conductor project: ${repo.name}/${wt.name}`);
+                autoRegisterProject(wtPath);
+                knownPaths.add(wtPath);
+                discovered++;
+              }
+            }
+          } catch { /* skip unreadable repo dirs */ }
+        }
+        if (discovered > 0) {
+          registryMtime = 0;
+          refreshProjectsList();
+        }
+      } catch { /* conductor dir unreadable — skip */ }
     }
 
     console.log(`  [startup] ${projectsList.length} registered project(s)`);
