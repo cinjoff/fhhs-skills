@@ -632,7 +632,7 @@ Read `~/.claude-mem/settings.json` using the **Read tool**. If it doesn't exist,
   "CLAUDE_MEM_CONTEXT_SESSION_COUNT": "50",
   "CLAUDE_MEM_CONTEXT_FULL_COUNT": "15",
   "CLAUDE_MEM_CONTEXT_FULL_FIELD": "narrative",
-  "CLAUDE_MEM_FOLDER_CLAUDEMD_ENABLED": "true",
+  "CLAUDE_MEM_FOLDER_CLAUDEMD_ENABLED": "false",
   "CLAUDE_MEM_CONTEXT_SHOW_LAST_SUMMARY": "true",
   "CLAUDE_MEM_CONTEXT_SHOW_LAST_MESSAGE": "false",
   "CLAUDE_MEM_CONTEXT_SHOW_READ_TOKENS": "true",
@@ -657,7 +657,7 @@ After applying, display:
   │ CONTEXT_SESSION_COUNT               │ 10      │ 50          │
   │ CONTEXT_FULL_COUNT                  │ 5       │ 15          │
   │ CONTEXT_FULL_FIELD                  │ —       │ narrative   │
-  │ FOLDER_CLAUDEMD_ENABLED             │ false   │ true        │
+  │ FOLDER_CLAUDEMD_ENABLED             │ false   │ false       │
   │ CONTEXT_SHOW_LAST_SUMMARY           │ true    │ true        │
   │ CONTEXT_SHOW_LAST_MESSAGE           │ true    │ false       │
   │ CONTEXT_SHOW_READ/WORK/SAVINGS      │ —       │ true        │
@@ -669,8 +669,7 @@ After applying, display:
   continuity. /fh:auto runs many parallel agents that all generate
   observations — high limits ensure nothing is lost. "narrative"
   mode gives richer context than "facts" for complex multi-phase
-  work. Auto-CLAUDE.md enabled for project-level context files.
-  Token stats visible so users can monitor context budget.
+  work. Token stats visible so users can monitor context budget.
 
   Adjust further via dashboard at localhost:37777 or
   edit ~/.claude-mem/settings.json directly.

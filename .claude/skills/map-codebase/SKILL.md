@@ -72,10 +72,18 @@ Continue to create_structure.
 </step>
 
 <step name="create_structure">
-Create .planning/codebase/ directory:
+Create .planning/codebase/ directory and clean up legacy mapping files:
 
 ```bash
 mkdir -p .planning/codebase
+```
+
+**Remove legacy multi-document structure if present.** Previous versions produced separate files (ARCHITECTURE.md, STRUCTURE.md, CONVENTIONS.md, DEPENDENCIES.md, etc.) in `.planning/codebase/`. These are superseded by the single CODEBASE.md. Delete them:
+
+```bash
+for f in ARCHITECTURE.md STRUCTURE.md CONVENTIONS.md DEPENDENCIES.md PATTERNS.md TECH_STACK.md; do
+  [ -f ".planning/codebase/$f" ] && rm ".planning/codebase/$f" && echo "Removed legacy .planning/codebase/$f"
+done
 ```
 
 **Expected output:** A single `CODEBASE.md` (~150-200 lines) covering structure, conventions, and architecture.
