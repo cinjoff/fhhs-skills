@@ -46,11 +46,6 @@ Identify the blast radius:
    - `documentSymbol` to understand file structure before planning changes
    - For renames: use LSP `rename` — it atomically updates all references across files
 
-**Enhanced navigation (if Serena MCP is connected):**
-- `find_referencing_symbols` for precise symbol-level reference tracing
-- `rename_symbol` for cross-codebase atomic rename (more reliable than LSP rename for large refactors)
-- If Serena is not connected, the built-in LSP tools above work well. Do not mention Serena.
-
 2. Map dependencies: what imports/calls the target, what does the target import/call
 3. Estimate: how many files change, which subsystems affected
 
@@ -124,7 +119,6 @@ Present the step sequence to the user. Wait for approval.
 
 For each step:
 1. Make the structural change. Use LSP `findReferences` before each modification to verify you've found all usage sites. For symbol renames, prefer LSP `rename` over manual find-and-replace.
-   If Serena is connected, prefer `find_referencing_symbols` (symbol-level) and `rename_symbol` (atomic cross-codebase rename) over built-in LSP equivalents.
 2. Run the full test suite
 3. **GREEN** → commit: `refactor(scope): <what changed and why>`
 4. **RED** → REVERT immediately (`git checkout -- .`), analyze why, try differently

@@ -526,9 +526,9 @@ function checkApiHealth() {
     _optimizations.health_checks_cached++;
     return lastHealthResult;
   }
-  const { execSync } = require('child_process');
+  const { execFileSync } = require('child_process');
   try {
-    execSync('claude --version', { stdio: 'pipe', timeout: API_HEALTH_TIMEOUT_MS });
+    execFileSync('claude', ['--version'], { stdio: 'pipe', timeout: API_HEALTH_TIMEOUT_MS });
     lastHealthResult = true;
   } catch {
     lastHealthResult = false;
@@ -623,7 +623,7 @@ function aggregatePhaseMetrics(stepHistory, phaseId) {
 
 function resolveProjectName(cwd) {
   try {
-    const { execSync } = require('child_process');
+    const { execFileSync } = require('child_process');
 
     // Tier 1: Check for CLAUDE_MEM_PROJECT already set (e.g., via .claude/settings.json)
     if (process.env.CLAUDE_MEM_PROJECT && process.env.CLAUDE_MEM_PROJECT.trim()) {
@@ -638,7 +638,7 @@ function resolveProjectName(cwd) {
     }
 
     // Tier 3: Git common dir for worktree support (returns /path/to/repo/.git)
-    const commonDir = execSync('git rev-parse --git-common-dir', {
+    const commonDir = execFileSync('git', ['rev-parse', '--git-common-dir'], {
       cwd,
       timeout: 5000,
       stdio: ['ignore', 'pipe', 'ignore'],
@@ -835,9 +835,9 @@ function runClaudeSession(prompt, opts) {
 function updateStateViaGsd(projectDir, phaseId) {
   // gsd-tools lives in the project, not next to this orchestrator
   const gsdPath = path.join(projectDir, '.claude/get-shit-done/bin/gsd-tools.cjs');
-  const { execSync } = require('child_process');
+  const { execFileSync } = require('child_process');
   try {
-    execSync(`node "${gsdPath}" phase complete ${phaseId} --cwd "${projectDir}"`, {
+    execFileSync('node', [gsdPath, 'phase', 'complete', phaseId, '--cwd', projectDir], {
       stdio: 'pipe',
       encoding: 'utf-8',
     });
@@ -1600,7 +1600,7 @@ async function main() {
 
   // Preflight: verify claude CLI is available
   try {
-    require('child_process').execSync('claude --version', { stdio: 'pipe' });
+    require('child_process').execFileSync('claude', ['--version'], { stdio: 'pipe' });
   } catch {
     fatal('claude CLI not found on PATH. Install Claude Code first.');
   }
@@ -2058,6 +2058,7 @@ async function main() {
       // Persist for --resume in sequential mode
       saveAutoState(projectDir, {
         phase: phase.id,
+        active: true,
         step: criticalsMissing[0],
         steps_completed: completedSteps,
         total_cost_estimate: totalCostEstimate,
@@ -2283,6 +2284,7 @@ async function main() {
     }
     saveAutoState(projectDir, {
       phase: null,
+      active: true,
       step: 'planning-wave-complete',
       phase_states: Object.assign({}, phase_states),
       total_cost_estimate: totalCostEstimate,
@@ -2395,6 +2397,7 @@ async function main() {
       }
       saveAutoState(projectDir, {
         phase: null,
+        active: true,
         step: 'review-wave-complete',
         phase_states: Object.assign({}, phase_states),
         total_cost_estimate: totalCostEstimate,
@@ -2530,6 +2533,7 @@ async function main() {
           _optimizations.state_writes_saved++;
           saveAutoState(projectDir, {
             phase: phase.id,
+            active: true,
             phase_states: Object.assign({}, phase_states),
             total_cost_estimate: totalCostEstimate,
             retry_count: retryCount,
@@ -2592,6 +2596,7 @@ async function main() {
           }
           saveAutoState(projectDir, {
             phase: phase.id,
+            active: true,
             phase_states: Object.assign({}, phase_states),
             total_cost_estimate: totalCostEstimate,
             retry_count: retryCount,
