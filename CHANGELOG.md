@@ -8,6 +8,20 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.58.4] - 2026-03-30
+
+### Fixed
+- **Tracker conductor workspace naming** — uses repo directory name instead of worktree name for consistent sidebar display; de-duplicates multiple worktrees per repo
+- **Global reconcile FHHS_SKILLS_ROOT** — writes to global settings with proper plugin cache discovery instead of broken placeholder value [setup:env:FHHS_SKILLS_ROOT]
+- **Claude-mem settings drift** — post-update reconcile enforces `FOLDER_CLAUDEMD_ENABLED=false` on every update to prevent auto-CLAUDE.md regeneration
+
+### Added
+- **Tracker auto-discovery** — scans `~/conductor/workspaces/` at startup and registers all projects with `.planning/` directories automatically
+- **Deterministic eval checks** — adds regex-based checks to 20+ full-tier evals and codifies authoring standards in skill-authoring-guide
+
+### Changed
+- **CLAUDE.md gitignore** — auto-generated CLAUDE.md files under `.claude/skills/` are now gitignored to prevent shipping noise
+
 ## [1.58.3] - 2026-03-30
 
 ### Fixed
