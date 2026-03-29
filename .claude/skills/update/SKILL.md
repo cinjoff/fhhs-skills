@@ -205,6 +205,7 @@ non-interactive environments. Open a separate terminal and run:
   claude plugin update fh@fhhs-skills
 
 Then come back and run /fh:update again to complete reconciliation.
+(If you used --global, re-add it: /fh:update --global)
 
 ──────────────────────────────────────────────────────────────
 → Run the command above in your terminal, then type "done"
@@ -262,7 +263,10 @@ Then run Steps 5a, 5a½, 5a¾, 5a⅞, and 5b with `PREV_VERSION="0.0.0"` and `LA
 
 Then check Step 5c (`.planning/` health suggestion).
 
-After Step 5c, also check how many other projects exist (same logic as the post-reconciliation tip in the main flow) and show the `--global` tip if applicable. Then exit.
+After Step 5c, check for the `--global` flag:
+
+- **If `--global` IS set:** Proceed to Step 6 (global project reconciliation). The current project was just reconciled; now reconcile all others.
+- **If `--global` is NOT set:** Check how many other projects exist (same logic as the post-reconciliation tip in the main flow) and show the `--global` tip if applicable. Then exit.
 
 ---
 
