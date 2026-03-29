@@ -336,7 +336,34 @@ RELEASE_EOF
 
 ---
 
-## Step 7: Confirm
+## Step 7: Sync Planning Repo
+
+The `.planning/` directory is symlinked to a private repo (`cinjoff/fhhs-planning`). After every release, commit and push any planning changes so they're tracked independently from the public repo.
+
+```bash
+PLANNING_REPO="/Users/konstantin/conductor/fhhs-planning"
+if [ -d "$PLANNING_REPO/.git" ]; then
+  cd "$PLANNING_REPO"
+  git pull --rebase origin main || echo "WARN: planning pull failed — check for conflicts"
+  if [ -n "$(git status --porcelain)" ]; then
+    git add -A
+    git commit -m "sync: planning state at vA.B.C release"
+    git push origin main || echo "ERROR: planning push failed — resolve manually at $PLANNING_REPO"
+    echo "Planning repo synced."
+  else
+    echo "Planning repo already up to date."
+  fi
+  cd -
+else
+  echo "WARN: Planning repo not found at $PLANNING_REPO — skipping sync"
+fi
+```
+
+**Note:** `git clean -fdx` in the main repo will destroy the `.planning` symlink. Re-run the conductor setup script or `ln -sf /Users/konstantin/conductor/fhhs-planning/.planning .planning` to restore it.
+
+---
+
+## Step 8: Confirm
 
 ```
 ## Released vA.B.C
@@ -346,6 +373,7 @@ RELEASE_EOF
 - CHANGELOG.md: updated
 - Git tag: vA.B.C
 - GitHub release: created
+- Planning repo: synced
 
 Users can update with `/fh:update`.
 ```
