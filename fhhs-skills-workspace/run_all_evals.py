@@ -77,6 +77,11 @@ COMMAND_MAP = {
     "simplify": ".claude/skills/simplify/SKILL.md",
     "todos": ".claude/skills/todos/SKILL.md",
     "tracker": ".claude/skills/tracker/SKILL.md",
+    "startup-advisor": ".claude/skills/startup-advisor/SKILL.md",
+    "startup-competitors": ".claude/skills/startup-competitors/SKILL.md",
+    "startup-design": ".claude/skills/startup-design/SKILL.md",
+    "startup-pitch": ".claude/skills/startup-pitch/SKILL.md",
+    "startup-positioning": ".claude/skills/startup-positioning/SKILL.md",
     "ui-animate": ".claude/skills/ui-animate/SKILL.md",
     "ui-branding": ".claude/skills/ui-branding/SKILL.md",
     "ui-critique": ".claude/skills/ui-critique/SKILL.md",
@@ -612,6 +617,60 @@ def print_regression_report(by_command_stats: dict, baselines: dict) -> None:
     log(f"{'='*90}")
 
 
+def print_coverage_report() -> None:
+    """Scan shipped skills and compare against COMMAND_MAP and evals.json."""
+    skills_dir = PROJECT_ROOT / ".claude" / "skills"
+
+    # Collect all shipped skills (dirs with a SKILL.md or PROMPT.md)
+    shipped_skills = []
+    for child in sorted(skills_dir.iterdir()):
+        if child.is_dir() and child.name != "__pycache__":
+            if (child / "SKILL.md").exists() or (child / "PROMPT.md").exists():
+                shipped_skills.append(child.name)
+
+    # Count evals per command from evals.json
+    with open(EVALS_FILE) as f:
+        data = json.load(f)
+    evals = data["evals"]
+    eval_counts: dict = defaultdict(int)
+    for e in evals:
+        eval_counts[e["command"]] += 1
+
+    # Build report rows
+    covered = []
+    uncovered = []
+    rows = []
+    for skill in shipped_skills:
+        in_map = skill in COMMAND_MAP
+        count = eval_counts.get(skill, 0)
+        status = "covered" if count > 0 else "uncovered"
+        map_flag = "yes" if in_map else "NO"
+        rows.append((skill, count, status, map_flag))
+        if count > 0:
+            covered.append(skill)
+        else:
+            uncovered.append(skill)
+
+    total = len(shipped_skills)
+    n_covered = len(covered)
+    pct = int(n_covered / total * 100) if total else 0
+
+    log(f"\n{'='*70}")
+    log("EVAL COVERAGE REPORT")
+    log(f"{'='*70}")
+    log(f"{'Skill':<28} {'Evals':>6}  {'Status':<12} {'In COMMAND_MAP':>14}")
+    log(f"{'-'*28} {'-'*6}  {'-'*12} {'-'*14}")
+    for skill, count, status, map_flag in rows:
+        log(f"{skill:<28} {count:>6}  {status:<12} {map_flag:>14}")
+    log(f"{'='*70}")
+    log(f"Summary: {n_covered}/{total} skills covered ({pct}%)")
+    if uncovered:
+        log(f"\nUncovered skills ({len(uncovered)}):")
+        for s in uncovered:
+            log(f"  - {s}")
+    log(f"{'='*70}\n")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Run fhhs-skills evals")
     parser.add_argument("--grader", choices=["keyword", "llm"], default="keyword",
@@ -630,7 +689,14 @@ def main():
                         help="Comma-separated tags — only run evals that have ALL specified tags (AND logic)")
     parser.add_argument("--update-baselines", action="store_true", default=False,
                         help="After grading, write current per-command metrics to baselines.json")
+    parser.add_argument("--coverage", action="store_true", default=False,
+                        help="Print eval coverage report (shipped skills vs evals) and exit")
     args = parser.parse_args()
+
+    # Handle --coverage before anything else
+    if args.coverage:
+        print_coverage_report()
+        sys.exit(0)
 
     # Determine output dir
     if args.output_dir:

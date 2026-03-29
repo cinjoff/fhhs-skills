@@ -10798,6 +10798,112 @@
           ]
         }
       ]
+    },
+    {
+      "id": 325,
+      "command": "auto",
+      "fixture": "auto-corrupt-state",
+      "prompt": "continue the auto run",
+      "expected_output": "Should detect corrupt .auto-state.json, rename to .auto-state.json.corrupt, and start fresh",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects that .auto-state.json is corrupt or invalid",
+          "type": "behavioral"
+        },
+        {
+          "text": "Renames or removes the corrupt state file",
+          "type": "behavioral"
+        },
+        {
+          "text": "Starts a fresh run rather than failing",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "fixture",
+        "edge-case",
+        "lifecycle"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "corrupt",
+            "fresh"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 326,
+      "command": "auto",
+      "fixture": "auto-milestone-done",
+      "prompt": "run auto mode on this project",
+      "expected_output": "Should detect all phases complete, suggest milestone archive/completion",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects that all phases are complete",
+          "type": "behavioral"
+        },
+        {
+          "text": "Suggests milestone completion or archive",
+          "type": "output"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "fixture",
+        "lifecycle"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "complete",
+            "milestone"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 327,
+      "command": "auto",
+      "fixture": "auto-walk-away",
+      "prompt": "run this project autonomously, walk away mode",
+      "expected_output": "Should read project, identify Phase 1 as starting point, begin plan-work",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Reads PROJECT.md and ROADMAP.md",
+          "type": "behavioral"
+        },
+        {
+          "text": "Identifies Phase 1 as the starting point",
+          "type": "behavioral"
+        },
+        {
+          "text": "Starts plan-work or planning for Phase 1",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "fixture",
+        "happy-path",
+        "lifecycle"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "phase",
+            "plan"
+          ]
+        }
+      ]
     }
   ]
 }
