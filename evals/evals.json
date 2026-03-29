@@ -9602,7 +9602,7 @@
       "id": 292,
       "command": "update",
       "prompt": "update --global",
-      "expected_output": "Should update the plugin globally (once), then discover ALL projects using fhhs-skills across the filesystem. Discovery uses two sources: tracker registry (~/.claude/tracker/projects.json) and Conductor workspace scan (~/conductor/workspaces/*/*). For each discovered project, should run post-update-reconcile.sh, changelog reconcile, and health --repair. Should display an aggregate table showing per-project status. Should clean up stale registry entries (paths that no longer exist).",
+      "expected_output": "Should update the plugin globally (once), then discover all ACTIVE projects using fhhs-skills. Discovery uses Conductor DB (only state='ready' workspaces) and tracker registry (non-Conductor projects only). Projects are grouped by GitHub repo. For each worktree, runs post-update-reconcile.sh, changelog reconcile with auto-remediation (installs tools, sets env vars, adds hooks), and health --repair. Displays results grouped by repo. Cleans up stale and archived entries from registry.",
       "files": [],
       "assertions": [
         {
@@ -9610,7 +9610,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Discovers projects from tracker registry and Conductor workspace scan",
+          "text": "Discovers active projects from Conductor DB and tracker registry, grouped by repo",
           "type": "behavioral"
         },
         {
@@ -9730,7 +9730,7 @@
       "id": 295,
       "command": "update",
       "prompt": "update --global \u2014 I use Conductor with worktrees. I have 3 worktrees for the same repo (fh-starter-project/havana, fh-starter-project/kyoto, fh-starter-project/tokyo). Will each worktree get its own reconciliation pass?",
-      "expected_output": "Yes \u2014 each Conductor worktree is treated as a separate project because each has its own .claude/settings.json and potentially different .planning/ state. The global reconcile discovers them individually (from tracker registry or Conductor scan) and runs reconciliation on each. The CLAUDE_MEM_PROJECT env var is set correctly per-worktree using git rev-parse --git-common-dir to resolve the actual repo name. Results table should show each worktree with its Conductor workspace group.",
+      "expected_output": "Yes \u2014 each worktree gets its own reconciliation pass because each has its own .claude/settings.json and potentially different .planning/ state. However, worktrees are grouped by repo in the display (e.g., fh-starter-project shows havana, kyoto, tokyo as instances). Discovery uses Conductor DB (only state='ready') so archived worktrees are excluded. The CLAUDE_MEM_PROJECT env var is set correctly per-worktree using git rev-parse --git-common-dir to resolve the actual repo name.",
       "files": [],
       "assertions": [
         {
@@ -9770,8 +9770,8 @@
     {
       "id": 296,
       "command": "update",
-      "prompt": "update --global \u2014 what if a project has env gaps that the global reconcile detects but can't auto-fix (like missing tool installs or hooks)? How does it report that?",
-      "expected_output": "The global reconcile script runs changelog reconcile which detects env gaps but does NOT auto-remediate them (tool installs, hook additions require the full SKILL.md remediation logic). It reports the gap count per project in the results table. For projects with remaining gaps, suggests running /fh:update individually in each project to apply the full remediation. The summary shows total env gaps across all projects.",
+      "prompt": "update --global \u2014 what if a project has env gaps like missing tools or hooks? Does the global update fix those or just report them?",
+      "expected_output": "The global reconcile now auto-remediates env gaps. It installs missing tools (pnpm/npm install -g), sets env vars in .claude/settings.json, adds hooks to global settings, and creates missing directories. Only items that genuinely can't be auto-fixed (like plugin installs in non-interactive environments) are reported as failures. The summary shows total remediated count and any remaining failures. It does NOT tell the user to run /fh:update individually.",
       "files": [],
       "assertions": [
         {
@@ -9811,7 +9811,7 @@
       "id": 297,
       "command": "update",
       "prompt": "update --global \u2014 what if the tracker registry doesn't exist yet (fresh install, no projects tracked)?",
-      "expected_output": "Should fall back to Conductor workspace scan as the secondary discovery source. If ~/conductor/workspaces/ exists, scan all subdirectories for .planning/ or .claude/settings.json. If neither source finds any projects, report 'No projects found' and suggest running /fh:new-project. Should NOT error out or crash when projects.json is missing.",
+      "expected_output": "Primary discovery uses Conductor DB (only active workspaces). If the DB is unavailable, falls back to filesystem scan of ~/conductor/workspaces/. Tracker registry is only used for non-Conductor projects. If no projects found from any source, report 'No projects found'. Should NOT error out or crash when projects.json is missing or Conductor DB is unavailable.",
       "files": [],
       "assertions": [
         {
@@ -9887,7 +9887,7 @@
       "id": 299,
       "command": "update",
       "prompt": "I just ran /fh:update and it said I have 5 other projects. What does --global actually do to each project?",
-      "expected_output": "The --global flag runs three reconciliation steps on each discovered project: (1) post-update-reconcile.sh for claude-mem patch, CLAUDE_MEM_PROJECT env var, and tracker registration, (2) changelog reconcile to detect env gaps (missing tools, hooks, env vars) using the fhhs-skills plugin changelog, and (3) health --repair to fix .planning/ directory issues. Projects without .planning/ skip the health step. The script discovers projects from two sources: the tracker registry and Conductor workspace scan.",
+      "expected_output": "The --global flag discovers all active projects (from Conductor DB for active workspaces, tracker registry for non-Conductor projects), groups them by repo, and runs full reconciliation on each worktree: (1) post-update-reconcile.sh for claude-mem patch, CLAUDE_MEM_PROJECT env var, and tracker registration, (2) changelog reconcile to detect AND auto-fix env gaps (installs missing tools, sets env vars, adds hooks), and (3) health --repair to fix .planning/ directory issues. Archived Conductor workspaces are excluded. Projects without .planning/ skip the health step.",
       "files": [],
       "assertions": [
         {
@@ -9895,7 +9895,7 @@
           "type": "output"
         },
         {
-          "text": "Mentions both discovery sources (tracker registry and Conductor scan)",
+          "text": "Mentions discovery from Conductor DB (active only) and tracker registry",
           "type": "output"
         },
         {

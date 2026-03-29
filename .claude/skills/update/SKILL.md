@@ -679,8 +679,8 @@ If the count is greater than 0, show:
 ```
 Restart Claude Code to use the new version.
 
-Tip: You have N other projects using fhhs-skills. Run /fh:update --global
-to reconcile all of them at once (env sync, health repair, tracker registration).
+Tip: You have N other active worktrees using fhhs-skills. Run /fh:update --global
+to fix all of them at once (env sync, tool installs, health repair, tracker cleanup).
 ```
 
 If 0 or check fails:
@@ -695,7 +695,13 @@ If `--global` flag IS set, proceed to Step 6.
 
 ## Step 6: Global Project Reconciliation (`--global` only)
 
-Discover and reconcile ALL projects using fhhs-skills across the filesystem. This step runs the same reconciliation logic (Steps 5a through 5c) on every discovered project, not just the current one.
+Discover and reconcile ALL active projects using fhhs-skills. Projects are grouped by GitHub repo — multiple Conductor worktrees under the same repo are instances of one project, not separate projects.
+
+**Discovery logic:**
+1. **Conductor DB** (`~/Library/Application Support/com.conductor.app/conductor.db`) — only workspaces with `state = 'ready'` (archived workspaces are excluded)
+2. **Tracker registry** (`~/.claude/tracker/projects.json`) — only non-Conductor projects (prevents archived workspaces from sneaking back in)
+
+**Auto-remediation:** The global reconcile now fixes everything itself — installing tools, setting env vars, adding hooks, repairing health. It does NOT suggest manual steps or tell the user to run `/fh:update` individually.
 
 ### 6a: Pre-update scan
 
@@ -712,218 +718,194 @@ if [ -s /tmp/fhhs-changelog.md ]; then
   CHANGELOG_FLAG="--changelog-file /tmp/fhhs-changelog.md"
 fi
 
-# Scan without making changes
+# Scan without making changes — only active workspaces from Conductor DB
 node "$HOME/.claude/get-shit-done/bin/global-reconcile.cjs" \
   --scan-only --from "$PREV_VERSION" --to "$LATEST_VERSION" \
   $CHANGELOG_FLAG
 ```
 
-Parse the JSON and display an ASCII project status map. Group projects by Conductor workspace:
+Parse the JSON and display an ASCII project status map. Group worktrees by repo (the `repos` field in the JSON output):
 
 ```
 ## Projects to reconcile
 
-  fh-starter-project
-  ├─ havana         ■■■■■■■□□□  health: degraded  4 env gaps
-  └─ kyoto          □□□□□□□□□□  no .planning      4 env gaps  ⚠ no settings.json
+N worktrees across M repos (active only — archived excluded)
 
-  nerve-os
-  ├─ toronto        ■■■■■■□□□□  health: degraded  4 env gaps
-  └─ quito          □□□□□□□□□□  no .planning      4 env gaps  ⚠ no settings.json
+  platform (5 worktrees)
+  ├─ vancouver      ■■■■■■■■■■  healthy   0 gaps
+  ├─ chicago-v1     ■■■□□□□□□□  broken    4 gaps
+  ├─ osaka-v1       ■■■■■■□□□□  degraded  2 gaps
+  ├─ cape-town-v1   ■■■■■■□□□□  degraded  2 gaps
+  └─ rabat          ■■■■■■■■□□  degraded  1 gap
 
-  fhhs-skills
-  ├─ san-francisco  ■■■■■■□□□□  health: degraded  2 env gaps
-  ├─ casablanca     ■■■■■■□□□□  health: degraded  2 env gaps
-  └─ dallas         ■■■□□□□□□□  health: broken    4 env gaps  ⚠ no settings.json
+  fhhs-skills (2 worktrees)
+  ├─ tunis-v2       ■■■■■■□□□□  degraded  2 gaps
+  └─ los-angeles    ■■■■■■□□□□  degraded  2 gaps
 
-  (standalone)
-  └─ san-juan       ■■■■■■■■■■  health: healthy   0 env gaps
+  soul (1 worktree)
+  └─ santo-domingo  ■■■■■■■■■■  healthy   0 gaps
 
-  Legend: ■ = ok  □ = needs attention  ⚠ = missing .claude/settings.json
+  sonica (1 worktree)
+  └─ louisville-v1  ■■■■■■□□□□  degraded  2 gaps
+
+  konstantout (1 worktree)
+  └─ san-juan       ■■■■■■■■■■  healthy   0 gaps
+
+  nerve-os (1 worktree)
+  └─ addis-ababa-v1 ■■■■■■□□□□  degraded  2 gaps
+
+  fh-starter-project (1 worktree)
+  └─ paris-v2       ■■■□□□□□□□  broken    4 gaps
+
+  Legend: ■ = ok  □ = needs fix
 ```
 
 **Build the progress bar** from the scan data:
-- `health: healthy` + 0 env gaps + has settings.json = full bar (10 filled)
+- `health: healthy` + 0 env gaps = full bar (10 filled)
 - `health: degraded` = 6 filled
 - `health: broken` = 3 filled
 - No `.planning/` = 0 filled
 - Each env gap subtracts 1 from the bar
-- Missing settings.json gets a `⚠` flag
 
-After showing the scan, display:
+### 6b: Run global reconcile with auto-remediation
 
-```
-## How global update works
-
-Plugin skills are read from the global cache (~/.claude/plugins/cache/)
-and update automatically — no project changes needed.
-
-Per-project files fall into two categories:
-
-  Gitignored (updated in-place, per-worktree):
-    .claude/settings.json     env vars like CLAUDE_MEM_PROJECT
-    .planning/config.json     runtime defaults cover new keys
-
-  Git-tracked (shared across worktrees):
-    CLAUDE.md                 may need /fh:revise-claude-md
-    conductor.json            may need setup script updates
-
-Gitignored files are updated directly in each project directory.
-Git-tracked files are checked for staleness but NOT auto-modified
-(they contain user content). If stale files are found, you'll see
-warnings with suggested fixes below.
-
-If you use Conductor: all worktrees get their own reconciliation
-pass. Gitignored files update independently per-worktree. For
-git-tracked file fixes, commit the change in any worktree — other
-worktrees pick it up when they pull or rebase.
-```
-
-### 6b: Run global reconcile
-
-The global reconcile uses the **fhhs-skills plugin changelog** (not each project's own changelog) to check environment requirements. The plugin changelog contains reconciliation tags like `[setup:tool:fallow]` and `[setup:hook:fhhs-statusline]` that verify whether each project's environment has the required tools, hooks, and env vars installed. User projects don't need their own changelogs — this is purely about plugin environment sync.
+The global reconcile discovers projects, detects env gaps, AND fixes them automatically. It installs missing tools, sets env vars, adds hooks, repairs health — the same fixes that per-project `/fh:update` would do.
 
 ```bash
-# Run global reconcile — discovers projects from tracker registry + Conductor scan
+# Run global reconcile — discovers active projects from Conductor DB + tracker
 node "$HOME/.claude/get-shit-done/bin/global-reconcile.cjs" \
   --from "$PREV_VERSION" --to "$LATEST_VERSION" \
   $CHANGELOG_FLAG
 ```
 
-Parse the JSON output. The script discovers projects from two sources:
-1. **Tracker registry** (`~/.claude/tracker/projects.json`) — projects that have been seen before
-2. **Conductor scan** (`~/conductor/workspaces/*/*`) — any workspace with `.planning/` or `.claude/settings.json`
-
-For each project, it runs:
+Parse the JSON output. The script runs per worktree:
 - `post-update-reconcile.sh` (claude-mem patch, CLAUDE_MEM_PROJECT env var, tracker registration)
-- `changelog reconcile` (env gap detection using the fhhs-skills plugin changelog — skipped if changelog unavailable)
+- `changelog reconcile` (detect env gaps using the fhhs-skills plugin changelog)
+- **Auto-remediation** of detected gaps (tool installs, env vars, hooks, dirs)
 - `validate health --repair` (planning directory health)
 
 ### 6c: Display aggregate results
 
-Format the JSON report into a human-readable summary:
+Format the JSON report grouped by repo:
 
 ```
 ## Global Update Report
 
-Discovered N projects (M from tracker, K from Conductor scan)
+Reconciled N worktrees across M repos
 
-| Project | Workspace | Health | Env Gaps | Repairs | Status |
-|---------|-----------|--------|----------|---------|--------|
-| havana | fh-starter-project | healthy | 0 | 0 | ✓ |
-| kyoto | fh-starter-project | healthy | 0 | 0 | ✓ |
-| san-juan | konstantout | degraded | 2 | 1 | ⚠ |
-| quito | nerve-os | — | 0 | — | ✓ (no .planning/) |
+  platform
+  │ vancouver      ✓  all ok
+  │ chicago-v1     ✓  4 gaps fixed (fallow, CLAUDE_CODE_ENABLE_TASKS, ...)
+  │ osaka-v1       ✓  2 gaps fixed
+  │ cape-town-v1   ✓  2 gaps fixed
+  │ rabat          ✓  1 gap fixed, 1 health repair
+  │
+  fhhs-skills
+  │ tunis-v2       ✓  2 gaps fixed, STATE.md regenerated
+  │ los-angeles    ✓  2 gaps fixed
+  │
+  soul
+  │ santo-domingo  ✓  all ok
+  │
+  (... remaining repos ...)
 ```
 
-**Status icons:**
-- `✓` — fully reconciled, no issues
-- `⚠` — partial: some steps had errors (show which in a footnote)
-- `—` — step was skipped (no .planning/ for health, etc.)
+**Status per worktree:**
+- `✓` — fully reconciled (env gaps fixed + health repaired)
+- `⚠` — partially fixed (some items couldn't be auto-fixed — show what failed)
 
-**If any projects have env gaps that couldn't be auto-fixed:**
+**If any remediations failed** (e.g., plugin installs in non-interactive environments):
 
-```
-### Projects with remaining env gaps
-
-The following projects still have environment gaps after reconciliation.
-Run /fh:update in each project individually to apply the full remediation
-(auto-install tools, hooks, etc.):
-
-  cd /path/to/project && claude  →  /fh:update
-```
-
-The global reconcile script handles env *detection* but not remediation (tool installs, hook additions need the full SKILL.md logic). The per-project `/fh:update` handles the actual fixes.
-
-**If any projects had health repairs:**
-
-Show what was actually fixed across all projects:
+Show ONE consolidated block with only the items that actually failed:
 
 ```
-### Health repairs performed
+### Items that couldn't be auto-fixed
 
-  havana:
-    ✓ config.json: Created with defaults
-    ✓ workflow.nyquist_validation: Added to config
+  plugin: claude-mem — requires interactive terminal
+  plugin: context-mode — requires interactive terminal
 
-  toronto:
-    ✓ STATE.md: Regenerated from roadmap
-
-  Total: 3 repairs across 2 projects
+  Fix: Open a terminal and run:
+    claude plugin marketplace add thedotmack/claude-mem
+    claude plugin install claude-mem
+    claude plugin marketplace add mksglu/context-mode
+    claude plugin install context-mode@context-mode
 ```
 
-**If any projects still have health issues after repair:**
+**If any projects had health repairs**, show what was fixed:
 
 ```
-### Remaining health issues (manual fix needed)
+### Health repairs
 
-  chicago-v1: BROKEN
-    [E002] PROJECT.md not found — run /fh:new-project
-
-  dallas: BROKEN
-    [E003] ROADMAP.md not found — run /fh:new-project
+  tunis-v2: STATE.md regenerated, config.json created
+  rabat: nyquist_validation added to config
+  Total: 4 repairs across 2 worktrees
 ```
 
-**If any projects have stale git-tracked files:**
+**If any projects still have health errors after repair:**
 
-The reconcile also checks git-tracked files like `conductor.json` and `CLAUDE.md` for staleness. These can't be auto-modified (they contain user content), so show warnings with fix commands:
+```
+### Remaining health issues
+
+  chicago-v1: BROKEN — PROJECT.md not found
+  paris-v2: BROKEN — PROJECT.md not found
+
+  These worktrees need /fh:new-project run inside them to initialize.
+```
+
+**If any worktrees have stale git-tracked files:**
+
+Git-tracked files (conductor.json, CLAUDE.md) are shared across worktrees in the same repo. Show one note per repo, not per worktree:
 
 ```
 ### Stale git-tracked files
 
-These files may need manual updating. Commit the fix in any worktree —
-other worktrees pick it up on pull/rebase.
-
-  havana: conductor.json — setup script missing post-update-reconcile step
-    Fix: Run /fh:new-project setup or manually add the reconcile step
-
-  dallas: CLAUDE.md — missing (project created with older plugin version)
-    Fix: Run /fh:revise-claude-md to generate
+  platform: conductor.json missing post-update-reconcile step
+    (Fix in any worktree — others get it on pull/rebase)
 ```
 
-### 6d: Stale project cleanup
+### 6d: Stale registry cleanup
 
-If any projects from the tracker registry no longer exist on disk (paths that 404'd during discovery), offer to clean them up:
+Auto-remove tracker entries for paths that no longer exist on disk, and also remove Conductor paths for archived workspaces:
 
 ```bash
-# Check for stale entries
 python3 -c "
-import json, os, pathlib
-registry = json.loads(pathlib.Path(os.path.expanduser('~/.claude/tracker/projects.json')).read_text())
-stale = [e for e in registry if not os.path.exists(e['path'])]
-if stale:
-    print('STALE_FOUND')
-    for e in stale:
-        print(f'  {e[\"path\"]} (last seen: {e.get(\"lastSeen\", \"unknown\")})')
+import json, os, pathlib, subprocess
+registry_path = pathlib.Path(os.path.expanduser('~/.claude/tracker/projects.json'))
+if not registry_path.exists():
+    print('NO_REGISTRY')
+    exit()
+registry = json.loads(registry_path.read_text())
+
+# Get active Conductor workspace names from DB
+active_ws = set()
+db_path = os.path.expanduser('~/Library/Application Support/com.conductor.app/conductor.db')
+if os.path.exists(db_path):
+    try:
+        out = subprocess.check_output(['sqlite3', db_path, \"SELECT directory_name FROM workspaces WHERE state = 'ready'\"], text=True)
+        active_ws = set(out.strip().split('\n')) if out.strip() else set()
+    except: pass
+
+cleaned = []
+removed = 0
+for e in registry:
+    p = e.get('path', '')
+    # Remove if path doesn't exist
+    if not os.path.exists(p):
+        removed += 1
+        continue
+    # Remove if it's a Conductor workspace that's archived
+    if '/conductor/workspaces/' in p:
+        ws_name = os.path.basename(p)
+        if ws_name not in active_ws:
+            removed += 1
+            continue
+    cleaned.append(e)
+
+if removed > 0:
+    registry_path.write_text(json.dumps(cleaned, indent=2) + '\n')
+    print(f'Removed {removed} stale/archived entries')
 else:
     print('NO_STALE')
-"
-```
-
-**If STALE_FOUND:**
-
-```
-### Stale project entries
-
-These projects are registered but no longer exist on disk:
-
-  /path/to/deleted/project (last seen: 2026-03-15)
-  /path/to/another/project (last seen: 2026-03-20)
-
-Removing stale entries from tracker registry...
-```
-
-Auto-remove stale entries (they're clearly gone):
-
-```bash
-python3 -c "
-import json, os, pathlib
-registry_path = pathlib.Path(os.path.expanduser('~/.claude/tracker/projects.json'))
-registry = json.loads(registry_path.read_text())
-cleaned = [e for e in registry if os.path.exists(e['path'])]
-removed = len(registry) - len(cleaned)
-registry_path.write_text(json.dumps(cleaned, indent=2) + '\n')
-print(f'Removed {removed} stale entries')
 "
 ```
 
@@ -933,10 +915,10 @@ print(f'Removed {removed} stale entries')
 ## Summary
 
 Updated fhhs-skills to vX.Y.Z
-Reconciled N projects across M workspaces
-  ✓ K projects fully up to date
-  ⚠ J projects with remaining gaps (run /fh:update individually)
-  🗑 R stale entries cleaned from registry
+Reconciled N worktrees across M repos (active only)
+  ✓ K worktrees fully fixed
+  ⚠ J items couldn't be auto-fixed (see above)
+  🗑 R stale/archived entries cleaned from registry
 
 Restart Claude Code to use the new version.
 ```
