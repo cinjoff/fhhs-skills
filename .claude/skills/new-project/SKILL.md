@@ -1105,9 +1105,58 @@ This only needs to be done once.
 
 ### 8e: Set up Supabase (conditional)
 
-**Only run this step if the user chose Supabase in Step 2.** If not, skip to Step 9.
+**Only run this step if the user chose Supabase in Step 2 OR if `scaffold_strategy` is set (template includes Supabase by default).** If neither condition is met, skip to Step 9.
 
-#### Choose local vs cloud Supabase
+#### Template Auto-Setup Mode
+
+**If `scaffold_strategy` is `template_repo` or `rsync_copy` (Step 3 ran):** The template already includes `supabase/config.toml`, `scripts/setup.sh`, and `scripts/seed.ts`. Skip the interactive question and default to `local` mode. Proceed directly to **8e-local** with no user prompts.
+
+If Docker/OrbStack is not available AND cannot be installed (user declines or system doesn't support it), create `.env.local` with SQLite fallback defaults instead of blocking:
+
+```bash
+# Generate a random secret for local auth
+AUTH_SECRET=$(openssl rand -base64 32)
+
+cat > .env.local <<EOF
+# SQLite fallback mode — no Docker/Supabase required
+# Organizations and some API routes require Postgres
+DATABASE_URL=file:./local.db
+BETTER_AUTH_SECRET=${AUTH_SECRET}
+BETTER_AUTH_URL=http://localhost:3000
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+SENTRY_LOCAL=true
+NEXT_PUBLIC_SENTRY_LOCAL=true
+EOF
+```
+
+Show: `⊘ Docker not available — using SQLite for local development. Organizations and some API routes require Postgres. You can run \`scripts/setup.sh\` later to switch to Supabase.`
+
+After local Supabase setup completes (or SQLite fallback is applied), run the template's seed script if Supabase is running:
+
+```bash
+if docker ps 2>/dev/null | grep -q supabase; then
+  npx tsx scripts/seed.ts
+  echo "✓ Database seeded with demo data"
+fi
+```
+
+Show a summary:
+
+```
+╔══════════════════════════════════════════════════════════════╗
+║  Template Setup Complete                                      ║
+╠══════════════════════════════════════════════════════════════╣
+║  ✓ Dependencies installed                                     ║
+║  ✓ Supabase running locally (or: ⊘ Using SQLite fallback)    ║
+║  ✓ Database seeded (or: ⊘ Skipped — no Supabase)             ║
+║  ✓ .env.local created                                        ║
+║  Ready to go — run `<pkg_manager> dev` to start building      ║
+╚══════════════════════════════════════════════════════════════╝
+```
+
+#### Choose local vs cloud Supabase (non-template projects)
+
+**Skip this question if Step 3 ran (template already scaffolded — handled above).**
 
 Ask:
 
