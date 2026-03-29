@@ -8,6 +8,14 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.53.0] - 2026-03-29
+
+### Changed
+- **Global update active-only filtering** — `/fh:update --global` now queries Conductor's SQLite DB for active workspaces only (state='ready'), excluding archived ones instead of scanning the entire filesystem
+- **Global update repo grouping** — worktrees are grouped by GitHub repo in the display and report, treating the repo as the project with worktrees as instances
+- **Global update auto-remediation** — env gaps (missing tools, env vars, hooks, dirs) are now auto-fixed during global reconcile instead of just detected; no longer tells users to run `/fh:update` individually
+- **Global reconcile security** — all subprocess calls converted from `execSync` to `execFileSync` to prevent shell injection
+
 ## [1.52.2] - 2026-03-29
 
 ### Fixed
