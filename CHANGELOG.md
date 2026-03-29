@@ -8,6 +8,11 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.54.1] - 2026-03-29
+
+### Changed
+- **Update skill cache cleanup** — `/fh:update` now removes old cached plugin versions and orphaned temp directories after updating, speeding up plugin discovery on new session start
+
 ## [1.54.0] - 2026-03-29
 
 ### Added
