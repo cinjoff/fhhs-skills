@@ -18,7 +18,7 @@ Parse `$ARGUMENTS` for flags:
 
 ### 1a. Check claude-mem availability
 
-Call `mcp__plugin_claude-mem_mcp-search__smart_search` with query `"test"` and limit 1.
+Call `mcp__plugin_claude-mem_mcp-search__search` with query `"test"` and limit 1.
 
 - If the call succeeds: proceed.
 - If the call fails or the tool is unavailable: stop and report:
@@ -43,18 +43,20 @@ Determine the date range. Default is 14 days ago. If `--days N` was passed, use 
 
 ### 2a. Broad time-window fetch
 
+Derive project name from `.planning/PROJECT.md` name field (fall back to basename of cwd). Use this as the `project` parameter for all claude-mem calls.
+
 Call `mcp__plugin_claude-mem_mcp-search__search` with:
 - No query text (empty string — retrieves all observations in the window)
 - `dateStart` = computed date above
 - `limit` = 100
-- No project filter (cross-project)
+- `project` = <project-name>
 
 ### 2b. Targeted semantic queries
 
-Call `mcp__plugin_claude-mem_mcp-search__smart_search` three times in parallel:
-1. query = `"error fail bug wrong broken"`, limit = 20
-2. query = `"slow inefficient tokens expensive retry"`, limit = 20
-3. query = `"workaround hack missing should"`, limit = 20
+Call `mcp__plugin_claude-mem_mcp-search__search` three times in parallel:
+1. query = `"error fail bug wrong broken"`, project = <project-name>, limit = 20
+2. query = `"slow inefficient tokens expensive retry"`, project = <project-name>, limit = 20
+3. query = `"workaround hack missing should"`, project = <project-name>, limit = 20
 
 ### 2c. Merge and deduplicate
 
@@ -66,8 +68,9 @@ Combine all results from 2a and 2b. Deduplicate by observation ID — keep each 
 
 ### 3a. What's working well (present first)
 
-Call `mcp__plugin_claude-mem_mcp-search__smart_search` with:
+Call `mcp__plugin_claude-mem_mcp-search__search` with:
 - query = `"completed succeeded solved improved efficient"`
+- project = <project-name>
 - limit = 20
 
 Review results for productive patterns: skills that worked cleanly, efficient multi-step workflows, successful approaches, good tool choices.

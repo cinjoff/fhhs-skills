@@ -4,6 +4,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const { execSync } = require('child_process');
 
 // ─── Path helpers ────────────────────────────────────────────────────────────
@@ -11,6 +12,12 @@ const { execSync } = require('child_process');
 /** Normalize a relative path to always use forward slashes (cross-platform). */
 function toPosixPath(p) {
   return p.split(path.sep).join('/');
+}
+
+/** Canonical path to gsd-tools.cjs — always $HOME, never projectDir.
+ *  .claude/skills/ files use os.homedir() inline (shipping boundary). */
+function gsdToolsPath() {
+  return path.join(os.homedir(), '.claude', 'get-shit-done', 'bin', 'gsd-tools.cjs');
 }
 
 // ─── Model Profile Table ─────────────────────────────────────────────────────
@@ -505,4 +512,5 @@ module.exports = {
   getMilestoneInfo,
   getMilestonePhaseFilter,
   toPosixPath,
+  gsdToolsPath,
 };

@@ -134,7 +134,7 @@ If DESIGN.md exists, use it throughout to ground UX/UI guidance in the project's
 
 If context-mode is available, index these via `ctx_batch_execute` for efficient search during the conversation.
 
-If claude-mem is available, call `smart_search` with 2-3 keywords from the project domain (limit=5) to surface relevant past learnings, decisions, and session context. Present as: "From previous sessions, here's what we've learned that might matter..."
+If claude-mem is available, derive project name from `.planning/PROJECT.md` name field (fall back to basename of cwd). Use this as the `project` parameter for all claude-mem calls. Call `search` with query=2-3 keywords from the project domain, limit=5, project=<project-name> to surface relevant past learnings, decisions, and session context. Present as: "From previous sessions, here's what we've learned that might matter..."
 
 Identify what's well-defined vs what has gaps: missing vision, vague success criteria, no differentiation story, unclear scope ambition, missing UX/domain research, missing design context.
 
@@ -144,7 +144,7 @@ This step runs even when the full workshop is skipped. It takes <30 seconds and 
 
 1. **Read PROJECT.md, REQUIREMENTS.md, ROADMAP.md** — confirm they exist and are non-trivial (>3 lines each)
 2. **Flag critical gaps silently** — if any of these are missing or empty, warn the user: "I'm skipping the workshop as requested, but I noticed [gap]. The pipeline may produce suboptimal results."
-3. **Quick domain check** — if claude-mem is available, `smart_search` with 2-3 project keywords (limit=3). Surface any relevant prior learnings that might affect the build.
+3. **Quick domain check** — if claude-mem is available, `search` with query=2-3 project keywords, limit=3, project=<project-name>. Surface any relevant prior learnings that might affect the build.
 4. **Validate phase readiness** — check that at least the first incomplete phase has a clear goal in ROADMAP.md. If the goal is vague (e.g., "improve things"), warn: "Phase N goal is vague — the planning step may struggle. Consider clarifying before proceeding."
 
 This step NEVER blocks execution. It only warns. The user already said "go" — respect that while providing visibility.
@@ -336,7 +336,7 @@ Each step is a separate `claude -p` session with fresh context. The orchestrator
 
 **Known pitfalls:**
 - `claude -p` does NOT support `--cwd` — use spawn `cwd` option only
-- `gsd-tools.cjs` must resolve from `projectDir/.claude/get-shit-done/bin/`, not `__dirname`
+- `gsd-tools.cjs` must resolve from `$HOME/.claude/get-shit-done/bin/` (created by `/fh:setup`), never from `projectDir`
 - Without `--plugin-dir`, `/fh:` skill commands are unavailable in `-p` sessions
 - Without `--permission-mode bypassPermissions`, interactive prompts hang the process
 - Bare skill invocations (e.g. `/fh:plan-work`) alone are insufficient — include phase goal and autonomy instructions

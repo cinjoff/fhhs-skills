@@ -54,7 +54,10 @@ function pushActivityEvent(type, text) {
 
 // Rolling log buffer for tracker visibility
 const _logBuffer = [];
-const LOG_BUFFER_MAX = 20;
+const LOG_BUFFER_MAX = 50;
+
+// JSONL log file path (set once projectDir is known)
+let _jsonlLogPath = null;
 
 // Optimization counters — module-level, included in every writeAutoStatus() call
 const _optimizations = {
@@ -245,12 +248,37 @@ function timestamp() {
   return new Date().toISOString().replace('T', ' ').replace(/\.\d+Z$/, 'Z');
 }
 
+/**
+ * Append a structured event to the JSONL log file.
+ * Each line is a self-contained JSON object for easy tailing/streaming.
+ */
+function logEvent(type, data) {
+  const event = {
+    ts: new Date().toISOString(),
+    type,
+    phase: data.phase || null,
+    step: data.step || null,
+    level: data.level || 'info',
+    msg: data.msg || '',
+    ...data.extra,
+  };
+  // Append to JSONL file
+  if (_jsonlLogPath) {
+    try {
+      fs.appendFileSync(_jsonlLogPath, JSON.stringify(event) + '\n', 'utf-8');
+    } catch { /* non-fatal */ }
+  }
+  return event;
+}
+
 function log(msg) {
   process.stdout.write(`[${timestamp()}] ${msg}\n`);
   _autoStatus.lastLogLine = msg;
   // Push to rolling log buffer
   _logBuffer.push({ ts: timestamp(), msg });
   while (_logBuffer.length > LOG_BUFFER_MAX) _logBuffer.shift();
+  // Delegate JSONL write to logEvent (single write path)
+  logEvent('log', { msg });
   // Debounced last_log_line update: max once per 2 seconds, routed through _stateWriteQueue
   const now = Date.now();
   if (_autoStatus.projectDir && (now - _autoStatus.lastLogWriteMs) >= 2000) {
@@ -557,7 +585,13 @@ function isApiError(err) {
 // ─── Per-Session Metrics ──────────────────────────────────────────────────────
 
 function parseSessionMetrics(stdout) {
-  const metrics = { tokens_in: 0, tokens_out: 0, read_calls: 0, ctx_search_hits: 0 };
+  const metrics = {
+    tokens_in: 0, tokens_out: 0,
+    num_turns: 0, duration_api_ms: 0,
+    context_window_pct: 0,
+    tool_calls: {},  // { Read: N, Edit: N, Bash: N, ... }
+    read_calls: 0, ctx_search_hits: 0,
+  };
   // claude -p with --output-format json emits JSON-lines (one object per line),
   // not a single JSON object. Parse each line and accumulate usage.
   for (const line of stdout.split('\n')) {
@@ -569,12 +603,29 @@ function parseSessionMetrics(stdout) {
         metrics.tokens_in += obj.usage.input_tokens || 0;
         metrics.tokens_out += obj.usage.output_tokens || 0;
       }
+      // Result line has session-level stats
+      if (obj.type === 'result') {
+        metrics.num_turns = obj.num_turns || 0;
+        metrics.duration_api_ms = obj.duration_api_ms || 0;
+      }
+      // Count tool calls by name
+      if (obj.tool) {
+        const name = obj.tool;
+        metrics.tool_calls[name] = (metrics.tool_calls[name] || 0) + 1;
+      }
     } catch {
       // Non-JSON line — skip
     }
   }
+  // Legacy counters (kept for backward compat)
   metrics.read_calls = (stdout.match(/"tool":"Read"/g) || []).length;
   metrics.ctx_search_hits = (stdout.match(/ctx_search|ctx_batch_execute/g) || []).length;
+  // Context window utilization: estimate % of 200K context used
+  // (input tokens represent the cumulative context seen by the model)
+  const CONTEXT_LIMIT = 200000;
+  metrics.context_window_pct = metrics.tokens_in > 0
+    ? Math.round((metrics.tokens_in / CONTEXT_LIMIT) * 100)
+    : 0;
   return metrics;
 }
 
@@ -792,8 +843,8 @@ function runClaudeSession(prompt, opts) {
 // ─── State Update via gsd-tools ──────────────────────────────────────────────
 
 function updateStateViaGsd(projectDir, phaseId) {
-  // gsd-tools lives in the project, not next to this orchestrator
-  const gsdPath = path.join(projectDir, '.claude/get-shit-done/bin/gsd-tools.cjs');
+  // gsd-tools lives at $HOME/.claude/get-shit-done/bin/ (symlink created by /fh:setup)
+  const gsdPath = path.join(os.homedir(), '.claude', 'get-shit-done', 'bin', 'gsd-tools.cjs');
   const { execSync } = require('child_process');
   try {
     execSync(`node "${gsdPath}" phase complete ${phaseId} --cwd "${projectDir}"`, {
@@ -1431,73 +1482,67 @@ function assignWaves(depGraph) {
 // ─── Pre-Index Shared Docs ────────────────────────────────────────────────────
 
 /**
- * Run a single claude -p session that indexes shared planning docs
- * so concurrent planning sessions can skip re-indexing shared context.
+ * (Removed: preIndexSharedDocs — context bootstrapping delegated to skills)
  */
-async function preIndexSharedDocs(projectDir) {
-  log('Pre-indexing shared docs for concurrent planning sessions...');
-  const sharedDocPaths = [
-    '.planning/PROJECT.md',
-    '.planning/ROADMAP.md',
-    '.planning/REQUIREMENTS.md',
-    '.planning/DESIGN.md',
-    '.planning/codebase/ARCHITECTURE.md',
-    '.planning/codebase/STACK.md',
-    '.planning/codebase/CONVENTIONS.md',
-    '.planning/codebase/STRUCTURE.md',
-    '.planning/codebase/INTEGRATIONS.md',
-    '.planning/codebase/CONCERNS.md',
-    '.planning/codebase/TESTING.md',
-  ].filter(p => fs.existsSync(path.join(projectDir, p)));
 
-  // Add research files
-  const researchDir = path.join(projectDir, '.planning', 'research');
-  if (fs.existsSync(researchDir)) {
-    try {
-      const researchFiles = fs.readdirSync(researchDir).filter(f => f.endsWith('.md'));
-      for (const f of researchFiles) sharedDocPaths.push(`.planning/research/${f}`);
-    } catch { /* ignore */ }
-    const v2Dir = path.join(researchDir, 'v2');
-    if (fs.existsSync(v2Dir)) {
-      try {
-        const v2Files = fs.readdirSync(v2Dir).filter(f => f.endsWith('.md'));
-        for (const f of v2Files) sharedDocPaths.push(`.planning/research/v2/${f}`);
-      } catch { /* ignore */ }
-    }
+// ─── Session History ──────────────────────────────────────────────────────────
+
+/**
+ * Compute averages for step_history entries grouped by step name.
+ * Returns { stepName: { avg_ms, avg_turns, avg_tokens_in, count } }
+ */
+function computeStepAverages(history) {
+  const groups = {};
+  for (const entry of history) {
+    const key = entry.step || 'unknown';
+    if (!groups[key]) groups[key] = { total_ms: 0, total_turns: 0, total_tokens_in: 0, count: 0 };
+    groups[key].total_ms += entry.elapsed_ms || 0;
+    groups[key].total_turns += (entry.metrics && entry.metrics.num_turns) || 0;
+    groups[key].total_tokens_in += (entry.metrics && entry.metrics.tokens_in) || 0;
+    groups[key].count++;
   }
-
-  // Add phase-level RESEARCH.md files
-  const phasesDir = path.join(projectDir, '.planning', 'phases');
-  if (fs.existsSync(phasesDir)) {
-    try {
-      for (const entry of fs.readdirSync(phasesDir, { withFileTypes: true })) {
-        if (!entry.isDirectory()) continue;
-        for (const f of fs.readdirSync(path.join(phasesDir, entry.name))) {
-          if (f.includes('RESEARCH.md')) {
-            sharedDocPaths.push(`.planning/phases/${entry.name}/${f}`);
-          }
-        }
-      }
-    } catch { /* ignore */ }
+  const averages = {};
+  for (const [key, g] of Object.entries(groups)) {
+    averages[key] = {
+      avg_ms: Math.round(g.total_ms / g.count),
+      avg_turns: Math.round(g.total_turns / g.count),
+      avg_tokens_in: Math.round(g.total_tokens_in / g.count),
+      count: g.count,
+    };
   }
+  return averages;
+}
 
-  if (sharedDocPaths.length === 0) {
-    log('  No shared docs found — skipping pre-index');
-    return false;
-  }
-
-  const prompt =
-    `Index these shared planning documents into context: ${sharedDocPaths.join(', ')}. ` +
-    `Read each file and summarize key decisions, constraints, and architecture to memory. ` +
-    `Do not take any other action.`;
-
+/**
+ * Append a session summary line to ~/.claude/tracker/history.jsonl.
+ * Creates the directory and file if they don't exist.
+ */
+function appendSessionHistory(projectDir) {
   try {
-    await runClaudeSession(prompt, { cwd: projectDir, sessionId: 'pre-index-shared-docs' });
-    log(`  Pre-indexed ${sharedDocPaths.length} shared doc(s)`);
-    return true;
+    const trackerDir = path.join(os.homedir(), '.claude', 'tracker');
+    if (!fs.existsSync(trackerDir)) {
+      fs.mkdirSync(trackerDir, { recursive: true });
+    }
+    const historyPath = path.join(trackerDir, 'history.jsonl');
+    const now = new Date().toISOString();
+    const elapsedMs = _autoStatus.startedAt ? Date.now() - new Date(_autoStatus.startedAt).getTime() : 0;
+    const stepAverages = computeStepAverages(_autoStatus.stepHistory);
+    const summary = {
+      project: resolveProjectName(projectDir),
+      project_path: projectDir,
+      started_at: _autoStatus.startedAt,
+      ended_at: now,
+      elapsed_ms: elapsedMs,
+      phases_total: _autoStatus.phasesTotal,
+      phases_completed: _autoStatus.phasesCompleted,
+      phases_failed: _autoStatus.phasesFailed,
+      step_history: _autoStatus.stepHistory,
+      step_averages: stepAverages,
+    };
+    fs.appendFileSync(historyPath, JSON.stringify(summary) + '\n', 'utf-8');
+    log(`  Session history appended to ${historyPath}`);
   } catch (err) {
-    log(`  Warning: pre-index failed (non-fatal): ${err.message.slice(0, 120)}`);
-    return false;
+    log(`  Warning: could not write session history: ${err.message}`);
   }
 }
 
@@ -1569,6 +1614,17 @@ async function main() {
   _autoStatus.startedAt = new Date().toISOString();
   _autoStatus.phasesTotal = phasesToRun.length;
   _autoStatus.stepsTotal = phasesToRun.length * PHASE_STEPS.length;
+
+  // Initialize JSONL log file for structured event streaming
+  _jsonlLogPath = path.join(projectDir, '.planning', '.auto-log.jsonl');
+  // Truncate on fresh start, preserve on resume
+  if (!opts.resume) {
+    try { fs.writeFileSync(_jsonlLogPath, '', 'utf-8'); } catch { /* non-fatal */ }
+  }
+  logEvent('session-start', {
+    msg: `Auto-execution starting: phases ${startPhase}–${endPhase} (${phasesToRun.length} phases)`,
+    extra: { phases_total: phasesToRun.length, start_phase: startPhase, end_phase: endPhase, resume: opts.resume },
+  });
 
   // Auto-open tracker dashboard (cross-platform)
   const { exec } = require('child_process');
@@ -1757,12 +1813,11 @@ async function main() {
       }
     }
 
-    // Cost tracking
+    // Cost tracking (written to step_history only — no log line to avoid buffer clutter)
     let sessionCost = 0;
     if (stepResult) {
       sessionCost = estimateSessionCost(stepResult.promptText || '', stepResult.stdout || '');
       totalCostEstimate += sessionCost;
-      log(`    Cost estimate: ~$${sessionCost.toFixed(4)} (running total: ~$${totalCostEstimate.toFixed(2)} — minimum estimate, actual cost higher)`);
     }
 
     return { skipped: false, succeeded: stepSucceeded, result: stepResult, cost: sessionCost };
@@ -1820,6 +1875,7 @@ async function main() {
     log(`═══ Phase ${phase.id}: ${phase.name} ═══`);
     _autoStatus.phaseStartedAt = new Date().toISOString();
     pushActivityEvent('auto', `Phase ${phase.id}: ${phase.name} started`);
+    logEvent('phase-start', { phase: phase.id, msg: phase.name });
 
     // Determine which steps to run for this phase
     let stepsToRun = [...PHASE_STEPS];
@@ -1881,6 +1937,7 @@ async function main() {
 
       log(`  ▸ ${step}`);
       pushActivityEvent('auto', `${step} started for Phase ${phase.id}`);
+      logEvent('step-start', { phase: phase.id, step, msg: `Starting ${step} for Phase ${phase.id}` });
 
       const outcome = await runStepWithRetry(phase, step, currentPlanPath);
 
@@ -1924,7 +1981,17 @@ async function main() {
         const stepElapsedMs = _autoStatus.stepStartedAt ? Date.now() - new Date(_autoStatus.stepStartedAt).getTime() : 0;
         const stepStdout = (outcome.result && outcome.result.stdout) || '';
         const metrics = parseSessionMetrics(stepStdout);
-        log(`PHASE_METRICS: phase=${phase.id} step=${step} elapsed=${stepElapsedMs}ms tokens_in=${metrics.tokens_in} tokens_out=${metrics.tokens_out} reads=${metrics.read_calls} ctx_hits=${metrics.ctx_search_hits}`);
+        logEvent('step-end', {
+          phase: phase.id, step, msg: `${step} complete`,
+          extra: {
+            duration_ms: stepElapsedMs,
+            tokens_in: metrics.tokens_in,
+            tokens_out: metrics.tokens_out,
+            num_turns: metrics.num_turns,
+            context_window_pct: metrics.context_window_pct,
+            tool_calls: metrics.tool_calls,
+          },
+        });
         _autoStatus.stepHistory.push({
           phase: phase.id,
           step,
@@ -2020,6 +2087,7 @@ async function main() {
         total_cost_estimate: totalCostEstimate,
         retry_count: retryCount,
         phase_plan_paths: currentPlanPath ? { [phase.id]: path.relative(projectDir, currentPlanPath) } : {},
+        step_history: _autoStatus.stepHistory,
       });
       writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
         active: false,
@@ -2037,6 +2105,10 @@ async function main() {
     }
 
     pushActivityEvent('auto', `Phase ${phase.id}: ${phase.name} completed`);
+    logEvent('phase-end', {
+      phase: phase.id, msg: `Phase ${phase.id} complete`,
+      extra: { duration_ms: _autoStatus.phaseStartedAt ? Date.now() - new Date(_autoStatus.phaseStartedAt).getTime() : 0 },
+    });
     updateStateViaGsd(projectDir, phase.id);
     _autoStatus.phasesCompleted++;
     writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
@@ -2059,8 +2131,10 @@ async function main() {
     // State write reduction: in stable runs write only at phase start/end
     let stableRun = true;
 
-    // ── Step 1: Pre-index shared docs ──────────────────────────────────────────
-    const preIndexSucceeded = await preIndexSharedDocs(projectDir);
+    // Context bootstrapping delegated to skills (plan-work Step -0.5 indexes into shared per-project DB)
+    const crypto = require('crypto');
+    const ctxDbHash = crypto.createHash('sha256').update(projectDir).digest('hex').slice(0, 16);
+    log(`  Context-mode DB: ~/.claude/context-mode/sessions/${ctxDbHash}.db (shared across all steps)`);
 
     // ── Phase states map ───────────────────────────────────────────────────────
     // Possible values: 'pending' | 'planned' | 'plan-failed' | 'reviewed' |
@@ -2092,6 +2166,12 @@ async function main() {
 
     // Plan paths per phase
     const phasePlanPaths = {};
+
+    // ── Resume: restore step_history from auto-state ──────────────────────────
+    if (opts.resume && resumeState && Array.isArray(resumeState.step_history)) {
+      _autoStatus.stepHistory = resumeState.step_history;
+      log(`  Restored ${resumeState.step_history.length} step_history entries from saved state`);
+    }
 
     // ── Resume: restore phasePlanPaths from auto-state ────────────────────────
     if (opts.resume && resumeState && resumeState.phase_plan_paths) {
@@ -2136,9 +2216,6 @@ async function main() {
       log(`  ▸ Planning phase ${phase.id}: ${phase.name}`);
 
       // Build planning prompt additions
-      const skipBootstrap = preIndexSucceeded
-        ? 'SKIP Phase Context Bootstrap (Step -0.5) — shared context already indexed. Use ctx_search for shared docs.'
-        : '';
       const assumeEarlier = phaseIdx > 0
         ? ' Assume earlier phases complete successfully and produce their expected artifacts.'
         : '';
@@ -2182,7 +2259,6 @@ async function main() {
       try {
         stepResult = await runClaudeSession(
           `You are in auto mode (workflow.auto_advance=true).` +
-          (skipBootstrap ? ` ${skipBootstrap}` : '') +
           ` Read .planning/STATE.md and .planning/ROADMAP.md for context. ` +
           `Plan phase ${phase.id}. Phase goal: "${phaseGoal}". ` +
           `Use /fh:plan-work to create the plan. Auto-decide all gray areas using best judgment. ` +
@@ -2274,6 +2350,44 @@ async function main() {
     const waveMap = assignWaves(depGraph);
 
     log(`  Dependency graph built. Wave assignments: ${JSON.stringify(waveMap)}`);
+
+    // Persist dependency graph and build waves to auto-state
+    {
+      const depGraphData = {
+        edges: Object.entries(depGraph).flatMap(([id, depIds]) => depIds.map(depId => ({ from: depId, to: id }))),
+        phases: phasesToRun.map(p => ({ id: p.id, name: p.name, wave: waveMap[p.id] })),
+      };
+      const buildWaves = [];
+      const waveGroupsForState = {};
+      for (const [id, w] of Object.entries(waveMap)) {
+        if (!waveGroupsForState[w]) waveGroupsForState[w] = [];
+        waveGroupsForState[w].push(id);
+      }
+      for (const w of Object.keys(waveGroupsForState).map(Number).sort((a, b) => a - b)) {
+        buildWaves.push(waveGroupsForState[w]);
+      }
+
+      const relPlanPathsForGraph = {};
+      for (const [pid, pp] of Object.entries(phasePlanPaths)) {
+        relPlanPathsForGraph[pid] = path.relative(projectDir, pp);
+      }
+      saveAutoState(projectDir, {
+        phase: null,
+        step: 'planning-wave-complete',
+        phase_states: Object.assign({}, phase_states),
+        total_cost_estimate: totalCostEstimate,
+        retry_count: retryCount,
+        phase_plan_paths: relPlanPathsForGraph,
+        step_history: _autoStatus.stepHistory,
+        dep_graph: depGraphData,
+        build_waves: buildWaves,
+      });
+
+      logEvent('dep-graph', {
+        msg: `Dependency graph: ${depGraphData.edges.length} edges, ${buildWaves.length} waves`,
+        extra: { dep_graph: depGraphData, build_waves: buildWaves },
+      });
+    }
 
     // ── Handle plan-failed phases: mark dependents as rescheduled ─────────────
     for (const phase of phasesToRun) {
@@ -2674,6 +2788,9 @@ async function main() {
       }
     }
   } // end else (pipeline)
+
+  // Write session history before final status
+  appendSessionHistory(projectDir);
 
   // Write final inactive status on successful completion
   writeAutoStatus(projectDir, buildAutoStatus(projectDir, {

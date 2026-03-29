@@ -56,7 +56,7 @@ If ctx_batch_execute is available, index diagnostic scan output for efficient qu
 ### Past Learnings Check
 
 If claude-mem is available, check for prior audit findings and trends:
-1. Call `mcp__plugin_claude-mem_mcp-search__smart_search` with "audit" + project/module name, limit=5
+1. Call `mcp__plugin_claude-mem_mcp-search__search` with "audit" + project/module name, project=<project-name>, limit=5
 2. Filter for: audit, anti-pattern, complexity, coverage, trend, recurring
 3. If relevant: "**Prior audit context:** - {summary}" — max 3 items. Note improvements or persistent issues.
 4. Skip silently if unavailable

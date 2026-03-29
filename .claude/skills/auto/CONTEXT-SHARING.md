@@ -10,39 +10,57 @@ How context-mode and claude-mem are wired across the plan-work → plan-review �
 │                                                                             │
 │  For each phase, spawns 4 sequential claude -p sessions with:              │
 │    --plugin-dir <fhhs-skills>      (skills)                                │
-│    --plugin-dir <context-mode>     (FTS5 index — per-session SQLite)       │
+│    --plugin-dir <context-mode>     (FTS5 index — per-project SQLite)       │
 │    --plugin-dir <claude-mem>       (persistent cross-session observations) │
-│    env CLAUDE_SESSION_ID=phase-{N}-auto  (shared context-mode DB)          │
+│    env CLAUDE_SESSION_ID=phase-{N}-auto  (event tracking only)             │
 │                                                                             │
-│  All 4 steps share ONE context-mode DB: ~/.claude/context-mode/sessions/   │
+│  DB isolation is per-project-directory, NOT per-session:                    │
+│    SHA256(projectDir)[:16] → ~/.claude/context-mode/sessions/{hash}.db     │
+│  All phases and steps for the same project share ONE context-mode DB.      │
 │  All 4 steps share ONE claude-mem DB:   ~/.claude-mem/claude-mem.db        │
+│                                                                             │
+│  Context bootstrapping is delegated to skills — the orchestrator does NOT  │
+│  pre-index docs. plan-work Step -0.5 bootstraps, subsequent steps reuse.   │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-## Phase Lifecycle: 4 Steps with Shared Context
+## Phase Lifecycle: 4 Steps with Shared Per-Project DB
 
 ```
+ DB identity: SHA256(projectDir)[:16] → {hash}.db
+ All steps for a project share this single DB — no per-session isolation.
+ CLAUDE_SESSION_ID (phase-{N}-auto) is for event tracking only.
+
 ═══════════════════════════════════════════════════════════════════════════════
  STEP 1: PLAN-WORK                                        ~10 min
 ═══════════════════════════════════════════════════════════════════════════════
 
- ┌─ Phase Context Bootstrap (Step -0.5) ──────────────────────────────────┐
+ ┌─ Phase Context Bootstrap (Step -0.5, skill-driven) ────────────────────┐
  │                                                                         │
- │  ctx_batch_execute indexes 9 STABLE docs (one-time cost ~2s):          │
+ │  plan-work skill bootstraps context into the per-project DB:            │
  │                                                                         │
  │    PROJECT.md ─────┐                                                    │
  │    ROADMAP.md ─────┤                                                    │
  │    REQUIREMENTS.md ┤                                                    │
  │    DESIGN.md ──────┤    ┌──────────────────────────┐                   │
  │    ARCHITECTURE.md ┼───→│  context-mode FTS5 DB    │                   │
- │    STRUCTURE.md ───┤    │  phase-{N}-auto.db       │                   │
+ │    STRUCTURE.md ───┤    │  {hash}.db               │                   │
  │    CONVENTIONS.md ─┤    │                          │                   │
  │    TESTING.md ─────┤    │  Persists across all     │                   │
- │    STACK.md ───────┘    │  4 steps via shared      │                   │
- │                         │  CLAUDE_SESSION_ID       │                   │
+ │    STACK.md ───────┘    │  steps via per-project   │                   │
+ │                         │  SHA256 hash             │                   │
  │  + phase RESEARCH.md    └──────────────────────────┘                   │
  │  + .planning/research/*.md (project research)                          │
  │  + milestone research/v2/*.md                                           │
+ │                                                                         │
+ │  NOTE: orchestrator does NOT pre-index — bootstrapping is delegated    │
+ │  entirely to the plan-work skill's Step -0.5.                           │
+ └─────────────────────────────────────────────────────────────────────────┘
+
+ ┌─ Step 9.5: Source Pre-Index ────────────────────────────────────────────┐
+ │                                                                         │
+ │  plan-work indexes source files mentioned in the plan into the DB,     │
+ │  so subsequent steps (plan-review, build) can ctx_search them.          │
  └─────────────────────────────────────────────────────────────────────────┘
 
  ┌─ Planning Steps ────────────────────────────────────────────────────────┐
@@ -66,13 +84,10 @@ How context-mode and claude-mem are wired across the plan-work → plan-review �
  STEP 2: PLAN-REVIEW                                      ~6 min
 ═══════════════════════════════════════════════════════════════════════════════
 
- ┌─ Phase Context Check ───────────────────────────────────────────────────┐
+ ┌─ Context Reuse ─────────────────────────────────────────────────────────┐
  │                                                                         │
- │  ctx_search("project vision", "architecture patterns")                  │
- │    → Results found? Bootstrap from plan-work is active!                 │
- │    → No results?   Run bootstrap (same 9 docs)                          │
- │                                                                         │
- │  All stable docs already indexed from Step 1 — zero re-reads            │
+ │  Same per-project DB — all plan-work indexes are already available.     │
+ │  No re-bootstrapping needed. ctx_search hits all prior content.         │
  └─────────────────────────────────────────────────────────────────────────┘
 
  ┌─ Review Steps ──────────────────────────────────────────────────────────┐
@@ -99,19 +114,19 @@ How context-mode and claude-mem are wired across the plan-work → plan-review �
  STEP 3: BUILD                                            ~15 min
 ═══════════════════════════════════════════════════════════════════════════════
 
- ┌─ Pre-Index Source Files ────────────────────────────────────────────────┐
+ ┌─ Probe + Index Source Files ────────────────────────────────────────────┐
  │                                                                         │
  │  Parse PLAN.md frontmatter → extract files_modified list                │
  │                                                                         │
- │  ctx_batch_execute indexes source files + mutable planning docs:        │
+ │  build probes the per-project DB and indexes source files:              │
  │                                                                         │
  │    src/lib/roles.ts ────────┐                                           │
  │    src/lib/auth.ts ─────────┤     ┌──────────────────────────┐         │
  │    src/components/sidebar ──┤     │  context-mode FTS5 DB    │         │
- │    src/app/.../page.tsx ────┼────→│  (same phase-{N}-auto)   │         │
+ │    src/app/.../page.tsx ────┼────→│  (same {hash}.db)        │         │
  │    PLAN.md ─────────────────┤     │                          │         │
  │    CONTEXT.md ──────────────┘     │  Now contains:           │         │
- │                                   │  - 9 stable planning docs│         │
+ │                                   │  - stable planning docs  │         │
  │  Stable docs already indexed      │  - phase research        │         │
  │  from Step 1 — NOT re-read        │  - source files          │         │
  │                                   │  - plan + decisions       │         │
@@ -217,18 +232,19 @@ Pre-indexed content (Step 3 manifest):
 ┌──────────────────────────────────────────────────────────────────────────┐
 │                         CONTEXT-MODE                                     │
 │                                                                          │
-│  Scope:     Per-session (but shared across phase steps via session ID)   │
-│  Storage:   ~/.claude/context-mode/sessions/phase-{N}-auto.db           │
+│  Scope:     Per-project-directory (SHA256(cwd)[:16] → shared DB)         │
+│  Storage:   ~/.claude/context-mode/sessions/{hash}.db                   │
 │  Indexed:   .planning/ docs, source files, plan artifacts                │
 │  Queried:   ctx_search (FTS5 full-text search)                           │
-│  Lifecycle: Created at plan-work, grows through build, discarded after   │
+│  Lifecycle: Bootstrapped by plan-work Step -0.5, grows through build     │
 │                                                                          │
 │  ┌─ plan-work ─┐  ┌─ plan-review ─┐  ┌─ build ────┐  ┌─ review ──┐    │
-│  │ Bootstrap:   │  │ Verify index: │  │ Add source: │  │ Query all: │   │
-│  │ 9 stable docs│→ │ found → reuse │→ │ files_mod.  │→ │ SUMMARY    │   │
-│  │ + research   │  │ empty → boot  │  │ + re-index  │  │ + plan     │   │
-│  └──────────────┘  └──────────────┘  │ post-wave   │  └────────────┘   │
-│                                       └─────────────┘                    │
+│  │ Step -0.5:   │  │ Reuses DB:   │  │ Probes+adds:│  │ Query all: │   │
+│  │ bootstrap    │→ │ all plan-work │→ │ source files│→ │ SUMMARY    │   │
+│  │ 9 stable docs│  │ content avail │  │ + re-index  │  │ + plan     │   │
+│  │ Step 9.5:    │  └──────────────┘  │ post-wave   │  └────────────┘   │
+│  │ index source │                     └─────────────┘                    │
+│  └──────────────┘                                                        │
 └──────────────────────────────────────────────────────────────────────────┘
 
 ┌──────────────────────────────────────────────────────────────────────────┐
@@ -237,7 +253,7 @@ Pre-indexed content (Step 3 manifest):
 │  Scope:     Global (persistent across ALL sessions and projects)          │
 │  Storage:   ~/.claude-mem/claude-mem.db (145 MB, 1233+ observations)     │
 │  Indexed:   Every file read, write, decision, code change                 │
-│  Queried:   smart_search, timeline, get_observations                     │
+│  Queried:   search, timeline, get_observations                     │
 │  Lifecycle: Append-only, never invalidated                                │
 │                                                                          │
 │  ┌─ plan-work ─┐  ┌─ plan-review ─┐  ┌─ build ────┐  ┌─ review ──┐    │
@@ -254,9 +270,10 @@ Pre-indexed content (Step 3 manifest):
 
 ## Key Technical Decisions
 
-1. **Why shared CLAUDE_SESSION_ID?** context-mode creates one SQLite DB per session ID.
-   By forcing `phase-{N}-auto` across all 4 steps, the index built in plan-work persists
-   through build and review. Without this, each step starts with an empty index.
+1. **Why per-project-directory DB?** context-mode derives the DB filename from
+   `SHA256(projectDir)[:16]`. All steps for the same project directory share one DB
+   automatically. `CLAUDE_SESSION_ID=phase-{N}-auto` is still set but only for event
+   tracking — it does not control DB isolation.
 
 2. **Why not share across parallel build agents?** Build agents are subagents spawned
    via the Agent tool — they run within the SAME claude session, so they automatically
