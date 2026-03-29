@@ -25,42 +25,42 @@ Check if the local error store exists:
 
 ### Query commands
 
-Run queries via `node lib/sentry-local-query.mjs {command}`:
+Run queries via `node src/lib/sentry-local-query.mjs {command}`:
 
 **Recent errors:**
 ```bash
-node lib/sentry-local-query.mjs recent
+node src/lib/sentry-local-query.mjs recent
 ```
 Returns last 20 errors with timestamp, level, message, and exception summary.
 
 **Recent errors within time window:**
 ```bash
-node lib/sentry-local-query.mjs recent --minutes N
+node src/lib/sentry-local-query.mjs recent --minutes N
 ```
 Returns errors from the last N minutes. Useful for checking errors during a specific operation.
 
 **Full-text search:**
 ```bash
-node lib/sentry-local-query.mjs search "keyword"
+node src/lib/sentry-local-query.mjs search "keyword"
 ```
 Searches across messages, exception text, and breadcrumbs. Use for finding errors related to a specific feature, endpoint, or error message.
 
 **Error statistics:**
 ```bash
-node lib/sentry-local-query.mjs stats
+node src/lib/sentry-local-query.mjs stats
 ```
 Returns error count by level, most common errors (grouped by message), and error rate trend over the last hour.
 
 **Full error detail:**
 ```bash
-node lib/sentry-local-query.mjs detail {event_id}
+node src/lib/sentry-local-query.mjs detail {event_id}
 ```
 Returns the complete error event including breadcrumbs, request context, tags, and full stack trace. Use after finding an interesting error via `recent` or `search`.
 
 ### Notes
 
 - Output is structured text optimized for agent consumption (not JSON).
-- If `lib/sentry-local-query.mjs` doesn't exist but `.sentry-local/events.db` does, the project wasn't fully set up with `/fh:new-project`. Suggest running it to scaffold the query tool.
+- If `src/lib/sentry-local-query.mjs` doesn't exist but `.sentry-local/events.db` does, the project wasn't fully set up with `/fh:new-project`. Suggest running it to scaffold the query tool.
 - The error store auto-prunes events older than 7 days.
 
 ---
@@ -69,7 +69,7 @@ Returns the complete error event including breadcrumbs, request context, tags, a
 
 These files are scaffolded by `/fh:new-project` (Step 5b). This section documents them for agents that need to understand or modify the observability setup.
 
-### `lib/sentry-local.ts` (~150 lines)
+### `src/lib/sentry-local.ts` (~150 lines)
 
 SQLite-backed Sentry transport and initialization helpers.
 
@@ -128,7 +128,7 @@ CREATE INDEX IF NOT EXISTS idx_events_level ON events(level);
 CREATE INDEX IF NOT EXISTS idx_events_created ON events(created_at DESC);
 ```
 
-### `lib/sentry-local-query.mjs` (~100 lines)
+### `src/lib/sentry-local-query.mjs` (~100 lines)
 
 CLI query tool for agents to inspect the error store.
 
@@ -137,7 +137,7 @@ CLI query tool for agents to inspect the error store.
 - Output: structured text optimized for LLM consumption (not JSON)
 - Graceful error on missing db: "No .sentry-local/events.db found. Run your app with SENTRY_LOCAL=true to start capturing errors."
 
-### `app/api/sentry-local/route.ts` (~40 lines)
+### `src/app/api/sentry-local/route.ts` (~40 lines)
 
 Browser envelope receiver (tunnel endpoint).
 

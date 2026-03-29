@@ -1035,6 +1035,33 @@ command -v vercel >/dev/null 2>&1 && echo "OK" || echo "MISSING"
 
 If `vercel` is MISSING: show a warning and skip to Step 9. The user can run `npm install -g vercel && vercel login` to enable this later.
 
+**Check Vercel authentication** before attempting to link (non-interactive environments like Conductor cannot handle login prompts):
+
+```bash
+vercel whoami 2>/dev/null && echo "LOGGED_IN" || echo "NOT_LOGGED_IN"
+```
+
+If `NOT_LOGGED_IN`: show a checkpoint and skip to Step 9. Do not attempt `vercel link` — it will hang waiting for browser auth.
+
+```
+╔══════════════════════════════════════════════════════════════╗
+║  CHECKPOINT: Vercel login required                           ║
+╚══════════════════════════════════════════════════════════════╝
+
+You are not logged in to Vercel. Run these in your terminal:
+
+  1. vercel login
+
+  2. cd <project-dir>
+     vercel link --yes --project <project-name>
+
+  3. vercel git connect
+     (links GitHub repo for auto-deployments on push to main)
+
+     If step 3 fails, go to vercel.com → project Settings →
+     Git → Connect Repository and select <repo-name>.
+```
+
 **Create `vercel.json` with the framework preset** before linking so Vercel uses the correct build settings:
 
 ```bash
@@ -1058,7 +1085,7 @@ if [ -f .git ]; then
   WORKTREE_FIX=true
 fi
 
-vercel link --yes --project "$(basename "$(pwd)")"
+vercel link --yes --project "$(basename "$(pwd)")" && echo "VERCEL_LINKED" || echo "VERCEL_LINK_FAILED"
 
 if [ "$WORKTREE_FIX" = true ]; then
   # Restore the worktree .git file
@@ -1075,7 +1102,25 @@ if [ "$WORKTREE_FIX" = true ]; then
 fi
 ```
 
-This writes `.vercel/project.json` with the project and org IDs. In worktree environments, the directory is moved to the main repo and symlinked back so future worktrees get it via the conductor setup script.
+If `VERCEL_LINK_FAILED`: show a checkpoint with manual instructions and skip to Step 9:
+
+```
+╔══════════════════════════════════════════════════════════════╗
+║  CHECKPOINT: Vercel link failed                              ║
+╚══════════════════════════════════════════════════════════════╝
+
+Run this in your terminal to link manually:
+
+  vercel link --yes --project <project-name>
+
+Then connect GitHub for auto-deployments:
+
+  vercel git connect
+
+Or go to vercel.com → project Settings → Git → Connect Repository.
+```
+
+If `VERCEL_LINKED`: this writes `.vercel/project.json` with the project and org IDs. In worktree environments, the directory is moved to the main repo and symlinked back so future worktrees get it via the conductor setup script.
 
 ### 8d: Connect GitHub to Vercel for auto-deployments
 
@@ -1322,7 +1367,24 @@ else
 fi
 ```
 
-Edit `supabase/config.toml` to configure local development (if not already configured by the starter template):
+Edit `supabase/config.toml` to configure local development (if not already configured by the starter template).
+
+**Port conflict detection:** Before starting, check if default Supabase ports are already in use by another project:
+
+```bash
+# Check if default DB port (54322) is already bound
+lsof -i :54322 -sTCP:LISTEN 2>/dev/null | head -1
+```
+
+If ports are in use (another Supabase instance is running), pick a non-conflicting port range by incrementing by 10 (e.g., 54331/54332/54333 instead of 54321/54322/54323). Update ALL port references in `supabase/config.toml`:
+- `[api] port` (default 54321)
+- `[db] port` (default 54322)
+- `[db] shadow_port` (default 54320)
+- `[studio] port` (default 54323)
+
+Also update the fallback `DATABASE_URL` in `scripts/seed.ts` if its hardcoded port no longer matches. The seed script uses a fallback like `postgresql://postgres:postgres@127.0.0.1:PORT/postgres` — ensure the port matches `[db] port` from `config.toml`.
+
+If no conflicts, keep defaults:
 - Postgres on port 54322 (default)
 - Keep Studio enabled on port 54323 (useful for inspecting data)
 - Keep other services at defaults
@@ -1334,6 +1396,8 @@ supabase start
 ```
 
 This pulls Docker images and starts containers. First run takes 2-5 minutes. The output includes local credentials (API URL, anon key, service_role key, DB URL).
+
+**If `supabase start` fails with a port allocation error**, go back and assign non-conflicting ports in `supabase/config.toml` as described above, then retry.
 
 Capture the output and extract credentials:
 
