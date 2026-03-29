@@ -45,8 +45,29 @@ Identify the blast radius:
    - `incomingCalls`/`outgoingCalls` to map the call graph
    - `documentSymbol` to understand file structure before planning changes
    - For renames: use LSP `rename` — it atomically updates all references across files
+
+**Enhanced navigation (if Serena MCP is connected):**
+- `find_referencing_symbols` for precise symbol-level reference tracing
+- `rename_symbol` for cross-codebase atomic rename (more reliable than LSP rename for large refactors)
+- If Serena is not connected, the built-in LSP tools above work well. Do not mention Serena.
+
 2. Map dependencies: what imports/calls the target, what does the target import/call
 3. Estimate: how many files change, which subsystems affected
+
+### Fallow Scope Augmentation (if available)
+
+```bash
+if command -v fallow &>/dev/null; then
+  FALLOW_CHECK=$(timeout 30 fallow check --format json --quiet 2>/dev/null) || FALLOW_CHECK=""
+fi
+```
+
+If Fallow ran successfully:
+- **Circular dependencies:** Check if the refactoring target is part of any circular dependency chain. If yes, note it — the refactoring should break the cycle, not preserve it.
+- **Unused exports:** Check if any exports in the target files are unused. These can be removed as part of the refactor rather than restructured.
+- **Dependency graph:** Use import/export data to supplement LSP's `findReferences` — Fallow sees the full module graph, not just direct callers.
+
+If Fallow is not installed: skip silently. LSP-based analysis is sufficient for most refactors.
 
 Report: "This refactoring touches N files across M subsystems. Blast radius: [description]."
 
@@ -103,6 +124,7 @@ Present the step sequence to the user. Wait for approval.
 
 For each step:
 1. Make the structural change. Use LSP `findReferences` before each modification to verify you've found all usage sites. For symbol renames, prefer LSP `rename` over manual find-and-replace.
+   If Serena is connected, prefer `find_referencing_symbols` (symbol-level) and `rename_symbol` (atomic cross-codebase rename) over built-in LSP equivalents.
 2. Run the full test suite
 3. **GREEN** → commit: `refactor(scope): <what changed and why>`
 4. **RED** → REVERT immediately (`git checkout -- .`), analyze why, try differently

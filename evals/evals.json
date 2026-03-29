@@ -10033,6 +10033,159 @@
           "check"
         ]
       }
+    },
+    {
+      "id": 302,
+      "command": "map-codebase",
+      "prompt": "When fallow is installed, /fh:map-codebase should run fallow check and fallow health before spawning the mapper agent and inject results into the agent prompt under 'Static Analysis Data'",
+      "expected_output": "Should detect fallow availability via `command -v fallow`, run `fallow check` and `fallow health`, collect their output, and inject the results into the mapper agent prompt under a 'Static Analysis Data' section. The static analysis data should be available to the agent before it begins mapping the codebase.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Checks for fallow availability with `command -v fallow`",
+          "type": "behavioral"
+        },
+        {
+          "text": "Runs `fallow check` to collect static analysis data",
+          "type": "behavioral"
+        },
+        {
+          "text": "Runs `fallow health` to collect health data",
+          "type": "behavioral"
+        },
+        {
+          "text": "Injects fallow results into agent prompt under 'Static Analysis Data'",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "fallow",
+        "integration"
+      ],
+      "checks": {
+        "type": "required_terms",
+        "terms": [
+          "fallow check",
+          "fallow health",
+          "Static Analysis Data",
+          "command -v fallow"
+        ]
+      }
+    },
+    {
+      "id": 303,
+      "command": "map-codebase",
+      "prompt": "When fallow is NOT installed, /fh:map-codebase should skip static analysis silently and produce the same CODEBASE.md output without mentioning Fallow",
+      "expected_output": "Should detect that fallow is not available, skip static analysis without error, and proceed to map the codebase normally. The resulting CODEBASE.md output should be identical in structure to a run without Fallow — no error messages about missing fallow, no 'fallow not found' warnings in the output.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Skips fallow static analysis when fallow is not installed",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT produce an error when fallow is unavailable",
+          "type": "guard"
+        },
+        {
+          "text": "Produces CODEBASE.md output regardless of fallow availability",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT mention Fallow in the output when fallow is not installed",
+          "type": "guard"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "fallow",
+        "degradation"
+      ],
+      "checks": {
+        "type": "required_terms",
+        "terms": [
+          "graceful",
+          "skip"
+        ]
+      }
+    },
+    {
+      "id": 304,
+      "command": "refactor",
+      "prompt": "When fallow is installed, /fh:refactor Step 1 should use fallow check output to detect circular dependencies and unused exports in the refactoring target",
+      "expected_output": "Should augment the refactoring scope analysis in Step 1 using fallow check output. The skill should identify circular dependencies and unused exports in the target module/file using Fallow Scope Augmentation. This data should inform the refactoring plan before implementation begins.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Uses fallow check output to augment refactoring scope in Step 1",
+          "type": "behavioral"
+        },
+        {
+          "text": "Detects circular dependencies in the refactoring target",
+          "type": "behavioral"
+        },
+        {
+          "text": "Detects unused exports in the refactoring target",
+          "type": "behavioral"
+        },
+        {
+          "text": "References 'Fallow Scope Augmentation' or equivalent fallow integration label",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "fallow",
+        "integration"
+      ],
+      "checks": {
+        "type": "required_terms",
+        "terms": [
+          "Fallow Scope Augmentation",
+          "circular dependency",
+          "unused exports"
+        ]
+      }
+    },
+    {
+      "id": 305,
+      "command": "fix",
+      "prompt": "/fh:fix, /fh:refactor, and /fh:extract should reference Serena MCP tools (find_symbol, find_referencing_symbols, rename_symbol) as enhanced alternatives but explicitly fall back to built-in LSP when Serena is not connected",
+      "expected_output": "Skills /fh:fix, /fh:refactor, and /fh:extract should mention Serena MCP tools (find_symbol, find_referencing_symbols, rename_symbol) as enhanced alternatives for symbol navigation and renaming. Each skill must also include an explicit fallback pattern that uses built-in LSP tools when Serena is not connected, ensuring the skill works correctly without Serena.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "References Serena MCP tool find_symbol",
+          "type": "behavioral"
+        },
+        {
+          "text": "References Serena MCP tool find_referencing_symbols",
+          "type": "behavioral"
+        },
+        {
+          "text": "References Serena MCP tool rename_symbol",
+          "type": "behavioral"
+        },
+        {
+          "text": "Includes explicit fallback to built-in LSP when Serena is not connected",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "serena",
+        "degradation"
+      ],
+      "checks": {
+        "type": "required_terms",
+        "terms": [
+          "find_symbol",
+          "find_referencing_symbols",
+          "rename_symbol",
+          "fallback"
+        ]
+      }
     }
   ]
 }
