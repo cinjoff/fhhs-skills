@@ -28,7 +28,7 @@ Detect from project config. Fall back to these defaults:
 
 ## E2E Reference
 For Playwright tests, read the Playwright testing skill:
-- Plugin path: `$HOME/.claude/plugins/cache/fhhs-skills/*/playwright-testing/PROMPT.md`
+- Plugin path (resolve via): `find "$HOME/.claude/plugins/cache/fhhs-skills" -path "*/playwright-testing/PROMPT.md" 2>/dev/null | sort -V | tail -1`
 - Fallback: `.claude/skills/playwright-testing/PROMPT.md`
 
 ## Anti-Patterns (delete these tests)

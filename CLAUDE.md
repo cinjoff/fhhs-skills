@@ -37,6 +37,13 @@ Claude Code plugin composing upstream skills (Superpowers, Impeccable, GSD) into
 - Every executed plan MUST have a SUMMARY.md — `gsd-tools verify phase-completeness` checks for these
 - CONTEXT.md section names are load-bearing: renaming requires mirroring in plan-work, plan-review, build, implementer-prompt, and `bin/lib/commands.cjs`
 
+## Skill Authoring Rules
+- **Non-interactive guard**: any CLI that opens browser/TTY must have pre-flight check (see `references/skill-authoring-guide.md`)
+- **Eval-alongside-feature**: every plan adding a new skill behavior must include an eval task for that behavior
+- **Dead-code after revert**: any plan with a git revert must include a dead-code sweep task
+- **Eval checks**: every eval must have `checks` with 2+ regex patterns; smoke-tier needs 3+
+- **Path consistency**: use `src/lib/` not `lib/`; Playwright via find+sort-V+tail-1 pattern
+
 ## Testing
 
 - Run evals: `python3 fhhs-skills-workspace/run_all_evals.py`
