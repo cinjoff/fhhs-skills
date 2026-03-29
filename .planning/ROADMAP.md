@@ -1,196 +1,193 @@
 ---
 type: roadmap
 project: fhhs-skills
-version: v1
+version: v2
 created: "2026-03-25"
-phases: 11
+revised: "2026-03-29"
+phases: 12
 ---
 
 # Roadmap
 
-## Phase 1: Skill Quality & Eval Coverage
-**Goal:** Every shipped skill works correctly and has eval coverage proving it.
-**Status:** Mostly complete (130+ evals, all skills covered)
-
-- All composite skills orchestrate correctly (build, plan-work, fix, refactor, review, simplify)
-- All design skills produce quality output (23 design commands)
-- Eval suite covers happy paths, edge cases, misrouting, failure recovery, state corruption
-- Fixture-backed evals validate against real project structures
-
-## Phase 2: Upstream Sync & Patch Stability
-**Goal:** Upstream updates can be incorporated without breaking patched skills.
-**Status:** Complete
-
-- Upstream sync workflow documented and repeatable
-- PATCHES.md and COMPATIBILITY.md stay accurate after syncs
-- Eval suite catches regressions introduced by upstream changes
-- `/fh:sync-upstream` skill guides the process
-- Pre-sync validation (Step 0.5) checks forked paths, snapshots, PATCHES.md
-- Git checkpoint (Step 3.5) with --include-untracked before modifications
-- Post-sync regression detection (Step 4.5) with targeted eval runs
-- Registry has explicit eval_commands per upstream
-- Eval runner supports --commands filter for targeted runs
-- 6 sync-upstream evals covering validation and regression flows
-
-## Phase 3: Upstream Capability Audit & Integration Planning
-**Goal:** All upstream capabilities are cataloged, quality-assessed, and gaps identified with integration recommendations.
-**Status:** Complete
-
-- UPSTREAM-INDEX.md documents all 8 upstream sources with skill-level detail
-- Every upstream skill has quality rating (A-D) and integration status
-- Gap Registry identifies unused high-value capabilities with recommended approaches (G1-G11)
-- /fh:audit-upstream skill maintains the index after upstream syncs
-- SDLC coverage matrix shows where gaps exist across the development lifecycle
-- 8 per-source upstream catalog files in `.planning/upstream/`
-- 13 audit-upstream evals (IDs 181-193)
-
-## Phase 3.5: Pipeline Depth & Intelligence
-**Goal:** Plan-work and new-project pipelines intelligently assess task complexity and suggest appropriate depth — deeper research, decision-locking, and engineering review when warranted.
-**Status:** Planning
-
-- `/fh:plan-work` evaluates complexity and suggests deep research for unfamiliar domains
-- Decision-locking (CONTEXT.md locked/discretion/deferred) prevents cross-session drift
-- Engineering review mode complements existing CEO-style plan-review
-- `/fh:build` wires verification-before-completion into final steps
-- Upstream gap registry items G1-G5 addressed
-
-## Phase 4: User Experience & Onboarding
-**Goal:** Non-technical users can install and use the plugin without assistance.
-
-- `/fh:setup` handles all platform-specific tooling installation
-- Documentation is clear, non-verbose, and action-oriented
-- Error messages always suggest next steps
-- `/fh:progress` and `/fh:tracker` provide clear status at any point
-
-## Phase 5: Advanced Integrations
-**Goal:** Skills leverage external tooling for deterministic analysis where available.
-
-- Fallow CLI integration for static analysis (unused exports, circular deps, complexity)
-- TypeScript LSP integration for type-aware code analysis
-- Graceful degradation when external tools aren't available
-
-## Phase 6: Ecosystem & Distribution
-**Goal:** Plugin is discoverable, installable, and maintainable at scale.
-
-- Marketplace listing is accurate and compelling
-- Release process is automated (version bump, changelog, tag, GitHub release)
-- Plugin update mechanism works reliably (`/fh:update`)
-- Community feedback loop established
-
-## Phase 7: Autonomous Execution & Harness Engineering
-**Goal:** Users can invoke `/fh:auto` with a project description and walk away — the system produces a working codebase with multi-milestone roadmap, executed phases, and a DECISIONS.md audit trail, without human intervention.
-
-- DECISIONS.md as append-only autonomous decision journal with confidence flagging and correction cascade
-- `/fh:new-project --auto` with deep research, scope-expansion roadmap, elaborate multi-milestone output
-- Autonomous loop: plan-work → plan-review (HOLD SCOPE) → build → review per phase
-- Headless orchestrator using `claude -p` for process-isolated agent sessions with crash recovery
-- Stuck detection, timeout supervision, and cost tracking
-- Decision correction cascade: human corrects a decision, system identifies downstream impact
-
-## Phase 9: Learning Persistence & Feedback Loop
-**Goal:** Workflow issues and skill improvement opportunities are automatically extracted from claude-mem observations and filed as GitHub issues.
-
-- `/fh:learnings` analyzes cross-project observations from claude-mem
-- Surfaces positive insights and productive patterns alongside problems
-- Clusters similar issues and deduplicates against existing GitHub issues
-- Auto-files structured issues with problem/evidence/suggestion format
-- Supports --dry-run and configurable time windows
-- Suggests claude-mem dashboard for deeper exploration
+> **v2 revision (2026-03-29):** Reconciled phase statuses with implementation reality. Absorbed orphan Phase 08 (pipeline optimization). Reprioritized remaining work around three goals: (1) auto skill optimization with observability, (2) Serena-driven context/memory workflow rework, (3) eval framework strengthening via /auto-improve and /skill-creator.
 
 ---
 
-# Milestone: Startup Validation Skills
+## Completed Phases
 
-Pre-building skills that help founders validate ideas, research markets, and shape their startup before writing code. Artifacts produced become the starting point for `/fh:new-project`.
+### Phase 1: Skill Quality & Eval Coverage
+**Goal:** Every shipped skill works correctly and has eval coverage proving it.
+**Status:** Complete
 
-**Research:** `.planning/research/startup-skills-research.md`
-**Upstream candidate:** [ferdinandobons/startup-skill](https://github.com/ferdinandobons/startup-skill) (MIT, 4 skills, 52 commits)
+- 210+ evals covering all shipped skills
+- Happy paths, edge cases, misrouting, failure recovery, state corruption
+- Fixture-backed evals with real project structures
 
-## Phase 10: Deep Skill Analysis & Architecture Design
-**Goal:** Save upstream snapshot, analyze skill internals, and design the 5-skill startup suite — boundaries, artifacts, chains, and advisor knowledge system.
+### Phase 2: Upstream Sync & Patch Stability
+**Goal:** Upstream updates can be incorporated without breaking patched skills.
+**Status:** Complete
 
-### Upstream & Analysis
-- Save `ferdinandobons/startup-skill` verbatim in `upstream/startup-skill/` (all 4 skills + references + output-guidelines)
-- Clone full repo (not just raw files) to capture all reference files and inter-skill dependencies
-- Analyze each SKILL.md: prompt structure, phase flow, parallel agent dispatch, fallback chains
-- Document artifact chain: which files each skill reads from prior skills, exact paths and formats
-- Catalog all reference files and their role (agent templates, research prompts, output guidelines)
-- Document startup-design's Fast Track mode and checkpoint/resume mechanism
-- Assess shipping boundary: what must co-locate in `.claude/skills/`, what's too large to ship
+- `/fh:sync-upstream` workflow with pre-sync validation, git checkpoints, post-sync regression detection
+- PATCHES.md and COMPATIBILITY.md stay accurate after syncs
+- 6 sync-upstream evals
 
-### Architecture Design (5 skills)
-- **4 forked workflow skills:** `/fh:startup-design` (monolithic 8-phase, the comprehensive journey), `/fh:startup-competitors` (optional deeper dive), `/fh:startup-positioning` (optional deeper dive), `/fh:startup-pitch` (natural follow-up)
-- **1 new skill:** `/fh:startup-advisor` (claude-mem + frameworks + firecrawl)
-- Per-skill spec: name, trigger phrases, explicit exclusions, YAML description draft
-- Artifact directory: `.planning/startup/` with per-skill output files
-- Artifact chain map: which skill produces what, which reads what, fallback when prior data missing
-- `/fh:startup-design --refresh` design: update existing artifacts (v1 for this skill only, others deferred)
-- Artifact flow design: `.planning/startup/` feeds `/fh:new-project` (Step 0.5), `/fh:plan-work` (domain context), `/fh:auto` (pre-indexed), `/fh:plan-review` (business reality checks)
-- Territory conflict analysis: no overlap with `/fh:plan-work`, `/fh:review`, `/fh:research`, `/fh:plan-review`
+### Phase 3: Upstream Capability Audit & Integration Planning
+**Goal:** All upstream capabilities are cataloged, quality-assessed, and gaps identified.
+**Status:** Complete
 
-### Advisor Knowledge Architecture
-- Three-tier retrieval: claude-mem (indexed YC library) → shipped frameworks → firecrawl + WebSearch fallback
-- `/fh:startup-advisor --setup`: downloads YC resources from pinned release, indexes into claude-mem with proper tagging
-- Shipped `references/frameworks/*.md` (~20-30KB): distilled decision frameworks as fallback
-- Firecrawl with targeted arguments (scrape mode for specific URLs, search mode for market data)
-- Context grounding: advisor reads `.planning/startup/` artifacts to personalize advice
+- UPSTREAM-INDEX.md with 8 upstream sources, per-skill quality ratings
+- Gap Registry (G1-G11), SDLC coverage matrix
+- 13 audit-upstream evals
 
-### Integration Points
-- `/fh:new-project` bridge: Step 0.5 reads `.planning/startup/` to auto-populate vision, scope, constraints
-- `/fh:auto` detection: when no `.planning/` exists, suggest running `/fh:startup-design` first
-- Startup artifacts drive `/fh:plan-work` — scorecard, market analysis, positioning inform planning decisions
+### Phase 3.5: Pipeline Depth & Intelligence
+**Goal:** Pipelines intelligently assess task complexity and suggest appropriate depth.
+**Status:** Complete
 
-### Delight Features (design only)
-- Visual ASCII scorecard from `/fh:startup-design` (screenshot-worthy format)
-- 2-sentence description generator with clarity scoring (grandmother test)
-- `/fh:startup-pitch --practice` investor roleplay mode (adapt from upstream)
-- Shareable battle card format (self-contained, Notion/Docs-ready)
+- Decision-locking (CONTEXT.md locked/discretion/deferred) prevents cross-session drift
+- Engineering review mode in plan-review
+- Verification-before-completion in build
+- 3 plans executed with SUMMARYs
 
-### Deliverable
-- `.planning/research/startup-skill-deep-analysis.md` — per-skill upstream breakdown
-- `.planning/research/startup-skill-architecture.md` — skill specs, artifact map, territory rules, advisor design, delight specs
+### Phase 4: User Experience & Onboarding
+**Goal:** Non-technical users can install and use the plugin without assistance.
+**Status:** Complete (core)
 
-## Phase 11: Integration Planning & Readiness
-**Goal:** Plan exact implementation changes, validate the architecture is buildable, and produce a go/no-go assessment with implementation wave plan.
+- `/fh:setup` with platform detection, first-run detection, Getting Started flow
+- Standardized error messages with next-step suggestions
+- `/fh:progress` routes new users to setup
+- Onboarding evals added
+- _Note: tracker UI redesign (plan 01/03) partially done, continued in Phase 8_
 
-### Upstream Integration
-- Plan PATCHES.md entries for each forked skill
-- Plan COMPATIBILITY.md updates (startup-skill as source #9)
-- Plan UPSTREAM-INDEX.md update: add startup-skill with per-skill quality ratings
-- Plan sync-upstream registry addition for future upstream syncs
+### Phase 6: Ecosystem & Distribution
+**Goal:** Plugin is discoverable, installable, and maintainable at scale.
+**Status:** Complete
 
-### Per-Skill Adaptation Plan
-- List all changes needed per forked SKILL.md: path changes (upstream dirs → `.planning/startup/`), naming (`/fh:` prefix), reference co-location
-- New skill not in upstream: `/fh:startup-advisor` (knowledge + search)
-- `/fh:startup-design --refresh` implementation approach: diff existing artifacts, update sections, preserve user edits
-- Reference files: which must ship vs generated at runtime (web research results)
-- Size assessment: estimate total shipped file size, check plugin cache constraints
+- Marketplace listing, automated release process
+- `/fh:update` and `/fh:release` working
+- Community docs and contributor guide
+- Health check integrated into release flow
 
-### New-Project & Auto Bridge
-- Plan `/fh:new-project` Step 0.5: detect `.planning/startup/`, read artifacts, auto-populate PROJECT.md
-- Map which startup artifacts feed which new-project questions
-- Plan `/fh:auto` detection: suggest startup skills when no `.planning/` exists
-- Design how `.planning/startup/` artifacts flow into `/fh:plan-work` (domain context), `/fh:auto` (pre-indexed per phase), and `/fh:plan-review` (business reality checks)
-- Plan modifications to plan-work and auto to read `.planning/startup/` as context source
+### Phase 8: Pipeline Optimization
+**Goal:** Build and review pipelines are fast, cheap, and well-structured.
+**Status:** Complete
 
-### Eval Strategy
-- Minimum 3 evals per skill: standalone mode, chained mode (with prior artifacts), fast-track mode (startup-design)
-- Advisor skill: eval for framework retrieval, eval for claude-mem search, eval for web fallback
-- Territory conflict evals: ensure startup skills don't trigger on development tasks
+- Build pipeline slimmed (9 to 7 steps): removed spec gate, Fallow gates, self-check
+- Model tiering: Sonnet for implementers, Haiku for GSD state
+- 1-agent simplify (was 3), inlined checkpoint protocol
+- Conditional context injection in implementer prompt
+- Plan-work brainstorm fast-track for Simple tasks
+- Configurable plan limits via config.json
+- 3 plans executed with SUMMARYs
 
-### Implementation Wave Plan
-- Wave 1: Upstream snapshot + base skill forks (startup-design, startup-competitors, startup-positioning, startup-pitch)
-- Wave 2: New skill (startup-advisor with framework references + claude-mem --setup)
-- Wave 3: New-project bridge (Step 0.5) + auto detection + downstream integration (plan-work + auto + plan-review read .planning/startup/)
-- Wave 4: Delight features + evals + startup-design --refresh
-- Risk assessment + mitigation strategies per wave
+### Phase 9: Learning Persistence & Feedback Loop
+**Goal:** Workflow issues extracted from claude-mem and filed as GitHub issues.
+**Status:** Complete (skill shipped)
 
-### Go/No-Go Checklist
-- All architectural decisions recorded and consistent
-- No unresolved questions or dependencies
-- Size budget confirmed within plugin cache limits
-- Eval strategy covers all skill modes
-- Implementation waves have clear execution order
+- `/fh:learnings` analyzes cross-project observations
+- Positive insights, clustering, dedup, auto-filing, dry-run, configurable windows
+- 8 evals (4 core + 4 edge-case)
+- _Note: plan 01 SUMMARY pending — skill was verified complete, just needs doc_
 
-### Deliverable
-- `.planning/research/startup-skill-integration-plan.md` — task breakdown, wave plan, go/no-go checklist
+### Phase 10-11: Startup Validation Skills
+**Goal:** Pre-building skills for founders to validate ideas before coding.
+**Status:** Complete (shipped in v1.39.0)
+
+- 5 skills shipped: startup-design, startup-competitors, startup-positioning, startup-pitch, startup-advisor
+- Upstream snapshot saved, PATCHES.md updated
+- new-project bridge (Step 0.5), auto detection
+- 15+ startup skill evals
+
+---
+
+## Active Work
+
+### Phase 5: Advanced Integrations — Serena & Context Workflow
+**Goal:** Skills leverage Serena for symbol navigation and context-mode for token efficiency. Workflow rework to identify what Serena should replace vs complement.
+**Status:** In progress — Plans 01-03 (context-mode) complete, Plans 04-06 (Fallow+Serena) partially executed
+
+**Completed:**
+- Context-mode integration across 18+ skills (ctx_search, ctx_batch_execute patterns)
+- Fallow CLI wired into map-codebase, review, simplify, fix, extract, refactor
+- Serena setup with `--mode no-memories` (symbol tools only, claude-mem handles memory)
+- Serena references in fix, refactor, extract skills
+
+**Remaining (Serena workflow rework):**
+- [ ] **Serena as primary symbol navigator** — currently "enhanced alternative", needs to become primary when installed (D-AUTO-06)
+- [ ] **map-codebase Serena integration** — pre-agent `get_symbols_overview` on entry points (D-AUTO-07)
+- [ ] **Evaluate Serena vs claude-mem memory overlap** — research spike concluded: no-memories is correct, but need to verify workflow handoffs
+- [ ] **Context-mode + Serena synergy** — define when to use ctx_search vs Serena symbol tools vs direct Read
+- [ ] **Workflow decision matrix** — document which tool to use when (context-mode for large output, Serena for symbols, claude-mem for cross-session, Read for editing)
+- [ ] **Eval coverage** — update existing evals for Serena-primary behavior, add map-codebase symbol eval
+
+**Key decisions locked:**
+- D-AUTO-06: Serena as primary, not enhanced alternative
+- Decision 1 (Plan 06): Memory architecture Option C (no-memories) — symbol tools only
+- D-AUTO-01: Fallow in map-codebase via pre-agent injection
+
+### Phase 7: Autonomous Execution & Harness Engineering
+**Goal:** Users invoke `/fh:auto` and walk away — system produces working codebase with decision audit trail.
+**Status:** In progress — core pipeline working, optimization and observability needed
+
+**Completed:**
+- DECISIONS.md as append-only autonomous decision journal
+- `/fh:new-project --auto` with scope-expansion roadmap
+- Autonomous loop: plan-work → plan-review (HOLD SCOPE) → build → review
+- Headless orchestrator via `claude -p` with crash recovery
+- Stuck detection, timeout supervision, cost tracking
+- Decision correction cascade
+- Parallel pipeline architecture (3-wave: concurrent plan → concurrent review → dependency-ordered build)
+- Activity events and kill sentinel support (uncommitted, 72 lines)
+- Per-step stuck thresholds (build: 15min, plan/review: 8min)
+
+**Remaining (optimization + observability):**
+- [ ] **Commit orchestrator improvements** — 72 lines of uncommitted changes (activity events, kill sentinel, per-step thresholds)
+- [ ] **Resume state validation** — validate .auto-state.json on resume, handle corruption gracefully (Plan 07-10 Task 1)
+- [ ] **Milestone completion awareness** — detect all-phases-done and suggest `gsd-tools milestone complete` (Plan 07-10 Task 2)
+- [ ] **Walk-away documentation** — document full narrative in SKILL.md (Plan 07-10 Task 3)
+- [ ] **Auto pipeline lifecycle evals** — corrupt state, milestone complete, walk-away from description (Plan 07-10 Task 4)
+- [ ] **Observability dashboard** — tracker UI shows live auto progress (activity feed, step tokens, cost chart)
+- [ ] **Cost optimization** — measure and reduce per-phase agent cost, identify context waste
+- [ ] **Context-mode integration in auto** — agents use ctx_search instead of Read for large files (CONTEXT-SHARING.md improvements)
+
+---
+
+## New Phases
+
+### Phase 12: Eval Framework & Continuous Improvement
+**Goal:** Eval-driven development loop where skill changes are measured, not guessed. /auto-improve runs iteratively to find and fix skill issues. /skill-creator provides structured skill development with built-in eval measurement.
+**Status:** Planning
+
+**Workstreams:**
+
+1. **Auto-improve loop hardening**
+   - [ ] Verify `/auto-improve` command works end-to-end (currently at `.claude/commands/auto-improve.md`)
+   - [ ] Run /auto-improve against current eval suite, baseline pass rates
+   - [ ] Add tier support (micro for fast iteration, smoke for core skills)
+   - [ ] Track improvement deltas across runs
+
+2. **Skill-creator integration**
+   - [ ] Assess skill-creator availability (not found locally — check if upstream or installable)
+   - [ ] Use skill-creator for new skill development with eval-first methodology
+   - [ ] Integrate eval benchmarking into skill development workflow
+
+3. **Eval infrastructure improvements**
+   - [ ] Fixture-backed evals for auto skill (mock .auto-state.json scenarios)
+   - [ ] Deterministic checks alongside keyword heuristics
+   - [ ] LLM grader for nuanced eval assessment
+   - [ ] Eval coverage dashboard (which skills have gaps)
+   - [ ] Baseline tracking: save pass rates, detect regressions
+
+4. **Measurement-driven decisions**
+   - [ ] Before/after metrics for every skill change
+   - [ ] Cost-per-phase tracking in auto runs
+   - [ ] Context-mode savings measurement (token reduction)
+   - [ ] Serena impact measurement (symbol resolution accuracy)
+
+---
+
+## Deferred
+
+- **Fallow MCP server integration** — use MCP instead of CLI shelling (revisit when Fallow MCP adoption grows)
+- **Fallow baseline/regression tracking** — nice-to-have across builds
+- **Multi-milestone auto execution** — archive → create → execute loop (D-070: roadmap creation scope only for now)
+- **Tracker UI redesign** — Linear-inspired dashboard (design docs exist at `.planning/designs/DESIGN.md`, partially implemented components exist)
