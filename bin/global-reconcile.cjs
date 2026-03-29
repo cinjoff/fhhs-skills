@@ -5,8 +5,11 @@
 //   node global-reconcile.cjs --from <version> --to <version> --changelog-file <path>
 //
 // Discovery sources (deduplicated):
-//   1. ~/.claude/tracker/projects.json (tracker registry)
-//   2. Conductor workspaces scan (~/conductor/workspaces)
+//   1. Conductor DB (active workspaces only, state='ready')
+//   2. ~/.claude/tracker/projects.json (tracker registry, non-Conductor projects)
+//
+// Projects are grouped by GitHub repo — multiple worktrees under the same repo
+// are treated as instances of one project, not separate projects.
 //
 // For each discovered project:
 //   - Run post-update-reconcile.sh (claude-mem patch, env var, tracker registration)
@@ -18,7 +21,7 @@
 // [setup:tool:fallow] that verify whether each project's environment has the
 // required tools, hooks, and env vars. It is NOT the project's own changelog.
 //
-// Output: JSON report with per-project results.
+// Output: JSON report with per-project results, grouped by repo.
 
 const fs = require('fs');
 const path = require('path');
@@ -52,13 +55,55 @@ if (changelogFile) {
   changelogFile = path.resolve(changelogFile);
 }
 
+// ─── Conductor DB query ─────────────────────────────────────────────────────
+
+/**
+ * Query Conductor's SQLite DB to get only active (state='ready') workspaces.
+ * Returns Map<repoName, { repoPath, workspaces: [{name, wsPath}] }>
+ */
+function getActiveConductorWorkspaces() {
+  const dbPath = path.join(os.homedir(), 'Library', 'Application Support', 'com.conductor.app', 'conductor.db');
+  if (!fs.existsSync(dbPath)) return new Map();
+
+  try {
+    // Query active workspaces joined with their repos
+    const query = `
+      SELECT w.directory_name, r.name as repo_name, r.root_path as repo_path
+      FROM workspaces w
+      JOIN repos r ON w.repository_id = r.id
+      WHERE w.state = 'ready'
+      ORDER BY r.name, w.directory_name;
+    `;
+    const out = execFileSync('sqlite3', ['-separator', '|', dbPath, query.replace(/\n/g, ' ')], {
+      timeout: 5000, stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    const lines = out.toString().trim().split('\n').filter(Boolean);
+    const repos = new Map();
+    for (const line of lines) {
+      const [wsName, repoName, repoPath] = line.split('|');
+      if (!wsName || !repoName) continue;
+      if (!repos.has(repoName)) {
+        repos.set(repoName, { repoPath: repoPath || '', workspaces: [] });
+      }
+      // Resolve workspace path from Conductor's directory structure
+      const conductorRoot = path.join(os.homedir(), 'conductor', 'workspaces');
+      const wsPath = path.join(conductorRoot, repoName, wsName);
+      repos.get(repoName).workspaces.push({ name: wsName, wsPath });
+    }
+    return repos;
+  } catch {
+    // DB not readable or sqlite3 not available — fall back to filesystem scan
+    return new Map();
+  }
+}
+
 // ─── Project discovery ───────────────────────────────────────────────────────
 
 function discoverProjects() {
   const seen = new Set();
   const projects = [];
 
-  function addProject(projectPath, source) {
+  function addProject(projectPath, source, repoName) {
     const normalized = path.resolve(projectPath);
     if (seen.has(normalized)) return;
     if (!fs.existsSync(normalized)) return;
@@ -67,64 +112,95 @@ function discoverProjects() {
     // Detect Conductor workspace
     const conductorMatch = normalized.match(/\/conductor\/workspaces\/([^/]+)\/([^/]+)/);
     const isConductor = !!conductorMatch;
-    const conductorWorkspace = conductorMatch ? conductorMatch[1] : null;
     const hasPlanning = fs.existsSync(path.join(normalized, '.planning'));
 
     // Check for .claude/settings.json (indicates fhhs-skills was set up here)
     const hasClaudeSettings = fs.existsSync(path.join(normalized, '.claude', 'settings.json'));
+
+    // Resolve repo name: explicit > Conductor match > git > directory name
+    let resolvedRepo = repoName || null;
+    if (!resolvedRepo && isConductor) {
+      resolvedRepo = conductorMatch[1];
+    }
+    if (!resolvedRepo) {
+      try {
+        const gitCommonDir = execFileSync('git', ['rev-parse', '--git-common-dir'], {
+          cwd: normalized, timeout: 5000, stdio: ['pipe', 'pipe', 'pipe'],
+        }).toString().trim();
+        const gitRoot = path.resolve(normalized, gitCommonDir, '..');
+        resolvedRepo = path.basename(gitRoot);
+      } catch {
+        resolvedRepo = path.basename(normalized);
+      }
+    }
 
     projects.push({
       path: normalized,
       name: path.basename(normalized),
       source,
       isConductor,
-      conductorWorkspace,
+      repo: resolvedRepo,
       hasPlanning,
       hasClaudeSettings,
     });
   }
 
-  // Source 1: Tracker registry
+  // Source 1: Conductor DB — only active workspaces (state='ready')
+  const activeRepos = getActiveConductorWorkspaces();
+  const conductorPaths = new Set();
+  for (const [repoName, repoInfo] of activeRepos) {
+    for (const ws of repoInfo.workspaces) {
+      if (fs.existsSync(ws.wsPath)) {
+        addProject(ws.wsPath, 'conductor-db', repoName);
+        conductorPaths.add(path.resolve(ws.wsPath));
+      }
+    }
+  }
+
+  // Source 2: Tracker registry — only non-Conductor projects
+  // (Conductor projects are already covered by the DB query above,
+  //  and this prevents archived Conductor workspaces from sneaking in)
   const registryPath = path.join(os.homedir(), '.claude', 'tracker', 'projects.json');
   try {
     const registry = JSON.parse(fs.readFileSync(registryPath, 'utf8'));
     if (Array.isArray(registry)) {
       for (const entry of registry) {
-        if (entry.path) addProject(entry.path, 'tracker');
+        if (!entry.path) continue;
+        const normalized = path.resolve(entry.path);
+        // Skip Conductor paths — they're handled by DB query above
+        const isConductorPath = normalized.includes('/conductor/workspaces/');
+        if (isConductorPath) continue;
+        addProject(entry.path, 'tracker');
       }
     }
   } catch {
-    // No registry or parse error — continue with other sources
+    // No registry or parse error — continue
   }
 
-  // Source 2: Conductor workspaces scan
-  const conductorRoot = path.join(os.homedir(), 'conductor', 'workspaces');
-  try {
-    if (fs.existsSync(conductorRoot)) {
-      for (const repo of fs.readdirSync(conductorRoot)) {
-        try {
-          const repoDir = path.join(conductorRoot, repo);
-          if (!fs.lstatSync(repoDir).isDirectory()) continue;
-          for (const workspace of fs.readdirSync(repoDir)) {
-            try {
-              const wsDir = path.join(repoDir, workspace);
-              if (!fs.lstatSync(wsDir).isDirectory()) continue;
-              // Only add if it has .planning or .claude (evidence of fhhs-skills usage)
-              if (fs.existsSync(path.join(wsDir, '.planning')) ||
-                  fs.existsSync(path.join(wsDir, '.claude', 'settings.json'))) {
-                addProject(wsDir, 'conductor-scan');
-              }
-            } catch {
-              // Bad entry (symlink loop, permission error) — skip, continue scanning
+  // Fallback: If Conductor DB query failed, scan filesystem but only for
+  // directories that exist (no archived workspace dirs exist on disk)
+  if (activeRepos.size === 0) {
+    const conductorRoot = path.join(os.homedir(), 'conductor', 'workspaces');
+    try {
+      if (fs.existsSync(conductorRoot)) {
+        for (const repo of fs.readdirSync(conductorRoot)) {
+          try {
+            const repoDir = path.join(conductorRoot, repo);
+            if (!fs.lstatSync(repoDir).isDirectory()) continue;
+            for (const workspace of fs.readdirSync(repoDir)) {
+              try {
+                const wsDir = path.join(repoDir, workspace);
+                if (!fs.lstatSync(wsDir).isDirectory()) continue;
+                if (fs.existsSync(path.join(wsDir, '.planning')) ||
+                    fs.existsSync(path.join(wsDir, '.claude', 'settings.json'))) {
+                  addProject(wsDir, 'conductor-scan', repo);
+                }
+              } catch { /* skip bad entries */ }
             }
-          }
-        } catch {
-          // Bad repo dir — skip, continue scanning
+          } catch { /* skip bad repo dirs */ }
         }
       }
-    }
-  } catch {
-    // Conductor dir doesn't exist or not readable — skip
+    } catch { /* skip if not readable */ }
   }
 
   return projects;
@@ -137,7 +213,7 @@ function reconcileProject(project) {
     path: project.path,
     name: project.name,
     isConductor: project.isConductor,
-    conductorWorkspace: project.conductorWorkspace,
+    repo: project.repo,
     steps: {},
     errors: [],
     status: 'ok',
@@ -195,6 +271,140 @@ function reconcileProject(project) {
         result.errors.push('changelog reconcile failed');
       }
     }
+  }
+
+  // Step 2.5: Auto-remediate env gaps
+  const missingItems = result.steps.changelogReconcile?.missing || [];
+  if (missingItems.length > 0) {
+    const remediated = [];
+    const failed = [];
+    for (const item of missingItems) {
+      const check = item.check || '';
+      const id = item.id || '';
+      try {
+        if (check.startsWith('setup:tool:')) {
+          // Install CLI tools
+          const pkg = id === 'typescript-language-server' ? 'typescript-language-server typescript' : id;
+          const mgr = id === 'typescript-language-server' ? 'npm' : 'pnpm';
+          execFileSync(mgr, ['install', '-g', ...pkg.split(' ')], {
+            timeout: 60000, stdio: ['pipe', 'pipe', 'pipe'],
+          });
+          remediated.push({ ...item, action: `installed via ${mgr}` });
+        } else if (check.startsWith('setup:env:')) {
+          // Add env var to project's .claude/settings.json
+          const settingsPath = path.join(project.path, '.claude', 'settings.json');
+          let settings = {};
+          try { settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8')); } catch { /* new file */ }
+          if (!settings.env) settings.env = {};
+          // Only set if not already present
+          if (!(id in settings.env)) {
+            if (id === 'CLAUDE_CWD') {
+              settings.env[id] = project.path;
+            } else if (id === 'CLAUDE_MEM_PROJECT') {
+              // Derive from git common dir (worktree-safe)
+              try {
+                const gitDir = execSync('git rev-parse --git-common-dir', {
+                  cwd: project.path, timeout: 5000, stdio: ['pipe', 'pipe', 'pipe'],
+                }).toString().trim();
+                const gitRoot = path.resolve(project.path, gitDir, '..');
+                settings.env[id] = path.basename(gitRoot);
+              } catch {
+                settings.env[id] = project.repo || path.basename(project.path);
+              }
+            } else {
+              settings.env[id] = id === 'CLAUDE_CODE_ENABLE_TASKS' ? 'true' : '1';
+            }
+            fs.mkdirSync(path.join(project.path, '.claude'), { recursive: true });
+            fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n');
+            remediated.push({ ...item, action: `set in settings.json` });
+          } else {
+            remediated.push({ ...item, action: 'already set' });
+          }
+        } else if (check.startsWith('setup:hook:')) {
+          // Add hooks to global ~/.claude/settings.json (shared across all projects)
+          const globalSettingsPath = path.join(os.homedir(), '.claude', 'settings.json');
+          let globalSettings = {};
+          try { globalSettings = JSON.parse(fs.readFileSync(globalSettingsPath, 'utf8')); } catch { /* new */ }
+          const hookId = id;
+          if (hookId.includes('statusline')) {
+            // statusLine is a top-level field, not in hooks array
+            if (!globalSettings.statusLine) {
+              globalSettings.statusLine = {
+                command: `node "$HOME/.claude/get-shit-done/hooks/fhhs-statusline.js"`,
+              };
+              fs.writeFileSync(globalSettingsPath, JSON.stringify(globalSettings, null, 2) + '\n');
+              remediated.push({ ...item, action: 'statusLine added to global settings' });
+            } else {
+              remediated.push({ ...item, action: 'already configured' });
+            }
+          } else {
+            // Map hook IDs to event types and commands
+            let event = 'PreToolUse';
+            let cmd = '';
+            if (hookId.includes('check-update')) { event = 'SessionStart'; cmd = `node "$HOME/.claude/get-shit-done/hooks/fhhs-check-update.js"`; }
+            else if (hookId.includes('learnings')) { event = 'SessionStart'; cmd = `node "$HOME/.claude/get-shit-done/hooks/fhhs-learnings.js"`; }
+            else if (hookId.includes('context-monitor')) { event = 'PostToolUse'; cmd = `node "$HOME/.claude/get-shit-done/hooks/fhhs-context-monitor.js"`; }
+            if (cmd) {
+              if (!globalSettings.hooks) globalSettings.hooks = {};
+              if (!globalSettings.hooks[event]) globalSettings.hooks[event] = [];
+              const existing = globalSettings.hooks[event].some(h => h.command && h.command.includes(hookId));
+              if (!existing) {
+                globalSettings.hooks[event].push({ command: cmd });
+                fs.writeFileSync(globalSettingsPath, JSON.stringify(globalSettings, null, 2) + '\n');
+                remediated.push({ ...item, action: `hook added to ${event}` });
+              } else {
+                remediated.push({ ...item, action: 'already configured' });
+              }
+            } else {
+              failed.push({ ...item, reason: 'unknown hook type' });
+            }
+          }
+        } else if (check.startsWith('setup:dir:')) {
+          // Create missing directories or install tools that create them
+          const expandedPath = id.replace(/^~/, os.homedir());
+          if (id.includes('shadcn') || id.includes('skills/shadcn')) {
+            try {
+              execFileSync('npx', ['-y', 'skills', 'add', '-g', '-y', '--all', 'shadcn/ui'], {
+                cwd: os.homedir(), timeout: 120000, stdio: ['pipe', 'pipe', 'pipe'],
+              });
+              remediated.push({ ...item, action: 'shadcn skills installed' });
+            } catch {
+              failed.push({ ...item, reason: 'shadcn install failed' });
+            }
+          } else {
+            fs.mkdirSync(expandedPath, { recursive: true });
+            remediated.push({ ...item, action: 'directory created' });
+          }
+        } else if (check.startsWith('setup:plugin:')) {
+          // Attempt plugin install — use execFileSync to avoid shell injection
+          try {
+            const pluginOpts = { timeout: 30000, stdio: ['pipe', 'pipe', 'pipe'] };
+            if (id.includes('claude-mem')) {
+              try { execFileSync('claude', ['plugin', 'marketplace', 'add', 'thedotmack/claude-mem'], pluginOpts); } catch { /* ignore */ }
+              execFileSync('claude', ['plugin', 'install', 'claude-mem'], pluginOpts);
+            } else if (id.includes('context-mode')) {
+              try { execFileSync('claude', ['plugin', 'marketplace', 'add', 'mksglu/context-mode'], pluginOpts); } catch { /* ignore */ }
+              execFileSync('claude', ['plugin', 'install', 'context-mode@context-mode'], pluginOpts);
+            } else {
+              execFileSync('claude', ['plugin', 'install', id], pluginOpts);
+            }
+            remediated.push({ ...item, action: 'plugin installed' });
+          } catch {
+            failed.push({ ...item, reason: 'plugin install failed (may need interactive terminal)' });
+          }
+        } else {
+          // Unknown check type — skip
+          failed.push({ ...item, reason: `unknown check type: ${check}` });
+        }
+      } catch (e) {
+        failed.push({ ...item, reason: (e.message || '').slice(0, 200) });
+      }
+    }
+    result.steps.envRemediation = {
+      status: failed.length > 0 ? 'partial' : 'ok',
+      remediated,
+      failed,
+    };
   }
 
   // Step 3: Run health --repair (only if project has .planning/)
@@ -280,7 +490,7 @@ function scanProject(project) {
     path: project.path,
     name: project.name,
     isConductor: project.isConductor,
-    conductorWorkspace: project.conductorWorkspace,
+    repo: project.repo,
     hasPlanning: project.hasPlanning,
     hasClaudeSettings: project.hasClaudeSettings,
     health: null,
@@ -351,10 +561,13 @@ function main() {
       mode: 'scan',
       discovery: {
         total: projects.length,
+        repos: [...new Set(projects.map(p => p.repo))].length,
+        fromConductorDb: projects.filter(p => p.source === 'conductor-db').length,
         fromTracker: projects.filter(p => p.source === 'tracker').length,
         fromScan: projects.filter(p => p.source === 'conductor-scan').length,
         withPlanning: projects.filter(p => p.hasPlanning).length,
       },
+      repos: groupByRepo(scans),
       projects: scans,
     };
     console.log(JSON.stringify(report, null, 2));
@@ -381,6 +594,12 @@ function main() {
     const repairs = r.steps.healthRepair?.repairsPerformed?.length || 0;
     return sum + repairs;
   }, 0);
+  const totalEnvRemediated = results.reduce((sum, r) => {
+    return sum + (r.steps.envRemediation?.remediated?.length || 0);
+  }, 0);
+  const totalEnvFailed = results.reduce((sum, r) => {
+    return sum + (r.steps.envRemediation?.failed?.length || 0);
+  }, 0);
   const totalMissing = results.reduce((sum, r) => {
     return sum + (r.steps.changelogReconcile?.missingCount || 0);
   }, 0);
@@ -388,21 +607,38 @@ function main() {
   const report = {
     discovery: {
       total: projects.length,
+      repos: [...new Set(projects.map(p => p.repo))].length,
+      fromConductorDb: projects.filter(p => p.source === 'conductor-db').length,
       fromTracker: projects.filter(p => p.source === 'tracker').length,
       fromScan: projects.filter(p => p.source === 'conductor-scan').length,
       withPlanning: projects.filter(p => p.hasPlanning).length,
     },
+    repos: groupByRepo(results),
     results,
     summary: {
       total: results.length,
       ok: okCount,
       partial: partialCount,
       totalRepairs,
+      totalEnvRemediated,
+      totalEnvFailed,
       totalEnvGaps: totalMissing,
     },
   };
 
   console.log(JSON.stringify(report, null, 2));
+}
+
+// ─── Group results by repo ──────────────────────────────────────────────────
+
+function groupByRepo(items) {
+  const groups = {};
+  for (const item of items) {
+    const repo = item.repo || '(standalone)';
+    if (!groups[repo]) groups[repo] = [];
+    groups[repo].push(item);
+  }
+  return groups;
 }
 
 main();
