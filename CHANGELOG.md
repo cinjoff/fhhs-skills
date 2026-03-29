@@ -8,6 +8,11 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.56.0] - 2026-03-29
+
+### Added
+- **Supabase template auto-setup** — `/fh:new-project` auto-detects template scaffolding and defaults to local Supabase without prompting, with SQLite fallback when Docker is unavailable and automatic database seeding post-setup
+
 ## [1.55.0] - 2026-03-29
 
 ### Added
