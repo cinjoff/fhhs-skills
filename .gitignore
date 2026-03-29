@@ -6,3 +6,4 @@ __pycache__/
 *.pyc
 fhhs-skills-workspace/full-run-*/
 .planning/
+.claude/skills/*/CLAUDE.md

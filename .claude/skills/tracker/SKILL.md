@@ -19,10 +19,9 @@ $ARGUMENTS
    ```
 2. Read `~/.claude/tracker/projects.json` if it exists; otherwise treat it as an empty array `[]`.
 3. Get the current working directory (CWD) — this is the project path.
-4. Derive `projectName` from the last path segment of CWD.
-5. Check if CWD matches the Conductor workspace pattern `~/conductor/workspaces/{repo}/{worktree}`:
-   - If it matches, set `conductorWorkspace: true` (and optionally record the `repo` and `worktree` segments).
-   - Otherwise omit the `conductorWorkspace` field.
+4. Derive `projectName`:
+   - If CWD matches the Conductor workspace pattern `~/conductor/workspaces/{repo}/{worktree}`, use `{repo}` as the name and set `conductorWorkspace` to `{repo}`.
+   - Otherwise, use the last path segment of CWD as the name and omit `conductorWorkspace`.
 6. Upsert an entry in the registry array:
    - If an entry with the same `path` already exists, update its `name` and set `lastSeen` to now (ISO string).
    - If no matching entry exists, append `{ path: CWD, name: projectName, addedAt: now }` (plus `conductorWorkspace: true` if applicable).
