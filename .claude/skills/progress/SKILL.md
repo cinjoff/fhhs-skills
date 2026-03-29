@@ -256,16 +256,40 @@ CONTEXT: [checkmark if has_context | - if not]
 
 ### Non-GSD fallback (if gsd_available is false):
 
-```
-No planning structure found.
+If `setup_complete = false`:
 
-Run /fh:new-project to start a new project.
+```
+fhhs-skills is installed but not configured yet.
+
+→ Run `/fh:setup` — one-time setup for tools, LSP, and hooks
+
+This takes ~2 minutes and only needs to run once.
+```
+
+If `setup_complete = true` (no `.planning/` directory):
+
+```
+Setup complete. No project found.
+
+→ Run `/fh:new-project` — set up vision, tech stack, and roadmap
+
+This creates the `.planning/` directory that tracks your project.
 ```
 
 </step>
 
 <step name="route">
 **Determine next action based on state.**
+
+### Setup Detection
+
+Check if fhhs-skills setup has been completed:
+
+```bash
+[ -f "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" ] && echo "SETUP_COMPLETE" || echo "SETUP_NEEDED"
+```
+
+Store as `setup_complete`.
 
 ### Pre-GSD routing (always evaluated first)
 
@@ -274,7 +298,16 @@ Run /fh:new-project to start a new project.
 | User says "improve N" or "improve N, M" | Handle as improvement action (see **Improvement Actions** section above) |
 | Uncommitted changes (uncommitted_count > 0) | "Uncommitted work in {N} files. Review before continuing?" |
 | State corruption detected | "STATE.md is out of sync with actual files. Run `/fh:health --repair` to fix." |
-| No `.planning/PROJECT.md` (gsd_available = false) | "No project found. Run `/fh:new-project` to set up tracking." |
+| `setup_complete = false` | "fhhs-skills is installed but not configured yet.
+
+→ Run `/fh:setup` — one-time setup for tools, LSP, and hooks
+
+This takes ~2 minutes and only needs to run once." |
+| No `.planning/PROJECT.md` AND `setup_complete = true` | "Setup complete. No project found.
+
+→ Run `/fh:new-project` — set up vision, tech stack, and roadmap
+
+This creates the `.planning/` directory that tracks your project." |
 | No clear state (no project, no uncommitted changes) | "No active work detected. What would you like to work on?" |
 
 If uncommitted changes exist, flag them but still continue to GSD routing below (both can be shown).

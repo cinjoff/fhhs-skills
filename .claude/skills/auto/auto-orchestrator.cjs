@@ -39,7 +39,22 @@ const _autoStatus = {
   stepsTotal: 0,
   lastLogLine: '',
   lastLogWriteMs: 0,
+  lastActivityAt: null,
 };
+
+// Rolling structured activity events for tracker visibility
+const _activityEvents = [];
+const ACTIVITY_EVENTS_MAX = 30;
+
+function pushActivityEvent(type, text) {
+  const evt = { type, text, timestamp: new Date().toISOString() };
+  _activityEvents.push(evt);
+  while (_activityEvents.length > ACTIVITY_EVENTS_MAX) _activityEvents.shift();
+}
+
+// Rolling log buffer for tracker visibility
+const _logBuffer = [];
+const LOG_BUFFER_MAX = 20;
 
 // Optimization counters — module-level, included in every writeAutoStatus() call
 const _optimizations = {
@@ -118,6 +133,7 @@ function buildAutoStatus(_projectDir, overrides) {
     step_history: _autoStatus.stepHistory,
     errors: _autoStatus.errors,
     last_log_line: _autoStatus.lastLogLine,
+    log_buffer: [..._logBuffer],
     optimizations: Object.assign({}, _optimizations),
     // Parallel execution fields (sequential fallback values)
     project_dir: _autoStatus.projectDir,
@@ -127,6 +143,8 @@ function buildAutoStatus(_projectDir, overrides) {
     phase_states,
     dep_graph: {},
     build_order: [],
+    last_activity_at: _autoStatus.lastActivityAt,
+    activity_events: [..._activityEvents],
   }, overrides);
 }
 
@@ -135,7 +153,15 @@ function buildAutoStatus(_projectDir, overrides) {
 const SOFT_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
 const HARD_TIMEOUT_MS = 45 * 60 * 1000; // 45 minutes
 const STUCK_SILENCE_MS = 3 * 60 * 1000; // 3 min no output → warn
-const STUCK_KILL_MS = 8 * 60 * 1000;    // 8 min no output → kill (stuck session)
+const STUCK_KILL_MS = 8 * 60 * 1000;    // 8 min no output → kill (stuck session, default)
+
+// Per-step stuck-kill thresholds: build agents go silent during long tool calls
+const STUCK_KILL_BY_STEP = {
+  'plan-work': 8 * 60 * 1000,
+  'plan-review': 8 * 60 * 1000,
+  'build': 15 * 60 * 1000,     // builds can go silent during compilation/testing
+  'review': 8 * 60 * 1000,
+};
 const MAX_RETRIES = 2;
 const API_HEALTH_TIMEOUT_MS = 15000;     // 15s for health check
 const API_BACKOFF_BASE_MS = 10000;       // 10s initial backoff on API failure
@@ -222,16 +248,21 @@ function timestamp() {
 function log(msg) {
   process.stdout.write(`[${timestamp()}] ${msg}\n`);
   _autoStatus.lastLogLine = msg;
+  // Push to rolling log buffer
+  _logBuffer.push({ ts: timestamp(), msg });
+  while (_logBuffer.length > LOG_BUFFER_MAX) _logBuffer.shift();
   // Debounced last_log_line update: max once per 2 seconds, routed through _stateWriteQueue
   const now = Date.now();
   if (_autoStatus.projectDir && (now - _autoStatus.lastLogWriteMs) >= 2000) {
     _autoStatus.lastLogWriteMs = now;
+    const bufferSnapshot = [..._logBuffer];
     _stateWriteQueue = _stateWriteQueue.then(() => {
       try {
         const p = path.join(_autoStatus.projectDir, '.planning', '.auto-state.json');
         if (fs.existsSync(p)) {
           const existing = JSON.parse(fs.readFileSync(p, 'utf-8'));
           existing.last_log_line = msg;
+          existing.log_buffer = bufferSnapshot;
           const tmp = p + '.tmp';
           fs.writeFileSync(tmp, JSON.stringify(existing, null, 2), 'utf-8');
           fs.renameSync(tmp, p);
@@ -650,21 +681,46 @@ function runClaudeSession(prompt, opts) {
     let stuckWarned = false;
 
     child.stdout.on('data', (data) => {
-      stdout += data.toString();
+      const chunk = data.toString();
+      stdout += chunk;
       lastActivityAt = Date.now();
+      _autoStatus.lastActivityAt = new Date().toISOString();
       stuckWarned = false; // reset warning on new output
+      // Feed last non-empty line into rolling log buffer for tracker visibility
+      const lines = chunk.split('\n').filter(l => l.trim());
+      if (lines.length > 0) {
+        const lastLine = lines[lines.length - 1].slice(0, 120);
+        const prefixed = `[session] ${lastLine}`;
+        _logBuffer.push({ ts: timestamp(), msg: prefixed });
+        while (_logBuffer.length > LOG_BUFFER_MAX) _logBuffer.shift();
+        _autoStatus.lastLogLine = prefixed;
+      }
     });
     child.stderr.on('data', (data) => {
       stderr += data.toString();
       lastActivityAt = Date.now();
+      _autoStatus.lastActivityAt = new Date().toISOString();
     });
 
     // Activity monitor: detect sessions that go silent (API stall, infinite loop)
+    // Use per-step threshold if available, fall back to default
+    const stepKillMs = (opts.stepName && STUCK_KILL_BY_STEP[opts.stepName]) || STUCK_KILL_MS;
     const activityCheck = setInterval(() => {
       const silenceMs = Date.now() - lastActivityAt;
       const elapsedMin = Math.round((Date.now() - sessionStart) / 60000);
 
-      if (silenceMs >= STUCK_KILL_MS) {
+      // Check for kill sentinel file
+      if (opts.cwd) {
+        const killFile = path.join(opts.cwd, '.planning', '.auto-kill');
+        if (fs.existsSync(killFile)) {
+          log('  Kill requested via .auto-kill sentinel — stopping gracefully');
+          try { fs.unlinkSync(killFile); } catch {}
+          child.kill('SIGTERM');
+          return;
+        }
+      }
+
+      if (silenceMs >= stepKillMs) {
         log(`  ✗ STUCK: no output for ${Math.round(silenceMs / 60000)}min — killing session (elapsed: ${elapsedMin}min)`);
         child.kill('SIGTERM');
         setTimeout(() => {
@@ -672,7 +728,7 @@ function runClaudeSession(prompt, opts) {
         }, 5000);
       } else if (silenceMs >= STUCK_SILENCE_MS && !stuckWarned) {
         stuckWarned = true;
-        log(`  ⚠ SILENT: no output for ${Math.round(silenceMs / 60000)}min (will kill at ${STUCK_KILL_MS / 60000}min silence)`);
+        log(`  ⚠ SILENT: no output for ${Math.round(silenceMs / 60000)}min (will kill at ${Math.round(stepKillMs / 60000)}min silence)`);
       }
     }, 30000); // check every 30s
 
@@ -710,12 +766,12 @@ function runClaudeSession(prompt, opts) {
       const silenceMs = Date.now() - lastActivityAt;
 
       if (signal === 'SIGTERM' || signal === 'SIGKILL') {
-        const reason = silenceMs >= STUCK_KILL_MS
+        const reason = silenceMs >= stepKillMs
           ? `stuck (no output for ${Math.round(silenceMs / 60000)}min)`
           : `hard timeout (${Math.round(elapsedMs / 60000)}min)`;
         const err = new Error(`Session killed: ${reason}`);
         err.timeout = true;
-        err.stuck = silenceMs >= STUCK_KILL_MS;
+        err.stuck = silenceMs >= stepKillMs;
         err.elapsedMs = elapsedMs;
         err.stdout = stdout;
         reject(err);
@@ -794,7 +850,7 @@ async function executeStep(projectDir, phaseId, step, planPath) {
         `Use /fh:plan-work to create the plan. Auto-decide all gray areas using best judgment. ` +
         `Write the plan to .planning/phases/ directory. Do not ask questions — make decisions autonomously.` +
         researchHint,
-        { cwd: projectDir, sessionId }
+        { cwd: projectDir, sessionId, stepName: 'plan-work' }
       );
     }
 
@@ -808,7 +864,7 @@ async function executeStep(projectDir, phaseId, step, planPath) {
         `You are in auto mode. Review the plan at ${relPlan} using /fh:plan-review with --mode hold. ` +
         `Phase goal: "${phaseGoal}". Apply feedback directly to the plan. Do not ask questions.` +
         ` Check plan alignment with research findings if .planning/research/ or phase RESEARCH.md exists.`,
-        { cwd: projectDir, sessionId }
+        { cwd: projectDir, sessionId, stepName: 'plan-review' }
       );
     }
 
@@ -821,7 +877,7 @@ async function executeStep(projectDir, phaseId, step, planPath) {
       return await runClaudeSession(
         `You are in auto mode. Execute the plan at ${relPlan} using /fh:build. ` +
         `Phase goal: "${phaseGoal}". Build all tasks, run tests, commit changes. Do not ask questions.`,
-        { cwd: projectDir, sessionId }
+        { cwd: projectDir, sessionId, stepName: 'build' }
       );
     }
 
@@ -829,7 +885,7 @@ async function executeStep(projectDir, phaseId, step, planPath) {
       return await runClaudeSession(
         `You are in auto mode. Run /fh:review --quick on the recent changes. ` +
         `Phase goal: "${phaseGoal}". Fix any issues found. Do not ask questions.`,
-        { cwd: projectDir, sessionId }
+        { cwd: projectDir, sessionId, stepName: 'review' }
       );
 
     default:
@@ -1744,8 +1800,26 @@ async function main() {
       continue;
     }
 
+    // Check for kill sentinel between phases
+    const killFile = path.join(projectDir, '.planning', '.auto-kill');
+    if (fs.existsSync(killFile)) {
+      log('Kill requested via .auto-kill sentinel — stopping between phases');
+      try { fs.unlinkSync(killFile); } catch {}
+      pushActivityEvent('auto', 'Auto-execution killed by user');
+      writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
+        active: false,
+        phase: phase.id,
+        phase_name: phase.name,
+        total_cost_estimate: totalCostEstimate,
+        budget: opts.budget || null,
+        last_log_line: 'Killed by user via .auto-kill sentinel',
+      }));
+      break;
+    }
+
     log(`═══ Phase ${phase.id}: ${phase.name} ═══`);
     _autoStatus.phaseStartedAt = new Date().toISOString();
+    pushActivityEvent('auto', `Phase ${phase.id}: ${phase.name} started`);
 
     // Determine which steps to run for this phase
     let stepsToRun = [...PHASE_STEPS];
@@ -1806,6 +1880,7 @@ async function main() {
       }));
 
       log(`  ▸ ${step}`);
+      pushActivityEvent('auto', `${step} started for Phase ${phase.id}`);
 
       const outcome = await runStepWithRetry(phase, step, currentPlanPath);
 
@@ -1919,7 +1994,14 @@ async function main() {
       }
 
       if (stepSucceeded) {
+        const stepType = step === 'plan-work' ? 'plan' : step === 'plan-review' ? 'review' : step;
+        const elapsed = _autoStatus.stepStartedAt
+          ? Math.round((Date.now() - new Date(_autoStatus.stepStartedAt).getTime()) / 1000) + 's'
+          : '';
+        pushActivityEvent(stepType, `${step} completed for Phase ${phase.id}${elapsed ? ` (${elapsed})` : ''}`);
         log(`  ✓ ${step} complete`);
+      } else if (outcome.skipped) {
+        pushActivityEvent('error', `${step} failed for Phase ${phase.id}: ${outcome.reason || 'unknown'}`);
       }
     }
 
@@ -1954,6 +2036,7 @@ async function main() {
       break; // exit phases loop — don't continue to next phase
     }
 
+    pushActivityEvent('auto', `Phase ${phase.id}: ${phase.name} completed`);
     updateStateViaGsd(projectDir, phase.id);
     _autoStatus.phasesCompleted++;
     writeAutoStatus(projectDir, buildAutoStatus(projectDir, {

@@ -109,13 +109,38 @@ function autoRegisterProject(projectPath) {
   }
 }
 
-// Read .auto-state.json from a planning directory (atomic-write safe)
+// Read .auto-state.json from a planning directory (atomic-write safe).
+// If the state contains a project_dir pointing elsewhere (worktree), also check
+// that location and use whichever has a newer started_at timestamp.
 function readAutoState(planningDir) {
+  let localState = null;
   try {
     const p = path.join(planningDir, '.auto-state.json');
-    if (fs.existsSync(p)) return JSON.parse(fs.readFileSync(p, 'utf8'));
+    if (fs.existsSync(p)) localState = JSON.parse(fs.readFileSync(p, 'utf8'));
   } catch { /* half-written or invalid JSON — ignore */ }
-  return null;
+
+  if (!localState) return null;
+
+  // Check if auto-state references a different project_dir (worktree scenario)
+  try {
+    const projectDir = localState.project_dir;
+    const localParent = path.dirname(planningDir);
+    if (projectDir && projectDir !== localParent) {
+      const worktreePlanningDir = path.join(projectDir, '.planning');
+      const worktreePath = path.join(worktreePlanningDir, '.auto-state.json');
+      if (fs.existsSync(worktreePath)) {
+        const worktreeState = JSON.parse(fs.readFileSync(worktreePath, 'utf8'));
+        // Use whichever has a newer started_at timestamp
+        const localTime = localState.started_at ? new Date(localState.started_at).getTime() : 0;
+        const worktreeTime = worktreeState.started_at ? new Date(worktreeState.started_at).getTime() : 0;
+        if (worktreeTime > localTime) {
+          return worktreeState;
+        }
+      }
+    }
+  } catch { /* worktree path missing or invalid — use local state */ }
+
+  return localState;
 }
 
 // Build a lightweight summary for the sidebar from a registry entry.
@@ -146,8 +171,31 @@ function buildProjectSummary(entry) {
     const phases = phaseResult.phases || [];
 
     const totalPhases = phases.length;
-    const completedPhases = phases.filter(p => p.status === 'complete').length;
-    const hasActive = phases.some(p => p.status === 'active');
+    let completedPhases = phases.filter(p => p.status === 'complete').length;
+    let hasActive = phases.some(p => p.status === 'active');
+
+    // Cross-reference autoState with parsed phase data
+    if (autoState) {
+      // Warn on mismatch between auto-state and ROADMAP parsing
+      if (autoState.phases_completed > 0 && completedPhases === 0) {
+        console.warn(`  Warning: auto-state reports ${autoState.phases_completed} phases completed but ROADMAP parsing found 0 — possible parsing mismatch`);
+      }
+
+      // Merge active phase info from auto-state phase_states
+      if (autoState.phase_states && typeof autoState.phase_states === 'object') {
+        for (const [phaseKey, phaseStatus] of Object.entries(autoState.phase_states)) {
+          if (phaseStatus === 'building' || phaseStatus === 'planning' || phaseStatus === 'reviewing') {
+            // Find matching phase by number (phaseKey may be "1", "2", etc.)
+            const phaseNum = parseInt(phaseKey, 10);
+            const matchedPhase = phases.find(p => p.number === phaseNum);
+            if (matchedPhase && matchedPhase.status !== 'complete') {
+              matchedPhase.status = 'active';
+              hasActive = true;
+            }
+          }
+        }
+      }
+    }
 
     let status = 'pending';
     if (completedPhases === totalPhases && totalPhases > 0) status = 'complete';
@@ -728,6 +776,17 @@ function setupProjectWatcher(projectPath) {
       }, DEBOUNCE_MS);
     });
     projectWatchers.set(projectPath, { watcher, debounceTimer });
+
+    // Also watch worktree .planning/ dirs if autoState references a different project_dir
+    try {
+      const autoState = readAutoState(planDir);
+      if (autoState && autoState.project_dir && autoState.project_dir !== projectPath) {
+        const worktreePath = autoState.project_dir;
+        if (fs.existsSync(path.join(worktreePath, '.planning')) && !projectWatchers.has(worktreePath)) {
+          setupProjectWatcher(worktreePath);
+        }
+      }
+    } catch { /* worktree no longer exists — ignore */ }
   } catch (err) {
     console.error(`  Warning: Could not watch ${planDir}: ${err.message}`);
   }

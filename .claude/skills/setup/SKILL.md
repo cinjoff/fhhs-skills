@@ -1,6 +1,6 @@
 ---
 name: fh:setup
-description: Welcome to fhhs-skills. Run once after installing this plugin for an overview. Use when the user says 'setup', 'get started', or 'what is this plugin'.
+description: Welcome to fhhs-skills. Run once after installing for an overview. Use --check to verify setup status.
 user-invocable: true
 disable-model-invocation: true
 ---
@@ -8,6 +8,48 @@ disable-model-invocation: true
 $ARGUMENTS
 
 Use the UI patterns from `references/gsd/ui-brand.md` for all output in this command, but use `FHHS ►` prefix in stage banners instead of `GSD ►`.
+
+## Quick Check Mode
+
+If the user passes `--check` (or says "check setup", "verify setup", "is setup ok"):
+
+Run all detection commands from Steps 2-10 but DO NOT install anything. Present results
+as a single status table:
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ FHHS ► SETUP STATUS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+| Component                  | Status                        |
+|----------------------------|-------------------------------|
+| Platform                   | {platform}                    |
+| Node.js                    | ✓ {version} / ✗ missing       |
+| TypeScript LSP             | ✓ {version} / ✗ missing       |
+| LSP Plugin                 | ✓ installed / ✗ not installed |
+| LSP Enabled                | ✓ / ✗ CLAUDE_CODE_ENABLE_LSP not set |
+| CLI Tools                  | ✓ linked / ✗ not linked       |
+| Hooks                      | ✓ configured / ✗ not configured |
+| claude-mem                 | ✓ installed / ○ not installed |
+| context-mode               | ✓ installed / ○ not installed |
+| Fallow                     | ✓ installed / ○ not installed |
+| Serena MCP                 | ✓ configured / ○ not installed |
+| shadcn skills              | ✓ installed / ○ not installed |
+```
+
+If any required component (Node, LSP, CLI tools, hooks) is missing:
+```
+⚠ {N} required components need setup.
+
+→ Run /fh:setup — full setup with installation
+```
+
+If everything is configured:
+```
+✓ All components configured. Ready to use.
+```
+
+Then STOP — do not proceed to Step 1.
 
 ---
 
@@ -797,7 +839,54 @@ If the install fails, show a warning but don't block setup:
 
 ---
 
-## Step 9: Conductor Configuration
+## Step 9: Serena (Enhanced Code Navigation) — Optional
+
+```
+◆ Step 9/N: Serena MCP Server
+```
+
+[Serena](https://github.com/oraios/serena) provides symbol-level code navigation and editing via MCP — name-based symbol lookup, cross-codebase rename, and reference tracing across 40+ languages. Used by `/fh:fix`, `/fh:refactor`, and `/fh:extract` when connected.
+
+**Requires:** Python 3.11+ and `uv` (Python package manager).
+
+### Check prerequisites
+
+```bash
+command -v uv >/dev/null 2>&1 && echo "UV_INSTALLED" || echo "UV_NOT_INSTALLED"
+command -v python3 >/dev/null 2>&1 && python3 --version || echo "PYTHON_NOT_FOUND"
+```
+
+### If prerequisites met
+
+```
+◆ Adding Serena MCP server...
+```
+
+```bash
+claude mcp add serena -- uvx --from git+https://github.com/oraios/serena serena start-mcp-server --context ide-assistant --project-from-cwd
+```
+
+Verify:
+```bash
+claude mcp list 2>/dev/null | grep -i serena && echo "✓ Serena MCP configured" || echo "⚠ Serena MCP not found"
+```
+
+### If prerequisites NOT met
+
+```
+○ Skipping Serena — requires Python 3.11+ and uv.
+  Install uv: curl -LsSf https://astral.sh/uv/install.sh | sh
+  Then re-run /fh:setup to add Serena.
+
+  Without Serena, skills use built-in LSP tools (works well for TypeScript/JavaScript).
+  Serena adds: symbol-level editing, cross-codebase rename, 40+ language support.
+```
+
+**Note:** If Serena is connected, its symbol tools overlap with Claude Code's built-in LSP. Both work side-by-side, but Serena's tools are generally more capable (name-based lookup, rename refactoring). Skills prefer Serena when available and fall back to built-in LSP.
+
+---
+
+## Step 10: Conductor Configuration
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -823,7 +912,7 @@ If `NOT_INSTALLED`:
   Download from https://conductor.build if interested.
 ```
 
-Skip to Step 10.
+Skip to Step 11.
 
 ### 9b: Conductor awareness
 
@@ -871,7 +960,7 @@ If installed, display:
 
 ---
 
-## Step 10: Summary
+## Step 11: Summary
 
 Display the summary banner as **direct text output** (not via Bash — Bash output gets collapsed by Claude Code and users won't see it). Output this exactly:
 
@@ -914,6 +1003,7 @@ Then present the status table and next steps as regular markdown text:
 | claude-mem                 | ✓ installed / ○ skipped (optional)       |
 | context-mode               | ✓ installed / ○ skipped (optional)       |
 | Fallow                     | ✓ installed / ⚠ manual install needed    |
+| Serena MCP                 | ✓ configured / ○ skipped (optional)      |
 | shadcn skills              | ✓ installed / ⚠ manual install needed    |
 | Conductor                  | ✓ detected / ○ not installed (optional) |
 

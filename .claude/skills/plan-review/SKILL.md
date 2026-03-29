@@ -10,6 +10,8 @@ allowed-tools:
   - mcp__conductor__AskUserQuestion
 ---
 
+> **Dependency check:** Verify `.planning/PROJECT.md` exists (required — if missing, tell user: "No project found.\n\n→ Run `/fh:new-project` — set up project tracking before reviewing plans"). If no plan exists in the current phase, tell user: "No plan to review.\n\n→ Run `/fh:plan-work` — create a plan first".
+
 > Forked from gstack plan-ceo-review (v0.3.3)
 
 # Plan Review

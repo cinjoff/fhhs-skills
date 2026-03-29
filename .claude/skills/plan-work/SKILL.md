@@ -14,7 +14,11 @@ You are a **lean orchestrator**. Your job is to coordinate, not to do heavy work
 > Check if `.planning/PROJECT.md` exists.
 > - **If YES → proceed.** Read STATE.md for current phase/plan. Read ROADMAP.md for phase goals. Read phase-specific CONTEXT.md for locked decisions.
 >   - **If ROADMAP.md is missing:** "Project exists but has no roadmap. Run `/fh:new-project` to regenerate, or proceed without phase tracking?" If proceeding without, skip Step 0 and treat as a standalone plan.
-> - **If NO → stop.** Tell the user: "No project found. Run `/fh:new-project` first to set up project tracking." Do not proceed.
+> - **If NO → stop.** Tell the user: "No project found.
+
+→ Run /fh:new-project — set up project tracking
+
+This creates the .planning/ directory that all planning and build skills depend on." Do not proceed.
 
 ---
 

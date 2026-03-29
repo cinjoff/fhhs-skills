@@ -80,6 +80,27 @@ mkdir -p .planning/codebase
 
 **Expected output:** A single `CODEBASE.md` (~150-200 lines) covering structure, conventions, and architecture.
 
+Continue to static_analysis.
+</step>
+
+<step name="static_analysis">
+Gather deterministic codebase metrics from Fallow if installed.
+
+```bash
+if command -v fallow &>/dev/null; then
+  FALLOW_CHECK=$(timeout 30 fallow check --format json --quiet 2>/dev/null) || FALLOW_CHECK=""
+  FALLOW_DUPES=$(timeout 30 fallow dupes --format json --quiet 2>/dev/null) || FALLOW_DUPES=""
+  FALLOW_HEALTH=$(timeout 30 fallow health --format json --quiet 2>/dev/null) || FALLOW_HEALTH=""
+fi
+```
+
+**Post-filter:**
+- From `FALLOW_CHECK`: extract summary counts (unused files, unused exports, circular deps) — not full file lists
+- From `FALLOW_DUPES`: extract duplication clusters (file pairs + similarity %) — top 10 by size
+- From `FALLOW_HEALTH`: extract top-10 complexity hotspots (file path + cyclomatic score)
+- **Hard cap:** Each output section ≤50 lines after filtering
+- If all empty or fallow not installed: skip injection silently
+
 Continue to spawn_agent.
 </step>
 
@@ -104,6 +125,25 @@ Capture three things:
 3. Architecture — how layers connect (pattern overview, dependencies, data flow)
 
 Stay focused: ~150-200 lines. No stack versions, no integrations, no tech debt — those can be discovered on-demand from source files.
+
+If the following Static Analysis Data section is present, use those metrics in Architecture and Concerns sections. If absent, proceed without it.
+
+## Static Analysis Data (deterministic — trust these numbers)
+
+### Dead Code Summary
+[FALLOW_CHECK summary: N unused files, M unused exports, K circular dependency chains]
+
+### Duplication Clusters (top 10)
+[FALLOW_DUPES: file pairs with similarity percentages]
+
+### Complexity Hotspots (top 10)
+[FALLOW_HEALTH top-10 by cyclomatic complexity]
+
+Use these metrics in the Architecture and Concerns sections:
+- Circular deps → document as architectural concerns
+- Complexity hotspots → note which modules are fragile
+- Duplication clusters → document as maintenance burden in Concerns
+- Dead code count → include as a health metric
 
 Write the document directly. Return confirmation only."
 )

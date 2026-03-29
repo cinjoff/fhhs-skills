@@ -10,11 +10,26 @@ export function ProjectDetail({ project, phases, autoState, concerns, decisions,
   if (!project) return null;
 
   const { done, total, pct } = aggregateCompletion(phases || []);
-  const currentPhase = (phases || []).findIndex(p => {
-    const s = (p.status || '').toLowerCase();
-    return s === 'active' || s === 'in_progress';
-  });
-  const currentPhaseNum = currentPhase >= 0 ? currentPhase + 1 : done;
+  const allDone = total > 0 && done === total;
+  let currentPhaseNum;
+  if (allDone) {
+    currentPhaseNum = null; // signals "Complete"
+  } else {
+    const activeIdx = (phases || []).findIndex(p => {
+      const s = (p.status || '').toLowerCase();
+      return s === 'active' || s === 'in_progress';
+    });
+    if (activeIdx >= 0) {
+      currentPhaseNum = activeIdx + 1;
+    } else {
+      // No active phase — show first non-done phase
+      const firstPendingIdx = (phases || []).findIndex(p => {
+        const s = (p.status || '').toLowerCase();
+        return s !== 'done' && s !== 'complete' && s !== 'completed' && s !== 'deferred';
+      });
+      currentPhaseNum = firstPendingIdx >= 0 ? firstPendingIdx + 1 : done;
+    }
+  }
 
   const sectionDelay = (index) => ({
     opacity: 0,
@@ -75,11 +90,11 @@ export function ProjectDetail({ project, phases, autoState, concerns, decisions,
           style: {
             fontSize: '1rem',
             fontFamily: 'var(--font-family-mono)',
-            color: 'var(--color-text-secondary)',
+            color: allDone ? 'var(--color-status-done)' : 'var(--color-text-secondary)',
             whiteSpace: 'nowrap',
             flexShrink: 0,
           },
-        }, `Phase ${currentPhaseNum} of ${total}`),
+        }, allDone ? 'Complete' : `Phase ${currentPhaseNum} of ${total}`),
       ),
 
       // Last activity
