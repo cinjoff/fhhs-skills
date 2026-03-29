@@ -8,6 +8,40 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.53.0] - 2026-03-29
+
+### Changed
+- **Global update active-only filtering** — `/fh:update --global` now queries Conductor's SQLite DB for active workspaces only (state='ready'), excluding archived ones instead of scanning the entire filesystem
+- **Global update repo grouping** — worktrees are grouped by GitHub repo in the display and report, treating the repo as the project with worktrees as instances
+- **Global update auto-remediation** — env gaps (missing tools, env vars, hooks, dirs) are now auto-fixed during global reconcile instead of just detected; no longer tells users to run `/fh:update` individually
+- **Global reconcile security** — all subprocess calls converted from `execSync` to `execFileSync` to prevent shell injection
+
+## [1.52.2] - 2026-03-29
+
+### Fixed
+- **Global update on already-current plugin** — `--global` flag was silently ignored when the plugin version already matched latest (Step 5½ exited before reaching Step 6), now correctly proceeds to global reconciliation
+- **Conductor CHECKPOINT reminder** — update failure message now reminds users to re-add `--global` when re-running after manual CLI update
+
+### Added
+- **Global update evals** — 3 new evals covering `--global` flag behavior including the already-up-to-date edge case
+
+## [1.52.1] - 2026-03-28
+
+### Fixed
+- **Native module rebuild in new-project** — adds `prebuild-install` step for better-sqlite3 in Conductor worktrees where pnpm postinstall scripts may not trigger [project:file:.node-version]
+- **Node version pinning** — new projects get a `.node-version` file so shell, Conductor, and CI all use the same Node major version
+
+## [1.52.0] - 2026-03-28
+
+### Added
+- **Auto quick sanity check** — validates planning artifacts even when workshop is skipped, warns on gaps without blocking execution
+- **Auto failure diagnostics** — classifies orchestrator failures (API error, logic error, stuck session) and provides actionable recovery guidance
+- **Fix pattern search** — searches codebase for similar vulnerable patterns after verifying a fix to prevent recurrence
+
+### Changed
+- **Auto final reporting** — clearer summary format with explicit next actions for the user
+- **Eval coverage** — expanded test suite from 10-cycle auto-improve run with updated baselines
+
 ## [1.51.0] - 2026-03-28
 
 ### Added

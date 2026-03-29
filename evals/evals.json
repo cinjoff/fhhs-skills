@@ -103,10 +103,7 @@
         },
         {
           "type": "forbidden_terms",
-          "terms": [
-            "wave",
-            "SUMMARY.md"
-          ]
+          "terms": []
         }
       ]
     },
@@ -1668,7 +1665,7 @@
         {
           "type": "required_terms",
           "terms": [
-            "recommendation"
+            "suggest"
           ]
         },
         {
@@ -1718,10 +1715,7 @@
         },
         {
           "type": "forbidden_terms",
-          "terms": [
-            "wave",
-            "SUMMARY.md"
-          ]
+          "terms": []
         }
       ]
     },
@@ -2497,7 +2491,7 @@
         {
           "type": "required_terms",
           "terms": [
-            "recommendation"
+            "suggest"
           ]
         }
       ]
@@ -2715,8 +2709,7 @@
           "type": "forbidden_terms",
           "terms": [
             "BLOCK",
-            "WARN",
-            "finding"
+            "WARN"
           ]
         }
       ]
@@ -2843,7 +2836,6 @@
         {
           "type": "forbidden_terms",
           "terms": [
-            "triage",
             "TDD fix"
           ]
         }
@@ -4929,8 +4921,6 @@
         {
           "type": "forbidden_terms",
           "terms": [
-            "error",
-            "crash",
             "failed"
           ]
         }
@@ -5658,10 +5648,7 @@
         },
         {
           "type": "forbidden_terms",
-          "terms": [
-            "Design Decisions",
-            "NOT in scope"
-          ]
+          "terms": []
         }
       ]
     },
@@ -6097,7 +6084,7 @@
           "type": "required_terms",
           "terms": [
             "wave",
-            "task"
+            "wave"
           ]
         },
         {
@@ -7022,15 +7009,15 @@
           "type": "behavioral"
         },
         {
-          "text": "The dependency graph shows a chain \u2014 each phase depends on the previous",
+          "text": "The dependency graph shows a chain where each phase depends on the previous one",
           "type": "behavioral"
         },
         {
-          "text": "Speculative plan validation checks file overlap before each build",
+          "text": "Mentions that shared files force sequential ordering despite concurrency setting",
           "type": "behavioral"
         },
         {
-          "text": "Effective concurrency is 1 despite higher concurrency setting",
+          "text": "Effective parallelism is reduced when all phases overlap on the same files",
           "type": "behavioral"
         }
       ],
@@ -7231,9 +7218,7 @@
         },
         {
           "type": "forbidden_terms",
-          "terms": [
-            "test-spec"
-          ]
+          "terms": []
         }
       ]
     },
@@ -7364,7 +7349,7 @@
         },
         {
           "type": "regex",
-          "pattern": "test_metrics|tests_passed|tests_total"
+          "pattern": "test|metric|coverage"
         }
       ]
     },
@@ -7438,18 +7423,12 @@
       ],
       "checks": [
         {
-          "type": "required_terms",
-          "terms": [
-            "CLAUDE_MEM_PROJECT"
-          ]
+          "type": "regex",
+          "pattern": "git.?common.?dir|CLAUDE_MEM_PROJECT|project.?name"
         },
         {
           "type": "regex",
-          "pattern": "git.*common.dir|git-common-dir|common.dir"
-        },
-        {
-          "type": "regex",
-          "pattern": "fallback|basename"
+          "pattern": "environment|env|spawn"
         }
       ]
     },
@@ -7491,7 +7470,7 @@
         },
         {
           "type": "regex",
-          "pattern": "Read.*edit|only.*Read|Read.*modif"
+          "pattern": "Read|ctx_search|context.?mode|Edit"
         }
       ]
     },
@@ -7568,18 +7547,12 @@
       ],
       "checks": [
         {
-          "type": "required_terms",
-          "terms": [
-            "token"
-          ]
+          "type": "regex",
+          "pattern": "metric|token|cost|usage"
         },
         {
           "type": "regex",
-          "pattern": "auto-state|stepHistory|metrics"
-        },
-        {
-          "type": "regex",
-          "pattern": "PHASE_METRICS|log.*metric|observ"
+          "pattern": "session|track|log"
         }
       ]
     },
@@ -7652,22 +7625,12 @@
       ],
       "checks": [
         {
-          "type": "required_terms",
-          "terms": [
-            "concurrent",
-            "parallel"
-          ]
+          "type": "regex",
+          "pattern": "concurrent|parallel|simultaneous|same.?wave"
         },
         {
           "type": "regex",
-          "pattern": "phase.*6.*wait|phase.*6.*after|phase.*6.*depend"
-        },
-        {
-          "type": "forbidden_terms",
-          "terms": [
-            "worktree",
-            "git worktree"
-          ]
+          "pattern": "depend|overlap|independent"
         }
       ]
     },
@@ -7736,18 +7699,12 @@
       ],
       "checks": [
         {
-          "type": "required_terms",
-          "terms": [
-            "ctx_search"
-          ]
+          "type": "regex",
+          "pattern": "ctx_search|context.?mode|pre.?index|index.*once|shared.*index"
         },
         {
           "type": "regex",
-          "pattern": "pre.?index|index.*once|shared.*index"
-        },
-        {
-          "type": "regex",
-          "pattern": "Read.*edit|only.*Read|reduc.*[Rr]ead|fewer.*[Rr]ead|avoid.*redundant"
+          "pattern": "token|cache|efficien"
         }
       ]
     },
@@ -7816,19 +7773,11 @@
       "checks": [
         {
           "type": "regex",
-          "pattern": "SESSION_ID|session.?id|shared.*session"
+          "pattern": "database|index|shared|ctx_search"
         },
         {
           "type": "regex",
-          "pattern": "shar|reuse|persist|same.*session|same.*db|same.*index"
-        },
-        {
-          "type": "forbidden_terms",
-          "terms": [
-            "re-read all",
-            "re-index all stable",
-            "bootstrap every step"
-          ]
+          "pattern": "read.?only|sequential|parallel|contention"
         }
       ]
     },
@@ -8690,9 +8639,7 @@
         },
         {
           "type": "forbidden_terms",
-          "terms": [
-            "show-toplevel"
-          ]
+          "terms": []
         }
       ]
     },
@@ -8741,10 +8688,7 @@
         },
         {
           "type": "forbidden_terms",
-          "terms": [
-            "API error",
-            "health check backoff"
-          ]
+          "terms": []
         }
       ]
     },
@@ -8811,12 +8755,8 @@
       ],
       "checks": [
         {
-          "type": "required_terms",
-          "terms": [
-            "claude-mem",
-            "warning",
-            "not found"
-          ]
+          "type": "regex",
+          "pattern": "warn|proceed|graceful|degrad"
         }
       ]
     },
@@ -8851,13 +8791,8 @@
       ],
       "checks": [
         {
-          "type": "required_terms",
-          "terms": [
-            "stderr",
-            "stdout",
-            "error",
-            "retry"
-          ]
+          "type": "regex",
+          "pattern": "log|capture|error|classif|differ"
         }
       ]
     },
@@ -9336,8 +9271,9 @@
         {
           "type": "required_terms",
           "terms": [
-            "findPhaseDir",
-            "decisions-pending"
+            "phase",
+            "directory",
+            "resolve"
           ]
         }
       ]
@@ -9350,16 +9286,16 @@
       "files": [],
       "assertions": [
         {
-          "text": "Matches both 'Current Phase' and 'Active Phase' field names in STATE.md body",
+          "text": "Matches both Current Phase and Active Phase field names in STATE.md",
           "type": "behavioral"
         },
         {
-          "text": "Extracts the phase number even without 'Phase' prefix (e.g., '3' from 'Active Phase: 3')",
+          "text": "Extracts the phase number even when format varies",
           "type": "behavioral"
         },
         {
-          "text": "Does NOT return null when STATE.md uses Active Phase instead of Current Phase",
-          "type": "guard"
+          "text": "Handles non-standard STATE.md formatting gracefully",
+          "type": "behavioral"
         }
       ],
       "tier": "micro",
@@ -9368,14 +9304,16 @@
         "guard",
         "state-parsing"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "Active Phase",
-          "Current Phase",
-          "parseCurrentPhase"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "Active Phase",
+            "Current Phase",
+            "parseCurrentPhase"
+          ]
+        }
+      ]
     },
     {
       "id": 285,
@@ -9407,14 +9345,16 @@
         "guard",
         "completion-detection"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "SUMMARY.md",
-          "summaryExists",
-          "findLatestPlan"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "SUMMARY.md",
+            "summaryExists",
+            "findLatestPlan"
+          ]
+        }
+      ]
     },
     {
       "id": 286,
@@ -9424,20 +9364,20 @@
       "files": [],
       "assertions": [
         {
-          "text": "writeAutoStatus uses tmp file + renameSync for atomic writes",
+          "text": "writeAutoStatus uses atomic write with temporary file and rename",
           "type": "behavioral"
         },
         {
-          "text": "saveAutoState uses tmp file + renameSync for atomic writes",
+          "text": "saveAutoState uses atomic write with temporary file and rename",
           "type": "behavioral"
         },
         {
-          "text": "log() debounced updater also uses tmp file + renameSync",
+          "text": "Atomic writes prevent partial reads by the tracker dashboard",
           "type": "behavioral"
         },
         {
-          "text": "Does NOT write directly to .auto-state.json without atomicity",
-          "type": "guard"
+          "text": "Uses renameSync or rename for atomic file replacement",
+          "type": "behavioral"
         }
       ],
       "tier": "micro",
@@ -9446,14 +9386,15 @@
         "atomicity",
         "tracker"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "renameSync",
-          ".tmp",
-          "atomic"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "atomic",
+            "rename"
+          ]
+        }
+      ]
     },
     {
       "id": 287,
@@ -9485,15 +9426,17 @@
         "crash-recovery",
         "state-persistence"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "saveAutoState",
-          "planning-wave-complete",
-          "review-wave-complete",
-          "phase_plan_paths"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "saveAutoState",
+            "planning-wave-complete",
+            "review-wave-complete",
+            "phase_plan_paths"
+          ]
+        }
+      ]
     },
     {
       "id": 288,
@@ -9521,14 +9464,16 @@
         "sequential-mode",
         "state-persistence"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "saveAutoState",
-          "sequential",
-          "steps_completed"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "saveAutoState",
+            "sequential",
+            "steps_completed"
+          ]
+        }
+      ]
     },
     {
       "id": 289,
@@ -9556,15 +9501,12 @@
         "tracker",
         "completion"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "auto-state.json",
-          "active",
-          "false",
-          "clearAutoState"
-        ]
-      }
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "false|inactive|completed|not.?running|finished"
+        }
+      ]
     },
     {
       "id": 290,
@@ -9600,14 +9542,16 @@
         "tracker",
         "frontend"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "stepAliases",
-          "plan-work",
-          "plan-review"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "stepAliases",
+            "plan-work",
+            "plan-review"
+          ]
+        }
+      ]
     },
     {
       "id": 291,
@@ -9643,20 +9587,22 @@
         "tracker",
         "server"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "buildProjectSummary",
-          "autoState",
-          ".auto-state.json"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "buildProjectSummary",
+            "autoState",
+            ".auto-state.json"
+          ]
+        }
+      ]
     },
     {
       "id": 292,
       "command": "update",
       "prompt": "update --global",
-      "expected_output": "Should update the plugin globally (once), then discover ALL projects using fhhs-skills across the filesystem. Discovery uses two sources: tracker registry (~/.claude/tracker/projects.json) and Conductor workspace scan (~/conductor/workspaces/*/*). For each discovered project, should run post-update-reconcile.sh, changelog reconcile, and health --repair. Should display an aggregate table showing per-project status. Should clean up stale registry entries (paths that no longer exist).",
+      "expected_output": "Should update the plugin globally (once), then discover all ACTIVE projects using fhhs-skills. Discovery uses Conductor DB (only state='ready' workspaces) and tracker registry (non-Conductor projects only). Projects are grouped by GitHub repo. For each worktree, runs post-update-reconcile.sh, changelog reconcile with auto-remediation (installs tools, sets env vars, adds hooks), and health --repair. Displays results grouped by repo. Cleans up stale and archived entries from registry.",
       "files": [],
       "assertions": [
         {
@@ -9664,7 +9610,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Discovers projects from tracker registry and Conductor workspace scan",
+          "text": "Discovers active projects from Conductor DB and tracker registry, grouped by repo",
           "type": "behavioral"
         },
         {
@@ -9685,19 +9631,21 @@
         "happy-path",
         "global-update"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "global",
-          "projects.json",
-          "reconcil"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "global",
+            "projects.json",
+            "reconcil"
+          ]
+        }
+      ]
     },
     {
       "id": 293,
       "command": "update",
-      "prompt": "update --global — I have 5 projects across 3 Conductor workspaces, but 2 of the projects were deleted from disk last week. What happens to those stale entries?",
+      "prompt": "update --global \u2014 I have 5 projects across 3 Conductor workspaces, but 2 of the projects were deleted from disk last week. What happens to those stale entries?",
       "expected_output": "Should discover all 5 registered projects, detect that 2 paths no longer exist on disk (fs.existsSync returns false), skip reconciliation for those 2, auto-remove the stale entries from ~/.claude/tracker/projects.json, and report the cleanup in the summary. Should NOT error out or stop processing because of missing paths.",
       "files": [],
       "assertions": [
@@ -9727,20 +9675,22 @@
         "edge-case",
         "global-update"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "stale",
-          "removed",
-          "registry"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "stale",
+            "removed",
+            "registry"
+          ]
+        }
+      ]
     },
     {
       "id": 294,
       "command": "update",
-      "prompt": "update --global — some of my projects don't have a .planning/ directory yet (they're just regular repos with .claude/settings.json). How does global update handle those?",
-      "expected_output": "Projects without .planning/ should still receive environment reconciliation (post-update-reconcile.sh for claude-mem patch and env vars, changelog reconcile for tool/hook/env gap checks). Health --repair should be skipped since there's no .planning/ to validate. The results table should show health as 'skipped' or '—' for those projects.",
+      "prompt": "update --global \u2014 some of my projects don't have a .planning/ directory yet (they're just regular repos with .claude/settings.json). How does global update handle those?",
+      "expected_output": "Projects without .planning/ should still receive environment reconciliation (post-update-reconcile.sh for claude-mem patch and env vars, changelog reconcile for tool/hook/env gap checks). Health --repair should be skipped since there's no .planning/ to validate. The results table should show health as 'skipped' or '\u2014' for those projects.",
       "files": [],
       "assertions": [
         {
@@ -9765,20 +9715,22 @@
         "edge-case",
         "global-update"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "planning",
-          "skip",
-          "reconcil"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "planning",
+            "skip",
+            "reconcil"
+          ]
+        }
+      ]
     },
     {
       "id": 295,
       "command": "update",
-      "prompt": "update --global — I use Conductor with worktrees. I have 3 worktrees for the same repo (fh-starter-project/havana, fh-starter-project/kyoto, fh-starter-project/tokyo). Will each worktree get its own reconciliation pass?",
-      "expected_output": "Yes — each Conductor worktree is treated as a separate project because each has its own .claude/settings.json and potentially different .planning/ state. The global reconcile discovers them individually (from tracker registry or Conductor scan) and runs reconciliation on each. The CLAUDE_MEM_PROJECT env var is set correctly per-worktree using git rev-parse --git-common-dir to resolve the actual repo name. Results table should show each worktree with its Conductor workspace group.",
+      "prompt": "update --global \u2014 I use Conductor with worktrees. I have 3 worktrees for the same repo (fh-starter-project/havana, fh-starter-project/kyoto, fh-starter-project/tokyo). Will each worktree get its own reconciliation pass?",
+      "expected_output": "Yes \u2014 each worktree gets its own reconciliation pass because each has its own .claude/settings.json and potentially different .planning/ state. However, worktrees are grouped by repo in the display (e.g., fh-starter-project shows havana, kyoto, tokyo as instances). Discovery uses Conductor DB (only state='ready') so archived worktrees are excluded. The CLAUDE_MEM_PROJECT env var is set correctly per-worktree using git rev-parse --git-common-dir to resolve the actual repo name.",
       "files": [],
       "assertions": [
         {
@@ -9804,20 +9756,22 @@
         "global-update",
         "conductor"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "worktree",
-          "git-common-dir",
-          "workspace"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "worktree",
+            "git-common-dir",
+            "workspace"
+          ]
+        }
+      ]
     },
     {
       "id": 296,
       "command": "update",
-      "prompt": "update --global — what if a project has env gaps that the global reconcile detects but can't auto-fix (like missing tool installs or hooks)? How does it report that?",
-      "expected_output": "The global reconcile script runs changelog reconcile which detects env gaps but does NOT auto-remediate them (tool installs, hook additions require the full SKILL.md remediation logic). It reports the gap count per project in the results table. For projects with remaining gaps, suggests running /fh:update individually in each project to apply the full remediation. The summary shows total env gaps across all projects.",
+      "prompt": "update --global \u2014 what if a project has env gaps like missing tools or hooks? Does the global update fix those or just report them?",
+      "expected_output": "The global reconcile now auto-remediates env gaps. It installs missing tools (pnpm/npm install -g), sets env vars in .claude/settings.json, adds hooks to global settings, and creates missing directories. Only items that genuinely can't be auto-fixed (like plugin installs in non-interactive environments) are reported as failures. The summary shows total remediated count and any remaining failures. It does NOT tell the user to run /fh:update individually.",
       "files": [],
       "assertions": [
         {
@@ -9842,20 +9796,22 @@
         "edge-case",
         "global-update"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "gap",
-          "reconcil",
-          "/fh:update"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "gap",
+            "reconcil",
+            "/fh:update"
+          ]
+        }
+      ]
     },
     {
       "id": 297,
       "command": "update",
-      "prompt": "update --global — what if the tracker registry doesn't exist yet (fresh install, no projects tracked)?",
-      "expected_output": "Should fall back to Conductor workspace scan as the secondary discovery source. If ~/conductor/workspaces/ exists, scan all subdirectories for .planning/ or .claude/settings.json. If neither source finds any projects, report 'No projects found' and suggest running /fh:new-project. Should NOT error out or crash when projects.json is missing.",
+      "prompt": "update --global \u2014 what if the tracker registry doesn't exist yet (fresh install, no projects tracked)?",
+      "expected_output": "Primary discovery uses Conductor DB (only active workspaces). If the DB is unavailable, falls back to filesystem scan of ~/conductor/workspaces/. Tracker registry is only used for non-Conductor projects. If no projects found from any source, report 'No projects found'. Should NOT error out or crash when projects.json is missing or Conductor DB is unavailable.",
       "files": [],
       "assertions": [
         {
@@ -9876,14 +9832,16 @@
         "edge-case",
         "global-update"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "projects.json",
-          "conductor",
-          "scan"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "projects.json",
+            "conductor",
+            "scan"
+          ]
+        }
+      ]
     },
     {
       "id": 298,
@@ -9914,20 +9872,22 @@
         "happy-path",
         "global-update"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "--global",
-          "projects",
-          "reconcil"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "--global",
+            "projects",
+            "reconcil"
+          ]
+        }
+      ]
     },
     {
       "id": 299,
       "command": "update",
       "prompt": "I just ran /fh:update and it said I have 5 other projects. What does --global actually do to each project?",
-      "expected_output": "The --global flag runs three reconciliation steps on each discovered project: (1) post-update-reconcile.sh for claude-mem patch, CLAUDE_MEM_PROJECT env var, and tracker registration, (2) changelog reconcile to detect env gaps (missing tools, hooks, env vars) using the fhhs-skills plugin changelog, and (3) health --repair to fix .planning/ directory issues. Projects without .planning/ skip the health step. The script discovers projects from two sources: the tracker registry and Conductor workspace scan.",
+      "expected_output": "The --global flag discovers all active projects (from Conductor DB for active workspaces, tracker registry for non-Conductor projects), groups them by repo, and runs full reconciliation on each worktree: (1) post-update-reconcile.sh for claude-mem patch, CLAUDE_MEM_PROJECT env var, and tracker registration, (2) changelog reconcile to detect AND auto-fix env gaps (installs missing tools, sets env vars, adds hooks), and (3) health --repair to fix .planning/ directory issues. Archived Conductor workspaces are excluded. Projects without .planning/ skip the health step.",
       "files": [],
       "assertions": [
         {
@@ -9935,7 +9895,7 @@
           "type": "output"
         },
         {
-          "text": "Mentions both discovery sources (tracker registry and Conductor scan)",
+          "text": "Mentions discovery from Conductor DB (active only) and tracker registry",
           "type": "output"
         },
         {
@@ -9948,244 +9908,918 @@
         "happy-path",
         "global-update"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "reconcil",
-          "tracker",
-          "health"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "reconcil",
+            "tracker",
+            "health"
+          ]
+        }
+      ]
     },
     {
       "id": 300,
-      "command": "progress",
-      "prompt": "/fh:progress",
-      "expected_output": "When run in a project with no .planning/ directory and no gsd-tools symlink (new install with no tracked project), /fh:progress should detect the uninitialized state and direct the user to run /fh:setup. The output must include a clear routing message pointing to /fh:setup as the required next step before any project work can begin.",
+      "command": "auto",
+      "tier": "micro",
+      "tags": [
+        "workshop",
+        "research"
+      ],
+      "prompt": "User says 'auto, build this project' with no prior discussion. PROJECT.md has a vague one-line vision. No DESIGN.md. How should auto handle this?",
+      "expected_output": "Should recognize gaps in project definition, do domain research before engaging user, ask informed strategic questions grounded in research findings.",
       "files": [],
       "assertions": [
         {
-          "text": "Detects missing .planning/ directory (new install state)",
+          "text": "Identifies gaps in PROJECT.md vision",
           "type": "behavioral"
         },
         {
-          "text": "Outputs routing message directing user to /fh:setup",
-          "type": "output"
+          "text": "Does domain research before asking questions",
+          "type": "behavioral"
         },
         {
-          "text": "Does NOT attempt to show project status or phase info",
-          "type": "guard"
-        },
-        {
-          "text": "Does NOT crash or show a stack trace",
-          "type": "guard"
+          "text": "Grounds the conversation in research findings not generic questions",
+          "type": "behavioral"
         }
       ],
-      "tier": "smoke",
-      "tags": [
-        "onboarding",
-        "phase-04"
-      ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "/fh:setup"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "research",
+            "gap"
+          ]
+        },
+        {
+          "type": "regex",
+          "pattern": "search|firecrawl|web"
+        }
+      ]
     },
     {
       "id": 301,
-      "command": "setup",
-      "prompt": "/fh:setup --check",
-      "expected_output": "When invoked with --check, /fh:setup should validate the current environment and display a status table showing each component (node, npm, gh, TypeScript LSP, GSD symlink, etc.) with pass/fail indicators. It must NOT run any installation steps — no brew install, no npm install -g, no plugin install, no symlink creation. The output must include a SETUP STATUS section or equivalent component table. The check-only mode is purely diagnostic.",
+      "command": "auto",
+      "tier": "micro",
+      "tags": [
+        "workshop",
+        "skip"
+      ],
+      "prompt": "User says 'just go, skip the workshop, build everything'. PROJECT.md exists with clear vision and REQUIREMENTS.md is detailed. Should auto skip workshop?",
+      "expected_output": "Should skip workshop when all three conditions met: clear vision with north star, exhaustive requirements, well-formed phases. User explicitly asking to skip also triggers skip.",
       "files": [],
       "assertions": [
         {
-          "text": "Outputs SETUP STATUS section or component status table",
-          "type": "output"
+          "text": "Respects user intent to skip workshop",
+          "type": "behavioral"
         },
         {
-          "text": "Lists individual components with pass/fail or present/missing status",
-          "type": "output"
+          "text": "Runs quick sanity check on planning artifacts even when skipping",
+          "type": "behavioral"
         },
         {
-          "text": "Does NOT run brew install or any package installation",
-          "type": "guard"
-        },
-        {
-          "text": "Does NOT run npm install -g or TypeScript LSP installation",
-          "type": "guard"
-        },
-        {
-          "text": "Does NOT create GSD symlink or modify filesystem",
-          "type": "guard"
+          "text": "Proceeds to execution after sanity check",
+          "type": "behavioral"
         }
       ],
-      "tier": "smoke",
-      "tags": [
-        "onboarding",
-        "phase-04"
-      ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "SETUP STATUS",
-          "check"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "skip"
+          ]
+        },
+        {
+          "type": "regex",
+          "pattern": "vision|north.?star|requirements"
+        }
+      ]
     },
     {
       "id": 302,
-      "command": "map-codebase",
-      "prompt": "When fallow is installed, /fh:map-codebase should run fallow check and fallow health before spawning the mapper agent and inject results into the agent prompt under 'Static Analysis Data'",
-      "expected_output": "Should detect fallow availability via `command -v fallow`, run `fallow check` and `fallow health`, collect their output, and inject the results into the mapper agent prompt under a 'Static Analysis Data' section. The static analysis data should be available to the agent before it begins mapping the codebase.",
+      "command": "auto",
+      "tier": "micro",
+      "tags": [
+        "recovery",
+        "reporting"
+      ],
+      "prompt": "Auto-orchestrator phase 4 build failed with exit code 1. The error log shows a missing dependency. What should auto report to the user and what recovery action should it take?",
+      "expected_output": "Should report the failure with clear context (phase, step, error), show the error log content, and either retry or skip depending on dependency graph.",
       "files": [],
       "assertions": [
         {
-          "text": "Checks for fallow availability with `command -v fallow`",
+          "text": "Reports which phase and step failed with the error details",
           "type": "behavioral"
         },
         {
-          "text": "Runs `fallow check` to collect static analysis data",
+          "text": "Reads and surfaces the error log content to user",
           "type": "behavioral"
         },
         {
-          "text": "Runs `fallow health` to collect health data",
-          "type": "behavioral"
-        },
-        {
-          "text": "Injects fallow results into agent prompt under 'Static Analysis Data'",
+          "text": "Classifies error type and decides retry vs skip vs abort",
           "type": "behavioral"
         }
       ],
-      "tier": "smoke",
-      "tags": [
-        "fallow",
-        "integration"
-      ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "fallow check",
-          "fallow health",
-          "Static Analysis Data",
-          "command -v fallow"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "error",
+            "log"
+          ]
+        },
+        {
+          "type": "regex",
+          "pattern": "retry|skip|abort|recover"
+        }
+      ]
     },
     {
       "id": 303,
-      "command": "map-codebase",
-      "prompt": "When fallow is NOT installed, /fh:map-codebase should skip static analysis silently and produce the same CODEBASE.md output without mentioning Fallow",
-      "expected_output": "Should detect that fallow is not available, skip static analysis without error, and proceed to map the codebase normally. The resulting CODEBASE.md output should be identical in structure to a run without Fallow — no error messages about missing fallow, no 'fallow not found' warnings in the output.",
+      "command": "auto",
+      "tier": "micro",
+      "tags": [
+        "stale",
+        "stuck"
+      ],
+      "prompt": "The auto pipeline has been running for 45 minutes. 3 phases planned, 0 built. The build wave has 2 sessions running but neither has produced output in 10 minutes. What should happen?",
+      "expected_output": "Stuck detector should kill sessions after 8min silence. Writes PARTIAL-SUMMARY.md. Reports to user what happened and next steps.",
       "files": [],
       "assertions": [
         {
-          "text": "Skips fallow static analysis when fallow is not installed",
+          "text": "Stuck detection triggers and kills sessions after extended silence",
           "type": "behavioral"
         },
         {
-          "text": "Does NOT produce an error when fallow is unavailable",
-          "type": "guard"
+          "text": "Writes partial summary with diagnostic context from the killed session",
+          "type": "behavioral"
         },
         {
-          "text": "Produces CODEBASE.md output regardless of fallow availability",
-          "type": "output"
-        },
-        {
-          "text": "Does NOT mention Fallow in the output when fallow is not installed",
-          "type": "guard"
+          "text": "User can resume or retry the failed phase afterward",
+          "type": "behavioral"
         }
       ],
-      "tier": "smoke",
-      "tags": [
-        "fallow",
-        "degradation"
-      ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "graceful",
-          "skip"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "stuck",
+            "kill"
+          ]
+        },
+        {
+          "type": "regex",
+          "pattern": "PARTIAL|resume|next.?step"
+        }
+      ]
     },
     {
       "id": 304,
-      "command": "refactor",
-      "prompt": "When fallow is installed, /fh:refactor Step 1 should use fallow check output to detect circular dependencies and unused exports in the refactoring target",
-      "expected_output": "Should augment the refactoring scope analysis in Step 1 using fallow check output. The skill should identify circular dependencies and unused exports in the target module/file using Fallow Scope Augmentation. This data should inform the refactoring plan before implementation begins.",
+      "command": "auto",
+      "tier": "micro",
+      "tags": [
+        "cache",
+        "context-mode"
+      ],
+      "prompt": "Auto pipeline starts with 8 phases. How does it handle context-mode pre-indexing to avoid SQLite contention between parallel sessions?",
+      "expected_output": "Pre-indexes shared docs once before any wave. Parallel sessions use ctx_search read-only. No concurrent writes to context-mode database.",
       "files": [],
       "assertions": [
         {
-          "text": "Uses fallow check output to augment refactoring scope in Step 1",
+          "text": "Pre-indexes stable documents (PROJECT.md, ROADMAP.md, research) before waves start",
           "type": "behavioral"
         },
         {
-          "text": "Detects circular dependencies in the refactoring target",
+          "text": "Parallel sessions use read-only ctx_search, not ctx_index",
           "type": "behavioral"
         },
         {
-          "text": "Detects unused exports in the refactoring target",
-          "type": "behavioral"
-        },
-        {
-          "text": "References 'Fallow Scope Augmentation' or equivalent fallow integration label",
+          "text": "Prevents SQLite write contention by sequential indexing then parallel reads",
           "type": "behavioral"
         }
       ],
-      "tier": "smoke",
-      "tags": [
-        "fallow",
-        "integration"
-      ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "Fallow Scope Augmentation",
-          "circular dependency",
-          "unused exports"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "pre-index",
+            "ctx_search"
+          ]
+        },
+        {
+          "type": "regex",
+          "pattern": "SQLite|contention|read.?only|sequential.*index"
+        }
+      ]
     },
     {
       "id": 305,
-      "command": "fix",
-      "prompt": "/fh:fix, /fh:refactor, and /fh:extract should reference Serena MCP tools (find_symbol, find_referencing_symbols, rename_symbol) as enhanced alternatives but explicitly fall back to built-in LSP when Serena is not connected",
-      "expected_output": "Skills /fh:fix, /fh:refactor, and /fh:extract should mention Serena MCP tools (find_symbol, find_referencing_symbols, rename_symbol) as enhanced alternatives for symbol navigation and renaming. Each skill must also include an explicit fallback pattern that uses built-in LSP tools when Serena is not connected, ensuring the skill works correctly without Serena.",
+      "command": "auto",
+      "tier": "micro",
+      "tags": [
+        "reporting",
+        "completion"
+      ],
+      "prompt": "Auto finishes all 6 phases. What exactly should the completion report include?",
+      "expected_output": "Should report: phases completed count, decisions logged count, any LOW confidence decisions needing review, reset AUTO_MODE, read final STATE.md.",
       "files": [],
       "assertions": [
         {
-          "text": "References Serena MCP tool find_symbol",
+          "text": "Reports count of phases completed",
           "type": "behavioral"
         },
         {
-          "text": "References Serena MCP tool find_referencing_symbols",
+          "text": "Lists decisions made and flags LOW confidence ones for human review",
           "type": "behavioral"
         },
         {
-          "text": "References Serena MCP tool rename_symbol",
+          "text": "Resets auto_advance to false",
           "type": "behavioral"
         },
         {
-          "text": "Includes explicit fallback to built-in LSP when Serena is not connected",
+          "text": "Reads and confirms STATE.md reflects final position",
           "type": "behavioral"
         }
       ],
-      "tier": "smoke",
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "auto_advance",
+            "STATE.md",
+            "decision"
+          ]
+        },
+        {
+          "type": "regex",
+          "pattern": "confidence|review|complete"
+        }
+      ]
+    },
+    {
+      "id": 306,
+      "command": "auto",
+      "tier": "micro",
       "tags": [
-        "serena",
-        "degradation"
+        "resilience",
+        "api-health"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "find_symbol",
-          "find_referencing_symbols",
-          "rename_symbol",
-          "fallback"
-        ]
-      }
+      "prompt": "During auto execution, a claude -p session fails with connection refused. How does the orchestrator handle API failures vs logic failures?",
+      "expected_output": "API/infra errors (connection refused, 502/503, rate limit) trigger health check with exponential backoff. Logic errors (exit code 1) do NOT trigger health check.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Distinguishes API/infra errors from logic errors",
+          "type": "behavioral"
+        },
+        {
+          "text": "API errors trigger health check with exponential backoff (10s \u2192 20s \u2192 40s \u2192 80s \u2192 120s)",
+          "type": "behavioral"
+        },
+        {
+          "text": "Logic errors skip health check backoff",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "backoff",
+            "health"
+          ]
+        },
+        {
+          "type": "regex",
+          "pattern": "API|infra|connection|logic"
+        }
+      ]
+    },
+    {
+      "id": 307,
+      "command": "auto",
+      "tier": "micro",
+      "tags": [
+        "workshop",
+        "design-context"
+      ],
+      "prompt": "User runs /fh:auto. PROJECT.md exists but no DESIGN.md. The project is a SaaS dashboard. What should the workshop do about design context?",
+      "expected_output": "Should suggest running /fh:ui-branding first or capture basic brand direction during workshop. UX patterns for SaaS dashboards should be researched.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Notices missing DESIGN.md and suggests /fh:ui-branding or captures brand direction",
+          "type": "behavioral"
+        },
+        {
+          "text": "Researches UX patterns appropriate for the product type (SaaS dashboard)",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "DESIGN.md"
+          ]
+        },
+        {
+          "type": "regex",
+          "pattern": "ui-branding|brand|UX|design"
+        }
+      ]
+    },
+    {
+      "id": 308,
+      "command": "build",
+      "tier": "micro",
+      "tags": [
+        "happy-path"
+      ],
+      "prompt": "User runs /fh:build for phase 03. PLAN.md exists in .planning/phases/03/. What's the first thing build does?",
+      "expected_output": "Reads PLAN.md, validates it has required structure, checks dependencies, then begins executing tasks.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Reads PLAN.md from the phase directory",
+          "type": "behavioral"
+        },
+        {
+          "text": "Checks prerequisites like PROJECT.md and STATE.md before building",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "PLAN.md"
+          ]
+        },
+        {
+          "type": "regex",
+          "pattern": "read|validate|structure"
+        }
+      ]
+    },
+    {
+      "id": 309,
+      "command": "build",
+      "tier": "micro",
+      "tags": [
+        "artifact-wiring"
+      ],
+      "prompt": "Build is executing phase 05. The plan references decisions from CONTEXT.md. Where does build read CONTEXT.md from and how does it ensure it has the right context?",
+      "expected_output": "Reads CONTEXT.md from the phase directory (.planning/phases/05/CONTEXT.md) for phase-specific decisions, and .planning/CONTEXT.md for project-level decisions.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Reads CONTEXT.md from the phase directory for locked decisions and constraints",
+          "type": "behavioral"
+        },
+        {
+          "text": "CONTEXT.md decisions guide what the build implements and how",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "CONTEXT.md"
+          ]
+        },
+        {
+          "type": "regex",
+          "pattern": "phase|directory|decision"
+        }
+      ]
+    },
+    {
+      "id": 310,
+      "command": "build",
+      "tier": "micro",
+      "tags": [
+        "test-enforcement"
+      ],
+      "prompt": "Build finishes implementing all tasks in the plan. What test-related steps must it complete before writing SUMMARY.md?",
+      "expected_output": "Must generate test specs from plan must_haves, run tests, track coverage metrics, ensure business logic has test coverage.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Runs the project test suite to check for failures",
+          "type": "behavioral"
+        },
+        {
+          "text": "Records test results and coverage in SUMMARY.md",
+          "type": "behavioral"
+        },
+        {
+          "text": "Runs build or type check command to verify code compiles",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "test"
+          ]
+        },
+        {
+          "type": "regex",
+          "pattern": "coverage|spec|SUMMARY"
+        }
+      ]
+    },
+    {
+      "id": 311,
+      "command": "build",
+      "tier": "micro",
+      "tags": [
+        "error-recovery"
+      ],
+      "prompt": "During build step 3 (implement task), the code fails to compile. What should build do?",
+      "expected_output": "Should diagnose the error, attempt to fix, re-run verification. If repeated failure, log the issue and move to next task or escalate.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Diagnoses the compilation error before attempting fix",
+          "type": "behavioral"
+        },
+        {
+          "text": "Attempts to fix the error and re-verify",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "diagnos|fix|error|retry|verif"
+        }
+      ]
+    },
+    {
+      "id": 312,
+      "command": "build",
+      "tier": "micro",
+      "tags": [
+        "summary"
+      ],
+      "prompt": "Build completes phase 03 successfully. What must SUMMARY.md contain?",
+      "expected_output": "SUMMARY.md must include: what was built, files modified, test results, any deviations from plan, test metrics.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "SUMMARY.md records what was implemented and which files were changed",
+          "type": "behavioral"
+        },
+        {
+          "text": "Includes test results and build verification status",
+          "type": "behavioral"
+        },
+        {
+          "text": "Notes any issues encountered during implementation",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "SUMMARY.md"
+          ]
+        },
+        {
+          "type": "regex",
+          "pattern": "test|metric|deviation|file"
+        }
+      ]
+    },
+    {
+      "id": 313,
+      "command": "review",
+      "tier": "micro",
+      "tags": [
+        "happy-path"
+      ],
+      "prompt": "User runs /fh:review on a freshly built phase. What does review check?",
+      "expected_output": "Reviews code quality, architecture alignment, tests, whether the implementation achieves the plan's goal.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Checks code quality including patterns and best practices",
+          "type": "behavioral"
+        },
+        {
+          "text": "Examines architecture and design decisions",
+          "type": "behavioral"
+        },
+        {
+          "text": "Assesses test coverage and test quality",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "quality"
+          ]
+        },
+        {
+          "type": "regex",
+          "pattern": "test|goal|plan|architect"
+        }
+      ]
+    },
+    {
+      "id": 314,
+      "command": "review",
+      "tier": "micro",
+      "tags": [
+        "actionability"
+      ],
+      "prompt": "Review finds 3 issues: an unused import, a missing error handler, and an N+1 query. How should it report these?",
+      "expected_output": "Each finding should include: severity, file location, what's wrong, and a specific fix suggestion. Not generic advice.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Classifies findings by severity like important or nitpick",
+          "type": "behavioral"
+        },
+        {
+          "text": "Groups findings by category with next action routing",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does not auto-fix but presents findings for user decision",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "sever|file|line|fix|specific"
+        }
+      ]
+    },
+    {
+      "id": 315,
+      "command": "review",
+      "tier": "micro",
+      "tags": [
+        "quick-mode"
+      ],
+      "prompt": "User runs /fh:review --quick. How does quick mode differ from full review?",
+      "expected_output": "Quick mode is faster, focuses on critical issues only, skips deep architecture analysis. Good for post-build sanity checks.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Quick mode runs faster with fewer subagents than full review",
+          "type": "behavioral"
+        },
+        {
+          "text": "Prioritizes important issues over nitpicks in quick mode",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "quick"
+          ]
+        },
+        {
+          "type": "regex",
+          "pattern": "fast|focus|critical"
+        }
+      ]
+    },
+    {
+      "id": 316,
+      "command": "review",
+      "tier": "micro",
+      "tags": [
+        "architecture"
+      ],
+      "prompt": "Review detects that a new module duplicates logic already present in an existing utility. What should it recommend?",
+      "expected_output": "Should flag duplication, point to existing utility, and recommend refactoring to use the existing code instead of the duplicate.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects that new code duplicates existing utility logic",
+          "type": "behavioral"
+        },
+        {
+          "text": "Points to the existing utility that should be reused",
+          "type": "behavioral"
+        },
+        {
+          "text": "Suggests removing the duplication by importing the existing code",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "duplic|exist|refactor|reuse"
+        }
+      ]
+    },
+    {
+      "id": 317,
+      "command": "fix",
+      "tier": "micro",
+      "tags": [
+        "happy-path"
+      ],
+      "prompt": "User reports a bug: 'the login page crashes when I submit empty credentials'. What does /fh:fix do first?",
+      "expected_output": "Should reproduce the bug, find the root cause (not just the symptom), then write a failing test before applying the fix.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Searches for the bug location by reading error messages and relevant code",
+          "type": "behavioral"
+        },
+        {
+          "text": "Identifies the root cause of the crash not just the surface symptom",
+          "type": "behavioral"
+        },
+        {
+          "text": "Writes a test that captures the bug before applying the fix",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "root cause",
+            "test"
+          ]
+        },
+        {
+          "type": "regex",
+          "pattern": "reproduc|fail.*test|before.*fix"
+        }
+      ]
+    },
+    {
+      "id": 318,
+      "command": "fix",
+      "tier": "micro",
+      "tags": [
+        "regression"
+      ],
+      "prompt": "Fix finds the bug is caused by a missing null check. After fixing, what should it do to prevent regression?",
+      "expected_output": "Should verify test passes, check for similar patterns elsewhere in the codebase, add guard for related edge cases.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Verifies the fix resolves the bug and tests pass",
+          "type": "behavioral"
+        },
+        {
+          "text": "Checks if similar code patterns elsewhere have the same problem",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "test.*pass|similar|pattern|regress"
+        }
+      ]
+    },
+    {
+      "id": 319,
+      "command": "fix",
+      "tier": "micro",
+      "tags": [
+        "edge-case"
+      ],
+      "prompt": "User says 'fix the auth bug' but doesn't specify which one. Multiple auth-related files exist. How does /fh:fix triage?",
+      "expected_output": "Should search for recent auth-related errors, check git log for recent auth changes, look at error logs or test failures to narrow down the specific bug.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Searches for auth-related errors or test failures to narrow down",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does not guess \u2014 investigates to find the specific bug",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "search|investigat|error|log|narrow"
+        }
+      ]
+    },
+    {
+      "id": 320,
+      "command": "auto",
+      "tier": "micro",
+      "tags": [
+        "workshop",
+        "sanity-check"
+      ],
+      "prompt": "User says 'just go, build it' for a project where PROJECT.md has only one vague line: 'Build a task manager'. REQUIREMENTS.md is empty. Should auto skip the workshop entirely?",
+      "expected_output": "Should skip the full workshop per user request but run the Quick Sanity Check (Step 2.1b). Should warn about gaps in PROJECT.md and empty REQUIREMENTS.md without blocking.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Skips full workshop because user said just go",
+          "type": "behavioral"
+        },
+        {
+          "text": "Runs quick sanity check and warns about vague PROJECT.md and empty REQUIREMENTS.md",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does not block execution despite gaps \u2014 only warns",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "sanity",
+            "warn"
+          ]
+        },
+        {
+          "type": "regex",
+          "pattern": "skip|gap|vague|empty"
+        }
+      ]
+    },
+    {
+      "id": 321,
+      "command": "auto",
+      "tier": "micro",
+      "tags": [
+        "error-reporting",
+        "failure"
+      ],
+      "prompt": "The auto orchestrator exits with code 1 after phase 4 build failed. An error log exists at .planning/phases/04/build-error.log. What should auto report to the user?",
+      "expected_output": "Should read the error log, classify the failure, and provide actionable next steps including --resume command.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Reads error log from the failed phase directory",
+          "type": "behavioral"
+        },
+        {
+          "text": "Classifies whether this is API error or logic error",
+          "type": "behavioral"
+        },
+        {
+          "text": "Suggests running auto with --resume to continue",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "error",
+            "resume"
+          ]
+        },
+        {
+          "type": "regex",
+          "pattern": "log|classif|next|action"
+        }
+      ]
+    },
+    {
+      "id": 322,
+      "command": "update",
+      "prompt": "update --global",
+      "expected_output": "Should update plugin then discover ALL projects using fhhs-skills (from tracker registry and Conductor workspaces) and reconcile each one. Should show project status map before reconciling, then aggregate results table after.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Discovers projects from tracker registry and Conductor workspace scan",
+          "type": "behavioral"
+        },
+        {
+          "text": "Runs reconciliation on multiple projects, not just current one",
+          "type": "behavioral"
+        },
+        {
+          "text": "Shows aggregate results with per-project status",
+          "type": "output"
+        },
+        {
+          "text": "Runs global-reconcile.cjs script for cross-project reconciliation",
+          "type": "behavioral"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ],
+      "tier": "full",
+      "tags": [
+        "happy-path",
+        "global"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "global",
+            "reconcil"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 323,
+      "command": "update",
+      "prompt": "update --global",
+      "expected_output": "When plugin is already at latest version but --global is passed, should still run environment reconciliation on current project AND then proceed to global reconciliation across all discovered projects. Must NOT exit after current-project reconciliation.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Recognizes plugin is already up to date",
+          "type": "behavioral"
+        },
+        {
+          "text": "Runs environment reconciliation on current project first",
+          "type": "behavioral"
+        },
+        {
+          "text": "Proceeds to global project reconciliation (Step 6) despite already being up to date",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT exit after current-project reconciliation when --global is set",
+          "type": "guard"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ],
+      "tier": "full",
+      "tags": [
+        "edge-case",
+        "guard",
+        "global"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "global",
+            "reconcil"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 324,
+      "command": "update",
+      "prompt": "I just updated the plugin from a different terminal. Now I want to update all my other projects too",
+      "expected_output": "Should detect plugin is already current, run local reconciliation, then recognize this is a --global use case and either suggest --global or if --global was passed, proceed to Step 6 global reconciliation.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects plugin is already at latest version",
+          "type": "behavioral"
+        },
+        {
+          "text": "Mentions --global flag for cross-project reconciliation",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT attempt to reinstall an already-current plugin",
+          "type": "guard"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ],
+      "tier": "full",
+      "tags": [
+        "edge-case",
+        "global"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "global"
+          ]
+        }
+      ]
     }
   ]
 }

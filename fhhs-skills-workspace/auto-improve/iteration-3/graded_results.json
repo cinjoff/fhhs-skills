@@ -1,0 +1,1250 @@
+[
+  {
+    "eval_id": 126,
+    "command": "auto",
+    "status": "graded",
+    "grades": [
+      {
+        "text": "Validates .planning/ state before starting (checks ROADMAP.md and STATE.md)",
+        "passed": true,
+        "evidence": "Matched 4/7 concepts (57%)"
+      },
+      {
+        "text": "Sets AUTO_MODE or auto_advance to true",
+        "passed": true,
+        "evidence": "Matched 3/4 concepts (75%)"
+      },
+      {
+        "text": "Shells out to plan-work and build skills for orchestration",
+        "passed": true,
+        "evidence": "Matched 5/7 concepts (71%)"
+      }
+    ],
+    "deterministic_grades": [
+      {
+        "check_type": "regex",
+        "passed": true,
+        "detail": "Pattern 'plan|planning' found in output"
+      },
+      {
+        "check_type": "regex",
+        "passed": true,
+        "detail": "Pattern '[Pp]hase' found in output"
+      }
+    ],
+    "pass_rate": 1.0,
+    "passed": 3,
+    "total": 3,
+    "duration_ms": 60165,
+    "grader": "keyword"
+  },
+  {
+    "eval_id": 150,
+    "command": "auto",
+    "status": "graded",
+    "grades": [
+      {
+        "text": "mentions 'concurrent' or 'parallel' or 'wave'",
+        "passed": true,
+        "evidence": "Matched 3/4 concepts (75%)"
+      },
+      {
+        "text": "mentions 'plan'",
+        "passed": true,
+        "evidence": "Matched 1/2 concepts (50%)"
+      }
+    ],
+    "deterministic_grades": [
+      {
+        "check_type": "required_terms",
+        "passed": true,
+        "detail": "All 1 terms present"
+      },
+      {
+        "check_type": "regex",
+        "passed": true,
+        "detail": "Pattern '[Pp]hase' found in output"
+      },
+      {
+        "check_type": "regex",
+        "passed": true,
+        "detail": "Pattern 'concurrent|parallel|all.*phase|simultaneous' found in output"
+      }
+    ],
+    "pass_rate": 1.0,
+    "passed": 2,
+    "total": 2,
+    "duration_ms": 49546,
+    "grader": "keyword"
+  },
+  {
+    "eval_id": 156,
+    "command": "auto",
+    "status": "graded",
+    "grades": [
+      {
+        "text": "Phases with no overlapping files can build concurrently in the same wave",
+        "passed": true,
+        "evidence": "Matched 6/8 concepts (75%)"
+      },
+      {
+        "text": "The dependency graph shows these phases are independent",
+        "passed": true,
+        "evidence": "Matched 4/6 concepts (67%)"
+      },
+      {
+        "text": "Both phases can run in parallel within the concurrency limit",
+        "passed": true,
+        "evidence": "Matched 6/7 concepts (86%)"
+      },
+      {
+        "text": "No speculative validation needed when files don't overlap",
+        "passed": true,
+        "evidence": "Matched 5/6 concepts (83%)"
+      }
+    ],
+    "deterministic_grades": [
+      {
+        "check_type": "regex",
+        "passed": true,
+        "detail": "Pattern '[Pp]hase' found in output"
+      },
+      {
+        "check_type": "required_terms",
+        "passed": true,
+        "detail": "All 1 terms present"
+      }
+    ],
+    "pass_rate": 1.0,
+    "passed": 4,
+    "total": 4,
+    "duration_ms": 30118,
+    "grader": "keyword"
+  },
+  {
+    "eval_id": 157,
+    "command": "auto",
+    "status": "graded",
+    "grades": [
+      {
+        "text": "All phases must build sequentially because they share file dependencies",
+        "passed": true,
+        "evidence": "Matched 7/10 concepts (70%)"
+      },
+      {
+        "text": "The dependency graph shows a chain where each phase depends on the previous one",
+        "passed": true,
+        "evidence": "Matched 7/9 concepts (78%)"
+      },
+      {
+        "text": "Mentions that shared files force sequential ordering despite concurrency setting",
+        "passed": true,
+        "evidence": "Matched 4/9 concepts (44%)"
+      },
+      {
+        "text": "Effective parallelism is reduced when all phases overlap on the same files",
+        "passed": true,
+        "evidence": "Matched 6/8 concepts (75%)"
+      }
+    ],
+    "deterministic_grades": [
+      {
+        "check_type": "regex",
+        "passed": true,
+        "detail": "Pattern '[Pp]hase' found in output"
+      },
+      {
+        "check_type": "required_terms",
+        "passed": true,
+        "detail": "All 1 terms present"
+      }
+    ],
+    "pass_rate": 1.0,
+    "passed": 4,
+    "total": 4,
+    "duration_ms": 40885,
+    "grader": "keyword"
+  },
+  {
+    "eval_id": 167,
+    "command": "auto",
+    "status": "graded",
+    "grades": [
+      {
+        "text": "Uses git rev-parse --git-common-dir to derive project name (not --show-toplevel which returns worktree path)",
+        "passed": true,
+        "evidence": "Matched 16/16 concepts (100%)"
+      },
+      {
+        "text": "Sets CLAUDE_MEM_PROJECT environment variable in spawn env",
+        "passed": true,
+        "evidence": "Matched 6/6 concepts (100%)"
+      },
+      {
+        "text": "Falls back to path.basename if git command fails",
+        "passed": true,
+        "evidence": "Matched 5/7 concepts (71%)"
+      },
+      {
+        "text": "Unified patch checks env var before worktree and basename detection",
+        "passed": true,
+        "evidence": "Matched 5/8 concepts (62%)"
+      }
+    ],
+    "deterministic_grades": [
+      {
+        "check_type": "regex",
+        "passed": true,
+        "detail": "Pattern 'git.?common.?dir|CLAUDE_MEM_PROJECT|project.?name' found in output"
+      },
+      {
+        "check_type": "regex",
+        "passed": true,
+        "detail": "Pattern 'environment|env|spawn' found in output"
+      }
+    ],
+    "pass_rate": 1.0,
+    "passed": 4,
+    "total": 4,
+    "duration_ms": 29187,
+    "grader": "keyword"
+  },
+  {
+    "eval_id": 171,
+    "command": "auto",
+    "status": "graded",
+    "grades": [
+      {
+        "text": "Read",
+        "passed": true,
+        "evidence": "Matched 1/1 concepts (100%)"
+      },
+      {
+        "text": "fallback",
+        "passed": true,
+        "evidence": "Matched 1/1 concepts (100%)"
+      },
+      {
+        "text": "Describes how project conventions and architecture context are injected into agent prompts when context-mode is unavailable",
+        "passed": true,
+        "evidence": "Matched 8/12 concepts (67%)"
+      },
+      {
+        "text": "The pipeline still works without context-mode by falling back to direct file reads and template injection",
+        "passed": true,
+        "evidence": "Matched 9/13 concepts (69%)"
+      }
+    ],
+    "deterministic_grades": [
+      {
+        "check_type": "required_terms",
+        "passed": true,
+        "detail": "All 2 terms present"
+      },
+      {
+        "check_type": "forbidden_terms",
+        "passed": true,
+        "detail": "No forbidden terms found"
+      }
+    ],
+    "pass_rate": 1.0,
+    "passed": 4,
+    "total": 4,
+    "duration_ms": 28902,
+    "grader": "keyword"
+  },
+  {
+    "eval_id": 172,
+    "command": "auto",
+    "status": "graded",
+    "grades": [
+      {
+        "text": "Phases 3, 4, and 5 can build concurrently in the same wave",
+        "passed": true,
+        "evidence": "Matched 5/6 concepts (83%)"
+      },
+      {
+        "text": "Phase 6 must wait for phase 4 to complete",
+        "passed": true,
+        "evidence": "Matched 3/5 concepts (60%)"
+      },
+      {
+        "text": "Phases 7 and 8 must wait for phase 6",
+        "passed": true,
+        "evidence": "Matched 2/4 concepts (50%)"
+      }
+    ],
+    "deterministic_grades": [
+      {
+        "check_type": "required_terms",
+        "passed": true,
+        "detail": "All 2 terms present"
+      },
+      {
+        "check_type": "regex",
+        "passed": true,
+        "detail": "Pattern 'phase.*6.*wait|phase.*6.*after|phase.*6.*depend' found in output"
+      },
+      {
+        "check_type": "forbidden_terms",
+        "passed": true,
+        "detail": "No forbidden terms found"
+      }
+    ],
+    "pass_rate": 1.0,
+    "passed": 3,
+    "total": 3,
+    "duration_ms": 32126,
+    "grader": "keyword"
+  },
+  {
+    "eval_id": 173,
+    "command": "auto",
+    "status": "graded",
+    "grades": [
+      {
+        "text": "Plans must include files_modified frontmatter for dependency graph construction",
+        "passed": true,
+        "evidence": "Matched 6/8 concepts (75%)"
+      },
+      {
+        "text": "Each task needs clear done criteria that can be verified programmatically",
+        "passed": true,
+        "evidence": "Matched 4/8 concepts (50%)"
+      },
+      {
+        "text": "Plans should include test specifications so build Step 2.5 can generate test skeletons",
+        "passed": true,
+        "evidence": "Matched 8/10 concepts (80%)"
+      }
+    ],
+    "deterministic_grades": [
+      {
+        "check_type": "required_terms",
+        "passed": true,
+        "detail": "All 1 terms present"
+      },
+      {
+        "check_type": "regex",
+        "passed": true,
+        "detail": "Pattern 'test|spec|coverage' found in output"
+      },
+      {
+        "check_type": "regex",
+        "passed": true,
+        "detail": "Pattern 'done|criteria|verify|must_have' found in output"
+      }
+    ],
+    "pass_rate": 1.0,
+    "passed": 3,
+    "total": 3,
+    "duration_ms": 37621,
+    "grader": "keyword"
+  },
+  {
+    "eval_id": 174,
+    "command": "auto",
+    "status": "graded",
+    "grades": [
+      {
+        "text": "Stable planning docs are indexed once and shared across all 4 steps via CLAUDE_SESSION_ID",
+        "passed": true,
+        "evidence": "Matched 9/11 concepts (82%)"
+      },
+      {
+        "text": "Build agents use ctx_search for context and only Read files they edit",
+        "passed": true,
+        "evidence": "Matched 8/9 concepts (89%)"
+      },
+      {
+        "text": "Post-wave re-indexing ensures next wave sees fresh content without re-reading",
+        "passed": true,
+        "evidence": "Matched 7/11 concepts (64%)"
+      }
+    ],
+    "deterministic_grades": [
+      {
+        "check_type": "regex",
+        "passed": true,
+        "detail": "Pattern 'ctx_search|context.?mode|pre.?index|index.*once|shared.*index' found in output"
+      },
+      {
+        "check_type": "regex",
+        "passed": true,
+        "detail": "Pattern 'token|cache|efficien' found in output"
+      }
+    ],
+    "pass_rate": 1.0,
+    "passed": 3,
+    "total": 3,
+    "duration_ms": 37955,
+    "grader": "keyword"
+  },
+  {
+    "eval_id": 175,
+    "command": "auto",
+    "status": "graded",
+    "grades": [
+      {
+        "text": "Planning wave runs all 10 phases concurrently (limited by concurrency pool)",
+        "passed": true,
+        "evidence": "Matched 8/9 concepts (89%)"
+      },
+      {
+        "text": "Review wave also runs concurrently",
+        "passed": true,
+        "evidence": "Matched 4/4 concepts (100%)"
+      },
+      {
+        "text": "Build wave parallelizes independent phases based on the dependency graph",
+        "passed": true,
+        "evidence": "Matched 6/8 concepts (75%)"
+      }
+    ],
+    "deterministic_grades": [
+      {
+        "check_type": "regex",
+        "passed": true,
+        "detail": "Pattern 'concurrent|parallel' found in output"
+      },
+      {
+        "check_type": "regex",
+        "passed": true,
+        "detail": "Pattern 'depend|overlap|independent' found in output"
+      },
+      {
+        "check_type": "regex",
+        "passed": true,
+        "detail": "Pattern 'wave|pipeline' found in output"
+      }
+    ],
+    "pass_rate": 1.0,
+    "passed": 3,
+    "total": 3,
+    "duration_ms": 34746,
+    "grader": "keyword"
+  },
+  {
+    "eval_id": 176,
+    "command": "auto",
+    "status": "check_failed",
+    "grades": [],
+    "deterministic_grades": [
+      {
+        "check_type": "regex",
+        "passed": false,
+        "detail": "Pattern 'SESSION_ID|session.?id|shared.*session' not found in output"
+      },
+      {
+        "check_type": "regex",
+        "passed": true,
+        "detail": "Pattern 'shar|reuse|persist|same.*session|same.*db|same.*index' found in output"
+      },
+      {
+        "check_type": "forbidden_terms",
+        "passed": true,
+        "detail": "No forbidden terms found"
+      }
+    ],
+    "pass_rate": 0.0,
+    "passed": 0,
+    "total": 3,
+    "duration_ms": 28549,
+    "grader": "deterministic"
+  },
+  {
+    "eval_id": 177,
+    "command": "auto",
+    "status": "graded",
+    "grades": [
+      {
+        "text": "The orchestrator resolves the project name via git rev-parse --git-common-dir, not --show-toplevel (which returns worktree path in Conductor)",
+        "passed": true,
+        "evidence": "Matched 18/18 concepts (100%)"
+      },
+      {
+        "text": "CLAUDE_MEM_PROJECT env var is injected into every claude -p session's spawn environment",
+        "passed": true,
+        "evidence": "Matched 7/9 concepts (78%)"
+      },
+      {
+        "text": "The unified patch adds env var check as the first tier in gp() before worktree and basename detection",
+        "passed": true,
+        "evidence": "Matched 5/11 concepts (45%)"
+      }
+    ],
+    "deterministic_grades": [
+      {
+        "check_type": "required_terms",
+        "passed": true,
+        "detail": "All 1 terms present"
+      },
+      {
+        "check_type": "regex",
+        "passed": true,
+        "detail": "Pattern 'git.*common.dir|git-common-dir|common.dir' found in output"
+      },
+      {
+        "check_type": "regex",
+        "passed": true,
+        "detail": "Pattern 'env|environment|spawn' found in output"
+      }
+    ],
+    "pass_rate": 1.0,
+    "passed": 3,
+    "total": 3,
+    "duration_ms": 27982,
+    "grader": "keyword"
+  },
+  {
+    "eval_id": 178,
+    "command": "auto",
+    "status": "graded",
+    "grades": [
+      {
+        "text": "With context-mode: agent uses ctx_search to query for auth patterns from the pre-indexed source files",
+        "passed": true,
+        "evidence": "Matched 11/12 concepts (92%)"
+      },
+      {
+        "text": "Agent only uses Read tool on files it will actually Edit, not for understanding context",
+        "passed": true,
+        "evidence": "Matched 8/9 concepts (89%)"
+      },
+      {
+        "text": "Without context-mode: agent falls back to Read for context, using injected CLAUDE_MD_SECTIONS and DESIGN_DECISIONS",
+        "passed": true,
+        "evidence": "Matched 9/12 concepts (75%)"
+      }
+    ],
+    "deterministic_grades": [
+      {
+        "check_type": "required_terms",
+        "passed": true,
+        "detail": "All 1 terms present"
+      },
+      {
+        "check_type": "regex",
+        "passed": true,
+        "detail": "Pattern 'fallback|without.*context|not.*available|unavailable' found in output"
+      },
+      {
+        "check_type": "regex",
+        "passed": true,
+        "detail": "Pattern 'Read.*[Ee]dit|only.*Read.*edit|Read.*modif' found in output"
+      }
+    ],
+    "pass_rate": 1.0,
+    "passed": 3,
+    "total": 3,
+    "duration_ms": 36674,
+    "grader": "keyword"
+  },
+  {
+    "eval_id": 283,
+    "command": "auto",
+    "status": "graded",
+    "grades": [
+      {
+        "text": "Uses findPhaseDir() to resolve full phase directory name including slug suffix",
+        "passed": true,
+        "evidence": "Matched 6/10 concepts (60%)"
+      },
+      {
+        "text": "Decisions redirect path includes the full folder name (e.g., 04.5-pipeline-depth), not just the number",
+        "passed": true,
+        "evidence": "Matched 8/10 concepts (80%)"
+      },
+      {
+        "text": "Does NOT construct path using only normalizePhaseName() which drops the slug suffix",
+        "passed": true,
+        "evidence": "Found negation 'do not' near concept 'construct'"
+      }
+    ],
+    "deterministic_grades": [
+      {
+        "check_type": "required_terms",
+        "passed": true,
+        "detail": "All 3 terms present"
+      }
+    ],
+    "pass_rate": 1.0,
+    "passed": 3,
+    "total": 3,
+    "duration_ms": 28137,
+    "grader": "keyword"
+  },
+  {
+    "eval_id": 284,
+    "command": "auto",
+    "status": "graded",
+    "grades": [
+      {
+        "text": "Matches both 'Current Phase' and 'Active Phase' field names in STATE.md body",
+        "passed": true,
+        "evidence": "Matched 7/9 concepts (78%)"
+      },
+      {
+        "text": "Extracts the phase number even without 'Phase' prefix (e.g., '3' from 'Active Phase: 3')",
+        "passed": true,
+        "evidence": "Matched 5/9 concepts (56%)"
+      },
+      {
+        "text": "Does NOT return null when STATE.md uses Active Phase instead of Current Phase",
+        "passed": true,
+        "evidence": "Found negation 'do not' near concept 'return'"
+      }
+    ],
+    "deterministic_grades": [
+      {
+        "check_type": "required_terms",
+        "passed": true,
+        "detail": "All 3 terms present"
+      }
+    ],
+    "pass_rate": 1.0,
+    "passed": 3,
+    "total": 3,
+    "duration_ms": 57777,
+    "grader": "keyword"
+  },
+  {
+    "eval_id": 286,
+    "command": "auto",
+    "status": "graded",
+    "grades": [
+      {
+        "text": "writeAutoStatus uses tmp file + renameSync for atomic writes",
+        "passed": true,
+        "evidence": "Matched 4/7 concepts (57%)"
+      },
+      {
+        "text": "saveAutoState uses tmp file + renameSync for atomic writes",
+        "passed": true,
+        "evidence": "Matched 4/7 concepts (57%)"
+      },
+      {
+        "text": "log() debounced updater also uses tmp file + renameSync",
+        "passed": false,
+        "evidence": "Matched 2/7 concepts (29%)"
+      },
+      {
+        "text": "Does NOT write directly to .auto-state.json without atomicity",
+        "passed": true,
+        "evidence": "Found negation 'do not' near concept 'write'"
+      }
+    ],
+    "deterministic_grades": [
+      {
+        "check_type": "required_terms",
+        "passed": true,
+        "detail": "All 2 terms present"
+      }
+    ],
+    "pass_rate": 0.75,
+    "passed": 3,
+    "total": 4,
+    "duration_ms": 23667,
+    "grader": "keyword"
+  },
+  {
+    "eval_id": 289,
+    "command": "auto",
+    "status": "graded",
+    "grades": [
+      {
+        "text": "Keeps .auto-state.json with active: false on completion (does not delete)",
+        "passed": true,
+        "evidence": "Matched 6/8 concepts (75%)"
+      },
+      {
+        "text": "--resume skips auto-state files that have active: false",
+        "passed": true,
+        "evidence": "Matched 4/7 concepts (57%)"
+      },
+      {
+        "text": "Does NOT call clearAutoState on successful completion",
+        "passed": true,
+        "evidence": "Found negation 'do not' near concept 'completion'"
+      }
+    ],
+    "deterministic_grades": [
+      {
+        "check_type": "required_terms",
+        "passed": true,
+        "detail": "All 2 terms present"
+      }
+    ],
+    "pass_rate": 1.0,
+    "passed": 3,
+    "total": 3,
+    "duration_ms": 35236,
+    "grader": "keyword"
+  },
+  {
+    "eval_id": 300,
+    "command": "auto",
+    "status": "graded",
+    "grades": [
+      {
+        "text": "Identifies that PROJECT.md vision has gaps or is too vague",
+        "passed": true,
+        "evidence": "Matched 5/6 concepts (83%)"
+      },
+      {
+        "text": "Performs research on the domain before asking the user questions",
+        "passed": true,
+        "evidence": "Matched 5/6 concepts (83%)"
+      },
+      {
+        "text": "Uses research findings to ground questions and suggestions",
+        "passed": true,
+        "evidence": "Matched 4/6 concepts (67%)"
+      }
+    ],
+    "deterministic_grades": [
+      {
+        "check_type": "required_terms",
+        "passed": true,
+        "detail": "All 2 terms present"
+      },
+      {
+        "check_type": "regex",
+        "passed": true,
+        "detail": "Pattern 'search|firecrawl|web' found in output"
+      }
+    ],
+    "pass_rate": 1.0,
+    "passed": 3,
+    "total": 3,
+    "duration_ms": 43943,
+    "grader": "keyword"
+  },
+  {
+    "eval_id": 301,
+    "command": "auto",
+    "status": "graded",
+    "grades": [
+      {
+        "text": "Recognizes user's intent to skip workshop",
+        "passed": true,
+        "evidence": "Matched 4/5 concepts (80%)"
+      },
+      {
+        "text": "Validates that PROJECT.md has clear vision before skipping",
+        "passed": true,
+        "evidence": "Matched 4/5 concepts (80%)"
+      },
+      {
+        "text": "Checks REQUIREMENTS.md completeness before skipping",
+        "passed": true,
+        "evidence": "Matched 3/4 concepts (75%)"
+      }
+    ],
+    "deterministic_grades": [
+      {
+        "check_type": "required_terms",
+        "passed": true,
+        "detail": "All 1 terms present"
+      },
+      {
+        "check_type": "regex",
+        "passed": true,
+        "detail": "Pattern 'vision|north.?star|requirements' found in output"
+      }
+    ],
+    "pass_rate": 1.0,
+    "passed": 3,
+    "total": 3,
+    "duration_ms": 41293,
+    "grader": "keyword"
+  },
+  {
+    "eval_id": 302,
+    "command": "auto",
+    "status": "graded",
+    "grades": [
+      {
+        "text": "Reports which phase and step failed with the error details",
+        "passed": true,
+        "evidence": "Matched 6/7 concepts (86%)"
+      },
+      {
+        "text": "Reads and surfaces the error log content to user",
+        "passed": true,
+        "evidence": "Matched 4/6 concepts (67%)"
+      },
+      {
+        "text": "Classifies error type and decides retry vs skip vs abort",
+        "passed": true,
+        "evidence": "Matched 3/7 concepts (43%)"
+      }
+    ],
+    "deterministic_grades": [
+      {
+        "check_type": "required_terms",
+        "passed": true,
+        "detail": "All 2 terms present"
+      },
+      {
+        "check_type": "regex",
+        "passed": true,
+        "detail": "Pattern 'retry|skip|abort|recover' found in output"
+      }
+    ],
+    "pass_rate": 1.0,
+    "passed": 3,
+    "total": 3,
+    "duration_ms": 36839,
+    "grader": "keyword"
+  },
+  {
+    "eval_id": 303,
+    "command": "auto",
+    "status": "graded",
+    "grades": [
+      {
+        "text": "Stuck detection triggers after extended silence period",
+        "passed": true,
+        "evidence": "Matched 4/6 concepts (67%)"
+      },
+      {
+        "text": "Kills stuck sessions and writes partial summary for diagnostics",
+        "passed": true,
+        "evidence": "Matched 6/7 concepts (86%)"
+      },
+      {
+        "text": "Reports to user with actionable next steps (resume, retry, investigate)",
+        "passed": false,
+        "evidence": "Matched 2/8 concepts (25%)"
+      }
+    ],
+    "deterministic_grades": [
+      {
+        "check_type": "required_terms",
+        "passed": true,
+        "detail": "All 2 terms present"
+      },
+      {
+        "check_type": "regex",
+        "passed": true,
+        "detail": "Pattern 'PARTIAL|resume|next.?step' found in output"
+      }
+    ],
+    "pass_rate": 0.6666666666666666,
+    "passed": 2,
+    "total": 3,
+    "duration_ms": 30793,
+    "grader": "keyword"
+  },
+  {
+    "eval_id": 304,
+    "command": "auto",
+    "status": "graded",
+    "grades": [
+      {
+        "text": "Pre-indexes stable documents (PROJECT.md, ROADMAP.md, research) before waves start",
+        "passed": true,
+        "evidence": "Matched 8/9 concepts (89%)"
+      },
+      {
+        "text": "Parallel sessions use read-only ctx_search, not ctx_index",
+        "passed": true,
+        "evidence": "Matched 5/6 concepts (83%)"
+      },
+      {
+        "text": "Prevents SQLite write contention by sequential indexing then parallel reads",
+        "passed": true,
+        "evidence": "Matched 6/8 concepts (75%)"
+      }
+    ],
+    "deterministic_grades": [
+      {
+        "check_type": "required_terms",
+        "passed": true,
+        "detail": "All 2 terms present"
+      },
+      {
+        "check_type": "regex",
+        "passed": true,
+        "detail": "Pattern 'SQLite|contention|read.?only|sequential.*index' found in output"
+      }
+    ],
+    "pass_rate": 1.0,
+    "passed": 3,
+    "total": 3,
+    "duration_ms": 32860,
+    "grader": "keyword"
+  },
+  {
+    "eval_id": 305,
+    "command": "auto",
+    "status": "graded",
+    "grades": [
+      {
+        "text": "Reports count of phases completed",
+        "passed": true,
+        "evidence": "Matched 4/4 concepts (100%)"
+      },
+      {
+        "text": "Lists decisions made and flags LOW confidence ones for human review",
+        "passed": true,
+        "evidence": "Matched 7/9 concepts (78%)"
+      },
+      {
+        "text": "Resets auto_advance to false",
+        "passed": true,
+        "evidence": "Matched 2/3 concepts (67%)"
+      },
+      {
+        "text": "Reads and confirms STATE.md reflects final position",
+        "passed": true,
+        "evidence": "Matched 5/6 concepts (83%)"
+      }
+    ],
+    "deterministic_grades": [
+      {
+        "check_type": "required_terms",
+        "passed": true,
+        "detail": "All 3 terms present"
+      },
+      {
+        "check_type": "regex",
+        "passed": true,
+        "detail": "Pattern 'confidence|review|complete' found in output"
+      }
+    ],
+    "pass_rate": 1.0,
+    "passed": 4,
+    "total": 4,
+    "duration_ms": 32428,
+    "grader": "keyword"
+  },
+  {
+    "eval_id": 306,
+    "command": "auto",
+    "status": "graded",
+    "grades": [
+      {
+        "text": "Distinguishes API/infra errors from logic errors",
+        "passed": true,
+        "evidence": "Matched 6/6 concepts (100%)"
+      },
+      {
+        "text": "API errors trigger health check with exponential backoff (10s \u2192 20s \u2192 40s \u2192 80s \u2192 120s)",
+        "passed": true,
+        "evidence": "Matched 11/12 concepts (92%)"
+      },
+      {
+        "text": "Logic errors skip health check backoff",
+        "passed": true,
+        "evidence": "Matched 6/6 concepts (100%)"
+      }
+    ],
+    "deterministic_grades": [
+      {
+        "check_type": "required_terms",
+        "passed": true,
+        "detail": "All 2 terms present"
+      },
+      {
+        "check_type": "regex",
+        "passed": true,
+        "detail": "Pattern 'API|infra|connection|logic' found in output"
+      }
+    ],
+    "pass_rate": 1.0,
+    "passed": 3,
+    "total": 3,
+    "duration_ms": 30600,
+    "grader": "keyword"
+  },
+  {
+    "eval_id": 307,
+    "command": "auto",
+    "status": "timeout",
+    "error": "Timed out after 180s",
+    "grades": [],
+    "deterministic_grades": [],
+    "pass_rate": 0.0,
+    "passed": 0,
+    "total": 2,
+    "grader": "keyword"
+  },
+  {
+    "eval_id": 308,
+    "command": "build",
+    "status": "graded",
+    "grades": [
+      {
+        "text": "Reads PLAN.md from the phase directory",
+        "passed": true,
+        "evidence": "Matched 3/4 concepts (75%)"
+      },
+      {
+        "text": "Checks prerequisites like PROJECT.md and STATE.md before building",
+        "passed": true,
+        "evidence": "Matched 4/6 concepts (67%)"
+      }
+    ],
+    "deterministic_grades": [
+      {
+        "check_type": "required_terms",
+        "passed": true,
+        "detail": "All 1 terms present"
+      },
+      {
+        "check_type": "regex",
+        "passed": true,
+        "detail": "Pattern 'read|validate|structure' found in output"
+      }
+    ],
+    "pass_rate": 1.0,
+    "passed": 2,
+    "total": 2,
+    "duration_ms": 34927,
+    "grader": "keyword"
+  },
+  {
+    "eval_id": 309,
+    "command": "build",
+    "status": "graded",
+    "grades": [
+      {
+        "text": "Reads CONTEXT.md from the phase directory for locked decisions and constraints",
+        "passed": true,
+        "evidence": "Matched 6/7 concepts (86%)"
+      },
+      {
+        "text": "CONTEXT.md decisions guide what the build implements and how",
+        "passed": true,
+        "evidence": "Matched 6/7 concepts (86%)"
+      }
+    ],
+    "deterministic_grades": [
+      {
+        "check_type": "required_terms",
+        "passed": true,
+        "detail": "All 1 terms present"
+      },
+      {
+        "check_type": "regex",
+        "passed": true,
+        "detail": "Pattern 'phase|directory|decision' found in output"
+      }
+    ],
+    "pass_rate": 1.0,
+    "passed": 2,
+    "total": 2,
+    "duration_ms": 31387,
+    "grader": "keyword"
+  },
+  {
+    "eval_id": 310,
+    "command": "build",
+    "status": "graded",
+    "grades": [
+      {
+        "text": "Runs the project test suite to check for failures",
+        "passed": true,
+        "evidence": "Matched 6/6 concepts (100%)"
+      },
+      {
+        "text": "Records test results and coverage in SUMMARY.md",
+        "passed": true,
+        "evidence": "Matched 4/5 concepts (80%)"
+      },
+      {
+        "text": "Runs build or type check command to verify code compiles",
+        "passed": true,
+        "evidence": "Matched 7/8 concepts (88%)"
+      }
+    ],
+    "deterministic_grades": [
+      {
+        "check_type": "required_terms",
+        "passed": true,
+        "detail": "All 1 terms present"
+      },
+      {
+        "check_type": "regex",
+        "passed": true,
+        "detail": "Pattern 'coverage|spec|SUMMARY' found in output"
+      }
+    ],
+    "pass_rate": 1.0,
+    "passed": 3,
+    "total": 3,
+    "duration_ms": 26318,
+    "grader": "keyword"
+  },
+  {
+    "eval_id": 311,
+    "command": "build",
+    "status": "timeout",
+    "error": "Timed out after 180s",
+    "grades": [],
+    "deterministic_grades": [],
+    "pass_rate": 0.0,
+    "passed": 0,
+    "total": 2,
+    "grader": "keyword"
+  },
+  {
+    "eval_id": 312,
+    "command": "build",
+    "status": "timeout",
+    "error": "Timed out after 180s",
+    "grades": [],
+    "deterministic_grades": [],
+    "pass_rate": 0.0,
+    "passed": 0,
+    "total": 3,
+    "grader": "keyword"
+  },
+  {
+    "eval_id": 313,
+    "command": "review",
+    "status": "timeout",
+    "error": "Timed out after 180s",
+    "grades": [],
+    "deterministic_grades": [],
+    "pass_rate": 0.0,
+    "passed": 0,
+    "total": 3,
+    "grader": "keyword"
+  },
+  {
+    "eval_id": 314,
+    "command": "review",
+    "status": "timeout",
+    "error": "Timed out after 180s",
+    "grades": [],
+    "deterministic_grades": [],
+    "pass_rate": 0.0,
+    "passed": 0,
+    "total": 3,
+    "grader": "keyword"
+  },
+  {
+    "eval_id": 315,
+    "command": "review",
+    "status": "timeout",
+    "error": "Timed out after 180s",
+    "grades": [],
+    "deterministic_grades": [],
+    "pass_rate": 0.0,
+    "passed": 0,
+    "total": 2,
+    "grader": "keyword"
+  },
+  {
+    "eval_id": 316,
+    "command": "review",
+    "status": "timeout",
+    "error": "Timed out after 180s",
+    "grades": [],
+    "deterministic_grades": [],
+    "pass_rate": 0.0,
+    "passed": 0,
+    "total": 3,
+    "grader": "keyword"
+  },
+  {
+    "eval_id": 317,
+    "command": "fix",
+    "status": "graded",
+    "grades": [
+      {
+        "text": "Searches for the bug location by reading error messages and relevant code",
+        "passed": true,
+        "evidence": "Matched 5/8 concepts (62%)"
+      },
+      {
+        "text": "Identifies the root cause of the crash not just the surface symptom",
+        "passed": true,
+        "evidence": "Matched 4/6 concepts (67%)"
+      },
+      {
+        "text": "Writes a test that captures the bug before applying the fix",
+        "passed": true,
+        "evidence": "Matched 3/6 concepts (50%)"
+      }
+    ],
+    "deterministic_grades": [
+      {
+        "check_type": "required_terms",
+        "passed": true,
+        "detail": "All 2 terms present"
+      },
+      {
+        "check_type": "regex",
+        "passed": true,
+        "detail": "Pattern 'reproduc|fail.*test|before.*fix' found in output"
+      }
+    ],
+    "pass_rate": 1.0,
+    "passed": 3,
+    "total": 3,
+    "duration_ms": 36800,
+    "grader": "keyword"
+  },
+  {
+    "eval_id": 318,
+    "command": "fix",
+    "status": "graded",
+    "grades": [
+      {
+        "text": "Verifies the fix resolves the bug and tests pass",
+        "passed": true,
+        "evidence": "Matched 4/6 concepts (67%)"
+      },
+      {
+        "text": "Checks if similar code patterns elsewhere have the same problem",
+        "passed": true,
+        "evidence": "Matched 4/7 concepts (57%)"
+      }
+    ],
+    "deterministic_grades": [
+      {
+        "check_type": "regex",
+        "passed": true,
+        "detail": "Pattern 'test.*pass|similar|pattern|regress' found in output"
+      }
+    ],
+    "pass_rate": 1.0,
+    "passed": 2,
+    "total": 2,
+    "duration_ms": 43654,
+    "grader": "keyword"
+  },
+  {
+    "eval_id": 319,
+    "command": "fix",
+    "status": "graded",
+    "grades": [
+      {
+        "text": "Searches for auth-related errors or test failures to narrow down",
+        "passed": true,
+        "evidence": "Matched 5/8 concepts (62%)"
+      },
+      {
+        "text": "Does not guess \u2014 investigates to find the specific bug",
+        "passed": true,
+        "evidence": "Matched 3/5 concepts (60%)"
+      }
+    ],
+    "deterministic_grades": [
+      {
+        "check_type": "regex",
+        "passed": true,
+        "detail": "Pattern 'search|investigat|error|log|narrow' found in output"
+      }
+    ],
+    "pass_rate": 1.0,
+    "passed": 2,
+    "total": 2,
+    "duration_ms": 44330,
+    "grader": "keyword"
+  }
+]

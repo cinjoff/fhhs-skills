@@ -182,6 +182,16 @@ and follow its gate function:
 If verification fails: return to Step 2 and iterate. Do NOT proceed to review
 or summary if the fix isn't verified.
 
+### Pattern search (prevent recurrence)
+
+After the fix is verified, search the codebase for similar vulnerable patterns:
+
+1. Identify the root cause pattern (e.g., missing null check, unvalidated input, race condition)
+2. Use Grep or `ctx_search` to find similar patterns in other files
+3. If similar vulnerabilities found: fix them now if trivial (<5 lines each), or note them in the summary as "Related patterns found in: {files}" for follow-up
+
+This step prevents the same class of bug from recurring elsewhere. Skip only if the root cause is truly unique to this one location.
+
 **For MODERATE+ fixes:** Read `skills/simplify/PROMPT.md` and follow it on the fix diff. Then suggest `/fh:review` for comprehensive analysis.
 
 **For SIMPLE fixes:** Suggest `/fh:review --quick` for a fast quality check.
