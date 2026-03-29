@@ -8,6 +8,14 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.58.2] - 2026-03-30
+
+### Fixed
+- **`/fh:auto` orchestrator discovery** — combines find and node invocation into a single bash call so the `$ORCHESTRATOR` path variable isn't lost between tool calls; also widens search from `cache/fhhs-skills` to all of `cache/` for robustness
+
+### Added
+- **Auto-pipeline eval fixture and deterministic checks** — adds `auto-pipeline` fixture and deterministic regex checks to eval suite for the concurrent build pipeline
+
 ## [1.58.1] - 2026-03-30
 
 ### Fixed
