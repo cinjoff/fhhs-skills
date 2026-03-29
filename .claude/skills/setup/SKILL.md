@@ -388,7 +388,7 @@ if [ -z "$PLUGIN_ROOT" ]; then
   fi
 fi
 
-# Link bin + hooks
+# Link bin + hooks, then record the resolved root so other skills can use it
 if [ -n "$PLUGIN_ROOT" ] && [ -d "$PLUGIN_ROOT/bin" ]; then
   mkdir -p "$HOME/.claude/get-shit-done"
   ln -sfn "$PLUGIN_ROOT/bin" "$HOME/.claude/get-shit-done/bin"
@@ -400,6 +400,16 @@ if [ -n "$PLUGIN_ROOT" ] && [ -d "$PLUGIN_ROOT/bin" ]; then
   else
     echo "⚠ Hooks directory not found — statusline and update check will not be configured"
   fi
+
+  node -e "
+const fs = require('fs');
+const f = process.env.HOME + '/.claude/settings.json';
+let s = {};
+try { s = JSON.parse(fs.readFileSync(f, 'utf8')); } catch {}
+s.env = Object.assign(s.env || {}, { FHHS_SKILLS_ROOT: process.argv[1] });
+fs.writeFileSync(f, JSON.stringify(s, null, 2) + '\n');
+" "$PLUGIN_ROOT"
+  echo "✓ FHHS_SKILLS_ROOT set to $PLUGIN_ROOT"
 else
   echo "ERROR: Could not find fhhs-skills plugin root"
 fi

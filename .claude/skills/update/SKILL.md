@@ -290,6 +290,15 @@ if [ -n "$PLUGIN_ROOT" ] && [ -d "$PLUGIN_ROOT/bin" ]; then
   ln -sfn "$PLUGIN_ROOT/bin" "$HOME/.claude/get-shit-done/bin"
   [ -d "$PLUGIN_ROOT/hooks" ] && ln -sfn "$PLUGIN_ROOT/hooks" "$HOME/.claude/get-shit-done/hooks"
   echo "✓ CLI tools re-linked"
+  node -e "
+const fs = require('fs');
+const f = process.env.HOME + '/.claude/settings.json';
+let s = {};
+try { s = JSON.parse(fs.readFileSync(f, 'utf8')); } catch {}
+s.env = Object.assign(s.env || {}, { FHHS_SKILLS_ROOT: process.argv[1] });
+fs.writeFileSync(f, JSON.stringify(s, null, 2) + '\n');
+" "$PLUGIN_ROOT"
+  echo "✓ FHHS_SKILLS_ROOT updated to $PLUGIN_ROOT"
 else
   echo "⚠ Could not find plugin root for re-linking"
 fi
