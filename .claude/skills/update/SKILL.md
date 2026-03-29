@@ -295,6 +295,34 @@ else
 fi
 ```
 
+### 5a-cache: Clean plugin cache
+
+Remove old cached plugin versions (keeps only the current one) and orphaned temp directories. This speeds up plugin discovery on session start.
+
+```bash
+CACHE_DIR="$HOME/.claude/plugins/cache"
+CURRENT_VERSION="$(basename "$LATEST")"
+
+# Remove old fhhs-skills cache versions
+if [ -d "$CACHE_DIR/fhhs-skills/fh" ]; then
+  REMOVED=0
+  for dir in "$CACHE_DIR/fhhs-skills/fh"/*/; do
+    dir="${dir%/}"
+    if [ "$(basename "$dir")" != "$CURRENT_VERSION" ]; then
+      rm -rf "$dir" && REMOVED=$((REMOVED + 1))
+    fi
+  done
+  [ "$REMOVED" -gt 0 ] && echo "✓ Removed $REMOVED old cached version(s)" || echo "✓ Cache already clean"
+fi
+
+# Remove orphaned temp_git_* directories from failed installs/updates
+TEMP_REMOVED=0
+for dir in "$CACHE_DIR"/temp_git_*/; do
+  [ -d "$dir" ] && rm -rf "$dir" && TEMP_REMOVED=$((TEMP_REMOVED + 1))
+done
+[ "$TEMP_REMOVED" -gt 0 ] && echo "✓ Removed $TEMP_REMOVED orphaned temp directories"
+```
+
 ### 5a½ + 5a¾ + 5a⅞: Run post-update reconciliation script
 
 Steps 5a½ (claude-mem patch), 5a¾ (CLAUDE_MEM_PROJECT), and 5a⅞ (tracker refresh) are handled by a script in `bin/` which was just re-linked in Step 5a. This ensures the NEW version's logic runs even when the SKILL.md prompt was loaded from the old cached version.

@@ -56,6 +56,14 @@ This project already has `.planning/` state — likely from a previous `/fh:new-
 | GSD project symlink | `[ -d .claude/get-shit-done/bin ]` | `mkdir -p .claude/get-shit-done && ln -sfn "$HOME/.claude/get-shit-done/bin" .claude/get-shit-done/bin` |
 | `config.json` freshness | Always run | `node ./.claude/get-shit-done/bin/gsd-tools.cjs config-ensure-section` — creates config with defaults if missing; skips if already present (runtime defaults cover missing keys) |
 
+#### Template identity cleanup
+
+| Check | How | If stale |
+|-------|-----|----------|
+| `package.json` name | `node -e "const p=JSON.parse(require('fs').readFileSync('package.json','utf8'));console.log(p.name==='fh-starter-project'?'STALE':'OK')"` | Update `name` to `$(basename "$(pwd)")` — the project was scaffolded from the starter template but never customized |
+| `supabase/config.toml` project_id | `grep -q 'fh-starter-project\|fh_starter_project' supabase/config.toml 2>/dev/null` | Update `project_id` to match the project name |
+| Remaining template refs | `grep -rl "fh-starter-project" --include="*.ts" --include="*.json" --include="*.toml" . 2>/dev/null \| grep -v node_modules` | Replace with actual project name |
+
 #### Project config
 
 | Check | How | If missing |
@@ -494,19 +502,198 @@ command -v gh >/dev/null 2>&1 && echo "OK" || echo "MISSING"
 
 If `gh` is MISSING: show a warning and skip. The user can run `brew install gh && gh auth login` to enable this later. The project will be scaffolded manually in Phase 1 instead.
 
-Pull starter template files into the project. The repo likely already exists (with commits and a remote), so we clone the template separately and copy its files in:
+**Create a new repository from the template.** This gives us a clean git history, proper GitHub template linkage, and avoids the messy rsync-into-existing-repo pattern.
+
+Derive the project name from the current directory:
 
 ```bash
-# Clone template into a temp directory
-TMPDIR=$(mktemp -d)
-gh repo clone cinjoff/fh-starter-project "$TMPDIR/starter" -- --depth 1
+PROJECT_NAME="$(basename "$(pwd)")"
+```
 
-# Copy template files into the project (excluding .git)
-rsync -a --exclude='.git' "$TMPDIR/starter/" ./
+**Determine the scaffolding strategy based on the current directory state:**
+
+```bash
+# Check if we're in an empty directory or an existing repo
+IS_GIT=$(git rev-parse --is-inside-work-tree 2>/dev/null && echo "true" || echo "false")
+IS_EMPTY=$([ -z "$(ls -A . 2>/dev/null | grep -v '^\.\(git\|planning\|claude\)$')" ] && echo "true" || echo "false")
+HAS_REMOTE=$(git remote get-url origin 2>/dev/null && echo "true" || echo "false")
+echo "IS_GIT=$IS_GIT IS_EMPTY=$IS_EMPTY HAS_REMOTE=$HAS_REMOTE"
+```
+
+#### Strategy A: Fresh start (no git or empty directory — the common case)
+
+This is the cleanest path. Create a new GitHub repo from the template, then clone it into the current directory:
+
+```bash
+# Remove any existing empty .git (fresh git init with no commits)
+if [ "$IS_GIT" = "true" ]; then
+  COMMIT_COUNT=$(git rev-list --count HEAD 2>/dev/null || echo "0")
+  if [ "$COMMIT_COUNT" = "0" ]; then
+    rm -rf .git
+  fi
+fi
+
+# Create a new private repo from the template
+gh repo create "$PROJECT_NAME" --private --template cinjoff/fh-starter-project
+
+# Clone into a temp location (gh repo create --template doesn't support --clone into non-empty dirs)
+TMPDIR=$(mktemp -d)
+gh repo clone "cinjoff/$PROJECT_NAME" "$TMPDIR/$PROJECT_NAME"
+
+# Move everything (including .git and dotfiles) into the project directory — POSIX-portable
+find "$TMPDIR/$PROJECT_NAME" -maxdepth 1 -mindepth 1 -exec mv {} . \;
 
 # Clean up
 rm -rf "$TMPDIR"
+
+scaffold_strategy="template_repo"
+echo "✓ Created repo from template — origin set to cinjoff/$PROJECT_NAME"
 ```
+
+> **Why `--template` instead of `--clone`?** GitHub's template repos create a NEW repo with a single "Initial commit" (clean history), set the "generated from" badge on GitHub, and don't carry the template's commit history. This is better than forking (which carries all history and implies upstream tracking) or rsync (which loses git provenance).
+
+**If `gh repo create --template` fails** (e.g., the template repo isn't marked as a GitHub template, or the user doesn't have create permissions), fall back to the clone+rsync approach:
+
+```bash
+# Fallback: clone and copy files
+TMPDIR=$(mktemp -d)
+gh repo clone cinjoff/fh-starter-project "$TMPDIR/starter" -- --depth 1
+rsync -a --exclude='.git' "$TMPDIR/starter/" ./
+rm -rf "$TMPDIR"
+scaffold_strategy="rsync_copy"
+echo "⚠ Fell back to rsync (template creation failed) — you'll need to create a GitHub repo manually in Step 8b"
+```
+
+#### Strategy B: Existing repo with remote (e.g., Conductor worktree)
+
+When running inside a Conductor workspace or an existing repo that already has a remote, we can't replace .git. Use the rsync approach but with a cleaner commit message:
+
+```bash
+TMPDIR=$(mktemp -d)
+gh repo clone cinjoff/fh-starter-project "$TMPDIR/starter" -- --depth 1
+rsync -a --exclude='.git' "$TMPDIR/starter/" ./
+rm -rf "$TMPDIR"
+scaffold_strategy="rsync_copy"
+echo "✓ Template files copied into existing repo"
+```
+
+> **Note:** Strategy B skips Steps 8a and 8b since the repo and remote already exist. The template commit in this case is just a regular commit on the existing branch.
+
+**Track which strategy was used** as `scaffold_strategy` (`template_repo` or `rsync_copy`) — this determines whether Steps 8a/8b are needed later.
+
+### 3a: Customize Template for This Project
+
+The starter template ships with generic placeholder names. Update them to match the actual project before installing dependencies.
+
+Derive the project name from the directory name (kebab-case):
+
+```bash
+PROJECT_NAME="$(basename "$(pwd)")"
+```
+
+#### 1. Update package.json
+
+Read `package.json` and update these fields:
+
+```bash
+node -e "
+const fs = require('fs');
+const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+const name = '${PROJECT_NAME}'.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+pkg.name = name;
+pkg.version = '0.1.0';
+fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+console.log('✓ package.json name: ' + name);
+"
+```
+
+#### 2. Update supabase/config.toml project_id
+
+The Supabase CLI uses `project_id` for container naming and `.orb.local` domains. Update it from the template default:
+
+```bash
+if [ -f supabase/config.toml ]; then
+  # Replace the project_id with the project name (must be alphanumeric + hyphens)
+  SAFE_NAME=$(echo "$PROJECT_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g')
+  sed -i '' "s/^project_id = \".*\"/project_id = \"$SAFE_NAME\"/" supabase/config.toml
+  echo "✓ supabase project_id: $SAFE_NAME"
+fi
+```
+
+#### 3. Replace template README
+
+The starter template's README describes the template itself. Replace it with a minimal project-specific one:
+
+```bash
+cat > README.md <<EOF
+# ${PROJECT_NAME}
+
+> TODO: Add project description
+
+## Getting Started
+
+\`\`\`bash
+pnpm install
+pnpm run setup   # starts local Supabase, seeds database
+pnpm run dev     # starts Next.js dev server
+\`\`\`
+
+## Scripts
+
+| Command | Description |
+|---------|-------------|
+| \`pnpm dev\` | Start development server |
+| \`pnpm build\` | Production build |
+| \`pnpm test\` | Run unit tests |
+| \`pnpm test:e2e\` | Run Playwright E2E tests |
+| \`pnpm run db:start\` | Start local Supabase |
+| \`pnpm run db:stop\` | Stop local Supabase |
+| \`pnpm run db:reset\` | Reset DB + re-seed |
+| \`pnpm run db:studio\` | Open Supabase Studio |
+EOF
+echo "✓ README.md replaced with project-specific version"
+```
+
+#### 4. Remove template CLAUDE.md
+
+The starter template includes its own `CLAUDE.md` describing template conventions. Remove it — Step 5 generates a fresh one tailored to this project's actual vision and stack:
+
+```bash
+rm -f CLAUDE.md
+echo "✓ Template CLAUDE.md removed (Step 5 will generate project-specific one)"
+```
+
+#### 5. Scrub remaining template references
+
+Search for and replace any remaining "fh-starter-project" references in non-binary files:
+
+```bash
+# Find files still referencing the template name (excluding node_modules, .git)
+REFS=$(grep -rl "fh-starter-project" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.json" --include="*.md" --include="*.toml" --include="*.yaml" --include="*.yml" . 2>/dev/null | grep -v node_modules | grep -v .git)
+
+if [ -n "$REFS" ]; then
+  echo "Updating template references in:"
+  echo "$REFS" | while read -r file; do
+    sed -i '' "s/fh-starter-project/$PROJECT_NAME/g" "$file"
+    echo "  ✓ $file"
+  done
+else
+  echo "✓ No remaining template references found"
+fi
+```
+
+#### 6. Update .env.example (if present)
+
+If the template includes `.env.example`, update the `BETTER_AUTH_URL` and `NEXT_PUBLIC_APP_URL` comments to use the project name:
+
+```bash
+if [ -f .env.example ]; then
+  sed -i '' "s/fh-starter-project/$PROJECT_NAME/g" .env.example
+  echo "✓ .env.example updated"
+fi
+```
+
+---
 
 Pin Node version so all environments (shell, Conductor, CI) agree. This prevents native module version mismatches:
 
@@ -545,11 +732,13 @@ cd "$HOME" && npx skills add shadcn/ui
 
 Show: `✓ shadcn skills installed globally (~/.skills/shadcn)` or `✓ shadcn skills already installed`.
 
-Commit the template scaffolding:
+Commit the template scaffolding (only for Strategy B — Strategy A already has the initial commit from `gh repo create --template`):
 
 ```bash
-git add -A
-git commit -m "feat: scaffold from fh-starter-project template"
+if [ "$scaffold_strategy" = "rsync_copy" ]; then
+  git add -A
+  git commit -m "feat: scaffold from fh-starter-project template"
+fi
 ```
 
 Do NOT push yet — later steps (Supabase, planning files) will commit on top.
@@ -786,6 +975,10 @@ Set up GitHub and Vercel so the project is ready for deployment from day one.
 
 ### 8a: Initialize git (if needed)
 
+**If `scaffold_strategy` is `template_repo`:** Git is already initialized with a remote — skip to 8b verification.
+
+**Otherwise:**
+
 ```bash
 git rev-parse --is-inside-work-tree 2>/dev/null && echo "GIT_OK" || echo "GIT_MISSING"
 ```
@@ -807,7 +1000,15 @@ If files are already committed (git was pre-existing), skip the commit.
 
 ### 8b: Create GitHub repository
 
-Check if a remote already exists:
+**If `scaffold_strategy` is `template_repo`:** The repo was already created on GitHub in Step 3. Verify the remote is set:
+
+```bash
+git remote get-url origin 2>/dev/null && echo "REMOTE_EXISTS: $(git remote get-url origin)" || echo "NO_REMOTE"
+```
+
+If `REMOTE_EXISTS`, show the URL and skip creation. If `NO_REMOTE` (shouldn't happen with Strategy A), fall through to creation below.
+
+**Otherwise:** Check if a remote already exists:
 
 ```bash
 git remote get-url origin 2>/dev/null && echo "REMOTE_EXISTS" || echo "NO_REMOTE"
@@ -904,9 +1105,58 @@ This only needs to be done once.
 
 ### 8e: Set up Supabase (conditional)
 
-**Only run this step if the user chose Supabase in Step 2.** If not, skip to Step 9.
+**Only run this step if the user chose Supabase in Step 2 OR if `scaffold_strategy` is set (template includes Supabase by default).** If neither condition is met, skip to Step 9.
 
-#### Choose local vs cloud Supabase
+#### Template Auto-Setup Mode
+
+**If `scaffold_strategy` is `template_repo` or `rsync_copy` (Step 3 ran):** The template already includes `supabase/config.toml`, `scripts/setup.sh`, and `scripts/seed.ts`. Skip the interactive question and default to `local` mode. Proceed directly to **8e-local** with no user prompts.
+
+If Docker/OrbStack is not available AND cannot be installed (user declines or system doesn't support it), create `.env.local` with SQLite fallback defaults instead of blocking:
+
+```bash
+# Generate a random secret for local auth
+AUTH_SECRET=$(openssl rand -base64 32)
+
+cat > .env.local <<EOF
+# SQLite fallback mode — no Docker/Supabase required
+# Organizations and some API routes require Postgres
+DATABASE_URL=file:./local.db
+BETTER_AUTH_SECRET=${AUTH_SECRET}
+BETTER_AUTH_URL=http://localhost:3000
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+SENTRY_LOCAL=true
+NEXT_PUBLIC_SENTRY_LOCAL=true
+EOF
+```
+
+Show: `⊘ Docker not available — using SQLite for local development. Organizations and some API routes require Postgres. You can run \`scripts/setup.sh\` later to switch to Supabase.`
+
+After local Supabase setup completes (or SQLite fallback is applied), run the template's seed script if Supabase is running:
+
+```bash
+if docker ps 2>/dev/null | grep -q supabase; then
+  npx tsx scripts/seed.ts
+  echo "✓ Database seeded with demo data"
+fi
+```
+
+Show a summary:
+
+```
+╔══════════════════════════════════════════════════════════════╗
+║  Template Setup Complete                                      ║
+╠══════════════════════════════════════════════════════════════╣
+║  ✓ Dependencies installed                                     ║
+║  ✓ Supabase running locally (or: ⊘ Using SQLite fallback)    ║
+║  ✓ Database seeded (or: ⊘ Skipped — no Supabase)             ║
+║  ✓ .env.local created                                        ║
+║  Ready to go — run `<pkg_manager> dev` to start building      ║
+╚══════════════════════════════════════════════════════════════╝
+```
+
+#### Choose local vs cloud Supabase (non-template projects)
+
+**Skip this question if Step 3 ran (template already scaffolded — handled above).**
 
 Ask:
 
@@ -1061,12 +1311,18 @@ brew install supabase/tap/supabase
 
 ##### 5. Initialize Supabase locally
 
+If the starter template was used (Step 3), `supabase/` already exists with `config.toml` and migrations. Skip initialization:
+
 ```bash
-# Initialize Supabase project structure (creates supabase/ directory)
-supabase init 2>/dev/null || true
+if [ -d "supabase" ] && [ -f "supabase/config.toml" ]; then
+  echo "✓ supabase/ already exists (from starter template) — skipping init"
+else
+  # Initialize Supabase project structure (creates supabase/ directory)
+  supabase init 2>/dev/null || true
+fi
 ```
 
-Edit `supabase/config.toml` to configure local development:
+Edit `supabase/config.toml` to configure local development (if not already configured by the starter template):
 - Postgres on port 54322 (default)
 - Keep Studio enabled on port 54323 (useful for inspecting data)
 - Keep other services at defaults
@@ -1094,32 +1350,49 @@ LOCAL_DB_URL=$(echo "$SUPABASE_STATUS" | python3 -c "import sys,json; print(json
 
 ##### 7. Run existing migrations and seeds
 
-Check for and run any existing migrations and seed data:
+Check for and run any existing migrations and seed data. The starter template uses a TypeScript seed script (`scripts/seed.ts`) via `tsx` instead of `supabase/seed.sql`, so check for both:
 
 ```bash
 # Check for migration files
 MIGRATION_COUNT=$(ls supabase/migrations/*.sql 2>/dev/null | wc -l | tr -d ' ')
 echo "Found $MIGRATION_COUNT migration(s)"
 
-# Check for seed file
-HAS_SEED=false
-[ -f "supabase/seed.sql" ] && HAS_SEED=true
-echo "Seed file (supabase/seed.sql): $HAS_SEED"
+# Check for seed files (SQL and TypeScript)
+HAS_SQL_SEED=false
+HAS_TS_SEED=false
+HAS_SEED_SCRIPT=false
+[ -f "supabase/seed.sql" ] && HAS_SQL_SEED=true
+[ -f "scripts/seed.ts" ] && HAS_TS_SEED=true
+
+# Check for db:seed or db:reset script in package.json
+if [ -f "package.json" ]; then
+  HAS_SEED_SCRIPT=$(node -e "const p=JSON.parse(require('fs').readFileSync('package.json','utf8'));console.log(p.scripts?.['db:seed']||p.scripts?.['db:reset']?'true':'false')" 2>/dev/null || echo "false")
+fi
+
+echo "SQL seed (supabase/seed.sql): $HAS_SQL_SEED"
+echo "TS seed (scripts/seed.ts): $HAS_TS_SEED"
+echo "Seed script in package.json: $HAS_SEED_SCRIPT"
 
 if [ "$MIGRATION_COUNT" -gt 0 ]; then
-  # Apply migrations to local database (also runs seed.sql if it exists)
+  # Apply migrations to local database
   supabase db reset
   echo "✓ Migrations applied"
-  [ "$HAS_SEED" = true ] && echo "✓ Seed data loaded" || echo "⊘ No seed.sql — database has schema but no test data"
-else
-  echo "No migrations found — database is empty"
+  [ "$HAS_SQL_SEED" = true ] && echo "✓ SQL seed data loaded via supabase db reset"
+fi
+
+# Run TypeScript seed if present (starter template pattern)
+if [ "$HAS_TS_SEED" = true ]; then
+  echo "Running TypeScript seed script..."
+  npx tsx scripts/seed.ts && echo "✓ TypeScript seed data loaded (test users, orgs, members)" || echo "⚠ Seed script failed — run '$PM run db:seed' manually after fixing"
+elif [ "$HAS_SQL_SEED" = false ] && [ "$MIGRATION_COUNT" -eq 0 ]; then
+  echo "No migrations or seed data found — database is empty"
   echo "Tip: Create migrations with 'supabase migration new <name>'"
 fi
 ```
 
-If `supabase/seed.sql` exists, it runs automatically during `supabase db reset`. If it doesn't exist yet, note this in the setup output — the project plan will create it.
+The starter template's `scripts/seed.ts` creates Better Auth tables (`user`, `account`, `session`, `verification`) and seeds test data (3 users, 3 orgs, members, customers). It uses the `DATABASE_URL` from `.env.local` — ensure that file exists before running the seed.
 
-**For brownfield projects** (existing codebase with migrations): The `supabase db reset` command drops and recreates the database, applies all migrations in order, then runs `seed.sql`. This is the correct approach for local dev — it guarantees schema matches the migration history.
+**For brownfield projects** (existing codebase with migrations): The `supabase db reset` command drops and recreates the database, applies all migrations in order, then runs `seed.sql`. This is the correct approach for local dev — it guarantees schema matches the migration history. If the project also has `scripts/seed.ts`, it runs after `supabase db reset` to populate Better Auth data.
 
 ##### 8. Generate local .env.local
 
@@ -1151,14 +1424,27 @@ EOF
 
 ##### 9. Add package.json scripts and helper
 
-Add convenience scripts for local Supabase management. Read `package.json`, then add to the `scripts` section:
+If the starter template was used (Step 3), `package.json` already has `db:*` scripts and a `setup` script. Check before adding:
+
+```bash
+node -e "
+const pkg = JSON.parse(require('fs').readFileSync('package.json', 'utf8'));
+const has = (k) => !!pkg.scripts?.[k];
+console.log('HAS_SETUP=' + has('setup'));
+console.log('HAS_DB_START=' + has('db:start'));
+console.log('HAS_DB_SEED=' + has('db:seed'));
+"
+```
+
+If scripts already exist, skip adding them. If missing, add convenience scripts for local Supabase management. Read `package.json`, then add to the `scripts` section:
 
 ```json
 {
   "setup": "scripts/setup.sh || (supabase start && echo 'Ready')",
   "db:start": "supabase start",
   "db:stop": "supabase stop",
-  "db:reset": "supabase db reset",
+  "db:seed": "npx tsx scripts/seed.ts",
+  "db:reset": "supabase db reset && npx tsx scripts/seed.ts",
   "db:studio": "sh scripts/open-studio.sh",
   "db:clean": "docker builder prune -f",
   "db:clean:all": "docker builder prune -af"

@@ -8,6 +8,29 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.56.0] - 2026-03-29
+
+### Added
+- **Supabase template auto-setup** — `/fh:new-project` auto-detects template scaffolding and defaults to local Supabase without prompting, with SQLite fallback when Docker is unavailable and automatic database seeding post-setup
+
+## [1.55.0] - 2026-03-29
+
+### Added
+- **Template identity customization** — `/fh:new-project` now customizes the starter template after cloning: updates package.json name, supabase config project_id, replaces README, removes template CLAUDE.md, and scrubs all `fh-starter-project` references
+- **GitHub template repo scaffolding** — new projects use `gh repo create --template` for clean git history and GitHub "generated from" badge, with rsync fallback for Conductor worktrees
+- **TypeScript seed support** — Supabase setup detects and runs `scripts/seed.ts` (Better Auth tables + test data) alongside standard `supabase/seed.sql`
+- **Brownfield template cleanup** — sync mode audit checks for stale `fh-starter-project` references in existing projects and fixes them
+- **Template customization evals** — 3 new evals (312-314) covering template identity, brownfield sync, and TS seed handling
+
+### Changed
+- **Supabase init skip** — skips `supabase init` when starter template already provides `supabase/` directory with config
+- **Package.json script dedup** — checks for existing `db:*` scripts before adding, avoiding duplicates from starter template
+
+## [1.54.1] - 2026-03-29
+
+### Changed
+- **Update skill cache cleanup** — `/fh:update` now removes old cached plugin versions and orphaned temp directories after updating, speeding up plugin discovery on new session start
+
 ## [1.54.0] - 2026-03-29
 
 ### Added
