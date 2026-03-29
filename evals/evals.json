@@ -9697,7 +9697,7 @@
     {
       "id": 293,
       "command": "update",
-      "prompt": "update --global — I have 5 projects across 3 Conductor workspaces, but 2 of the projects were deleted from disk last week. What happens to those stale entries?",
+      "prompt": "update --global \u2014 I have 5 projects across 3 Conductor workspaces, but 2 of the projects were deleted from disk last week. What happens to those stale entries?",
       "expected_output": "Should discover all 5 registered projects, detect that 2 paths no longer exist on disk (fs.existsSync returns false), skip reconciliation for those 2, auto-remove the stale entries from ~/.claude/tracker/projects.json, and report the cleanup in the summary. Should NOT error out or stop processing because of missing paths.",
       "files": [],
       "assertions": [
@@ -9739,8 +9739,8 @@
     {
       "id": 294,
       "command": "update",
-      "prompt": "update --global — some of my projects don't have a .planning/ directory yet (they're just regular repos with .claude/settings.json). How does global update handle those?",
-      "expected_output": "Projects without .planning/ should still receive environment reconciliation (post-update-reconcile.sh for claude-mem patch and env vars, changelog reconcile for tool/hook/env gap checks). Health --repair should be skipped since there's no .planning/ to validate. The results table should show health as 'skipped' or '—' for those projects.",
+      "prompt": "update --global \u2014 some of my projects don't have a .planning/ directory yet (they're just regular repos with .claude/settings.json). How does global update handle those?",
+      "expected_output": "Projects without .planning/ should still receive environment reconciliation (post-update-reconcile.sh for claude-mem patch and env vars, changelog reconcile for tool/hook/env gap checks). Health --repair should be skipped since there's no .planning/ to validate. The results table should show health as 'skipped' or '\u2014' for those projects.",
       "files": [],
       "assertions": [
         {
@@ -9777,8 +9777,8 @@
     {
       "id": 295,
       "command": "update",
-      "prompt": "update --global — I use Conductor with worktrees. I have 3 worktrees for the same repo (fh-starter-project/havana, fh-starter-project/kyoto, fh-starter-project/tokyo). Will each worktree get its own reconciliation pass?",
-      "expected_output": "Yes — each Conductor worktree is treated as a separate project because each has its own .claude/settings.json and potentially different .planning/ state. The global reconcile discovers them individually (from tracker registry or Conductor scan) and runs reconciliation on each. The CLAUDE_MEM_PROJECT env var is set correctly per-worktree using git rev-parse --git-common-dir to resolve the actual repo name. Results table should show each worktree with its Conductor workspace group.",
+      "prompt": "update --global \u2014 I use Conductor with worktrees. I have 3 worktrees for the same repo (fh-starter-project/havana, fh-starter-project/kyoto, fh-starter-project/tokyo). Will each worktree get its own reconciliation pass?",
+      "expected_output": "Yes \u2014 each Conductor worktree is treated as a separate project because each has its own .claude/settings.json and potentially different .planning/ state. The global reconcile discovers them individually (from tracker registry or Conductor scan) and runs reconciliation on each. The CLAUDE_MEM_PROJECT env var is set correctly per-worktree using git rev-parse --git-common-dir to resolve the actual repo name. Results table should show each worktree with its Conductor workspace group.",
       "files": [],
       "assertions": [
         {
@@ -9816,7 +9816,7 @@
     {
       "id": 296,
       "command": "update",
-      "prompt": "update --global — what if a project has env gaps that the global reconcile detects but can't auto-fix (like missing tool installs or hooks)? How does it report that?",
+      "prompt": "update --global \u2014 what if a project has env gaps that the global reconcile detects but can't auto-fix (like missing tool installs or hooks)? How does it report that?",
       "expected_output": "The global reconcile script runs changelog reconcile which detects env gaps but does NOT auto-remediate them (tool installs, hook additions require the full SKILL.md remediation logic). It reports the gap count per project in the results table. For projects with remaining gaps, suggests running /fh:update individually in each project to apply the full remediation. The summary shows total env gaps across all projects.",
       "files": [],
       "assertions": [
@@ -9854,7 +9854,7 @@
     {
       "id": 297,
       "command": "update",
-      "prompt": "update --global — what if the tracker registry doesn't exist yet (fresh install, no projects tracked)?",
+      "prompt": "update --global \u2014 what if the tracker registry doesn't exist yet (fresh install, no projects tracked)?",
       "expected_output": "Should fall back to Conductor workspace scan as the secondary discovery source. If ~/conductor/workspaces/ exists, scan all subdirectories for .planning/ or .claude/settings.json. If neither source finds any projects, report 'No projects found' and suggest running /fh:new-project. Should NOT error out or crash when projects.json is missing.",
       "files": [],
       "assertions": [
@@ -9997,7 +9997,7 @@
       "id": 301,
       "command": "setup",
       "prompt": "/fh:setup --check",
-      "expected_output": "When invoked with --check, /fh:setup should validate the current environment and display a status table showing each component (node, npm, gh, TypeScript LSP, GSD symlink, etc.) with pass/fail indicators. It must NOT run any installation steps — no brew install, no npm install -g, no plugin install, no symlink creation. The output must include a SETUP STATUS section or equivalent component table. The check-only mode is purely diagnostic.",
+      "expected_output": "When invoked with --check, /fh:setup should validate the current environment and display a status table showing each component (node, npm, gh, TypeScript LSP, GSD symlink, etc.) with pass/fail indicators. It must NOT run any installation steps \u2014 no brew install, no npm install -g, no plugin install, no symlink creation. The output must include a SETUP STATUS section or equivalent component table. The check-only mode is purely diagnostic.",
       "files": [],
       "assertions": [
         {
@@ -10077,7 +10077,7 @@
       "id": 303,
       "command": "map-codebase",
       "prompt": "When fallow is NOT installed, /fh:map-codebase should skip static analysis silently and produce the same CODEBASE.md output without mentioning Fallow",
-      "expected_output": "Should detect that fallow is not available, skip static analysis without error, and proceed to map the codebase normally. The resulting CODEBASE.md output should be identical in structure to a run without Fallow — no error messages about missing fallow, no 'fallow not found' warnings in the output.",
+      "expected_output": "Should detect that fallow is not available, skip static analysis without error, and proceed to map the codebase normally. The resulting CODEBASE.md output should be identical in structure to a run without Fallow \u2014 no error messages about missing fallow, no 'fallow not found' warnings in the output.",
       "files": [],
       "assertions": [
         {
@@ -10145,45 +10145,6 @@
           "Fallow Scope Augmentation",
           "circular dependency",
           "unused exports"
-        ]
-      }
-    },
-    {
-      "id": 305,
-      "command": "fix",
-      "prompt": "/fh:fix, /fh:refactor, and /fh:extract should reference Serena MCP tools (find_symbol, find_referencing_symbols, rename_symbol) as enhanced alternatives but explicitly fall back to built-in LSP when Serena is not connected",
-      "expected_output": "Skills /fh:fix, /fh:refactor, and /fh:extract should mention Serena MCP tools (find_symbol, find_referencing_symbols, rename_symbol) as enhanced alternatives for symbol navigation and renaming. Each skill must also include an explicit fallback pattern that uses built-in LSP tools when Serena is not connected, ensuring the skill works correctly without Serena.",
-      "files": [],
-      "assertions": [
-        {
-          "text": "References Serena MCP tool find_symbol",
-          "type": "behavioral"
-        },
-        {
-          "text": "References Serena MCP tool find_referencing_symbols",
-          "type": "behavioral"
-        },
-        {
-          "text": "References Serena MCP tool rename_symbol",
-          "type": "behavioral"
-        },
-        {
-          "text": "Includes explicit fallback to built-in LSP when Serena is not connected",
-          "type": "behavioral"
-        }
-      ],
-      "tier": "smoke",
-      "tags": [
-        "serena",
-        "degradation"
-      ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "find_symbol",
-          "find_referencing_symbols",
-          "rename_symbol",
-          "fallback"
         ]
       }
     },
@@ -10405,6 +10366,111 @@
           "pattern": "autoState.activity_events"
         }
       ]
+    },
+    {
+      "id": 312,
+      "command": "learnings",
+      "prompt": "/fh:learnings --days 7",
+      "expected_output": "Should handle case where claude-mem returns zero observations gracefully \u2014 present empty dashboard with no issues to file, not crash or show errors",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Handles empty observation set gracefully",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT attempt to file GitHub issues when there are no observations",
+          "type": "guard"
+        },
+        {
+          "text": "Suggests extending window or checking claude-mem for more observations",
+          "type": "output"
+        }
+      ],
+      "tier": "full",
+      "tags": [
+        "edge-case"
+      ],
+      "checks": []
+    },
+    {
+      "id": 313,
+      "command": "learnings",
+      "prompt": "analyze learnings and file issues",
+      "expected_output": "Should detect gh auth failure and stop with clear guidance to run gh auth login, before attempting any issue creation",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects gh auth failure before attempting issue creation",
+          "type": "behavioral"
+        },
+        {
+          "text": "Stops before creating any GitHub issues",
+          "type": "guard"
+        },
+        {
+          "text": "Suggests running gh auth login to fix authentication",
+          "type": "output"
+        }
+      ],
+      "scenario_requires": [
+        "no_gh_auth"
+      ],
+      "tier": "full",
+      "tags": [
+        "guard",
+        "edge-case"
+      ],
+      "checks": []
+    },
+    {
+      "id": 314,
+      "command": "learnings",
+      "prompt": "/fh:learnings --days 30",
+      "expected_output": "Should parse --days 30 flag and use 30-day window instead of default 14 days",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Parses --days flag from the prompt",
+          "type": "behavioral"
+        },
+        {
+          "text": "Uses 30-day window for observation query",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT use default 14-day window",
+          "type": "guard"
+        }
+      ],
+      "tier": "full",
+      "tags": [
+        "happy-path"
+      ],
+      "checks": []
+    },
+    {
+      "id": 315,
+      "command": "learnings",
+      "prompt": "what did I learn about React hooks?",
+      "expected_output": "Should NOT trigger /fh:learnings \u2014 this is a general knowledge question, not a request to analyze claude-mem workflow observations",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Does not trigger the learnings skill for a general knowledge question",
+          "type": "guard"
+        },
+        {
+          "text": "Recognizes question is about general knowledge, not workflow observation analysis",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "full",
+      "tags": [
+        "misroute",
+        "guard"
+      ],
+      "checks": []
     }
   ]
 }
