@@ -8,6 +8,13 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.58.1] - 2026-03-30
+
+### Fixed
+- **Vercel auth check in `/fh:new-project`** — checks `vercel whoami` before attempting to link; shows a checkpoint with login + link + git connect steps when not authenticated (prevents hanging in non-interactive environments like Conductor)
+- **Vercel link failure handling** — detects `vercel link` exit code and shows manual recovery checkpoint instead of silently skipping
+- **Observability query paths** — updated sentry-local paths from `lib/` to `src/lib/` to match starter template structure
+
 ## [1.58.0] - 2026-03-29
 
 ### Added
