@@ -307,3 +307,76 @@ Pre-indexed content (Step 3 manifest):
    for files being actively edited. Pre-indexed manifest includes source files,
    per-task files from `<files>` elements, and test files discovered by convention
    matching. Metrics tracked per-session in stepHistory enable before/after comparison.
+## Measurement & Verification
+
+### phase_costs in .auto-state.json
+
+The orchestrator records per-phase cost data in `.auto-state.json` under the `phase_costs` key:
+
+```json
+{
+  "phase_costs": {
+    "3": {
+      "tokens_in": 42150,
+      "tokens_out": 8320,
+      "read_calls": 7,
+      "ctx_search_hits": 31,
+      "duration_ms": 187400,
+      "steps": ["plan", "plan-review", "build", "review"]
+    },
+    "4": { ... }
+  }
+}
+```
+
+Fields per phase entry:
+- `tokens_in` / `tokens_out` — cumulative input and output tokens across all 4 steps
+- `read_calls` — number of Read tool calls (lower is better; ctx_search should substitute)
+- `ctx_search_hits` — number of successful ctx_search lookups from the shared index
+- `duration_ms` — wall-clock time from phase start to state update
+- `steps` — which pipeline steps completed (useful for partial runs and --resume)
+
+**Survival across --resume:** `phase_costs` is restored from the saved `.auto-state.json` on resume. Phases already in `built` state retain their recorded costs; only newly executed phases append new entries.
+
+### Per-Phase Cost Table in Orchestrator Output
+
+After each phase completes, the orchestrator emits a cost summary table to stdout:
+
+```
+Phase 3 complete — 3m 7s
+  tokens_in:       42,150   tokens_out:    8,320
+  read_calls:          7    ctx_hits:         31
+  ctx efficiency:  82%  (31 hits / 38 total lookups)
+```
+
+Context efficiency = ctx_search_hits / (read_calls + ctx_search_hits). Values above 70% indicate healthy pre-indexing behavior. Values below 50% suggest the shared context-mode DB is not being populated or queried correctly.
+
+After all phases complete, a milestone summary table is printed:
+
+```
+=== Milestone Cost Summary ===
+Phase  Duration   Tokens In   Tokens Out   Read Calls   ctx Hits
+    3   3m 07s      42,150       8,320           7          31
+    4   4m 22s      51,890      10,140           5          44
+    5   2m 58s      38,710       7,680           6          29
+TOTAL  10m 27s     132,750      26,140          18         104
+```
+
+### PHASE_METRICS Log Line Format
+
+At the end of each phase, the orchestrator writes a structured log line to stdout prefixed with `PHASE_METRICS:`. This is designed for parsing by claude-mem cross-session analysis:
+
+```
+PHASE_METRICS: phase=3 tokens_in=42150 tokens_out=8320 read_calls=7 ctx_hits=31 duration_ms=187400 project=my-project date=2026-03-29T18:42:00Z
+```
+
+All fields are space-separated key=value pairs. No quotes, no commas. Fields:
+- `phase` — phase number (integer)
+- `tokens_in` / `tokens_out` — cumulative for the phase
+- `read_calls` — Read tool invocations across all 4 steps
+- `ctx_hits` — successful ctx_search lookups
+- `duration_ms` — wall-clock phase duration
+- `project` — project name (from CLAUDE_MEM_PROJECT env var, or git top-level basename)
+- `date` — ISO 8601 timestamp at phase completion
+
+**claude-mem usage:** To analyze cost trends across runs, use `smart_search` with the keyword `PHASE_METRICS` to retrieve past log lines, then compare `read_calls` and `ctx_hits` ratios over time.

@@ -388,14 +388,38 @@ function autoStatePath(projectDir) {
   return path.join(projectDir, '.planning', '.auto-state.json');
 }
 
+function validateAutoState(state) {
+  if (!state || typeof state !== 'object') {
+    return { valid: false, reason: 'state is not an object' };
+  }
+  if (typeof state.active !== 'boolean') {
+    return { valid: false, reason: 'missing required field: active (boolean)' };
+  }
+  const hasPhase = typeof state.phase === 'string';
+  const hasPhaseStates = state.phase_states !== null && typeof state.phase_states === 'object';
+  if (!hasPhase && !hasPhaseStates) {
+    return { valid: false, reason: 'missing required field: phase (string) or phase_states (object)' };
+  }
+  return { valid: true, state };
+}
+
 function loadAutoState(projectDir) {
   const p = autoStatePath(projectDir);
   if (!fs.existsSync(p)) return null;
+  let parsed;
   try {
-    return JSON.parse(fs.readFileSync(p, 'utf-8'));
+    parsed = JSON.parse(fs.readFileSync(p, 'utf-8'));
   } catch {
+    parsed = null;
+  }
+  const result = validateAutoState(parsed);
+  if (!result.valid) {
+    const corruptPath = p + '.corrupt';
+    try { fs.renameSync(p, corruptPath); } catch { /* ignore rename errors */ }
+    process.stderr.write('Warning: Corrupt .auto-state.json detected — renamed to .corrupt, starting fresh\n');
     return null;
   }
+  return parsed;
 }
 
 // Unified write queue for .auto-state.json — all writers must go through this
@@ -576,6 +600,23 @@ function parseSessionMetrics(stdout) {
   metrics.read_calls = (stdout.match(/"tool":"Read"/g) || []).length;
   metrics.ctx_search_hits = (stdout.match(/ctx_search|ctx_batch_execute/g) || []).length;
   return metrics;
+}
+
+// ─── Phase Cost Aggregation ─────────────────────────────────────────────────
+
+function aggregatePhaseMetrics(stepHistory, phaseId) {
+  const entries = stepHistory.filter(e => e.phase === phaseId);
+  let tokens_in = 0;
+  let tokens_out = 0;
+  let elapsed_ms = 0;
+  for (const entry of entries) {
+    if (entry.metrics) {
+      tokens_in += entry.metrics.tokens_in || 0;
+      tokens_out += entry.metrics.tokens_out || 0;
+    }
+    elapsed_ms += entry.elapsed_ms || 0;
+  }
+  return { tokens_in, tokens_out, elapsed_ms, step_count: entries.length };
 }
 
 // ─── Project Name Resolution ──────────────────────────────────────────────────
@@ -1768,6 +1809,8 @@ async function main() {
     return { skipped: false, succeeded: stepSucceeded, result: stepResult, cost: sessionCost };
   }
 
+  const phase_costs = {};
+
   if (opts.noSpeculative) {
     // ─── SEQUENTIAL FALLBACK (--no-speculative) ───────────────────────────────
     log('Mode: sequential (--no-speculative)');
@@ -2038,6 +2081,16 @@ async function main() {
 
     pushActivityEvent('auto', `Phase ${phase.id}: ${phase.name} completed`);
     updateStateViaGsd(projectDir, phase.id);
+    phase_costs[phase.id] = aggregatePhaseMetrics(_autoStatus.stepHistory, phase.id);
+    saveAutoState(projectDir, {
+      phase: phase.id,
+      active: true,
+      steps_completed: completedSteps,
+      total_cost_estimate: totalCostEstimate,
+      retry_count: retryCount,
+      phase_plan_paths: currentPlanPath ? { [phase.id]: path.relative(projectDir, currentPlanPath) } : {},
+      phase_costs,
+    });
     _autoStatus.phasesCompleted++;
     writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
       phase: phase.id,
@@ -2573,6 +2626,7 @@ async function main() {
     for (const phase of phasesToRun) {
       if (phase_states[phase.id] === 'built') {
         updateStateViaGsd(projectDir, phase.id);
+        phase_costs[phase.id] = aggregatePhaseMetrics(_autoStatus.stepHistory, phase.id);
       }
     }
 
@@ -2656,6 +2710,7 @@ async function main() {
           _autoStatus.phasesFailed++;
         } else {
           updateStateViaGsd(projectDir, phase.id);
+          phase_costs[phase.id] = aggregatePhaseMetrics(_autoStatus.stepHistory, phase.id);
           phase_states[phase.id] = 'built';
           log(`Phase ${phase.id} complete\n`);
         }
@@ -2696,12 +2751,33 @@ async function main() {
   log(`  Cost estimate: $${totalCostEstimate.toFixed(2)}${opts.budget ? ` / $${opts.budget} budget` : ''}`);
   log(`  Duration: ${durationMin}m`);
 
+  // Milestone detection
+  if (_autoStatus.phasesCompleted === _autoStatus.phasesTotal && _autoStatus.phasesFailed === 0) {
+    const gsdPath = path.join(projectDir, '.claude/get-shit-done/bin/gsd-tools.cjs');
+    log(``);
+    log(`All phases complete! Run: node ${gsdPath} milestone complete`);
+  }
+
+  // Per-phase cost table
+  const costEntries = Object.entries(phase_costs);
+  if (costEntries.length > 0) {
+    log(``);
+    log('Phase    | Tokens In | Tokens Out | Time');
+    log('---------+-----------+------------+------');
+    for (const [phaseId, c] of costEntries) {
+      const tIn = c.tokens_in.toLocaleString();
+      const tOut = c.tokens_out.toLocaleString();
+      const mins = Math.round(c.elapsed_ms / 60000) + 'm';
+      log(`${phaseId.padEnd(8)} | ${tIn.padStart(9)} | ${tOut.padStart(10)} | ${mins}`);
+    }
+  }
+
   // Write completed_at timestamp but keep the file — tracker shows "completed" status.
   // The file has active:false so --resume won't treat it as in-progress.
   // Next auto run overwrites it. No cleanup needed.
 }
 
-main().catch((err) => {
+if (require.main === module) main().catch((err) => {
   writeAutoStatus(_autoStatus.projectDir || process.cwd(), {
     active: false,
     last_log_line: `Fatal error: ${err.message.slice(0, 200)}`,
@@ -2709,3 +2785,7 @@ main().catch((err) => {
   });
   fatal(err.message);
 });
+
+if (typeof module !== 'undefined') {
+  module.exports = { validateAutoState, parseSessionMetrics, aggregatePhaseMetrics };
+}
