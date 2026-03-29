@@ -8,6 +8,27 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.58.0] - 2026-03-29
+
+### Added
+- **Walk-Away Guide** — new section in `/fh:auto` SKILL.md documenting the full autonomous journey from project description to working codebase
+- **Resume state validation** — orchestrator validates `.auto-state.json` on resume, renames corrupt files to `.corrupt`, and verifies SUMMARY.md existence for built phases
+- **Milestone completion awareness** — orchestrator detects when all phases complete and suggests `gsd-tools milestone complete`
+- **Per-phase cost tracking** — `aggregatePhaseMetrics` aggregates token usage per phase, `printMilestoneCostSummary` shows cost table with ctx_search efficiency percentages
+- **Pipeline efficiency fixes** — excludes already-complete phases from pipeline, reuses existing plans in sequential fallback, fixes cascade handler to preserve built/reviewed states (~$0.24 and ~35min saved per run)
+- **Orchestrator unit tests** — 41 tests covering parseSessionMetrics, aggregatePhaseMetrics, parsePlanFrontmatter, buildDependencyGraph, assignWaves, comparePhaseNum, estimateSessionCost, cascadePlanFailures
+- **Auto pipeline evals** — 8 new evals for lifecycle, corrupt state, milestone complete, walk-away, and resume scenarios
+
+### Changed
+- **ctx_search hints in skill prompts** — plan-work and build agent prompts now guide agents to prefer ctx_search over Read for pre-indexed files
+- **Silence detection** — threshold raised to 5 minutes, warns only once per session regardless of intermittent output
+- **step_history persistence** — populated in all execution paths (planning wave, review wave, build wave, sequential fallback)
+
+### Fixed
+- **gsd-tools path resolution** — resolves from `$HOME/.claude/get-shit-done/bin/` consistently
+- **smart_search migration** — updated deprecated claude-mem API calls
+- **JSONL dedup** — prevents duplicate log entries in orchestrator output
+
 ## [1.57.1] - 2026-03-29
 
 ### Changed
