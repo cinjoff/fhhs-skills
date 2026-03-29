@@ -8,6 +8,15 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.52.2] - 2026-03-29
+
+### Fixed
+- **Global update on already-current plugin** — `--global` flag was silently ignored when the plugin version already matched latest (Step 5½ exited before reaching Step 6), now correctly proceeds to global reconciliation
+- **Conductor CHECKPOINT reminder** — update failure message now reminds users to re-add `--global` when re-running after manual CLI update
+
+### Added
+- **Global update evals** — 3 new evals covering `--global` flag behavior including the already-up-to-date edge case
+
 ## [1.52.1] - 2026-03-28
 
 ### Fixed

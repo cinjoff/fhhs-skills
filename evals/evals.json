@@ -10698,6 +10698,128 @@
           "pattern": "log|classif|next|action"
         }
       ]
+    },
+    {
+      "id": 322,
+      "command": "update",
+      "prompt": "update --global",
+      "expected_output": "Should update plugin then discover ALL projects using fhhs-skills (from tracker registry and Conductor workspaces) and reconcile each one. Should show project status map before reconciling, then aggregate results table after.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Discovers projects from tracker registry and Conductor workspace scan",
+          "type": "behavioral"
+        },
+        {
+          "text": "Runs reconciliation on multiple projects, not just current one",
+          "type": "behavioral"
+        },
+        {
+          "text": "Shows aggregate results with per-project status",
+          "type": "output"
+        },
+        {
+          "text": "Runs global-reconcile.cjs script for cross-project reconciliation",
+          "type": "behavioral"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ],
+      "tier": "full",
+      "tags": [
+        "happy-path",
+        "global"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "global",
+            "reconcil"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 323,
+      "command": "update",
+      "prompt": "update --global",
+      "expected_output": "When plugin is already at latest version but --global is passed, should still run environment reconciliation on current project AND then proceed to global reconciliation across all discovered projects. Must NOT exit after current-project reconciliation.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Recognizes plugin is already up to date",
+          "type": "behavioral"
+        },
+        {
+          "text": "Runs environment reconciliation on current project first",
+          "type": "behavioral"
+        },
+        {
+          "text": "Proceeds to global project reconciliation (Step 6) despite already being up to date",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT exit after current-project reconciliation when --global is set",
+          "type": "guard"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ],
+      "tier": "full",
+      "tags": [
+        "edge-case",
+        "guard",
+        "global"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "global",
+            "reconcil"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 324,
+      "command": "update",
+      "prompt": "I just updated the plugin from a different terminal. Now I want to update all my other projects too",
+      "expected_output": "Should detect plugin is already current, run local reconciliation, then recognize this is a --global use case and either suggest --global or if --global was passed, proceed to Step 6 global reconciliation.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects plugin is already at latest version",
+          "type": "behavioral"
+        },
+        {
+          "text": "Mentions --global flag for cross-project reconciliation",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT attempt to reinstall an already-current plugin",
+          "type": "guard"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ],
+      "tier": "full",
+      "tags": [
+        "edge-case",
+        "global"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "global"
+          ]
+        }
+      ]
     }
   ]
 }
