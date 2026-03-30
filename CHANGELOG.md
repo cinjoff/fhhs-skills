@@ -8,6 +8,17 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.59.0] - 2026-03-30
+
+### Added
+- **Progressive disclosure for claude-mem** — 13 skills now use 3-layer retrieval (search index -> get_observations for full details -> optional timeline) instead of dumping all observations into context
+- **Smart explore in code-analysis skills** — fix, refactor, review, and build use smart_outline/smart_unfold for token-efficient code navigation (8-19x cheaper than full file reads)
+- **7 new evals** — progressive-disclosure and smart-explore pattern coverage (IDs 334-340)
+
+### Fixed
+- **smart_search description** — corrected from "historical code recall" to "current-codebase AST search" in workflow-matrix
+- **progress/SKILL.md timeline params** — now uses correct `query`/`depth_before` API instead of undocumented `window` parameter
+
 ## [1.58.5] - 2026-03-30
 
 ### Changed
