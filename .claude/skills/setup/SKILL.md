@@ -639,10 +639,12 @@ Read `~/.claude-mem/settings.json` using the **Read tool**. If it doesn't exist,
 
 ```json
 {
-  "CLAUDE_MEM_CONTEXT_OBSERVATIONS": "500",
-  "CLAUDE_MEM_CONTEXT_SESSION_COUNT": "50",
+  "CLAUDE_MEM_MODEL": "claude-haiku-4-5-20251001",
+  "CLAUDE_MEM_CONTEXT_OBSERVATIONS": "75",
+  "CLAUDE_MEM_CONTEXT_SESSION_COUNT": "20",
   "CLAUDE_MEM_CONTEXT_FULL_COUNT": "15",
   "CLAUDE_MEM_CONTEXT_FULL_FIELD": "narrative",
+  "CLAUDE_MEM_SKIP_TOOLS": "ListMcpResourcesTool,SlashCommand,Skill,TodoWrite,AskUserQuestion,Read,Glob,Grep,ToolSearch,mcp__plugin_claude-mem_mcp-search____IMPORTANT,mcp__plugin_claude-mem_mcp-search__search,mcp__plugin_claude-mem_mcp-search__get_observations,mcp__plugin_claude-mem_mcp-search__timeline,mcp__plugin_claude-mem_mcp-search__smart_search,mcp__plugin_claude-mem_mcp-search__smart_unfold,mcp__plugin_claude-mem_mcp-search__smart_outline,mcp__plugin_context-mode_context-mode__ctx_search,mcp__plugin_context-mode_context-mode__ctx_execute,mcp__plugin_context-mode_context-mode__ctx_execute_file,mcp__plugin_context-mode_context-mode__ctx_batch_execute,mcp__plugin_context-mode_context-mode__ctx_index,mcp__plugin_context-mode_context-mode__ctx_fetch_and_index,mcp__plugin_context-mode_context-mode__ctx_stats,mcp__plugin_context-mode_context-mode__ctx_doctor,mcp__plugin_context-mode_context-mode__ctx_upgrade",
   "CLAUDE_MEM_FOLDER_CLAUDEMD_ENABLED": "false",
   "CLAUDE_MEM_CONTEXT_SHOW_LAST_SUMMARY": "true",
   "CLAUDE_MEM_CONTEXT_SHOW_LAST_MESSAGE": "false",

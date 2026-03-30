@@ -1,6 +1,6 @@
 ---
 name: fh:learnings
-description: Analyze claude-mem observations to find workflow issues and auto-file GitHub issues for skill improvements.
+description: Analyze claude-mem observations to surface project improvement insights and, for plugin maintainers, auto-file GitHub issues for skill improvements.
 user-invocable: true
 ---
 
@@ -25,7 +25,22 @@ Call `mcp__plugin_claude-mem_mcp-search__search` with query `"test"` and limit 1
 
   > claude-mem is not installed. Install it from the Claude Code marketplace to use /fh:learnings.
 
-### 1b. Check GitHub CLI
+### 1b. Check GitHub CLI (conditional)
+
+Detect project identity first:
+
+```bash
+REMOTE_URL=$(git remote get-url origin 2>/dev/null || echo "")
+if echo "$REMOTE_URL" | grep -q "cinjoff/fhhs-skills"; then
+  echo "IS_FHHS_SKILLS=true"
+else
+  echo "IS_FHHS_SKILLS=false"
+fi
+```
+
+Set `IS_FHHS_SKILLS=true` if REMOTE_URL contains `cinjoff/fhhs-skills`, else `IS_FHHS_SKILLS=false`. Hold this value for use in Sections 4 and beyond.
+
+**Only if IS_FHHS_SKILLS is true**, check GitHub CLI authentication:
 
 ```bash
 gh auth status
@@ -34,6 +49,12 @@ gh auth status
 - If the command fails or returns an unauthenticated state: stop and report:
 
   > GitHub CLI not authenticated. Run `gh auth login` first.
+
+If IS_FHHS_SKILLS is false, skip this check — GitHub CLI is not needed for the insights + plan-work flow.
+
+### 1c. Project identity confirmed
+
+Hold `IS_FHHS_SKILLS` for later sections. Proceed to Section 2.
 
 ---
 
@@ -131,11 +152,52 @@ Present a summary table:
 
 ---
 
-## Section 4: File GitHub Issues
+## Section 3.5: Project Insights
+
+Classify observations from the **working set** (Section 2c) by keyword matching. Do NOT make any new claude-mem API calls — use only observations already collected.
+
+For each observation in the working set, check its text against these keyword categories:
+
+| Category | Keywords |
+|----------|----------|
+| architecture | architecture, decision, component, structure, pattern, design, boundary, coupling |
+| testing | test, coverage, bug, regression, broken, fix, failing, flaky |
+| workflow | slow, blocked, stuck, retry, workaround, timeout, token, expensive |
+| tech-debt | debt, cleanup, refactor, duplication, hack, temporary, todo, fixme |
+| scope | scope, creep, large, split, took long, estimate, phase, overran |
+
+An observation matches a category if any of its keywords appear in the observation text (case-insensitive). An observation may match multiple categories.
+
+**For each category with 2 or more matching observations**, produce an insight:
+
+Present a summary table first:
+
+| Category | Observations | Date Range | Pattern |
+|----------|-------------|------------|---------|
+| [category] | N | [earliest] – [latest] | [one-line summary of the pattern] |
+
+Then for each qualifying category, provide a detailed recommendation block:
+
+**[Category] (N observations)**
+
+- **What we observed:** [Describe the recurring pattern in 1–2 sentences]
+- **Why this matters:** [Impact on productivity, quality, or reliability]
+- **Suggested action:** [Specific, concrete action — not vague. E.g. "Add a pre-flight check in /fh:build that detects X before running Y" rather than "Improve the build skill"]
+- **Priority:** high / medium / low
+
+If fewer than 2 observations match any category, output:
+
+> No strong patterns detected in the last {N} days.
+
+---
+
+## Section 4: File GitHub Issues (or Plan from Insights)
+
+### If IS_FHHS_SKILLS is true
 
 For each identified issue in the ranked list from Section 3c:
 
-### 4a. Check for existing open issues
+#### 4a. Check for existing open issues
 
 ```bash
 gh issue list --repo cinjoff/fhhs-skills --state open --search "{summary keywords}" --limit 5
@@ -144,7 +206,7 @@ gh issue list --repo cinjoff/fhhs-skills --state open --search "{summary keyword
 - If a matching open issue exists: skip this issue. Note: "Already tracked in #N"
 - If no match: proceed to create.
 
-### 4b. Prepare issue body
+#### 4b. Prepare issue body
 
 Read the issue template from `.claude/skills/learnings/references/issue-template.md`.
 
@@ -156,7 +218,7 @@ Fill in the placeholders:
 - `{{IMPACT}}` — brief statement of user impact
 - `{{SUGGESTION}}` — what the skill could do differently to address this
 
-### 4c. Create the issue
+#### 4c. Create the issue
 
 ```bash
 gh issue create \
@@ -168,7 +230,7 @@ gh issue create \
 
 Replace `{type}` with the issue classification (e.g. `skill-bug`, `workflow-gap`, `feature-idea`, `common-mistake`).
 
-### 4d. Report results
+#### 4d. Report results
 
 After processing all issues:
 
@@ -180,14 +242,54 @@ If `--dry-run` was passed: do NOT call `gh issue create`. Instead, print each is
 
 ---
 
+### If IS_FHHS_SKILLS is false
+
+#### Section 4: Plan from Insights
+
+Check whether GSD planning is active in this project:
+
+```bash
+[ -f .planning/PROJECT.md ] && echo "GSD" || echo "NO_GSD"
+```
+
+**If GSD exists:**
+
+Present the top 3 insights from Section 3.5 (highest observation count, then highest priority). Then offer:
+
+> Reply `plan` to create a /fh:plan-work from the top findings, or `skip` to finish.
+
+If the user replies `plan`:
+1. Collect the top 3 insights from Section 3.5 (by observation count).
+2. Format a plan-work prompt grouped by category. For each insight include: the category, the observed pattern, and the suggested action as a concrete work item.
+3. Confirm with the user: "Ready to invoke /fh:plan-work with these findings. Confirm?"
+4. On confirmation, invoke `/fh:plan-work` with the formatted prompt.
+
+If the user replies `skip`: proceed to Section 5.
+
+**If NO GSD:**
+
+Present a structured improvement brief:
+
+> **Project Improvement Brief**
+>
+> Top 3 insights from the last {N} days:
+>
+> 1. **[Category]** — [Pattern summary] → [Suggested action]
+> 2. **[Category]** — [Pattern summary] → [Suggested action]
+> 3. **[Category]** — [Pattern summary] → [Suggested action]
+>
+> To turn these into a tracked plan, run `/fh:new-project` first to initialize GSD planning, then re-run `/fh:learnings`.
+
+---
+
 ## Section 5: Offer Extended Scope
 
 After completing Section 4, present:
 
-> Analyzed last {N} days. Want to look further back? Reply with `30`, `60`, or `90` to extend the window.
+> Analyzed last {N} days. Want to look further back? Reply with `30`, `60`, or `90` to extend the window. You can also run `/fh:learnings` after your next phase to track how patterns evolve over time.
 
 If the user responds with a number:
 - Set `dateStart` to that many days ago
 - Collect observations from Section 2 again, but **exclude observation IDs already processed** in the current session
-- Run Sections 3 and 4 on the new observations only
+- Run Sections 3, 3.5, and 4 on the new observations only
 - Report: "Extended to {N} days. Found X additional observations."

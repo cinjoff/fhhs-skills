@@ -11341,6 +11341,59 @@
           "pattern": "supabase|database|seed"
         }
       ]
+    },
+    {
+      "id": 332,
+      "command": "learnings",
+      "prompt": "Run /fh:learnings --dry-run to analyze my project patterns. I'm working on a Next.js e-commerce app, not fhhs-skills.",
+      "expected_output": "Should produce Project Insights section with categorized patterns (architecture, testing, workflow, tech-debt, scope), offer plan-work for improvement instead of filing GitHub issues on cinjoff/fhhs-skills",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Produces Project Insights section with categorized recommendations",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT file or reference cinjoff/fhhs-skills for non-plugin projects",
+          "type": "guard"
+        },
+        {
+          "text": "Offers plan-work or structured improvement brief instead of GitHub issues",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        { "type": "regex", "pattern": "[Pp]roject [Ii]nsights" },
+        { "type": "regex", "pattern": "(architecture|testing|workflow|tech.debt|scope)" },
+        { "type": "regex", "pattern": "[Ss]uggested [Aa]ction|[Rr]ecommend" },
+        { "type": "regex", "pattern": "plan-work|/fh:plan-work|plan from" }
+      ],
+      "tier": "smoke",
+      "tags": ["core", "learnings"]
+    },
+    {
+      "id": 333,
+      "command": "learnings",
+      "prompt": "Run /fh:learnings --dry-run from the fhhs-skills repository",
+      "expected_output": "Should produce Project Insights section AND file GitHub issues on cinjoff/fhhs-skills since we are in the plugin repo",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Produces Project Insights section even for fhhs-skills",
+          "type": "behavioral"
+        },
+        {
+          "text": "Files or references GitHub issues on cinjoff/fhhs-skills",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        { "type": "regex", "pattern": "[Pp]roject [Ii]nsights" },
+        { "type": "regex", "pattern": "cinjoff/fhhs-skills" },
+        { "type": "regex", "pattern": "(issue|GitHub)" }
+      ],
+      "tier": "smoke",
+      "tags": ["core", "learnings"]
     }
   ]
 }

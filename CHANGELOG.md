@@ -8,6 +8,13 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.58.5] - 2026-03-30
+
+### Changed
+- **Claude-mem token optimization** — switches observation model from Sonnet-4.5 to Haiku (4-5x cheaper), reduces preloaded observations from 500 to 75, extends skip list to 25 tools including all context-mode and claude-mem MCP calls
+- **`/fh:learnings` dual-audience mode** — detects whether you're in the fhhs-skills repo or a user project; provides project-specific improvement insights with optional plan-work integration for non-plugin repos
+- **Build and auto completion nudges** — suggests `/fh:learnings` at natural breakpoints after phase/milestone completion
+
 ## [1.58.4] - 2026-03-30
 
 ### Fixed
