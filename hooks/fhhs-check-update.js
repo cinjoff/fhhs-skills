@@ -116,3 +116,25 @@ const child = spawn(process.execPath, ['-e', `
 });
 
 child.unref();
+
+// If claude-mem is installed, re-register its worker hooks to ensure the worker
+// starts on session startup. This is a no-op if claude-mem isn't installed.
+const claudeMemInstallScript = path.join(
+  homeDir,
+  '.claude',
+  'plugins',
+  'marketplaces',
+  'thedotmack',
+  'plugin',
+  'scripts',
+  'smart-install.js'
+);
+
+if (fs.existsSync(claudeMemInstallScript)) {
+  const memChild = spawn(process.execPath, [claudeMemInstallScript], {
+    stdio: 'ignore',
+    windowsHide: true,
+    detached: true
+  });
+  memChild.unref();
+}
