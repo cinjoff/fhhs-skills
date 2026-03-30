@@ -480,6 +480,14 @@ Route based on phase status:
 Suggest `/fh:review` for deeper scrutiny (adds spec verification + gap analysis).
 If frontend changes: suggest `/fh:ui-test` for visual verification.
 
+If claude-mem is installed (check: the Learnings Digest substep in Step 4 ran successfully), add to the phase-complete and milestone-complete routes:
+
+> Run `/fh:learnings` to surface patterns from your recent work and find improvement opportunities.
+
+This nudge only appears when:
+1. A phase or milestone just completed (not per-plan completions)
+2. claude-mem is available
+
 ---
 
 ## Context Budget Rules

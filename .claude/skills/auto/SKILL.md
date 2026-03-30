@@ -458,6 +458,12 @@ Whether the orchestrator completes successfully or is interrupted, always:
    - Suggest: "All phases complete. Run `gsd-tools milestone complete` to archive this milestone."
    - If there were LOW confidence decisions, remind: "Review DECISIONS.md before archiving — N decisions flagged for review."
 
+3.5. **Learnings prompt:** After successful completion of 2+ phases, suggest:
+
+   > Run `/fh:learnings` to review what worked well and what could improve across the phases you just built.
+
+   This only triggers on successful completion (not failures/interruptions) and only when claude-mem is installed.
+
 4. **If orchestrator failed**, provide actionable diagnostics:
    - Read the error output and any `{step}-error.log` files in the failed phase directory
    - Classify the failure: API error (suggest retry with `--resume`), logic error (show the error and suggest investigating), stuck session (note the phase and suggest `--resume`)
