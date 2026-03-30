@@ -67,6 +67,12 @@ assumptions and document them in your report.
 
 **LSP:** `goToDefinition`, `findReferences`, `hover`, `documentSymbol` — faster than grep.
 
+**Smart code navigation (if available):**
+- `mcp__plugin_claude-mem_mcp-search__smart_outline` for understanding file structure before modifying (cheaper than Read)
+- `mcp__plugin_claude-mem_mcp-search__smart_unfold` for reading specific functions you need to modify (extracts exact AST node)
+- `mcp__plugin_claude-mem_mcp-search__smart_search` for finding symbols across the codebase (cheaper than Grep for structural queries)
+- Fall back to Read/Grep/LSP if smart_explore tools are not available
+
 **Do NOT commit.** Write code and tests. The orchestrator commits once after all tasks complete.
 
 Your parent task ID is {TASK_ID}. At start: TaskUpdate({TASK_ID}, status='in_progress').

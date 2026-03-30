@@ -96,14 +96,23 @@ Run the existing test suite for the affected area. Record: X tests, all GREEN.
 
 If claude-mem is available, recall prior refactoring outcomes:
 1. Derive project name from `.planning/PROJECT.md` name field (fall back to basename of cwd). Use this as the `project` parameter for all claude-mem calls.
-2. Call `mcp__plugin_claude-mem_mcp-search__search` with query=the target module/pattern name, limit=5, project=<project-name>
-3. Filter for: refactor, extract, simplify, "blast radius", coupling, migration
-4. If relevant: "**Prior refactoring context:** - {summary}" — max 3 items
-5. Skip silently if unavailable
+2. Call `mcp__plugin_claude-mem_mcp-search__search` with query=the target module/pattern name, project=<project-name>, limit=10
+3. Scan the returned index for relevant observation IDs — prioritize types: gotcha, decision, trade-off. Filter for keywords: refactor, extract, simplify, "blast radius", coupling, migration
+4. For the top 2-3 relevant IDs, call `mcp__plugin_claude-mem_mcp-search__get_observations` with ids=[ID1, ID2, ID3] to fetch full details
+5. If temporal context would help (e.g., understanding how the module evolved over multiple refactors), call `mcp__plugin_claude-mem_mcp-search__timeline` with query=module/pattern name, depth_before=3
+6. Also call `mcp__plugin_claude-mem_mcp-search__smart_search` with query=the target module/function name, limit=3 — provides AST-aware codebase search for structural context on the target module (function signatures, coupling points, call hierarchy)
+7. Present: "**Prior refactoring context:** - {full observation detail}" — max 3 items
+8. Skip silently if unavailable
 
 ---
 
 ## Step 3: Plan Atomic Steps
+
+**Structural analysis:** If claude-mem smart_explore tools are available:
+- Call `mcp__plugin_claude-mem_mcp-search__smart_outline` on each target module to see all functions/classes/interfaces without reading full files
+- Use this structural view to plan extraction boundaries and identify coupling points
+- Call `mcp__plugin_claude-mem_mcp-search__smart_unfold` on specific functions to understand implementation details before planning changes
+- Fall back to Read/LSP `documentSymbol` if smart_explore is not available
 
 Break refactoring into the smallest atomic steps where each:
 - Makes exactly one structural change

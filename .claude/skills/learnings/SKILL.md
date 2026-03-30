@@ -79,9 +79,15 @@ Call `mcp__plugin_claude-mem_mcp-search__search` three times in parallel:
 2. query = `"slow inefficient tokens expensive retry"`, project = <project-name>, limit = 20
 3. query = `"workaround hack missing should"`, project = <project-name>, limit = 20
 
-### 2c. Merge and deduplicate
+### 2c. Drill down for full details
 
-Combine all results from 2a and 2b. Deduplicate by observation ID — keep each observation once. This is your **working set**.
+From 2a and 2b results, collect all unique observation IDs. Deduplicate by observation ID — keep each observation once.
+
+For observations that appear most relevant (prioritize types: gotcha, decision, trade-off), call `mcp__plugin_claude-mem_mcp-search__get_observations` with ids=[...] in batches of up to 20 IDs to fetch full observation details. This replaces the lightweight index with rich detail needed for accurate classification in Sections 3 and 3.5.
+
+If temporal context would help understand patterns (e.g., a cluster of errors around a specific date), call `mcp__plugin_claude-mem_mcp-search__timeline` with query=the relevant topic, depth_before=3.
+
+The fully-resolved observations are your **working set**.
 
 ---
 
@@ -94,7 +100,7 @@ Call `mcp__plugin_claude-mem_mcp-search__search` with:
 - project = <project-name>
 - limit = 20
 
-Review results for productive patterns: skills that worked cleanly, efficient multi-step workflows, successful approaches, good tool choices.
+From the returned index, identify the top 5 relevant observation IDs and call `mcp__plugin_claude-mem_mcp-search__get_observations` with ids=[...] to fetch full details. Review for productive patterns: skills that worked cleanly, efficient multi-step workflows, successful approaches, good tool choices.
 
 Present as:
 

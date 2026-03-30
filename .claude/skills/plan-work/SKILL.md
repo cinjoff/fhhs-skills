@@ -152,16 +152,18 @@ Check whether the user's request involves unfamiliar APIs, external services, li
 
 Before researching, check claude-mem for relevant past learnings:
 1. Derive project name from `.planning/PROJECT.md` name field (fall back to basename of cwd). Use this as the `project` parameter for all claude-mem calls.
-2. If claude-mem is available, call `mcp__plugin_claude-mem_mcp-search__search` with query=2-3 keywords from the user's task description, limit=5, project=<project-name>
-3. Filter results for observations containing: mistake, pitfall, learning, retro, "should have", "next time", warning, regression
-4. If relevant results found, present as:
+2. If claude-mem is available, call `mcp__plugin_claude-mem_mcp-search__search` with query=2-3 keywords from the user's task description, project=<project-name>, limit=10
+3. Scan the returned index for relevant observation IDs — prioritize types: gotcha, decision, trade-off. Filter for keywords: mistake, pitfall, learning, retro, "should have", "next time", warning, regression
+4. For the top 2-3 relevant IDs, call `mcp__plugin_claude-mem_mcp-search__get_observations` with ids=[ID1, ID2, ID3] to fetch full details
+5. If temporal context would help (e.g., understanding what led to a past mistake), call `mcp__plugin_claude-mem_mcp-search__timeline` with query=task/feature keywords, depth_before=3
+6. If relevant results found, present as:
 
    **Past learnings relevant to this work:**
-   - {observation summary} (from {date})
+   - {full observation detail} (from {date})
 
    Max 3 items, <2% context budget.
-5. Feed these into the brainstorm/design context so past mistakes inform decisions
-6. Skip silently if claude-mem not installed or no relevant results
+7. Feed these into the brainstorm/design context so past mistakes inform decisions
+8. Skip silently if claude-mem not installed or no relevant results
 
 The complexity assessment from Step 0.5 determines the research path:
 
