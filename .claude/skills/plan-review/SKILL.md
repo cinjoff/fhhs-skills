@@ -176,11 +176,13 @@ ctx_search is especially valuable for plan-review since it reads more .planning/
 
 If claude-mem is available, check for prior architectural decisions and review outcomes:
 1. Derive project name from `.planning/PROJECT.md` name field (fall back to basename of cwd). Use this as the `project` parameter for all claude-mem calls.
-2. Call `mcp__plugin_claude-mem_mcp-search__search` with query=the phase name + "architecture" or "decision", limit=5, project=<project-name>
-3. Filter for: decision, architecture, pitfall, "should have", trade-off, regression
-4. If relevant: "**Prior decisions relevant to this review:** - {summary}" — max 3 items
-5. Cross-reference with locked decisions in CONTEXT.md — flag contradictions
-6. Skip silently if unavailable
+2. Call `mcp__plugin_claude-mem_mcp-search__search` with query=the phase name + "architecture" or "decision", project=<project-name>, limit=10
+3. Scan the returned index for relevant observation IDs — prioritize types: gotcha, decision, trade-off. Filter for keywords: decision, architecture, pitfall, "should have", trade-off, regression
+4. For the top 2-3 relevant IDs, call `mcp__plugin_claude-mem_mcp-search__get_observations` with ids=[ID1, ID2, ID3] to fetch full details
+5. If temporal context would help (e.g., understanding what led to a past architectural decision), call `mcp__plugin_claude-mem_mcp-search__timeline` with query=phase name + architecture topic, depth_before=3
+6. Present: "**Prior decisions relevant to this review:** - {full observation detail}" — max 3 items
+7. Cross-reference with locked decisions in CONTEXT.md — flag contradictions
+8. Skip silently if unavailable
 
 ### Taste Calibration (EXPANSION mode only)
 Read `.planning/DESIGN.md` for the project's design context and taste references. Use it to calibrate your recommendations — align with established design language and patterns rather than discovering them from scratch.

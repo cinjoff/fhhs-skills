@@ -339,10 +339,11 @@ This is advisory only — never block completion. Budget: <1% context.
 
 If claude-mem is available, generate a learnings digest:
 1. Derive project name from `.planning/PROJECT.md` name field (fall back to basename of cwd). Use this as the `project` parameter for all claude-mem calls.
-2. Call `mcp__plugin_claude-mem_mcp-search__timeline` with window=7d, limit=20, project=<project-name>
-3. Call `mcp__plugin_claude-mem_mcp-search__search` with query=current phase name, limit=10, project=<project-name>
-4. Read existing `~/.claude/cache/learnings-digest.json` if present
-5. Merge observations into digest using this deterministic algorithm:
+2. Call `mcp__plugin_claude-mem_mcp-search__timeline` with query=current phase name, depth_before=5, project=<project-name>
+3. Call `mcp__plugin_claude-mem_mcp-search__search` with query=current phase name, project=<project-name>, limit=10
+4. From the search results, identify observation IDs matching improvement themes. For the top 3-5 relevant IDs, call `mcp__plugin_claude-mem_mcp-search__get_observations` with ids=[ID1, ID2, ...] to fetch full details before merging into the digest.
+5. Read existing `~/.claude/cache/learnings-digest.json` if present
+6. Merge observations into digest using this deterministic algorithm:
    a. Load existing digest items (empty array if no file or corrupt)
    b. For each new observation, check if it matches improvement themes (keywords: mistake, pitfall, learning, retro, regression, "should have", "next time", bug, broke, failed):
       - If no theme match → skip
@@ -351,8 +352,8 @@ If claude-mem is available, generate a learnings digest:
    c. Priority escalation: times_seen >= 3 → "medium", times_seen >= 5 → "high" (never downgrade)
    d. Items addressed by this build session (if the build's work matches an item's suggested_action) → mark addressed=true, addressed_at=ISO timestamp
    e. Compute stats: scanned = total observations checked, pending = items where addressed is falsy, addressed_since_last = items addressed in this merge
-6. Write updated digest to `~/.claude/cache/learnings-digest.json`
-7. Skip silently if claude-mem not installed or any MCP call fails
+7. Write updated digest to `~/.claude/cache/learnings-digest.json`
+8. Skip silently if claude-mem not installed or any MCP call fails
 
 Digest schema: `{ generated: ISO string, generated_by: "build"|"context-critical", project: cwd path, phase: current phase name, items: [{ id: string, priority: "low"|"medium"|"high", category: "retro"|"pattern"|"theme", summary: string, detail: string, suggested_action: string, times_seen: number, first_seen: ISO string, addressed: boolean, addressed_at?: ISO string }], stats: { scanned: number, pending: number, addressed_since_last: number } }`
 
