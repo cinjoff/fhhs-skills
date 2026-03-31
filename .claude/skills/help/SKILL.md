@@ -90,7 +90,7 @@ Phase management, milestone lifecycle, and test generation are handled automatic
 | `/fh:settings` | Configure workflow preferences |
 | `/fh:health` | Check if your project files are in good shape |
 | `/fh:map-codebase` | Analyze your codebase structure |
-| `/fh:revise-claude-md` | Update CLAUDE.md with learnings from the session |
+| `/fh:learnings` | Capture and apply session learnings, optionally update CLAUDE.md |
 | `/fh:update` | Check for updates and install the latest version |
 
 ## Common Workflows
@@ -102,7 +102,7 @@ Bug fix:      /fh:fix
 Refactoring:  /fh:refactor (includes /fh:simplify automatically)
 Code cleanup: /fh:simplify (standalone, on any recent changes)
 Resuming:     /fh:resume → (routes to next action)
-CLAUDE.md:    /fh:revise-claude-md (after sessions or /fh:revise-claude-md audit)
+CLAUDE.md:    /fh:learnings --update-claude-md (after sessions to capture and apply learnings)
 ```
 
 ## Files & Structure

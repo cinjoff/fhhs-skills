@@ -20,8 +20,8 @@ You are a **lean orchestrator**. Stay under 15% context usage. Delegate all anal
 
 | Flag | What runs | When to use |
 |------|-----------|-------------|
-| *(default — full)* | All steps | Deep scrutiny before promoting |
-| `--quick` | Steps 1, 1.5, 1.7, 1.8, 2, 3, 4, 5, 6, 7 (quality + spec verification + goal verification + evidence) | Fast pre-commit sanity check |
+| *(default — full)* | All steps including Step 2.5 (Quality Refinement) | Deep scrutiny before promoting |
+| `--quick` | Steps 1, 1.5, 1.7, 1.8, 2, 3, 4, 5, 6, 7 — **skips Step 2.5** | Fast pre-commit sanity check |
 
 ---
 
@@ -138,8 +138,8 @@ If no PLAN.md is in scope: skip this step silently.
 ### Context-Mode Acceleration
 
 When reading PLAN.md for must_haves verification or checking goal criteria:
-- If ctx_search is available: use `ctx_search` with queries like "must_haves for plan {plan}" and "done criteria for {phase}". Returns relevant entries without loading full plan files.
-- If not available: fall back to reading the files directly.
+- If claude-mem is available (check tool list for `mcp__plugin_claude-mem_*`): use `mcp__plugin_claude-mem_mcp-search__smart_search` with query="must_haves for plan {plan}" or "done criteria for {phase}". Returns relevant entries without loading full plan files.
+- If not available, fall back to Read/Grep/Glob directly.
 
 ---
 
@@ -181,6 +181,66 @@ For security vulnerability detection, run `/fh:secure` or configure a pre-PR hoo
 **Agent 1 — Code Quality** (`subagent_type: "code-reviewer"`)
 - Same as full mode Agent 1, but skip architecture deep-dive
 - Focus: naming, structure, error handling, test quality, cross-file consistency
+
+---
+
+## Step 2.5: Quality Refinement (full mode only)
+
+**Triage findings from Steps 2 and dispatch sub-skills as needed.**
+
+This step runs only in full mode (not `--quick`). Skip entirely in `--quick` mode.
+
+### a. Evaluate findings against the trigger table
+
+After Agent 1 (Code Quality) and Agent 2 (Gap Analysis) return, evaluate each finding category:
+
+| Finding pattern | Sub-skill | Trigger condition |
+|---|---|---|
+| DRY violations, code duplication, redundant patterns | `/fh:simplify` | 2+ DRY/duplication findings |
+| Unhandled error paths, missing edge cases, brittle patterns | `/fh:harden` | Any unhandled error path in changed code |
+| Cross-device/responsive issues, accessibility gaps | `/fh:adapt` | Frontend files changed + accessibility/responsive findings |
+| Design system drift, inconsistent tokens/spacing | `/fh:normalize` | Frontend files + design system defined in DESIGN.md |
+| Visual quality issues, layout problems, AI slop | `/fh:ui-critique` | Visual file ratio > 30% OR explicit UI concerns in findings |
+| Final polish pass | `/fh:polish` | Only after other sub-skills ran AND findings remain |
+
+If **no findings trigger any sub-skill**: skip to Step 3 entirely. Most reviews won't need this step.
+
+### b. Dispatch a single "quality-refine" subagent
+
+If any trigger condition is met, dispatch **one** `quality-refine` subagent (general-purpose). Do NOT dispatch N sequential inline skill calls.
+
+The subagent receives:
+- Findings from Agent 1 and Agent 2 (verbatim)
+- The trigger table above
+- The changed file list (from Step 1)
+- Project name (so subagent can call `mcp__plugin_claude-mem_mcp-search__smart_search` for cross-session pattern detection)
+
+The subagent:
+1. Decides which sub-skills to apply based on findings and the trigger table
+2. Runs triggered sub-skills **in sequence**, scoped to changed files only — not the whole codebase
+3. Reports back with: which sub-skills ran, what was changed, any remaining issues
+
+### c. Performance checks (conditional)
+
+- If Next.js project detected (Step 1) AND performance-related findings: reference `.claude/skills/nextjs-perf/PROMPT.md` criteria
+- If frontend changes AND significant bundle/render concerns: suggest `/fh:ui-test` for visual verification
+
+### d. Cross-session pattern detection (graceful degradation)
+
+Before dispatching the quality-refine subagent, check if the same quality issues have been flagged in prior reviews. Skip silently if claude-mem is unavailable or any call fails.
+
+1. Derive project name from `.planning/PROJECT.md` name field (fall back to basename of cwd). Use this as the `project` parameter.
+2. For each triggered sub-skill category (DRY, error handling, etc.), call `mcp__plugin_claude-mem_mcp-search__smart_search` with query="{category} {primary module/feature name}", project=<project-name>, limit=5
+3. From the returned index, call `mcp__plugin_claude-mem_mcp-search__get_observations` with ids=[top 2-3 relevant IDs] to fetch full details
+4. Count how many sessions each pattern appears in (use `times_seen` field or count distinct session IDs in observations)
+5. **If a pattern recurs 3+ times across sessions:** escalate its priority to the next severity level in the report (Minor → Important, Important → Critical) and annotate it with "⚠ Recurring pattern (seen N times)"
+6. Pass recurring-pattern context to the quality-refine subagent so it knows which issues are chronic vs. one-off
+
+If claude-mem is not installed or any call fails: skip this check and proceed with the standard trigger table evaluation.
+
+### e. Failure handling
+
+If the quality-refine subagent times out or fails: log a warning ("Quality refinement skipped: subagent timeout/error") and continue to Step 3. Do NOT block the review.
 
 ---
 
@@ -227,6 +287,8 @@ npm run lint 2>&1; echo "EXIT:$?"
 Record: test count, pass/fail, build exit code, lint exit code, raw output excerpts.
 
 **If frontend work** (`.tsx`/`.css` files changed): suggest `/fh:ui-test` for visual verification but don't block on it.
+
+**If Step 2.5 dispatched sub-skills:** Re-run tests after sub-skill execution to verify refinements didn't introduce regressions. If tests fail post-refinement, flag as a blocking finding and report which sub-skill introduced the failure.
 
 ---
 
@@ -299,6 +361,11 @@ Generate a structured report. For each finding above Minor, include a **Next act
 
 ### Recommended Next Actions
 1. [ordered list of actions with skill routing]
+
+### Recurring Findings (if any)
+<!-- Only include if cross-session pattern detection found patterns seen 3+ times -->
+- ⚠ {pattern} — seen N times across sessions → escalated to {severity}
+- Suggestion: run `/fh:learnings --update-claude-md` to persist these patterns to CLAUDE.md so future sessions are aware from the start
 ```
 
 ---
@@ -359,7 +426,7 @@ Derive the type and scope from the diff analysis. Present options:
 ### Persist Findings
 
 After generating the review report, output a structured summary of recurring patterns:
-1. If ctx_search is available, query for the most significant findings from indexed agent reports
+1. If claude-mem is available (check tool list for `mcp__plugin_claude-mem_*`), use `mcp__plugin_claude-mem_mcp-search__smart_search` to query for the most significant findings from this session's context. If not available, fall back to Read/Grep/Glob directly.
 2. Skip one-off issues — only persist patterns likely to recur
 3. Output each finding as:
    **[review-learning]** {module/area}: {pattern found} — {recommendation}

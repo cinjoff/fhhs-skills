@@ -342,6 +342,104 @@ sh "$HOME/.claude/get-shit-done/bin/post-update-reconcile.sh" --project-root "$P
 
 If the output includes "WARNING: gp() signature changed", claude-mem changed its internals and the patch needs updating — note this in the reconciliation table but don't fail the update.
 
+### 5a-mem: claude-mem environment reconciliation
+
+Check and fix claude-mem configuration drift. These checks run regardless of changelog tags.
+
+**1. context-mode deprecation check:**
+
+```bash
+python3 -c "
+import json, pathlib, os
+f = pathlib.Path(os.path.expanduser('~/.claude/plugins/installed_plugins.json'))
+if f.exists():
+    data = json.loads(f.read_text())
+    plugins = data.get('plugins', {})
+    has_ctx = any('context-mode' in k for k in plugins)
+    print('HAS_CONTEXT_MODE' if has_ctx else 'NO_CONTEXT_MODE')
+else:
+    print('NO_CONTEXT_MODE')
+" 2>/dev/null
+```
+
+**If `HAS_CONTEXT_MODE`:** Add to reconciliation table:
+
+```
+| ⚠ | context-mode plugin      | No longer needed — claude-mem handles cross-session context. Uninstall: claude plugin uninstall context-mode |
+```
+
+Do NOT auto-uninstall — inform the user.
+
+**2. CLAUDE_MEM_CONTEXT_OBSERVATIONS check:**
+
+Read `~/.claude-mem/settings.json`. If `CLAUDE_MEM_CONTEXT_OBSERVATIONS` exists and is not `"0"`, update it to `"0"` with a note in the reconciliation table:
+
+```
+| ✓ | CLAUDE_MEM_CONTEXT_OBSERVATIONS | Updated to "0" — skills now query claude-mem on-demand instead of auto-injecting |
+```
+
+**3. CLAUDE_MEM_SKIP_TOOLS canonical list check:**
+
+The canonical SKIP_TOOLS list is:
+
+```
+ListMcpResourcesTool,ReadMcpResourceTool,SlashCommand,Skill,TodoWrite,AskUserQuestion,ToolSearch,TaskCreate,TaskUpdate,TaskGet,TaskList,TaskOutput,TaskStop,SendMessage,EnterPlanMode,ExitPlanMode,EnterWorktree,ExitWorktree,LSP,CronCreate,CronDelete,CronList,TeamCreate,TeamDelete,NotebookEdit,mcp__plugin_claude-mem_mcp-search____IMPORTANT,mcp__plugin_claude-mem_mcp-search__search,mcp__plugin_claude-mem_mcp-search__get_observations,mcp__plugin_claude-mem_mcp-search__timeline,mcp__plugin_claude-mem_mcp-search__smart_search,mcp__plugin_claude-mem_mcp-search__smart_unfold,mcp__plugin_claude-mem_mcp-search__smart_outline
+```
+
+Read `~/.claude-mem/settings.json`. Compare current `CLAUDE_MEM_SKIP_TOOLS` against the canonical list. If missing entries exist, update to the full canonical list. If `Read`, `Glob`, or `Grep` appear in the list, remove them (they are high-signal observation sources).
+
+Add to reconciliation table if changes were made:
+
+```
+| ✓ | CLAUDE_MEM_SKIP_TOOLS    | Updated to canonical list (removed Read/Glob/Grep, added missing tools) |
+```
+
+**4. Native memory check:**
+
+```bash
+python3 -c "
+import json, pathlib, os
+f = pathlib.Path(os.path.expanduser('~/.claude/settings.json'))
+if f.exists():
+    data = json.loads(f.read_text())
+    mem = data.get('memory', {})
+    if mem.get('enabled', True) is not False:
+        print('NATIVE_MEMORY_ENABLED')
+    else:
+        print('NATIVE_MEMORY_DISABLED')
+else:
+    print('NO_SETTINGS')
+" 2>/dev/null
+```
+
+**If `NATIVE_MEMORY_ENABLED`:** Use the Edit tool to set `"memory": {"enabled": false}` in `~/.claude/settings.json`. Add to reconciliation table:
+
+```
+| ✓ | Native memory            | Disabled — claude-mem provides superior cross-session memory |
+```
+
+**5. Native task tracking (always enforced):**
+
+Use the Read tool to load `~/.claude/settings.json`, then use the Edit tool to:
+- Set `CLAUDE_CODE_ENABLE_TASKS` to `"0"` in the `env` object (add if missing)
+- Remove `CLAUDE_CODE_TASK_LIST_ID` from the `env` object entirely if present
+
+Add to reconciliation table:
+
+```
+| ✓ | CLAUDE_CODE_ENABLE_TASKS | Forced to "0" — tasks disabled, progress tracked via claude-mem timeline |
+```
+
+**6. Stale projects check:**
+
+Suggest the user check claude-mem for observations from projects tied to removed worktrees. This is informational only — do not auto-delete.
+
+```
+| ℹ | Stale project data       | Consider checking claude-mem for projects from removed worktrees |
+```
+
+Only show this if there are tracker entries that were cleaned in Step 6d, or if `--global` is set.
+
 ### 5b: Changelog-driven reconciliation — auto-fix gaps
 
 Save the changelog (already fetched in Step 2) to a temp file and run the reconciliation check:
@@ -404,7 +502,7 @@ Use the **Read tool** to load `~/.claude/settings.json`, then use the **Edit too
 | ID | Value |
 |----|-------|
 | `CLAUDE_CODE_ENABLE_LSP` | `"1"` |
-| `CLAUDE_CODE_ENABLE_TASKS` | `"true"` |
+| `CLAUDE_CODE_ENABLE_TASKS` | `"0"` |
 | `CLAUDE_CWD` | Derive from `process.cwd()` or `$CONDUCTOR_ROOT_PATH` — NOT a static value |
 | `CLAUDE_MEM_PROJECT` | Derive from `git rev-parse --git-common-dir` (worktree-safe) — NOT a static value |
 | Any other env | `"true"` (safe default) |
@@ -449,11 +547,11 @@ After installing `claude-mem@thedotmack` successfully, also apply fhhs-skills co
 ```json
 {
   "CLAUDE_MEM_MODEL": "claude-haiku-4-5-20251001",
-  "CLAUDE_MEM_CONTEXT_OBSERVATIONS": "75",
+  "CLAUDE_MEM_CONTEXT_OBSERVATIONS": "0",
   "CLAUDE_MEM_CONTEXT_SESSION_COUNT": "20",
   "CLAUDE_MEM_CONTEXT_FULL_COUNT": "15",
   "CLAUDE_MEM_CONTEXT_FULL_FIELD": "narrative",
-  "CLAUDE_MEM_SKIP_TOOLS": "ListMcpResourcesTool,SlashCommand,Skill,TodoWrite,AskUserQuestion,Read,Glob,Grep,ToolSearch,mcp__plugin_claude-mem_mcp-search____IMPORTANT,mcp__plugin_claude-mem_mcp-search__search,mcp__plugin_claude-mem_mcp-search__get_observations,mcp__plugin_claude-mem_mcp-search__timeline,mcp__plugin_claude-mem_mcp-search__smart_search,mcp__plugin_claude-mem_mcp-search__smart_unfold,mcp__plugin_claude-mem_mcp-search__smart_outline,mcp__plugin_context-mode_context-mode__ctx_search,mcp__plugin_context-mode_context-mode__ctx_execute,mcp__plugin_context-mode_context-mode__ctx_execute_file,mcp__plugin_context-mode_context-mode__ctx_batch_execute,mcp__plugin_context-mode_context-mode__ctx_index,mcp__plugin_context-mode_context-mode__ctx_fetch_and_index,mcp__plugin_context-mode_context-mode__ctx_stats,mcp__plugin_context-mode_context-mode__ctx_doctor,mcp__plugin_context-mode_context-mode__ctx_upgrade",
+  "CLAUDE_MEM_SKIP_TOOLS": "ListMcpResourcesTool,ReadMcpResourceTool,SlashCommand,Skill,TodoWrite,AskUserQuestion,ToolSearch,TaskCreate,TaskUpdate,TaskGet,TaskList,TaskOutput,TaskStop,SendMessage,EnterPlanMode,ExitPlanMode,EnterWorktree,ExitWorktree,LSP,CronCreate,CronDelete,CronList,TeamCreate,TeamDelete,NotebookEdit,mcp__plugin_claude-mem_mcp-search____IMPORTANT,mcp__plugin_claude-mem_mcp-search__search,mcp__plugin_claude-mem_mcp-search__get_observations,mcp__plugin_claude-mem_mcp-search__timeline,mcp__plugin_claude-mem_mcp-search__smart_search,mcp__plugin_claude-mem_mcp-search__smart_unfold,mcp__plugin_claude-mem_mcp-search__smart_outline",
   "CLAUDE_MEM_FOLDER_CLAUDEMD_ENABLED": "false",
   "CLAUDE_MEM_CONTEXT_SHOW_LAST_SUMMARY": "true",
   "CLAUDE_MEM_CONTEXT_SHOW_LAST_MESSAGE": "false",
@@ -492,7 +590,6 @@ node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" changelog reconcile \
 |--------|------|-------------|
 | ✓ | fallow | Installed via pnpm |
 | ✓ | shadcn skills | Installed globally |
-| ✓ | CLAUDE_CODE_ENABLE_TASKS | Added to settings.json |
 | ⚠ | claude-mem | Requires manual install (see below) |
 ```
 
@@ -834,7 +931,7 @@ Reconciled N worktrees across M repos
 
   platform
   │ vancouver      ✓  all ok
-  │ chicago-v1     ✓  4 gaps fixed (fallow, CLAUDE_CODE_ENABLE_TASKS, ...)
+  │ chicago-v1     ✓  4 gaps fixed (fallow, ...)
   │ osaka-v1       ✓  2 gaps fixed
   │ cape-town-v1   ✓  2 gaps fixed
   │ rabat          ✓  1 gap fixed, 1 health repair

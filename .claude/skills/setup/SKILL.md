@@ -32,7 +32,6 @@ as a single status table:
 | FHHS_SKILLS_ROOT           | ✓ {path} / ✗ not set          |
 | Hooks                      | ✓ configured / ✗ not configured |
 | claude-mem                 | ✓ installed / ○ not installed |
-| context-mode               | ✓ installed / ○ not installed |
 | Fallow                     | ✓ installed / ○ not installed |
 | shadcn skills              | ✓ installed / ○ not installed |
 ```
@@ -317,21 +316,17 @@ If not present, use the **Edit tool** to merge into settings.json:
 ```json
 {
   "env": {
-    "CLAUDE_CODE_ENABLE_LSP": "1",
-    "CLAUDE_CODE_ENABLE_TASKS": "true"
+    "CLAUDE_CODE_ENABLE_LSP": "1"
   }
 }
 ```
 
 Merge carefully — do NOT overwrite other `env` keys that may already exist.
 
-> **Why `CLAUDE_CODE_ENABLE_TASKS`?** Enables native task tracking used by `/fh:plan-work` and `/fh:build` for live progress visibility. Task list IDs are configured per-workspace via Conductor's setup script (which writes `CLAUDE_CODE_TASK_LIST_ID` into `.claude/settings.json`), or via `CLAUDE_CODE_TASK_LIST_ID` env var for non-Conductor setups.
-
 After writing:
 
 ```
 ✓ CLAUDE_CODE_ENABLE_LSP=1 set in ~/.claude/settings.json
-✓ CLAUDE_CODE_ENABLE_TASKS=true set in ~/.claude/settings.json
   → Restart Claude Code for changes to activate
 ```
 
@@ -444,7 +439,7 @@ fhhs-skills includes four hooks:
 |------|-------|-------------|
 | `fhhs-statusline.js` | Statusline | Shows model, current task, context usage, update indicator |
 | `fhhs-check-update.js` | SessionStart | Checks GitHub for new fhhs-skills versions (background, throttled to 6h) |
-| `fhhs-learnings.js` | SessionStart | Surfaces improvement areas from past sessions (reads cached digest) |
+| `fhhs-learnings.js` | SessionStart | Surfaces improvement areas from past sessions (reads cached digest; applies signal density logic to decide whether to prompt for full analysis) |
 | `fhhs-context-monitor.js` | PostToolUse | Warns the agent when context window is running low |
 
 ### 5a: Read current settings
@@ -500,6 +495,15 @@ Check if `settings.hooks.SessionStart` already contains hooks with commands incl
 }
 ```
 
+**fhhs-learnings.js signal density logic** — the hook reads `~/.claude/cache/learnings-digest.json` and applies this decision matrix before outputting anything:
+
+1. Count pending (unaddressed) items in the digest
+2. Check `last_full_analysis` timestamp (if present in digest)
+3. Decision matrix:
+   - 5+ pending items AND >7 days since `last_full_analysis` → append: "💡 You have {N} unaddressed improvements. Run `/fh:learnings` for a full analysis."
+   - 10+ pending items (any time) → append: "⚠️ {N} improvements have accumulated. Consider `/fh:learnings` before starting new work."
+   - <5 pending OR <7 days since analysis → show items silently (current behavior)
+
 **PostToolUse hook** — add context monitor (only if not already present):
 
 Check if `settings.hooks.PostToolUse` already contains a hook with command including `fhhs-context-monitor`. If not, add:
@@ -536,25 +540,9 @@ After writing settings.json:
 
 ---
 
-## Pre-PR Security Hook (optional)
+## Security Scanning
 
-To run security scanning automatically before creating PRs, add to `.claude/settings.json`:
-
-```json
-{
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "pattern": "gh pr create",
-        "action": "Run /fh:secure on changed files before PR creation"
-      }
-    ]
-  }
-}
-```
-
-This ensures `/fh:secure` runs before every PR. For on-demand scanning, run `/fh:secure` directly.
+`/fh:secure` is available as a standalone skill for on-demand security scanning of changed files. Run it directly when you want to check for vulnerabilities before a PR.
 
 ---
 
@@ -640,13 +628,13 @@ Read `~/.claude-mem/settings.json` using the **Read tool**. If it doesn't exist,
 ```json
 {
   "CLAUDE_MEM_MODEL": "claude-haiku-4-5-20251001",
-  "CLAUDE_MEM_CONTEXT_OBSERVATIONS": "75",
-  "CLAUDE_MEM_CONTEXT_SESSION_COUNT": "20",
-  "CLAUDE_MEM_CONTEXT_FULL_COUNT": "15",
+  "CLAUDE_MEM_CONTEXT_OBSERVATIONS": "0",
+  "CLAUDE_MEM_CONTEXT_SESSION_COUNT": "0",
+  "CLAUDE_MEM_CONTEXT_FULL_COUNT": "0",
   "CLAUDE_MEM_CONTEXT_FULL_FIELD": "narrative",
-  "CLAUDE_MEM_SKIP_TOOLS": "ListMcpResourcesTool,SlashCommand,Skill,TodoWrite,AskUserQuestion,Read,Glob,Grep,ToolSearch,mcp__plugin_claude-mem_mcp-search____IMPORTANT,mcp__plugin_claude-mem_mcp-search__search,mcp__plugin_claude-mem_mcp-search__get_observations,mcp__plugin_claude-mem_mcp-search__timeline,mcp__plugin_claude-mem_mcp-search__smart_search,mcp__plugin_claude-mem_mcp-search__smart_unfold,mcp__plugin_claude-mem_mcp-search__smart_outline,mcp__plugin_context-mode_context-mode__ctx_search,mcp__plugin_context-mode_context-mode__ctx_execute,mcp__plugin_context-mode_context-mode__ctx_execute_file,mcp__plugin_context-mode_context-mode__ctx_batch_execute,mcp__plugin_context-mode_context-mode__ctx_index,mcp__plugin_context-mode_context-mode__ctx_fetch_and_index,mcp__plugin_context-mode_context-mode__ctx_stats,mcp__plugin_context-mode_context-mode__ctx_doctor,mcp__plugin_context-mode_context-mode__ctx_upgrade",
+  "CLAUDE_MEM_SKIP_TOOLS": "ListMcpResourcesTool,ReadMcpResourceTool,SlashCommand,Skill,TodoWrite,AskUserQuestion,ToolSearch,TaskCreate,TaskUpdate,TaskGet,TaskList,TaskOutput,TaskStop,SendMessage,EnterPlanMode,ExitPlanMode,EnterWorktree,ExitWorktree,LSP,CronCreate,CronDelete,CronList,TeamCreate,TeamDelete,NotebookEdit,mcp__plugin_claude-mem_mcp-search____IMPORTANT,mcp__plugin_claude-mem_mcp-search__search,mcp__plugin_claude-mem_mcp-search__get_observations,mcp__plugin_claude-mem_mcp-search__timeline,mcp__plugin_claude-mem_mcp-search__smart_search,mcp__plugin_claude-mem_mcp-search__smart_unfold,mcp__plugin_claude-mem_mcp-search__smart_outline",
   "CLAUDE_MEM_FOLDER_CLAUDEMD_ENABLED": "false",
-  "CLAUDE_MEM_CONTEXT_SHOW_LAST_SUMMARY": "true",
+  "CLAUDE_MEM_CONTEXT_SHOW_LAST_SUMMARY": "false",
   "CLAUDE_MEM_CONTEXT_SHOW_LAST_MESSAGE": "false",
   "CLAUDE_MEM_CONTEXT_SHOW_READ_TOKENS": "true",
   "CLAUDE_MEM_CONTEXT_SHOW_WORK_TOKENS": "true",
@@ -690,37 +678,21 @@ After applying, display:
 
 ---
 
-## Step 6b: context-mode (Context Optimization)
+## Step 6b: Disable Native Claude Memory
 
-context-mode is a companion plugin that dramatically improves session efficiency:
-- **Session Continuity**: Tracks files, decisions, tasks, and errors in SQLite. When context compacts, your working state rebuilds automatically.
-- **Context Saving**: Tool outputs are sandboxed — raw data never enters context. 315 KB of output becomes 5.4 KB (98% reduction).
-- **Knowledge Base**: Index project docs, specs, and codebase mapping into FTS5 for instant BM25-ranked search via `ctx_search`.
+claude-mem handles cross-session context more efficiently than the built-in memory system. Disable native memory to avoid token waste from duplicate memory injection.
 
-Install automatically:
-```bash
-claude plugin marketplace add mksglu/context-mode 2>/dev/null
-claude plugin install context-mode@context-mode 2>/dev/null && echo "OK context-mode" || echo "FAILED context-mode"
+Add to the project's `.claude/settings.json`:
+```json
+{
+  "memory": { "enabled": false }
+}
 ```
 
-If OK, display:
+Display:
 ```
-✓ context-mode installed — session continuity + context saving active
-  fhhs-skills will use ctx_search/ctx_index for faster lookups automatically
+✓ Native memory disabled — claude-mem handles cross-session context
 ```
-
-If FAILED (e.g. running inside Conductor or non-interactive env where `claude plugin` doesn't work), tell the user:
-```
-⚠ Could not install context-mode automatically.
-  Install manually in a Claude Code session:
-
-    /plugin marketplace add mksglu/context-mode
-    /plugin install context-mode@context-mode
-
-  Then run /context-mode:ctx-doctor to verify.
-```
-
-Do NOT ask the user whether to install — just install it. It's a recommended companion that fhhs-skills actively uses.
 
 ---
 
@@ -793,7 +765,7 @@ If the install fails (e.g. network issue, npx not available), show a warning but
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-[Fallow](https://docs.fallow.tools/) provides deterministic static analysis — dead-code detection, circular dependency analysis, code duplication, and complexity metrics. Used by `/fh:review` and `/fh:simplify` to inject ground truth findings into review agents.
+[Fallow](https://docs.fallow.tools/) provides deterministic static analysis — dead-code detection, circular dependency analysis, code duplication, and complexity metrics. Used by `/fh:review` and `/fh:map-codebase` to inject ground truth findings into agents.
 
 ### Check and install
 
@@ -844,7 +816,7 @@ If the install fails, show a warning but don't block setup:
 
     pnpm install -g fallow   # or: npm install -g fallow
 
-  Without Fallow, /fh:review and /fh:simplify still work but use
+  Without Fallow, /fh:review and /fh:map-codebase still work but use
   LLM-only analysis instead of deterministic static analysis.
 ```
 
@@ -898,28 +870,18 @@ If installed, display:
   │ $CONDUCTOR_DEFAULT_BRANCH  │ Default branch (usually main)    │
   └────────────────────────────┴──────────────────────────────────┘
 
-  Task tracking: Each workspace gets its own task list via the
-  setup script, which writes CLAUDE_CODE_TASK_LIST_ID into
-  .claude/settings.json using the workspace name.
+  Native task tracking is disabled (CLAUDE_CODE_ENABLE_TASKS="0").
+  Progress is tracked via claude-mem timeline instead.
   /fh:new-project configures this automatically.
 
   If you have an existing project, create conductor.json manually:
 
     {
       "scripts": {
-        "setup": "npm install && ln -sf \"$CONDUCTOR_ROOT_PATH/.env.local\" .env.local 2>/dev/null; true; ln -sf \"$CONDUCTOR_ROOT_PATH/.vercel\" .vercel 2>/dev/null; true; node -e \"var fs=require('fs'),f='.claude/settings.json',s={};try{s=JSON.parse(fs.readFileSync(f,'utf8'))}catch{}s.env=Object.assign(s.env||{},{CLAUDE_CODE_TASK_LIST_ID:process.env.CONDUCTOR_WORKSPACE_NAME||'default'});fs.writeFileSync(f,JSON.stringify(s,null,2)+'\\n')\"",
-        "run": "npm run dev -- --port $CONDUCTOR_PORT",
-        "archive": "rm -rf \"$HOME/.claude/tasks/${CONDUCTOR_WORKSPACE_NAME}\" 2>/dev/null; true"
+        "setup": "npm install && ln -sf \"$CONDUCTOR_ROOT_PATH/.env.local\" .env.local 2>/dev/null; true; ln -sf \"$CONDUCTOR_ROOT_PATH/.vercel\" .vercel 2>/dev/null; true",
+        "run": "npm run dev -- --port $CONDUCTOR_PORT"
       },
-      "env": {
-        "CLAUDE_CODE_ENABLE_TASKS": "true"
-      }
     }
-
-  Note: CLAUDE_CODE_TASK_LIST_ID must be set via the setup script
-  (not the env block) because Conductor does not interpolate shell
-  variables in env values. The setup script has access to
-  $CONDUCTOR_WORKSPACE_NAME and writes it to .claude/settings.json.
 ```
 
 ---
@@ -965,7 +927,7 @@ Then present the status table and next steps as regular markdown text:
 | CLI Tools                  | ✓ linked                 |
 | Hooks                      | ✓ statusline + update check + context monitor |
 | claude-mem                 | ✓ installed / ○ skipped (optional)       |
-| context-mode               | ✓ installed / ○ skipped (optional)       |
+| Native memory              | ✓ disabled / ⚠ still enabled             |
 | Fallow                     | ✓ installed / ⚠ manual install needed    |
 | shadcn skills              | ✓ installed / ⚠ manual install needed    |
 | Conductor                  | ✓ detected / ○ not installed (optional) |

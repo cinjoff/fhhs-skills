@@ -22,66 +22,26 @@ This creates the .planning/ directory that all planning and build skills depend 
 
 ---
 
-## Step -1: Initialize Task Tracking
+## Step -0.5: Past Context Check
 
-Before beginning any planning work, create native tasks for all planning steps so progress is visible throughout the session.
+If claude-mem is available (check tool list for `mcp__plugin_claude-mem_*`):
 
-**Try creating tasks. If TaskCreate fails or is unavailable, set TASKS_AVAILABLE=false, log "Task tracking unavailable, continuing with GSD tracking", and proceed normally. All subsequent TaskUpdate calls should be skipped when TASKS_AVAILABLE=false.**
+1. Derive project name from `.planning/PROJECT.md` name field (fall back to basename of cwd). Use this as the `project` parameter for all claude-mem calls.
+2. Call `search` with query=2-3 keywords from the phase/project domain, project=<project-name>, limit=10
+3. Scan the returned index for relevant IDs — prioritize types: gotcha, decision, trade-off
+4. For the top 2-3 relevant IDs, call `get_observations` to fetch full details
+5. Present as: "**From prior sessions:** - {observation}" — max 3 items
+6. Feed these into the planning context so past mistakes and decisions inform this session
 
-If TaskCreate succeeds, create the following tasks in order and capture their IDs:
+If claude-mem is not available, skip silently. The rest of plan-work reads planning files directly as fallback.
 
-1. **"Phase matching"** (activeForm: "Matching to phase")
-2. **"Complexity assessment"** (activeForm: "Assessing complexity")
-3. **"Research"** (activeForm: "Researching")
-4. **"Brainstorm design"** (activeForm: "Brainstorming")
-5. **"Discuss implementation"** (activeForm: "Discussing gray areas")
-6. **"Derive must_haves"** (activeForm: "Deriving must_haves")
-7. **"Create plan"** (activeForm: "Writing plan")
-8. **"Plan-check"** (activeForm: "Validating plan")
+claude-mem observations from prior steps persist automatically — no explicit pre-indexing needed.
 
-Set up sequential dependencies: each task `addBlockedBy` the previous task's ID (task 2 blocked by task 1, task 3 blocked by task 2, etc.).
-
----
-
-## Step -0.5: Phase Context Bootstrap
-
-If `ctx_batch_execute` is available (test by checking tool list), index stable planning docs that don't change during a phase. These persist in the shared context-mode DB across plan-work → plan-review → build → review steps.
-
-```
-ctx_batch_execute([
-  { label: "PROJECT", cmd: "cat .planning/PROJECT.md" },
-  { label: "ROADMAP", cmd: "cat .planning/ROADMAP.md" },
-  { label: "REQUIREMENTS", cmd: "cat .planning/REQUIREMENTS.md" },
-  { label: "DESIGN", cmd: "cat .planning/DESIGN.md" },
-  { label: "ARCHITECTURE", cmd: "cat .planning/codebase/CODEBASE.md 2>/dev/null || cat .planning/codebase/ARCHITECTURE.md 2>/dev/null || echo ''" },
-  { label: "STRUCTURE", cmd: "cat .planning/codebase/STRUCTURE.md 2>/dev/null || echo ''" },
-  { label: "CONVENTIONS", cmd: "cat .planning/codebase/CONVENTIONS.md 2>/dev/null || echo ''" },
-  { label: "TESTING", cmd: "cat .planning/codebase/TESTING.md 2>/dev/null || echo ''" },
-  { label: "STACK", cmd: "cat .planning/codebase/STACK.md 2>/dev/null || echo ''" },
-], queries: [
-  "project vision and scope",
-  "architecture patterns and boundaries",
-  "code conventions and style",
-  "test patterns and setup",
-  "file structure conventions"
-])
-```
-
-Also index research files if they exist:
-- `.planning/research/*.md` (project-level research from /fh:new-project)
-- `.planning/phases/{phase}/{phase}-RESEARCH.md` (phase-level research)
-- `.planning/research/v2/*.md` (milestone-level research)
-- `.planning/startup/*.md` and `.planning/startup/**/*.md` (startup validation artifacts from /fh:startup-design — market data, competitors, positioning inform planning decisions)
-
-If `ctx_batch_execute` is not available, skip silently. The rest of plan-work reads these files directly as fallback.
-
-This is a one-time cost (~2 seconds) that saves repeated reads across all 4 phase steps.
+See @.claude/skills/shared/claude-mem-rules.md for canonical patterns.
 
 ---
 
 ## Step 0: Phase Matching
-
-> **Task tracking:** `TaskUpdate(phaseMatchingId, status="in_progress")` — skip if TASKS_AVAILABLE=false.
 
 Compare the user's `$ARGUMENTS` against existing phases in ROADMAP.md:
 
@@ -93,15 +53,11 @@ Compare the user's `$ARGUMENTS` against existing phases in ROADMAP.md:
 
 Once the target phase is determined, hold it — it determines the output path for PLAN.md in Step 3.
 
-> **Task tracking:** `TaskUpdate(phaseMatchingId, status="completed")` — skip if TASKS_AVAILABLE=false.
-
 ---
 
-## Step 0.5: Complexity Assessment
+## Step 0.5: Complexity & Scope Assessment
 
-> **Task tracking:** `TaskUpdate(complexityAssessmentId, status="in_progress")` — skip if TASKS_AVAILABLE=false.
-
-Before diving in, evaluate the task to suggest appropriate depth for research, discussion, and review.
+Before diving in, evaluate the task to suggest appropriate depth AND determine whether the phase should be split into multiple focused plans.
 
 **Complexity signals to check:**
 
@@ -118,11 +74,23 @@ Before diving in, evaluate the task to suggest appropriate depth for research, d
 | **Medium** (4-8 tasks, some unfamiliar patterns) | Inline research | Identify gray areas | Strongly suggest `/fh:plan-review` |
 | **Complex** (9+ tasks, unfamiliar domain, new architecture, multi-session) | Suggest deep research via phase-researcher agent | Full discussion with decision-locking | Strongly suggest `/fh:plan-review` |
 
-**Present the assessment to the user:** "This looks [simple/medium/complex] — I suggest [depth]. Want to proceed with that depth, or adjust?"
+### Scope Decomposition (Medium and Complex only)
 
-Wait for user confirmation before proceeding. The user can override the suggested depth.
+For Medium and Complex tasks, assess whether the phase should produce multiple focused plans rather than one large plan:
 
-> **Task tracking:** `TaskUpdate(complexityAssessmentId, status="completed")` — skip if TASKS_AVAILABLE=false.
+1. **Count requirements** for this phase from ROADMAP.md
+2. **Estimate total files** that will be created/modified (quick codebase scan)
+3. **Identify natural splits** — does the work decompose into independent sub-features, vertical slices, or sequential stages?
+
+**Present the decomposition to the user:** "This phase has N requirements touching ~M files. I suggest splitting into K focused plans: (1) [scope], (2) [scope], (3) [scope]. Each stays under 4-6 tasks for peak execution quality."
+
+**Why this matters:** A single 8-task plan consumes 70%+ context, degrading quality in later tasks — leading to review rework. Three 3-task plans each execute at peak quality (under 50% context). The planning overhead is small; the quality gain is large.
+
+Get user approval on the decomposition BEFORE proceeding to research/brainstorm. Plan each sub-scope through the remaining steps, producing one PLAN.md per sub-scope.
+
+**Present the full assessment to the user:** "This looks [simple/medium/complex]. [If Medium+: scope decomposition suggestion]. I suggest [depth]. Want to proceed, or adjust?"
+
+Wait for user confirmation before proceeding. The user can override both depth and decomposition.
 
 ---
 
@@ -143,8 +111,6 @@ Advisory only — never block.
 ---
 
 ## Step 1: Research (if needed)
-
-> **Task tracking:** `TaskUpdate(researchId, status="in_progress")` — skip if TASKS_AVAILABLE=false.
 
 Check whether the user's request involves unfamiliar APIs, external services, library selection, or technical feasibility questions. If so, research before designing — it prevents brainstorming in a vacuum.
 
@@ -210,37 +176,34 @@ Spawn a Task agent with:
 - Instruction to use Firecrawl for web search and Context7 for library documentation
 - Instruction to write findings to `.planning/phases/XX-name/XX-RESEARCH.md` with prescriptive recommendations, stack decisions, pitfalls, and code examples
 
-### Context-Mode Acceleration
+### Tool Selection
 
-If the Phase Context Bootstrap ran in Step -0.5, these docs are already indexed — use ctx_search instead of Read for broad queries.
-
-When scouting the codebase for reusable assets, existing patterns, or prior decisions:
-- If ctx_search is available: search the indexed codebase mapping for architecture patterns, conventions, and existing abstractions before grepping the actual codebase. Also search for prior decisions related to the current gray areas.
-- If not available: use the existing Grep/Glob/Read pattern.
-
-ctx_search is faster for broad "what exists?" queries. Use Grep/Glob for precise "where exactly?" lookups.
-
-See @.claude/skills/plan-work/references/workflow-matrix.md for the full tool selection guide — when to use ctx_search vs Read vs Grep vs LSP vs Fallow vs claude-mem.
+See @.claude/skills/plan-work/references/workflow-matrix.md for the full tool selection guide. Default to Smart Explore. Escalate to Explore Agent only when synthesis is needed.
 
 ### Skip research (simple tasks)
 
-**If the feature uses well-known patterns**, skip this step and say so. When skipping: `TaskUpdate(researchId, status="completed", metadata={skipped: true, reason: "Well-known patterns, no research needed"})` — skip if TASKS_AVAILABLE=false.
+**If the feature uses well-known patterns**, skip this step and say so.
 
 If the user mentions wanting an isolated branch or worktree, set up a git worktree before continuing.
-
-> **Task tracking:** On completion: `TaskUpdate(researchId, status="completed")` — skip if TASKS_AVAILABLE=false.
 
 ---
 
 ## Step 2: Brainstorm
 
-> **Task tracking:** `TaskUpdate(brainstormId, status="in_progress")` — skip if TASKS_AVAILABLE=false.
+**Skip if complexity is Simple.** Jump to Step 3 (Discuss Implementation) with abbreviated scope: identify 1-2 gray areas, lock decisions, proceed to plan creation.
 
-**Skip if complexity is Simple.** Jump to Step 3 (Discuss Implementation) with abbreviated scope: identify 1-2 gray areas, lock decisions, proceed to plan creation. When skipping: `TaskUpdate(brainstormId, status="completed", metadata={skipped: true, reason: "Simple complexity — brainstorm skipped"})` — skip if TASKS_AVAILABLE=false.
+**Skip if:** A phase-specific CONTEXT.md already exists AND a design doc for this topic already exists in `.planning/designs/`. The design was already approved — proceed to Step 3.
 
-**Skip if:** A phase-specific CONTEXT.md already exists AND a design doc for this topic already exists in `.planning/designs/`. The design was already approved — proceed to Step 3. When skipping: `TaskUpdate(brainstormId, status="completed", metadata={skipped: true, reason: "Design already exists"})` — skip if TASKS_AVAILABLE=false.
+### Past Decisions Check (before brainstorming)
 
-Read `skills/brainstorming/PROMPT.md` and follow it completely — it handles exploration, questions, design sections, and user approval.
+If claude-mem is available, check for prior decisions and gotchas in this domain before exploring design options:
+1. Call `search` with query=2-3 keywords from the phase topic + "architecture decision", project=<project-name>, limit=10
+2. For top 2-3 relevant IDs (prioritize types: decision, gotcha, trade-off), fetch full details with `get_observations`
+3. Present: "**From prior sessions:** - {observation}" — max 3 items
+4. Feed into brainstorm context — avoid re-debating settled questions and surface mistakes that burned time before
+5. Skip silently if claude-mem unavailable or no relevant results
+
+Read `references/brainstorming-prompt.md` (co-located in this skill's directory) and follow it completely — it handles exploration, questions, design sections, and user approval.
 
 If research was done in Step 1, feed the findings into the brainstorming context.
 
@@ -250,15 +213,11 @@ Save approved design to `.planning/designs/YYYY-MM-DD-<topic>.md`.
 
 **Wait for user approval before continuing.**
 
-> **Task tracking:** `TaskUpdate(brainstormId, status="completed")` — skip if TASKS_AVAILABLE=false.
-
 ---
 
 ## Step 3: Discuss Implementation
 
-> **Task tracking:** `TaskUpdate(discussId, status="in_progress")` — skip if TASKS_AVAILABLE=false.
-
-**Skip if:** A CONTEXT.md already exists for this phase (decisions already locked from a previous planning session). When skipping: `TaskUpdate(discussId, status="completed", metadata={skipped: true, reason: "CONTEXT.md already locked"})` — skip if TASKS_AVAILABLE=false.
+**Skip if:** A CONTEXT.md already exists for this phase (decisions already locked from a previous planning session).
 
 ### AUTO_MODE branch
 
@@ -290,19 +249,31 @@ Then continue to Step 4.
 
 Resolve implementation gray areas before planning:
 
-### Context-Mode Acceleration
+### Codebase Scouting Tools
 
-If the Phase Context Bootstrap ran in Step -0.5, these docs are already indexed — use ctx_search instead of Read for broad queries.
+See @.claude/skills/plan-work/references/workflow-matrix.md for tool selection. Additionally:
+If claude-mem is available (check tool list for `mcp__plugin_claude-mem_*`):
+- Use `smart_outline` on modules in the target area for token-efficient structural views (function signatures, exports) without reading full files
+- Use `smart_search` to search for existing patterns related to the gray areas being discussed — surfaces reusable abstractions faster than grep
+- Default to Smart Explore. Escalate to Explore Agent only when synthesis is needed.
 
-When scouting the codebase for reusable assets, existing patterns, or prior decisions:
-- If ctx_search is available: search the indexed codebase mapping for architecture patterns, conventions, and existing abstractions before grepping the actual codebase. Also search for prior decisions related to the current gray areas.
-- If not available: use the existing Grep/Glob/Read pattern.
+If claude-mem is not available: fall back to Read/Grep/Glob directly.
 
-ctx_search is faster for broad "what exists?" queries. Use Grep/Glob for precise "where exactly?" lookups.
+1. **Scout codebase** for reusable assets — existing components, utilities, patterns that could be leveraged. Use smart_outline/smart_search (if available), LSP `workspaceSymbol`, or Grep to find relevant abstractions.
 
-See @.claude/skills/plan-work/references/workflow-matrix.md for the full tool selection guide — when to use ctx_search vs Read vs Grep vs LSP vs Fallow vs claude-mem.
-
-1. **Scout codebase** for reusable assets — existing components, utilities, patterns that could be leveraged. Use LSP `workspaceSymbol` to find relevant abstractions by name, and `findReferences` to see how existing patterns are used. Also check for `playwright.config.*` in the project root. If present, note it — frontend interactive features should consider E2E test tasks during planning.
+   **Testing strategy detection** (do this once during scouting, carry results into the plan):
+   - Check for `playwright.config.*` → E2E framework is Playwright
+   - Check for `vitest.config.*` or `"vitest"` in package.json → unit runner is Vitest
+   - Check for `jest.config.*` or `"jest"` in package.json → unit runner is Jest
+   - Check for existing test dirs: `__tests__/`, `tests/`, `e2e/`, `*.test.*`, `*.spec.*`
+   - Record findings as `TESTING_STRATEGY`:
+     ```
+     unit_runner: vitest|jest|none
+     e2e_runner: playwright|none
+     test_dirs: [paths where tests live]
+     run_command: "pnpm test --run" | "CI=true npm test" | etc.
+     ```
+   Emit this in the plan's `<context>` block so build subagents don't need to re-detect. If Playwright is present, frontend interactive features should include E2E test tasks. See `.claude/skills/shared/testing-guide.md` for testing conventions.
 2. **Identify 3-4 gray areas** specific to this phase — layout choices, data flow decisions, error handling approaches, integration patterns
 3. **Ask user** which gray areas to discuss (don't discuss all — let user prioritize)
 4. **Deep-dive** selected areas — present options with trade-offs, get user decisions
@@ -353,13 +324,9 @@ See @.claude/skills/plan-work/references/workflow-matrix.md for the full tool se
 
 **Scope commitment rule:** Once the user selects which gray areas to discuss, commit fully to that selection. Do not lobby for different areas or silently expand scope.
 
-> **Task tracking:** `TaskUpdate(discussId, status="completed")` — skip if TASKS_AVAILABLE=false.
-
 ---
 
 ## Step 4: Derive must_haves
-
-> **Task tracking:** `TaskUpdate(deriveMustHavesId, status="in_progress")` — skip if TASKS_AVAILABLE=false.
 
 From the approved design, extract the **must_haves** — these drive the plan and verify it when done.
 
@@ -387,13 +354,9 @@ Identify how artifacts connect to each other:
 
 Hold these must_haves — they feed directly into the PLAN.md frontmatter and the plan-check in Step 6.
 
-> **Task tracking:** `TaskUpdate(deriveMustHavesId, status="completed")` — skip if TASKS_AVAILABLE=false.
-
 ---
 
 ## Step 5: Create Plan
-
-> **Task tracking:** `TaskUpdate(createPlanId, status="in_progress")` — skip if TASKS_AVAILABLE=false.
 
 Write plans to `.planning/phases/XX-name/XX-NN-PLAN.md` using the target phase from Step 0.
 - Include full frontmatter (`phase`, `plan`, `requirements`)
@@ -462,7 +425,7 @@ Target **{files_per_plan} files** total across tasks.
 Keep plan total under **{words_per_plan} words**.
 
 - Each task has: files, action, verify, done
-- Mark tasks `tdd="true"` when they involve logic, state, or behavior — the executor will follow `skills/test-driven-development/PROMPT.md` for these
+- Mark tasks `tdd="true"` when they involve logic, state, or behavior — the executor will follow `.claude/skills/shared/testing-guide.md` for these
 - Set `wave` numbers for parallelization (independent tasks = same wave)
 - Test tasks can be marked `wave: same` as their implementation task when they test independent interfaces (the test doesn't need the implementation output to run).
 - If frontend: add `type="checkpoint:human-verify"` for key visual moments
@@ -471,16 +434,20 @@ Keep plan total under **{words_per_plan} words**.
 ### Context optimization
 
 - In `<context>` blocks, reference only files the executor actually needs
-- Reference relevant sections of CODEBASE.md per task (Conventions for style, Structure for file placement, Architecture for layer boundaries)
+- Reference the specific granular codebase file each task needs:
+  - Style/patterns → `.planning/codebase/CONVENTIONS.md`
+  - File placement → `.planning/codebase/STRUCTURE.md`
+  - Layer boundaries → `.planning/codebase/ARCHITECTURE.md`
+  - External services → `.planning/codebase/INTEGRATIONS.md`
+  - Test approach → `.planning/codebase/TESTING.md`
+  - Tech stack → `.planning/codebase/STACK.md`
+  - Tech debt → `.planning/codebase/CONCERNS.md`
+- For codebase questions: if claude-mem is available, use `smart_search` for the specific question (it will hit the relevant granular file); otherwise Read the specific file directly
 - If GSD and CONTEXT.md exists: honor locked decisions, exclude deferred ideas
-
-> **Task tracking:** `TaskUpdate(createPlanId, status="completed")` — skip if TASKS_AVAILABLE=false.
 
 ---
 
 ## Step 6: Plan-check (inline verification loop)
-
-> **Task tracking:** `TaskUpdate(planCheckId, status="in_progress")` — skip if TASKS_AVAILABLE=false.
 
 Before presenting the plan to the user, run this verification checklist. If any check fails, revise and recheck (max 3 iterations, then ask the user for guidance).
 
@@ -503,7 +470,7 @@ These catch schema issues (missing frontmatter fields, malformed tasks) automati
 6. **Context compliance** (GSD only): plan does not contradict locked decisions in CONTEXT.md; plan does not include work deferred in CONTEXT.md.
 7. **Test coverage REQUIRE**: For each task that creates or modifies `.ts`, `.js`, `.tsx`, `.jsx` files (excluding config-only, types-only, or constants-only files): if the task involves business logic, state management, or data transformation, it MUST either have `tdd="true"` OR the plan must contain a companion test task covering the same files. If neither condition is met, FAIL the check: 'Task N ({name}) modifies business logic without test coverage. Add `tdd="true"` to the task, or add a companion test task in the same wave.' Revise the plan to include test coverage before presenting to the user. This is not advisory — untested business logic is the #1 source of regressions in autonomous builds.
 8. **Playwright E2E check** (frontend only): If any task creates interactive UI (forms, auth flows, navigation, CRUD operations) and the project has `playwright.config.*`: check whether any task includes E2E test files (`e2e/*.spec.*` or `*.spec.*`). If none found, emit WARN and auto-suggest a concrete test task:
-   - Playwright skill prompt: `$FHHS_SKILLS_ROOT/.claude/skills/playwright-testing/PROMPT.md` (set by `/fh:setup`; fall back to `.claude/skills/playwright-testing/PROMPT.md` if unset)
+   - Playwright patterns: `.claude/skills/playwright-testing/PROMPT.md` (and testing-guide.md Part D for quick reference)
    - Suggested task should use: Page Object Model pattern, `getByRole` selectors, critical user journey focus
    - Present: 'No E2E test task found for interactive UI. Suggested test task: [task description]. Add it, or confirm E2E coverage is not needed for this plan.'
    Advisory — user can decline. But the suggestion is concrete and ready to add, not a vague warning.
@@ -512,8 +479,6 @@ These catch schema issues (missing frontmatter fields, malformed tasks) automati
 If a check fails, state which check failed, revise the plan, and recheck. After 3 failed iterations, present what you have and ask the user to resolve the issue.
 
 **Present the plan to the user. Wait for approval.**
-
-> **Task tracking:** `TaskUpdate(planCheckId, status="completed")` — skip if TASKS_AVAILABLE=false.
 
 ---
 
@@ -526,25 +491,6 @@ After plan approval:
 3. **Continue planning** — Plan more phases before building.
 
 **Review is the default for ALL plans.** Only skip review for trivially obvious work where the risk of a missed edge case is near zero. When in doubt, review.
-
----
-
-## Step 9.5: Index Source Files for Downstream Steps
-
-If ctx_batch_execute is available AND the plan has a `files_modified` list in frontmatter:
-
-1. Parse `files_modified` from the plan frontmatter
-2. Filter to files that exist on disk
-3. Index them for downstream consumption (plan-review, build):
-
-```
-ctx_batch_execute([
-  // For each existing file in files_modified:
-  { label: "<basename>", cmd: "cat <filepath>" },
-], queries: ["implementation patterns in modified files"])
-```
-
-This ensures plan-review and build can access the relevant source code via ctx_search without redundant file reads. If files_modified is empty or ctx_batch_execute is unavailable, skip silently.
 
 ---
 

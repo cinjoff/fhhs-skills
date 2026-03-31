@@ -861,12 +861,12 @@
     {
       "id": 21,
       "command": "map-codebase",
-      "prompt": "map-codebase (codebase already mapped, .planning/codebase/CODEBASE.md exists)",
-      "expected_output": "Should detect existing CODEBASE.md and check staleness (commits since last mapping via .last-mapped SHA). Should show staleness context. Should offer Refresh (delete and remap) or Skip (use existing). Should wait for user choice before proceeding.",
+      "prompt": "map-codebase (codebase already mapped, .planning/codebase/ has 7 files from a previous run)",
+      "expected_output": "Should detect existing 7 granular files in .planning/codebase/ (STACK.md, CONVENTIONS.md, etc.) and check staleness (commits since last mapping via .last-mapped SHA). Should show staleness context. Should offer Refresh (delete and remap), Update (specific files), or Skip. Should wait for user choice before proceeding.",
       "files": [],
       "assertions": [
         {
-          "text": "Detects existing CODEBASE.md",
+          "text": "Detects existing granular files in .planning/codebase/",
           "type": "behavioral"
         },
         {
@@ -886,7 +886,16 @@
       "tags": [
         "edge-case"
       ],
-      "checks": []
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "STACK\\.md|CONVENTIONS\\.md|ARCHITECTURE\\.md"
+        },
+        {
+          "type": "regex",
+          "pattern": "[Rr]efresh|[Ss]kip|[Uu]pdate"
+        }
+      ]
     },
     {
       "id": 22,
@@ -924,23 +933,11 @@
       "id": 23,
       "command": "build",
       "prompt": "build the plan (plan has only frontend tasks - React component refactor, new page layout, CSS updates)",
-      "expected_output": "Should detect all tasks are frontend. Should dispatch subagents (model: sonnet) with frontend-design directives from skills/frontend-design/PROMPT.md. Phase completion Gate 2 runs design quality gates (critique -> polish -> normalize) since visual ratio > 30%. Should read .planning/DESIGN.md for design context. Should check for frontend anti-patterns (AI slop, emoji in UI, generic gradients). Should run verification gate (tests, build check, lint) before writing SUMMARY.md.",
+      "expected_output": "Should execute the frontend tasks via waves. Should dispatch subagents (model: sonnet) and run verification (tests, build check, lint) before writing SUMMARY.md. Build does NOT run design quality gates (ui-critique/polish/normalize) \u2014 those are review's responsibility. Should suggest /fh:review for quality gatekeeping after execution.",
       "files": [],
       "assertions": [
         {
-          "text": "Detects frontend-only plan",
-          "type": "behavioral"
-        },
-        {
-          "text": "Includes frontend-design directives in subagent prompts",
-          "type": "behavioral"
-        },
-        {
-          "text": "Phase completion Gate 2 runs design quality gates: critique -> polish -> normalize",
-          "type": "behavioral"
-        },
-        {
-          "text": "Design quality gates check UI conventions and patterns",
+          "text": "Dispatches subagents to execute tasks in waves",
           "type": "behavioral"
         },
         {
@@ -948,7 +945,11 @@
           "type": "behavioral"
         },
         {
-          "text": "Gate 2 runs design quality checks for frontend-heavy phase",
+          "text": "Does NOT run design quality gates (ui-critique/polish/normalize) \u2014 those belong to review",
+          "type": "guard"
+        },
+        {
+          "text": "Suggests /fh:review for quality follow-up",
           "type": "behavioral"
         }
       ],
@@ -1747,7 +1748,7 @@
       "id": 36,
       "command": "plan-work",
       "prompt": "Plan and build adding user settings page with a dark mode toggle. The project already has a ThemeProvider and uses Tailwind dark: prefix.",
-      "expected_output": "Should run /plan-work first: skips research (dark mode toggle is well-known pattern), brainstorms design options (toggle placement, persistence strategy, system preference detection), discusses with user, derives must_haves with user-facing truths, creates PLAN.md with proper frontmatter. Then /build: dispatches subagents (model: sonnet) that self-discover Next.js perf rules and do NOT commit. Orchestrator makes single commit per plan. Verification (tests, build, lint) runs before SUMMARY.md. Phase completion gates include design quality gates (critique+harden, polish+adapt, normalize). User runs /review (quality + gap + spec verification) and /simplify on demand. Should perform complexity assessment before deciding research path.",
+      "expected_output": "Should run /plan-work first: skips research (dark mode toggle is well-known pattern), brainstorms design options (toggle placement, persistence strategy, system preference detection), discusses with user, derives must_haves with user-facing truths, creates PLAN.md with proper frontmatter. Then /build: dispatches subagents (model: sonnet) that self-discover Next.js perf rules and do NOT commit. Orchestrator makes single commit per plan. Verification (tests, build, lint) runs before SUMMARY.md. Build does NOT run design quality gates \u2014 those run in /review. User runs /review (quality + gap + spec verification, including ui-critique for frontend) and /simplify on demand. Should perform complexity assessment before deciding research path.",
       "files": [
         "evals/fixtures/nextjs-app-deep/next.config.ts",
         "evals/fixtures/nextjs-app-deep/tsconfig.json",
@@ -1779,12 +1780,12 @@
           "type": "behavioral"
         },
         {
-          "text": "Phase completion gates run at end of phase: goal verification, design quality gates, verification-before-completion",
+          "text": "Phase completion gates run at end of phase: goal verification, verification-before-completion",
           "type": "behavioral"
         },
         {
-          "text": "Design quality gates (critique \u2192 polish \u2192 normalize) run at phase completion for frontend-heavy work",
-          "type": "behavioral"
+          "text": "Design quality gates (critique/polish/normalize) are NOT run by build \u2014 they run in /review",
+          "type": "guard"
         },
         {
           "text": "Simplify before /review",
@@ -5493,19 +5494,19 @@
       "id": 114,
       "command": "build",
       "prompt": "Build the new dashboard landing page. It has 4 tasks: hero section with animated charts, responsive nav bar, data visualization widgets, and accessibility audit. Execute the plan at .planning/phases/11-dashboard/11-01-PLAN.md",
-      "expected_output": "Should execute the 4 frontend tasks. After completion, should suggest /fh:ui-test for visual verification of the frontend-heavy work. Gate 2 (design quality) triggers when visual ratio > 30% or phase targets UI, running critique/polish/normalize checks.",
+      "expected_output": "Should execute the 4 frontend tasks via waves. After completion, should suggest /fh:review for quality gatekeeping (which handles ui-critique for frontend) and /fh:ui-test for visual verification. Build does NOT run critique/polish/normalize gates directly.",
       "files": [],
       "assertions": [
         {
-          "text": "Suggests /fh:ui-test for frontend-heavy work",
+          "text": "Suggests /fh:review for quality gatekeeping after frontend work",
           "type": "behavioral"
         },
         {
-          "text": "Gate 2 triggers design quality gates for high visual ratio",
-          "type": "behavioral"
+          "text": "Does NOT run design quality gates (critique/polish/normalize) directly in build",
+          "type": "guard"
         },
         {
-          "text": "Recognizes frontend-prominent work for quality gates",
+          "text": "Completes all 4 tasks in execution waves",
           "type": "behavioral"
         }
       ],
@@ -6836,8 +6837,8 @@
     {
       "id": 148,
       "command": "map-codebase",
-      "prompt": "map this codebase. .planning/codebase/CODEBASE.md already exists from a previous run",
-      "expected_output": "Should detect existing codebase map, show staleness (commits since last map), present refresh/skip options, and default to skip if recent. Should NOT overwrite without asking.",
+      "prompt": "map this codebase. .planning/codebase/ already has STACK.md, CONVENTIONS.md, etc. from a previous run",
+      "expected_output": "Should detect existing granular codebase map files, show staleness (commits since last map), present refresh/update/skip options. Should NOT overwrite without asking.",
       "files": [],
       "assertions": [
         {
@@ -6853,7 +6854,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Does NOT immediately overwrite existing CODEBASE.md",
+          "text": "Does NOT immediately overwrite existing granular files",
           "type": "guard"
         }
       ],
@@ -6862,7 +6863,16 @@
         "edge-case",
         "guard"
       ],
-      "checks": []
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "STACK|CONVENTIONS|ARCHITECTURE"
+        },
+        {
+          "type": "regex",
+          "pattern": "[Rr]efresh|[Ss]kip"
+        }
+      ]
     },
     {
       "id": 149,
@@ -7165,7 +7175,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Effective concurrency is 1 despite higher concurrency setting",
+          "text": "When all phases share files_modified, the dependency graph forces sequential build order",
           "type": "behavioral"
         }
       ],
@@ -7721,7 +7731,7 @@
     {
       "id": 171,
       "command": "auto",
-      "prompt": "Context-mode is not installed on this system. How does the auto pipeline ensure build agents still get project conventions, locked decisions, and architecture context without ctx_search?",
+      "prompt": "claude-mem is not installed on this system. How does the auto pipeline ensure build agents still get project conventions, locked decisions, and architecture context without smart_search?",
       "assertions": [
         {
           "type": "keyword",
@@ -7733,11 +7743,11 @@
         },
         {
           "type": "behavioral",
-          "text": "Describes how project conventions and architecture context are injected into agent prompts when context-mode is unavailable"
+          "text": "Describes how project conventions and architecture context are injected into agent prompts when claude-mem is unavailable"
         },
         {
           "type": "behavioral",
-          "text": "The pipeline still works without context-mode by falling back to direct file reads and template injection"
+          "text": "Pipeline still functions without claude-mem by falling back to direct file reads"
         }
       ],
       "tier": "micro",
@@ -7849,7 +7859,7 @@
     {
       "id": 174,
       "command": "auto",
-      "prompt": "How does the auto pipeline minimize token usage across 10 phases? Specifically, how does pre-indexing and ctx_search-first reduce redundant file reads in build agents?",
+      "prompt": "How does the auto pipeline minimize token usage across 10 phases? Specifically, how does claude-mem observations and smart_search-first reduce redundant file reads in build agents?",
       "assertions": [
         {
           "text": "Stable planning docs are indexed once and shared across all 4 steps via CLAUDE_SESSION_ID",
@@ -7860,7 +7870,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Post-wave re-indexing ensures next wave sees fresh content without re-reading",
+          "text": "Wave 2 agents can query Wave 1 observations via smart_search without explicit re-indexing",
           "type": "behavioral"
         }
       ],
@@ -7873,7 +7883,7 @@
         {
           "type": "required_terms",
           "terms": [
-            "ctx_search"
+            "smart_search"
           ]
         },
         {
@@ -7927,7 +7937,7 @@
     {
       "id": 176,
       "command": "auto",
-      "prompt": "In the auto pipeline, plan-work indexes 9 stable docs into context-mode. Then plan-review runs. Then build runs with source file pre-indexing. How does the pipeline avoid re-reading the same planning docs (PROJECT.md, ARCHITECTURE.md, etc.) across these 4 steps?",
+      "prompt": "In the auto pipeline, plan-work observes file reads via claude-mem PostToolUse hook. Then plan-review runs. Then build runs with source file pre-indexing. How does the pipeline avoid re-reading the same planning docs (PROJECT.md, ARCHITECTURE.md, etc.) across these 4 steps?",
       "assertions": [
         {
           "text": "All 4 steps share one context-mode FTS5 database via a common CLAUDE_SESSION_ID",
@@ -7981,7 +7991,7 @@
           "type": "behavioral"
         },
         {
-          "text": "The unified patch adds env var check as the first tier in gp() before worktree and basename detection",
+          "text": "CLAUDE_MEM_PROJECT environment variable is injected by the orchestrator to ensure correct project attribution",
           "type": "behavioral"
         }
       ],
@@ -8010,7 +8020,7 @@
     {
       "id": 178,
       "command": "auto",
-      "prompt": "A build agent for task 3 needs to understand the project's authentication patterns before editing src/auth/login.ts. With context-mode available and source files pre-indexed in Step 3, what should the agent do? What if context-mode is NOT available?",
+      "prompt": "A build agent for task 3 needs to understand the project's authentication patterns before editing src/auth/login.ts. With claude-mem available, what should the agent do to get context, and what is the fallback if claude-mem is not installed?",
       "assertions": [
         {
           "text": "With context-mode: agent uses ctx_search to query for auth patterns from the pre-indexed source files",
@@ -8035,12 +8045,12 @@
         {
           "type": "required_terms",
           "terms": [
-            "ctx_search"
+            "smart_search"
           ]
         },
         {
           "type": "regex",
-          "pattern": "fallback|without.*context|not.*available|unavailable"
+          "pattern": "fallback|without.*claude-mem|not.*available|unavailable"
         },
         {
           "type": "regex",
@@ -9478,7 +9488,7 @@
           "type": "output"
         },
         {
-          "text": "Does NOT construct path using only normalizePhaseName() which drops the slug suffix",
+          "text": "Phase path resolution handles fractional phases like 04.5 correctly without dropping the slug suffix",
           "type": "guard"
         }
       ],
@@ -9513,7 +9523,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Does NOT return null when STATE.md uses Active Phase instead of Current Phase",
+          "text": "Correctly handles STATE.md with both Active Phase and Current Phase field names in parseCurrentPhase",
           "type": "guard"
         }
       ],
@@ -9523,14 +9533,16 @@
         "guard",
         "state-parsing"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "Active Phase",
-          "Current Phase",
-          "parseCurrentPhase"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "Active Phase",
+            "Current Phase",
+            "parseCurrentPhase"
+          ]
+        }
+      ]
     },
     {
       "id": 285,
@@ -9562,19 +9574,21 @@
         "guard",
         "completion-detection"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "SUMMARY.md",
-          "summaryExists",
-          "findLatestPlan"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "SUMMARY.md",
+            "summaryExists",
+            "findLatestPlan"
+          ]
+        }
+      ]
     },
     {
       "id": 286,
       "command": "auto",
-      "prompt": "The auto orchestrator writes .auto-state.json for the tracker dashboard. What mechanism prevents the tracker from reading a half-written JSON file during a write?",
+      "prompt": "The auto orchestrator writes .auto-state.json for the tracker dashboard. What mechanism prevents the tracker from reading a half-written JSON file during a write? Read the auto-orchestrator.cjs source code and identify the specific atomic write pattern used (e.g., write to temp file then rename).",
       "expected_output": "All three write paths (writeAutoStatus, saveAutoState, and the debounced log() updater) use atomic writes: write to a .tmp file first, then fs.renameSync() to the target path. rename is atomic on POSIX filesystems, so the tracker always reads either the old complete file or the new complete file, never a partial write.",
       "files": [],
       "assertions": [
@@ -9601,14 +9615,15 @@
         "atomicity",
         "tracker"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "renameSync",
-          ".tmp",
-          "atomic"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "atomic",
+            "rename"
+          ]
+        }
+      ]
     },
     {
       "id": 287,
@@ -9640,15 +9655,17 @@
         "crash-recovery",
         "state-persistence"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "saveAutoState",
-          "planning-wave-complete",
-          "review-wave-complete",
-          "phase_plan_paths"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "saveAutoState",
+            "planning-wave-complete",
+            "review-wave-complete",
+            "phase_plan_paths"
+          ]
+        }
+      ]
     },
     {
       "id": 288,
@@ -9676,14 +9693,16 @@
         "sequential-mode",
         "state-persistence"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "saveAutoState",
-          "sequential",
-          "steps_completed"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "saveAutoState",
+            "sequential",
+            "steps_completed"
+          ]
+        }
+      ]
     },
     {
       "id": 289,
@@ -9711,15 +9730,15 @@
         "tracker",
         "completion"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "auto-state.json",
-          "active",
-          "false",
-          "clearAutoState"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "active",
+            "false"
+          ]
+        }
+      ]
     },
     {
       "id": 290,
@@ -9755,14 +9774,16 @@
         "tracker",
         "frontend"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "stepAliases",
-          "plan-work",
-          "plan-review"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "stepAliases",
+            "plan-work",
+            "plan-review"
+          ]
+        }
+      ]
     },
     {
       "id": 291,
@@ -9798,14 +9819,16 @@
         "tracker",
         "server"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "buildProjectSummary",
-          "autoState",
-          ".auto-state.json"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "buildProjectSummary",
+            "autoState",
+            ".auto-state.json"
+          ]
+        }
+      ]
     },
     {
       "id": 292,
@@ -9840,14 +9863,16 @@
         "happy-path",
         "global-update"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "global",
-          "projects.json",
-          "reconcil"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "global",
+            "projects.json",
+            "reconcil"
+          ]
+        }
+      ]
     },
     {
       "id": 293,
@@ -9882,14 +9907,16 @@
         "edge-case",
         "global-update"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "stale",
-          "removed",
-          "registry"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "stale",
+            "removed",
+            "registry"
+          ]
+        }
+      ]
     },
     {
       "id": 294,
@@ -9920,14 +9947,16 @@
         "edge-case",
         "global-update"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "planning",
-          "skip",
-          "reconcil"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "planning",
+            "skip",
+            "reconcil"
+          ]
+        }
+      ]
     },
     {
       "id": 295,
@@ -9959,14 +9988,16 @@
         "global-update",
         "conductor"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "worktree",
-          "git-common-dir",
-          "workspace"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "worktree",
+            "git-common-dir",
+            "workspace"
+          ]
+        }
+      ]
     },
     {
       "id": 296,
@@ -9997,14 +10028,16 @@
         "edge-case",
         "global-update"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "gap",
-          "reconcil",
-          "/fh:update"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "gap",
+            "reconcil",
+            "/fh:update"
+          ]
+        }
+      ]
     },
     {
       "id": 297,
@@ -10031,14 +10064,16 @@
         "edge-case",
         "global-update"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "projects.json",
-          "conductor",
-          "scan"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "projects.json",
+            "conductor",
+            "scan"
+          ]
+        }
+      ]
     },
     {
       "id": 298,
@@ -10069,14 +10104,16 @@
         "happy-path",
         "global-update"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "--global",
-          "projects",
-          "reconcil"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "--global",
+            "projects",
+            "reconcil"
+          ]
+        }
+      ]
     },
     {
       "id": 299,
@@ -10103,14 +10140,16 @@
         "happy-path",
         "global-update"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "reconcil",
-          "tracker",
-          "health"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "reconcil",
+            "tracker",
+            "health"
+          ]
+        }
+      ]
     },
     {
       "id": 300,
@@ -10141,12 +10180,14 @@
         "onboarding",
         "phase-04"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "/fh:setup"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "/fh:setup"
+          ]
+        }
+      ]
     },
     {
       "id": 301,
@@ -10181,13 +10222,15 @@
         "onboarding",
         "phase-04"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "SETUP STATUS",
-          "check"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "SETUP STATUS",
+            "check"
+          ]
+        }
+      ]
     },
     {
       "id": 302,
@@ -10218,21 +10261,23 @@
         "fallow",
         "integration"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "fallow check",
-          "fallow health",
-          "Static Analysis Data",
-          "command -v fallow"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "fallow check",
+            "fallow health",
+            "Static Analysis Data",
+            "command -v fallow"
+          ]
+        }
+      ]
     },
     {
       "id": 303,
       "command": "map-codebase",
-      "prompt": "When fallow is NOT installed, /fh:map-codebase should skip static analysis silently and produce the same CODEBASE.md output without mentioning Fallow",
-      "expected_output": "Should detect that fallow is not available, skip static analysis without error, and proceed to map the codebase normally. The resulting CODEBASE.md output should be identical in structure to a run without Fallow \u2014 no error messages about missing fallow, no 'fallow not found' warnings in the output.",
+      "prompt": "When fallow is NOT installed, /fh:map-codebase should skip static analysis silently and produce the same 7-file output without mentioning Fallow",
+      "expected_output": "Should detect that fallow is not available, skip static analysis without error, and proceed to map the codebase normally with 4 parallel agents producing 7 granular files. No error messages about missing fallow.",
       "files": [],
       "assertions": [
         {
@@ -10244,7 +10289,7 @@
           "type": "guard"
         },
         {
-          "text": "Produces CODEBASE.md output regardless of fallow availability",
+          "text": "Produces 7 granular files regardless of fallow availability",
           "type": "output"
         },
         {
@@ -10257,13 +10302,16 @@
         "fallow",
         "degradation"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "graceful",
-          "skip"
-        ]
-      }
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "skip.*silent|silent.*skip|without.*error"
+        },
+        {
+          "type": "regex",
+          "pattern": "7.*file|granular|STACK|CONVENTIONS"
+        }
+      ]
     },
     {
       "id": 304,
@@ -10294,14 +10342,16 @@
         "fallow",
         "integration"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "Fallow Scope Augmentation",
-          "circular dependency",
-          "unused exports"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "Fallow Scope Augmentation",
+            "circular dependency",
+            "unused exports"
+          ]
+        }
+      ]
     },
     {
       "id": 306,
@@ -10399,7 +10449,7 @@
     {
       "id": 308,
       "command": "auto",
-      "prompt": "Verify that auto-orchestrator.cjs checks for a .auto-kill sentinel file to allow external kill requests, and that server.cjs exposes a /api/kill endpoint to create it",
+      "prompt": "Verify that auto-orchestrator.cjs checks for a .auto-kill sentinel file to allow external kill requests, and that server.cjs exposes a /api/kill endpoint to create it Read the orchestrator source code to verify the specific shutdown sequence when the kill sentinel is detected.",
       "expected_output": "auto-orchestrator.cjs should check for existence of a .auto-kill file in its main loop and exit gracefully when found. server.cjs should expose a /api/kill POST endpoint that creates the .auto-kill sentinel file.",
       "files": [],
       "assertions": [
@@ -10412,7 +10462,7 @@
           "type": "output"
         },
         {
-          "text": "Kill sentinel triggers graceful shutdown, not abrupt process.exit",
+          "text": "Kill sentinel file detection leads to cleanup actions before the process exits, not an immediate process.exit()",
           "type": "behavioral"
         }
       ],
@@ -10871,31 +10921,37 @@
     {
       "id": 320,
       "command": "build",
-      "prompt": "Build the plan. context-mode is installed.",
-      "expected_output": "Should include token efficiency guidance and prefer ctx_search over Read for convention lookups",
+      "prompt": "Build the plan. claude-mem is installed with smart_search and smart_outline available.",
+      "expected_output": "Should prefer claude-mem smart_search/smart_outline for code exploration, include graceful degradation guard",
       "files": [],
       "assertions": [
         {
-          "text": "Includes token efficiency guidance when context-mode is installed",
+          "text": "Uses claude-mem smart tools for code exploration",
           "type": "behavioral"
         },
         {
-          "text": "Prefers ctx_search over Read for convention and pattern lookups",
+          "text": "Falls back to Read for files that need editing",
           "type": "behavioral"
         }
       ],
       "tier": "full",
       "tags": [
-        "context-mode",
+        "claude-mem",
+        "smart-explore",
         "token-efficiency"
       ],
       "checks": [
         {
-          "type": "required_terms",
-          "terms": [
-            "ctx_search",
-            "Token Efficiency"
-          ]
+          "type": "regex",
+          "pattern": "smart_search|smart_outline"
+        },
+        {
+          "type": "regex",
+          "pattern": "claude.mem|mcp__plugin_claude-mem"
+        },
+        {
+          "type": "regex",
+          "pattern": "fall.?back|not available|degradation"
         }
       ]
     },
@@ -11197,15 +11253,17 @@
         "serena",
         "degradation"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "find_symbol",
-          "find_referencing_symbols",
-          "rename_symbol",
-          "fallback"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "find_symbol",
+            "find_referencing_symbols",
+            "rename_symbol",
+            "fallback"
+          ]
+        }
+      ]
     },
     {
       "id": 329,
@@ -11390,7 +11448,7 @@
       "id": 333,
       "command": "learnings",
       "prompt": "Run /fh:learnings --dry-run from the fhhs-skills repository",
-      "expected_output": "Should produce Project Insights section AND file GitHub issues on cinjoff/fhhs-skills since we are in the plugin repo",
+      "expected_output": "Should produce Project Insights section, Workflow Coaching section, AND present GitHub issues for user confirmation before filing on cinjoff/fhhs-skills",
       "files": [],
       "assertions": [
         {
@@ -11398,7 +11456,11 @@
           "type": "behavioral"
         },
         {
-          "text": "Files or references GitHub issues on cinjoff/fhhs-skills",
+          "text": "Presents GitHub issues for user confirmation before filing on cinjoff/fhhs-skills",
+          "type": "behavioral"
+        },
+        {
+          "text": "Shows workflow coaching insights",
           "type": "behavioral"
         }
       ],
@@ -11414,6 +11476,10 @@
         {
           "type": "regex",
           "pattern": "(issue|GitHub)"
+        },
+        {
+          "type": "regex",
+          "pattern": "[Cc]onfirm|[Aa]pprov"
         }
       ],
       "tier": "smoke",
@@ -11684,6 +11750,876 @@
         {
           "type": "regex",
           "pattern": "smart_unfold|implementation detail|function.level"
+        }
+      ]
+    },
+    {
+      "id": 341,
+      "command": "plan-work",
+      "prompt": "Plan a new auth feature for my Next.js app. I don't have claude-mem installed \u2014 no mcp__plugin_claude-mem tools are available.",
+      "expected_output": "Should proceed with planning using Read/Grep/Glob fallbacks, never call mcp__plugin_claude-mem tools",
+      "files": [],
+      "assertions": [],
+      "tier": "smoke",
+      "tags": [
+        "claude-mem",
+        "degradation",
+        "plan-work"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "Read|Grep|Glob"
+        },
+        {
+          "type": "regex",
+          "pattern": "fall.?back|not available|skip"
+        },
+        {
+          "type": "regex",
+          "pattern": "Step [0-9]|phase|plan"
+        }
+      ]
+    },
+    {
+      "id": 342,
+      "command": "auto",
+      "prompt": "Run auto mode on phase 3. claude-mem is not available, no mcp__plugin_claude-mem tools exist.",
+      "expected_output": "Should proceed with auto execution without failing on missing claude-mem",
+      "files": [],
+      "assertions": [],
+      "tier": "full",
+      "tags": [
+        "claude-mem",
+        "degradation",
+        "auto"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "phase.?3|auto|execut"
+        },
+        {
+          "type": "regex",
+          "pattern": "claude.mem.*(not|unavail)|without.*claude.mem|fall.?back"
+        },
+        {
+          "type": "regex",
+          "pattern": "plan|build|review"
+        }
+      ]
+    },
+    {
+      "id": 343,
+      "command": "auto",
+      "prompt": "Run auto mode. My repo is github.com/acme/widgets. Make sure claude-mem observations use the right project name.",
+      "expected_output": "Should derive CLAUDE_MEM_PROJECT from gh repo nameWithOwner",
+      "files": [],
+      "assertions": [],
+      "tier": "full",
+      "tags": [
+        "claude-mem",
+        "auto",
+        "project-id"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "CLAUDE_MEM_PROJECT|nameWithOwner|project.*name"
+        },
+        {
+          "type": "regex",
+          "pattern": "acme.*widgets|gh repo"
+        },
+        {
+          "type": "regex",
+          "pattern": "env|subprocess|claude -p"
+        }
+      ]
+    },
+    {
+      "id": 344,
+      "command": "setup",
+      "prompt": "Run setup on my new project. I don't want claude-mem \u2014 when you ask me, I'll decline.",
+      "expected_output": "Should offer claude-mem as optional, accept decline gracefully, note skills work without it",
+      "files": [],
+      "assertions": [],
+      "tier": "smoke",
+      "tags": [
+        "claude-mem",
+        "setup",
+        "consent"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "optional|recommend|choice|consent|Y/n"
+        },
+        {
+          "type": "regex",
+          "pattern": "work without|skip|decline|not required"
+        },
+        {
+          "type": "regex",
+          "pattern": "cross.session|memory|observation"
+        }
+      ]
+    },
+    {
+      "id": 345,
+      "command": "plan-work",
+      "prompt": "I want to plan adding a payment system. Show me what tools the plan-work skill recommends for code exploration.",
+      "expected_output": "Should recommend smart_search/smart_outline/smart_unfold, NOT ctx_batch_execute or ctx_search",
+      "files": [],
+      "assertions": [],
+      "tier": "smoke",
+      "tags": [
+        "claude-mem",
+        "removal",
+        "guard"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "smart_search|smart_outline|smart_unfold"
+        },
+        {
+          "type": "regex",
+          "pattern": "claude.mem|progressive.disclosure"
+        },
+        {
+          "type": "negative_regex",
+          "pattern": "ctx_batch_execute|ctx_search|ctx_index"
+        }
+      ]
+    },
+    {
+      "id": 346,
+      "command": "learnings",
+      "prompt": "update claude md with recent learnings",
+      "expected_output": "Should run learnings --update-claude-md flow: check claude-mem, gather observations, surface patterns/gotchas/conventions, and update CLAUDE.md with approved additions",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Runs --update-claude-md flow (Section 4.5 only)",
+          "type": "behavioral"
+        },
+        {
+          "text": "Surfaces patterns, gotchas, or conventions from observations",
+          "type": "output"
+        },
+        {
+          "text": "Updates or proposes updates to CLAUDE.md",
+          "type": "output"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "smoke",
+        "learnings"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "learnings"
+        },
+        {
+          "type": "regex",
+          "pattern": "CLAUDE\\.md"
+        },
+        {
+          "type": "regex",
+          "pattern": "pattern|gotcha|convention"
+        }
+      ]
+    },
+    {
+      "id": 347,
+      "command": "ui-branding",
+      "prompt": "update my design direction",
+      "expected_output": "Should handle existing DESIGN.md gracefully \u2014 offer to update/extend rather than overwriting. Should capture updated design direction and persist to DESIGN.md.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects or creates DESIGN.md for design direction",
+          "type": "behavioral"
+        },
+        {
+          "text": "Handles update/extend flow when DESIGN.md already exists",
+          "type": "behavioral"
+        },
+        {
+          "text": "Persists updated design direction",
+          "type": "output"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "smoke",
+        "ui-branding"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "branding"
+        },
+        {
+          "type": "regex",
+          "pattern": "DESIGN\\.md"
+        },
+        {
+          "type": "regex",
+          "pattern": "update|direction"
+        }
+      ]
+    },
+    {
+      "id": 348,
+      "command": "review",
+      "prompt": "review code with duplicated patterns",
+      "expected_output": "Should detect DRY violations and dispatch simplify sub-skill to address duplication. Should identify the duplicated patterns, propose consolidation, and report quality findings.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects DRY violations in the code",
+          "type": "behavioral"
+        },
+        {
+          "text": "Dispatches simplify sub-skill for duplication",
+          "type": "behavioral"
+        },
+        {
+          "text": "Reports quality findings with actionable recommendations",
+          "type": "output"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "smoke",
+        "review",
+        "quality"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "review"
+        },
+        {
+          "type": "regex",
+          "pattern": "simplify|DRY|duplication"
+        },
+        {
+          "type": "regex",
+          "pattern": "quality"
+        }
+      ]
+    },
+    {
+      "id": 349,
+      "command": "review",
+      "prompt": "review my React component changes",
+      "expected_output": "Should detect frontend/React code and dispatch ui-critique sub-skill for visual and design review. Should assess layout, readability, and component design quality.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects frontend React code",
+          "type": "behavioral"
+        },
+        {
+          "text": "Dispatches ui-critique sub-skill for visual design review",
+          "type": "behavioral"
+        },
+        {
+          "text": "Reports frontend-specific quality findings",
+          "type": "output"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "smoke",
+        "review",
+        "frontend"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "review"
+        },
+        {
+          "type": "regex",
+          "pattern": "ui-critique|visual|design"
+        },
+        {
+          "type": "regex",
+          "pattern": "frontend|React|component"
+        }
+      ]
+    },
+    {
+      "id": 350,
+      "command": "build",
+      "prompt": "build the current plan",
+      "expected_output": "Should execute the plan tasks in waves, verify with tests and build checks, and write SUMMARY.md. Should NOT run design quality gates (ui-critique/polish/normalize) \u2014 those are review's responsibility. Build stays lean: execute, verify, summarize.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Executes plan tasks in waves",
+          "type": "behavioral"
+        },
+        {
+          "text": "Runs verification (tests, build, lint) before SUMMARY",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT run ui-critique, polish, or normalize gates",
+          "type": "guard"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ],
+      "tier": "smoke",
+      "tags": [
+        "smoke",
+        "build",
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "build"
+        },
+        {
+          "type": "regex",
+          "pattern": "execute|wave|task"
+        },
+        {
+          "type": "regex",
+          "pattern": "verify|test"
+        }
+      ]
+    },
+    {
+      "id": 351,
+      "command": "review",
+      "prompt": "review code and check for recurring patterns",
+      "expected_output": "Should use claude-mem smart_search to surface recurring patterns from project history. Should dispatch quality-refine sub-skill with persistent pattern knowledge from claude-mem.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Uses claude-mem smart_search to check for recurring patterns",
+          "type": "behavioral"
+        },
+        {
+          "text": "Dispatches quality-refine sub-skill",
+          "type": "behavioral"
+        },
+        {
+          "text": "Surfaces patterns from project history",
+          "type": "output"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "smoke",
+        "review",
+        "quality",
+        "claude-mem"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "review"
+        },
+        {
+          "type": "regex",
+          "pattern": "claude-mem|smart_search|pattern"
+        },
+        {
+          "type": "regex",
+          "pattern": "quality.refin|sub-skill|sub_skill"
+        }
+      ]
+    },
+    {
+      "id": 352,
+      "command": "auto",
+      "prompt": "run autonomous execution on this project",
+      "expected_output": "Should run full autonomous loop: plan, build, then a complete final review using quality-refine sub-skills. The final review phase should be thorough \u2014 not skipped or abbreviated \u2014 covering quality, architecture, and goal verification.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Runs full plan-build-review loop autonomously",
+          "type": "behavioral"
+        },
+        {
+          "text": "Final review is complete \u2014 not abbreviated or skipped",
+          "type": "behavioral"
+        },
+        {
+          "text": "Quality-refine sub-skills run in final review phase",
+          "type": "behavioral"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ],
+      "tier": "smoke",
+      "tags": [
+        "smoke",
+        "auto",
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "auto"
+        },
+        {
+          "type": "regex",
+          "pattern": "final.review|final review|complete review"
+        },
+        {
+          "type": "regex",
+          "pattern": "quality.refin|quality-refine|complete"
+        }
+      ]
+    },
+    {
+      "id": 353,
+      "command": "review",
+      "prompt": "review code in a project without claude-mem installed",
+      "expected_output": "Should perform code review using available tools (Read, Grep) without requiring claude-mem. Should gracefully fall back to standard review workflow when claude-mem is not available.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Performs code review without requiring claude-mem",
+          "type": "behavioral"
+        },
+        {
+          "text": "Falls back gracefully when claude-mem is not available",
+          "type": "behavioral"
+        },
+        {
+          "text": "Uses Read/Grep for code exploration",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "claude-mem",
+        "graceful-degradation"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "review"
+        },
+        {
+          "type": "regex",
+          "pattern": "fall.?back|without|not available"
+        },
+        {
+          "type": "regex",
+          "pattern": "Read|Grep"
+        }
+      ]
+    },
+    {
+      "id": 354,
+      "command": "plan-work",
+      "prompt": "check for past learnings before planning",
+      "expected_output": "Should search claude-mem for past observations and learnings before starting planning. Should progressively disclose findings on-demand rather than loading all context upfront.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Searches claude-mem for past observations before planning",
+          "type": "behavioral"
+        },
+        {
+          "text": "Surfaces relevant learnings from previous sessions",
+          "type": "behavioral"
+        },
+        {
+          "text": "Uses progressive disclosure \u2014 loads context on-demand",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "claude-mem",
+        "progressive-disclosure"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "search|smart_search"
+        },
+        {
+          "type": "regex",
+          "pattern": "observation|learnings"
+        },
+        {
+          "type": "regex",
+          "pattern": "progressive|layer|on.demand"
+        }
+      ]
+    },
+    {
+      "id": 355,
+      "command": "review",
+      "prompt": "run static analysis on my codebase",
+      "expected_output": "Should route to review or map-codebase skill for static analysis. Should surface Fallow-tier concerns: dead code, duplication, and complexity issues.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Routes to review or map-codebase for static analysis",
+          "type": "behavioral"
+        },
+        {
+          "text": "Identifies dead code, duplication, or complexity concerns",
+          "type": "behavioral"
+        },
+        {
+          "text": "Surfaces Fallow-tier findings (unused code, structural debt)",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "fallow",
+        "consolidation"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "review|map-codebase"
+        },
+        {
+          "type": "regex",
+          "pattern": "fallow|static"
+        },
+        {
+          "type": "regex",
+          "pattern": "dead.code|duplication|complexity"
+        }
+      ]
+    },
+    {
+      "id": 356,
+      "command": "review",
+      "prompt": "review code that has duplication and missing error handling",
+      "expected_output": "Should perform code review and dispatch quality-refinement sub-skills: simplify for duplication, harden for missing error handling. Should conditionally invoke appropriate sub-skills based on findings.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects duplication and missing error handling",
+          "type": "behavioral"
+        },
+        {
+          "text": "Dispatches simplify sub-skill for duplication",
+          "type": "behavioral"
+        },
+        {
+          "text": "Dispatches harden sub-skill for missing error handling",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "review",
+        "quality-refinement"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "review"
+        },
+        {
+          "type": "regex",
+          "pattern": "simplify|harden"
+        },
+        {
+          "type": "regex",
+          "pattern": "dispatch|invoke|conditional"
+        }
+      ]
+    },
+    {
+      "id": 357,
+      "command": "map-codebase",
+      "prompt": "map-codebase --refresh-stale (claude-mem available, drift detected in CONVENTIONS.md and STACK.md)",
+      "expected_output": "Should query claude-mem for drift signals, detect drift in conventions and stack, regenerate only CONVENTIONS.md and STACK.md (not all 7 files), spawn 1-2 targeted agents instead of 4. Should report which files were refreshed and which were kept.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Queries claude-mem for drift signals",
+          "type": "behavioral"
+        },
+        {
+          "text": "Only regenerates files with detected drift, not all 7",
+          "type": "behavioral"
+        },
+        {
+          "text": "Reports which files were refreshed vs kept",
+          "type": "output"
+        }
+      ],
+      "tier": "full",
+      "tags": [
+        "edge-case",
+        "claude-mem",
+        "drift"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "smart_search|drift"
+        },
+        {
+          "type": "regex",
+          "pattern": "CONVENTIONS|STACK"
+        },
+        {
+          "type": "regex",
+          "pattern": "refresh|regenerat|target"
+        }
+      ]
+    },
+    {
+      "id": 358,
+      "command": "map-codebase",
+      "prompt": "map this codebase. It's a fresh project, no .planning/codebase/ exists yet",
+      "expected_output": "Should create .planning/codebase/ directory, spawn 4 parallel gsd-codebase-mapper agents (tech, arch, quality, concerns), produce 7 granular files (STACK.md, INTEGRATIONS.md, ARCHITECTURE.md, STRUCTURE.md, CONVENTIONS.md, TESTING.md, CONCERNS.md), verify all files exist with >10 lines each, record .last-mapped SHA.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Spawns 4 parallel mapper agents",
+          "type": "behavioral"
+        },
+        {
+          "text": "Produces 7 granular files",
+          "type": "output"
+        },
+        {
+          "text": "Records .last-mapped SHA for freshness tracking",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "happy-path",
+        "core"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "Agent.*tech|Agent.*arch|Agent.*quality|Agent.*concerns|4.*agent|parallel"
+        },
+        {
+          "type": "regex",
+          "pattern": "STACK\\.md|CONVENTIONS\\.md|ARCHITECTURE\\.md"
+        },
+        {
+          "type": "regex",
+          "pattern": "last.mapped|freshness|SHA"
+        }
+      ]
+    },
+    {
+      "id": 359,
+      "command": "learnings",
+      "prompt": "run /fh:learnings to analyze my recent work patterns and suggest improvements",
+      "expected_output": "Should produce Workflow Coaching section with max 3 insights covering categories like repeated context loss, suboptimal tool usage, planning gaps, testing anti-patterns. Should frame as opportunities, not criticism. Should also produce standard Project Insights.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Produces Workflow Coaching / Workflow Insights section",
+          "type": "output"
+        },
+        {
+          "text": "Shows max 3 coaching insights",
+          "type": "behavioral"
+        },
+        {
+          "text": "Frames suggestions as opportunities, not criticism",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "full",
+      "tags": [
+        "happy-path",
+        "coaching",
+        "learnings"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "[Ww]orkflow|[Cc]oach|[Ii]mprovement"
+        },
+        {
+          "type": "regex",
+          "pattern": "[Ss]uggest|[Oo]pportunit|[Ii]mprov|[Pp]attern"
+        },
+        {
+          "type": "regex",
+          "pattern": "claude.mem|observation|session"
+        }
+      ]
+    },
+    {
+      "id": 360,
+      "command": "learnings",
+      "prompt": "/fh:learnings --dry-run from fhhs-skills repo. I want to see what issues would be filed",
+      "expected_output": "Should identify skill improvement issues AND present them for user confirmation before filing. Should show issue title, affected skill, evidence, and proposed fix for each. Should ask user to approve/skip/edit each issue. Should NOT auto-file without confirmation.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Presents issues for user confirmation before filing",
+          "type": "behavioral"
+        },
+        {
+          "text": "Shows issue title, affected skill, and evidence for each",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT auto-file GitHub issues without user approval",
+          "type": "guard"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "guard",
+        "learnings",
+        "confirmation"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "[Cc]onfirm|[Aa]pprov|[Yy]ou.*like.*file"
+        },
+        {
+          "type": "regex",
+          "pattern": "[Ii]ssue.*title|[Aa]ffected.*skill|[Ee]vidence"
+        },
+        {
+          "type": "regex",
+          "pattern": "skip|edit|approv"
+        }
+      ]
+    },
+    {
+      "id": 361,
+      "command": "build",
+      "prompt": "build just completed a phase. claude-mem has 6 unaddressed improvement items in the digest. what should happen post-phase?",
+      "expected_output": "Should detect 6 unaddressed items (>= 5 threshold), suggest running /fh:learnings to review workflow improvements and skill issues. Should also check for codebase mapping drift if .planning/codebase/ exists.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects unaddressed improvement count meets threshold",
+          "type": "behavioral"
+        },
+        {
+          "text": "Suggests /fh:learnings for workflow improvements",
+          "type": "output"
+        },
+        {
+          "text": "Checks for codebase drift post-phase",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "full",
+      "tags": [
+        "integration",
+        "learnings",
+        "build"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "/fh:learnings"
+        },
+        {
+          "type": "regex",
+          "pattern": "improvement|pattern|workflow"
+        }
+      ]
+    },
+    {
+      "id": 362,
+      "command": "build",
+      "prompt": "how does the build skill decide which codebase mapping file to inject into subagent prompts?",
+      "expected_output": "Should explain task-type routing: UI tasks get CONVENTIONS.md + STRUCTURE.md, API tasks get ARCHITECTURE.md + CONVENTIONS.md, DB tasks get ARCHITECTURE.md + STACK.md, test tasks get TESTING.md + CONVENTIONS.md, infra tasks get STACK.md + INTEGRATIONS.md. Should mention claude-mem smart_search as preferred method with Read fallback.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Describes task-type routing for codebase files",
+          "type": "output"
+        },
+        {
+          "text": "Mentions multiple granular files by name",
+          "type": "output"
+        },
+        {
+          "text": "References claude-mem smart_search with Read fallback",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "full",
+      "tags": [
+        "documentation",
+        "build",
+        "granular"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "CONVENTIONS|STRUCTURE|ARCHITECTURE"
+        },
+        {
+          "type": "regex",
+          "pattern": "UI|API|DB|test|infra"
+        },
+        {
+          "type": "regex",
+          "pattern": "smart_search|claude.mem|Read.*fallback"
+        }
+      ]
+    },
+    {
+      "id": 363,
+      "command": "map-codebase",
+      "prompt": "map-codebase --refresh-stale but claude-mem is not available",
+      "expected_output": "Should detect claude-mem is unavailable, fall back to full refresh based on commit count freshness. Should NOT error out. Should explain that --refresh-stale requires claude-mem for targeted refresh and is falling back to full mapping.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Falls back to full refresh when claude-mem unavailable",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT error when claude-mem is missing",
+          "type": "guard"
+        },
+        {
+          "text": "Explains the fallback reason",
+          "type": "output"
+        }
+      ],
+      "tier": "full",
+      "tags": [
+        "edge-case",
+        "degradation",
+        "claude-mem"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "fall.?back|full.*refresh|not.*available"
+        },
+        {
+          "type": "regex",
+          "pattern": "claude.mem|smart_search"
         }
       ]
     }

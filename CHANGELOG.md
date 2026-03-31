@@ -8,6 +8,23 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.60.0] - 2026-04-01
+
+### Added
+- **Granular codebase mapping** — `/fh:map-codebase` now produces detailed structural analysis with claude-mem integration for cross-session context
+
+### Changed
+- **Lighter build pipeline** — `/fh:build` delegates more to review, reducing redundant checks during execution
+- **Smarter review pipeline** — `/fh:review` absorbs quality checks previously duplicated in build
+- **claude-mem integration formalized** — all skills that use claude-mem now follow consistent patterns with graceful degradation
+- **Fallow integration formalized** — static analysis checks standardized across review, build, and map-codebase
+- **Task tracking removed** — native task tracking removed from all skills; `/fh:setup` and `/fh:new-project` no longer configure it
+- **Skill graph simplified** — `/fh:revise-claude-md` removed (absorbed into `/fh:learnings`), `/fh:ui-redesign` merged into `/fh:ui-branding`
+
+### Removed
+- **`/fh:revise-claude-md`** — use `/fh:learnings` instead
+- **`/fh:ui-redesign`** — use `/fh:ui-branding` instead
+
 ## [1.59.1] - 2026-03-31
 
 ### Fixed

@@ -49,32 +49,15 @@ Identify the blast radius:
 2. Map dependencies: what imports/calls the target, what does the target import/call
 3. Estimate: how many files change, which subsystems affected
 
-### Fallow Scope Augmentation (if available)
-
-```bash
-if command -v fallow &>/dev/null; then
-  FALLOW_CHECK=$(timeout 30 fallow check --format json --quiet 2>/dev/null) || FALLOW_CHECK=""
-fi
-```
-
-If Fallow ran successfully:
-- **Circular dependencies:** Check if the refactoring target is part of any circular dependency chain. If yes, note it — the refactoring should break the cycle, not preserve it.
-- **Unused exports:** Check if any exports in the target files are unused. These can be removed as part of the refactor rather than restructured.
-- **Dependency graph:** Use import/export data to supplement LSP's `findReferences` — Fallow sees the full module graph, not just direct callers.
-
-If Fallow is not installed: skip silently. LSP-based analysis is sufficient for most refactors.
+For static analysis findings (dead code, duplication), run `/fh:review` first — it uses Fallow to inject deterministic ground truth before you begin restructuring.
 
 Report: "This refactoring touches N files across M subsystems. Blast radius: [description]."
 
 If large (10+ files or 3+ subsystems), suggest writing a PLAN.md via `/fh:plan-work` first.
 
-### Context-Mode Acceleration
+### claude-mem Acceleration
 
-If ctx_batch_execute is available, index the analysis scope before planning refactoring steps:
-- Index files in the target module/directory via ctx_batch_execute
-- Include `.planning/codebase/CODEBASE.md` for structure, conventions, and architecture reference (fall back to individual files in `.planning/codebase/` if CODEBASE.md doesn't exist)
-- Use ctx_search for "coupling between modules", "dependency patterns", "abstraction layers" to find refactoring targets
-- If unavailable, fall back to direct Grep/Glob/Read
+If claude-mem is available (check tool list for mcp__plugin_claude-mem_* tools), use `smart_search` to find relevant patterns for coupling, dependency, and abstraction analysis in the target module. If not available, fall back to Read/Grep/Glob directly.
 
 ---
 
@@ -165,7 +148,7 @@ Report: what was restructured, why it's better, test evidence confirming behavio
 ### Persist Findings
 
 After refactoring is complete, output key patterns discovered for future sessions:
-1. If ctx_search is available, query for coupling patterns and extraction outcomes from this session
+1. If claude-mem is available (check tool list for mcp__plugin_claude-mem_*), use smart_search to find relevant patterns from this session
 2. Only persist structural insights — skip mechanical rename/move details
 3. Output each finding as:
    **[refactor-learning]** {module/area}: {pattern discovered} → {approach that worked}

@@ -491,7 +491,7 @@ function reconcileProject(project) {
     staleFiles.push({
       file: 'CLAUDE.md',
       reason: 'missing — project may have been created with an older plugin version',
-      fix: 'Run /fh:revise-claude-md to generate',
+      fix: 'Run /fh:learnings --update-claude-md to generate',
     });
   }
 

@@ -158,7 +158,7 @@ Read existing planning artifacts to understand what's already defined:
 
 If DESIGN.md exists, use it throughout to ground UX/UI guidance in the project's actual brand direction — color palette, typography, component patterns, design language, tone. When suggesting UX patterns, frame them in the project's design context: "Your brand is {tone} — for that, the proven pattern is {X}" rather than generic advice.
 
-If context-mode is available, index these via `ctx_batch_execute` for efficient search during the conversation.
+claude-mem observations persist across sequential `claude -p` sessions. No explicit pre-indexing needed.
 
 If claude-mem is available, derive project name from `.planning/PROJECT.md` name field (fall back to basename of cwd). Use this as the `project` parameter for all claude-mem calls. Call `mcp__plugin_claude-mem_mcp-search__search` with query=2-3 keywords from the project domain, project=<project-name>, limit=10 to get a lightweight index of past observations. Scan the returned index for relevant IDs — prioritize types: gotcha, decision, trade-off. For the top 2-3 relevant IDs, call `mcp__plugin_claude-mem_mcp-search__get_observations` with ids=[ID1, ID2, ID3] to fetch full details. If temporal context would help, call `mcp__plugin_claude-mem_mcp-search__timeline` with query=project domain keywords, depth_before=3. Present as: "**From prior sessions:** - {full observation detail}" — max 3 items.
 
@@ -418,16 +418,9 @@ During the concurrent planning wave, multiple sessions may attempt to update `.p
 - After the planning wave completes, the orchestrator merges all `.decisions-pending.md` files into `.planning/DECISIONS.md` in a single serial step.
 - This guarantees DECISIONS.md integrity without file locking.
 
-### Context-Mode Pre-Indexing
+### Cross-Session Context
 
-Shared documents (PROJECT.md, ROADMAP.md, research files, codebase mapping) are indexed once before any wave begins using context-mode's `ctx_batch_execute`. Concurrent sessions then use `ctx_search` in read-only mode to query the shared index. This prevents SQLite write contention that would occur if each parallel session independently indexed the same files.
-
-### Per-Step Token Awareness
-
-Track tool call efficiency across steps:
-- Count Read tool calls vs ctx_search calls per step — ctx_search should be preferred for indexed docs
-- If a step re-reads files that were indexed in the shared context, note it as waste
-- Report tool call patterns in the step completion log for cost optimization analysis
+claude-mem observations persist across sequential `claude -p` sessions. No explicit pre-indexing needed — each session's key decisions and learnings are automatically available to subsequent sessions via claude-mem search.
 
 ### Partial Failure Handling
 
