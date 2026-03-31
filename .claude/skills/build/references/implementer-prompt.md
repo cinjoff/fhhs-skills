@@ -51,8 +51,6 @@ You are a subagent — no interactive questions. Make reasonable assumptions and
 
 **Do NOT commit.** The orchestrator commits once after all tasks complete.
 
-Task ID: {TASK_ID}. If non-empty: `TaskUpdate({TASK_ID}, status='in_progress')` at start, `status='completed'` when done.
-
 ## Testing
 
 {SHARED_REFERENCES}

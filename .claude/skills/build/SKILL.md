@@ -160,8 +160,6 @@ Use `$EXEC_MODEL` resolved in Step 2.5 (or resolve here if Step 2.5 was skipped)
 
 For each wave, dispatch **one subagent per task** using the Agent tool with **`subagent_type: "general-purpose"`** and **`model: "$EXEC_MODEL"`** (use the resolved value, e.g. `"sonnet"` or `"opus"`).
 
-**Task tracking (optional):** On first dispatch, try `TaskCreate` for the task. If it works, update status on dispatch (`in_progress`) and completion (`completed`). If TaskCreate fails, skip all tracking silently.
-
 ### Subagent prompt
 
 Use the structured template at `references/implementer-prompt.md`. Fill its placeholders:
@@ -173,7 +171,6 @@ Use the structured template at `references/implementer-prompt.md`. Fill its plac
 - `{PHASE_NAME}` — Phase directory name for smart_search queries (e.g. "13-pending-payments-invoicing").
 - `{FILE_TYPES}` — Comma-separated file type descriptions for convention queries (e.g. "tsx components", "test files").
 - `{TASK_NAME}` — Task identifier for deferred items format.
-- `{TASK_ID}` — Native task ID if tracking is active. Empty string otherwise.
 - `{PROJECT_CONSTRAINTS}` — See population rule below.
 - `{SHARED_REFERENCES}` — Pre-loaded testing/TDD rules from `SHARED_REFERENCES_CACHE` (populated in Reference Warm-Up). Task-filtered: TDD tasks get Part B, E2E tasks get Part D, all get Part A + C. If empty, subagent reads files directly.
 

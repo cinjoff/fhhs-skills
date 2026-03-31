@@ -1990,7 +1990,6 @@ If Conductor is detected, create `conductor.json` in the project root with scrip
     "archive": "rm -rf \"$HOME/.claude/tasks/${CONDUCTOR_WORKSPACE_NAME}\" 2>/dev/null; true"
   },
   "env": {
-    "CLAUDE_CODE_ENABLE_TASKS": "true",
     "SENTRY_LOCAL": "true",
     "NEXT_PUBLIC_SENTRY_LOCAL": "true"
   }
@@ -2000,8 +1999,6 @@ If Conductor is detected, create `conductor.json` in the project root with scrip
 > **Why `CLAUDE_CODE_TASK_LIST_ID` and `CLAUDE_CWD` in the setup script?** Conductor's `env` block does not interpolate shell variables like `${CONDUCTOR_WORKSPACE_NAME}` — it passes them as literal strings. The setup script runs in a shell where these variables resolve correctly, and writes the values into `.claude/settings.json` so Claude Code picks them up. Each workspace gets its own task list so parallel workspaces don't pollute each other's tracking. `CLAUDE_CWD` tells plugins like claude-mem the real project root, so they identify the project by repo name rather than the workspace directory name.
 >
 > **Why the claude-mem project-env patch?** claude-mem derives its project name from the process cwd basename. In Conductor workspaces and git worktrees, this basename is the workspace name (e.g., "cairo" or "quito"), not the actual project name (e.g., "fhhs-skills" or "nerve-os"), causing observation misattribution. The unified patch at `.claude/skills/patches/patch-claude-mem-project-env.cjs` modifies claude-mem's `gp()` function to check `CLAUDE_MEM_PROJECT` env var first, then fall back to worktree detection, then basename. This covers both Conductor workspaces and plain git worktrees. The patch is idempotent and skips if already applied or if claude-mem is not installed.
->
-> **Why `CLAUDE_CODE_ENABLE_TASKS` in env?** This is a static value (no interpolation needed), so the `env` block works fine. It enables native task tracking used by `/fh:plan-work` and `/fh:build`.
 >
 > **Why `archive` cleans up?** Task lists persist at `~/.claude/tasks/{ID}/`. Without cleanup, old workspace task lists accumulate indefinitely. The archive script removes the directory when the workspace is torn down.
 

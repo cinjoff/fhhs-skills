@@ -1,7 +1,7 @@
 {
   "env": {
     "CLAUDE_MEM_PROJECT": "fhhs-skills",
-    "CLAUDE_CODE_TASK_LIST_ID": "riyadh-v4"
+    "CLAUDE_CODE_ENABLE_TASKS": "0"
   },
   "hooks": {
     "PostToolUse": [

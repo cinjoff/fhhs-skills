@@ -316,21 +316,17 @@ If not present, use the **Edit tool** to merge into settings.json:
 ```json
 {
   "env": {
-    "CLAUDE_CODE_ENABLE_LSP": "1",
-    "CLAUDE_CODE_ENABLE_TASKS": "true"
+    "CLAUDE_CODE_ENABLE_LSP": "1"
   }
 }
 ```
 
 Merge carefully — do NOT overwrite other `env` keys that may already exist.
 
-> **Why `CLAUDE_CODE_ENABLE_TASKS`?** Enables native task tracking used by `/fh:plan-work` and `/fh:build` for live progress visibility. Task list IDs are configured per-workspace via Conductor's setup script (which writes `CLAUDE_CODE_TASK_LIST_ID` into `.claude/settings.json`), or via `CLAUDE_CODE_TASK_LIST_ID` env var for non-Conductor setups.
-
 After writing:
 
 ```
 ✓ CLAUDE_CODE_ENABLE_LSP=1 set in ~/.claude/settings.json
-✓ CLAUDE_CODE_ENABLE_TASKS=true set in ~/.claude/settings.json
   → Restart Claude Code for changes to activate
 ```
 
@@ -878,9 +874,6 @@ If installed, display:
         "run": "npm run dev -- --port $CONDUCTOR_PORT",
         "archive": "rm -rf \"$HOME/.claude/tasks/${CONDUCTOR_WORKSPACE_NAME}\" 2>/dev/null; true"
       },
-      "env": {
-        "CLAUDE_CODE_ENABLE_TASKS": "true"
-      }
     }
 
   Note: CLAUDE_CODE_TASK_LIST_ID must be set via the setup script
