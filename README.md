@@ -1,6 +1,6 @@
 # fhhs-skills
 
-An all-in-one workflow plugin for [Claude Code](https://claude.com/claude-code) — 45 skills covering planning, building, reviewing, debugging, design quality, security, startup validation, and autonomous execution. One install, no other plugins required.
+An all-in-one workflow plugin for [Claude Code](https://claude.com/claude-code) — 49 skills covering planning, building, reviewing, debugging, design quality, security, startup validation, and autonomous execution. One install, no other plugins required.
 
 ## What You Get
 
@@ -178,7 +178,6 @@ All upstreams are forked and bundled. See [PATCHES.md](PATCHES.md) for modificat
 
 | Tool | What it adds |
 |------|-------------|
-| [context-mode](https://github.com/mksglu/context-mode) | Session-scoped FTS5 indexing — large outputs stay out of context window |
 | [claude-mem](https://github.com/thedotmack/claude-mem) | Persistent cross-session memory — learnings, patterns, decisions |
 | [Fallow](https://docs.fallow.tools/) | Deterministic static analysis — dead code, circular deps, duplication |
 | TypeScript LSP | Code navigation — go-to-definition, find-references, rename |
