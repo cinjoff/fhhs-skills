@@ -12157,6 +12157,166 @@
           "pattern": "quality.refin|quality-refine|complete"
         }
       ]
+    },
+    {
+      "id": 353,
+      "command": "review",
+      "prompt": "review code in a project without claude-mem installed",
+      "expected_output": "Should perform code review using available tools (Read, Grep) without requiring claude-mem. Should gracefully fall back to standard review workflow when claude-mem is not available.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Performs code review without requiring claude-mem",
+          "type": "behavioral"
+        },
+        {
+          "text": "Falls back gracefully when claude-mem is not available",
+          "type": "behavioral"
+        },
+        {
+          "text": "Uses Read/Grep for code exploration",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "claude-mem",
+        "graceful-degradation"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "review"
+        },
+        {
+          "type": "regex",
+          "pattern": "fall.?back|without|not available"
+        },
+        {
+          "type": "regex",
+          "pattern": "Read|Grep"
+        }
+      ]
+    },
+    {
+      "id": 354,
+      "command": "plan-work",
+      "prompt": "check for past learnings before planning",
+      "expected_output": "Should search claude-mem for past observations and learnings before starting planning. Should progressively disclose findings on-demand rather than loading all context upfront.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Searches claude-mem for past observations before planning",
+          "type": "behavioral"
+        },
+        {
+          "text": "Surfaces relevant learnings from previous sessions",
+          "type": "behavioral"
+        },
+        {
+          "text": "Uses progressive disclosure — loads context on-demand",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "claude-mem",
+        "progressive-disclosure"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "search|smart_search"
+        },
+        {
+          "type": "regex",
+          "pattern": "observation|learnings"
+        },
+        {
+          "type": "regex",
+          "pattern": "progressive|layer|on.demand"
+        }
+      ]
+    },
+    {
+      "id": 355,
+      "command": "review",
+      "prompt": "run static analysis on my codebase",
+      "expected_output": "Should route to review or map-codebase skill for static analysis. Should surface Fallow-tier concerns: dead code, duplication, and complexity issues.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Routes to review or map-codebase for static analysis",
+          "type": "behavioral"
+        },
+        {
+          "text": "Identifies dead code, duplication, or complexity concerns",
+          "type": "behavioral"
+        },
+        {
+          "text": "Surfaces Fallow-tier findings (unused code, structural debt)",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "fallow",
+        "consolidation"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "review|map-codebase"
+        },
+        {
+          "type": "regex",
+          "pattern": "fallow|static"
+        },
+        {
+          "type": "regex",
+          "pattern": "dead.code|duplication|complexity"
+        }
+      ]
+    },
+    {
+      "id": 356,
+      "command": "review",
+      "prompt": "review code that has duplication and missing error handling",
+      "expected_output": "Should perform code review and dispatch quality-refinement sub-skills: simplify for duplication, harden for missing error handling. Should conditionally invoke appropriate sub-skills based on findings.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects duplication and missing error handling",
+          "type": "behavioral"
+        },
+        {
+          "text": "Dispatches simplify sub-skill for duplication",
+          "type": "behavioral"
+        },
+        {
+          "text": "Dispatches harden sub-skill for missing error handling",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "review",
+        "quality-refinement"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "review"
+        },
+        {
+          "type": "regex",
+          "pattern": "simplify|harden"
+        },
+        {
+          "type": "regex",
+          "pattern": "dispatch|invoke|conditional"
+        }
+      ]
     }
   ]
 }

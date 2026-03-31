@@ -225,9 +225,18 @@ The subagent:
 - If Next.js project detected (Step 1) AND performance-related findings: reference `.claude/skills/nextjs-perf/PROMPT.md` criteria
 - If frontend changes AND significant bundle/render concerns: suggest `/fh:ui-test` for visual verification
 
-### d. Token efficiency
+### d. Cross-session pattern detection (graceful degradation)
 
-Use `mcp__plugin_claude-mem_mcp-search__smart_search` to check if the same quality issues were flagged in prior reviews. If a pattern recurs 3+ times: escalate its priority and note it in the report.
+Before dispatching the quality-refine subagent, check if the same quality issues have been flagged in prior reviews. Skip silently if claude-mem is unavailable or any call fails.
+
+1. Derive project name from `.planning/PROJECT.md` name field (fall back to basename of cwd). Use this as the `project` parameter.
+2. For each triggered sub-skill category (DRY, error handling, etc.), call `mcp__plugin_claude-mem_mcp-search__smart_search` with query="{category} {primary module/feature name}", project=<project-name>, limit=5
+3. From the returned index, call `mcp__plugin_claude-mem_mcp-search__get_observations` with ids=[top 2-3 relevant IDs] to fetch full details
+4. Count how many sessions each pattern appears in (use `times_seen` field or count distinct session IDs in observations)
+5. **If a pattern recurs 3+ times across sessions:** escalate its priority to the next severity level in the report (Minor → Important, Important → Critical) and annotate it with "⚠ Recurring pattern (seen N times)"
+6. Pass recurring-pattern context to the quality-refine subagent so it knows which issues are chronic vs. one-off
+
+If claude-mem is not installed or any call fails: skip this check and proceed with the standard trigger table evaluation.
 
 ### e. Failure handling
 
@@ -352,6 +361,11 @@ Generate a structured report. For each finding above Minor, include a **Next act
 
 ### Recommended Next Actions
 1. [ordered list of actions with skill routing]
+
+### Recurring Findings (if any)
+<!-- Only include if cross-session pattern detection found patterns seen 3+ times -->
+- ⚠ {pattern} — seen N times across sessions → escalated to {severity}
+- Suggestion: run `/fh:learnings --update-claude-md` to persist these patterns to CLAUDE.md so future sessions are aware from the start
 ```
 
 ---
