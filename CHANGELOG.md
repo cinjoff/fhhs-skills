@@ -8,6 +8,11 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.60.1] - 2026-04-01
+
+### Fixed
+- **Setup/update sync** — `/fh:setup` now disables native task tracking (`CLAUDE_CODE_ENABLE_TASKS="0"`), guards against Read/Glob/Grep in claude-mem skip list, and shows correct on-demand config values in the display table [setup:env:CLAUDE_CODE_ENABLE_TASKS]
+
 ## [1.60.0] - 2026-04-01
 
 ### Added
