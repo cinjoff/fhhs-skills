@@ -217,29 +217,7 @@ Codebase mapping available. Before grepping for architecture info, check:
 - @.planning/codebase/CODEBASE.md for structure, conventions, and architecture patterns
 ```
 
-**Index into FTS5 via ctx_index (if context-mode available):**
-
-Check if `ctx_index` MCP tool is available. If not, skip silently.
-
-If available:
-1. Read `.planning/codebase/CODEBASE.md` and call `ctx_index` with `title="codebase:CODEBASE"` and `content=file content`
-2. Index planning docs that skills read repeatedly:
-
-| File | Index title |
-|------|-------------|
-| `.planning/PROJECT.md` | `planning:PROJECT` |
-| `.planning/ROADMAP.md` | `planning:ROADMAP` |
-| `.planning/STATE.md` | `planning:STATE` |
-| `.planning/DESIGN.md` | `planning:DESIGN` |
-| `.planning/REQUIREMENTS.md` | `planning:REQUIREMENTS` |
-| `.planning/DECISIONS.md` | `planning:DECISIONS` |
-
-For each file: if it exists, read and index. Skip missing files silently.
-
-Write manifest for cache invalidation:
-```bash
-md5sum .planning/PROJECT.md .planning/ROADMAP.md .planning/STATE.md .planning/DESIGN.md .planning/REQUIREMENTS.md .planning/DECISIONS.md .planning/codebase/CODEBASE.md 2>/dev/null > .planning/codebase/.planning-index-manifest
-```
+**Note:** claude-mem's PostToolUse hook automatically observes file reads — no explicit indexing needed. Planning docs will be available to subsequent sessions via `smart_search` after they are read.
 
 **Record git SHA for freshness:**
 ```bash
@@ -304,7 +282,7 @@ End workflow.
 - CODEBASE.md exists and is non-empty (>50 lines, <250 lines)
 - CODEBASE.md has all 3 sections: Structure, Conventions, Architecture
 - .claude/rules/codebase-context.md points to CODEBASE.md (not individual docs)
-- ctx_index called for CODEBASE.md when context-mode available
+- claude-mem auto-observes CODEBASE.md reads via PostToolUse hook
 - .planning/codebase/.last-mapped written with current git SHA
 - Clear completion summary
 </success_criteria>

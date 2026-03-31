@@ -49,11 +49,10 @@ Spawn a Task agent with:
 
 ### Context-Mode Acceleration
 
-If ctx_batch_execute is available, index research sources for efficient synthesis:
-- After fetching web pages or library docs, index them via ctx_batch_execute with descriptive labels
-- Use ctx_search to extract relevant sections across all indexed sources at once
+If claude-mem is available (check tool list for `mcp__plugin_claude-mem_*`), use `mcp__plugin_claude-mem_mcp-search__smart_search` to cross-reference research sources for efficient synthesis:
+- After fetching web pages or library docs, use smart_search to find relevant sections across sources
 - Particularly useful when comparing multiple libraries, approaches, or documentation pages
-- If unavailable, process sources inline as fetched
+- If not available, fall back to Read/Grep/Glob directly and process sources inline as fetched
 
 - Instruction to write output with GSD-compatible YAML frontmatter:
   ```yaml
@@ -87,7 +86,7 @@ Output goes to `.planning/phases/XX-name/XX-RESEARCH.md` with full frontmatter. 
 ### Persist Findings
 
 After research output is generated, persist key conclusions so future research can build on them:
-1. If ctx_search is available, query indexed sources for conclusions and recommendations
+1. If claude-mem is available (check tool list for `mcp__plugin_claude-mem_*`), use `mcp__plugin_claude-mem_mcp-search__smart_search` to query for conclusions and recommendations from this session's context. If not available, fall back to Read/Grep/Glob directly.
 2. Output each finding as:
    **[research-finding]** {topic}: {conclusion/decision} — confidence: {high/medium/low}
 3. Include library/approach decisions and their rationale — these are the most valuable for avoiding duplicate research

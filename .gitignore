@@ -5,5 +5,6 @@
 __pycache__/
 *.pyc
 fhhs-skills-workspace/full-run-*/
+fhhs-skills-workspace/auto-improve/iteration-*/
 .planning/
 .claude/skills/*/CLAUDE.md

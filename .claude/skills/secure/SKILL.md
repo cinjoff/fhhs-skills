@@ -69,13 +69,9 @@ Categories: IDOR (insecure direct object references), permissive CORS, missing s
 
 **Context budget:** Each scanner gets only the file contents + checklist. No plan files, no GSD state.
 
-### Context-Mode Acceleration
+### Claude-Mem Acceleration
 
-If ctx_batch_execute is available, index the combined output from all 4 security scan agents:
-- Index each agent's findings with labeled sections (injection, auth, data-exposure, access-control)
-- Use ctx_search to filter by severity (critical/high/medium), threat category, or remediation effort
-- Enables efficient cross-referencing without holding all 4 reports in context
-- If unavailable, process agent reports sequentially
+If claude-mem is available (check tool list for `mcp__plugin_claude-mem_*`), use `smart_search` to check for prior security findings relevant to the scanned files. Persist new critical/high findings as observations for cross-session recall. If not available, fall back to Read/Grep/Glob directly and process agent reports sequentially.
 
 ---
 
@@ -130,7 +126,7 @@ Generate a structured security report:
 ### Persist Findings
 
 After the security report, output vulnerability patterns for future scans:
-1. If ctx_search is available, query indexed agent findings for critical/high severity vulnerabilities
+1. If claude-mem is available, persist critical/high severity findings as observations for cross-session recall
 2. Output each finding as:
    **[security-finding]** {threat-category}: {vulnerability pattern} in {file/component} — status: {fixed/unfixed}
 3. Include remediation status so future scans can verify fixes held

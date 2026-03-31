@@ -85,33 +85,8 @@ When the user says "improve N" (where N is an item number from the learnings dis
 
 If multiple items selected ("improve 1, 3"), spawn separate background agents for each.
 
-<step name="reindex_planning">
-**Re-index stale .planning/ files in the background (fire-and-forget):**
-
-Check if `ctx_index` MCP tool is available AND `.planning/codebase/.planning-index-manifest` exists. If either is missing, skip silently.
-
-Resolve the lightweight model: `node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs resolve-model gsd-codebase-mapper --raw` (defaults to `haiku` if resolution fails or in balanced/budget profiles).
-
-If both exist, spawn a background subagent with the resolved model and `run_in_background: true`:
-
-```
-Agent(
-  model="<resolved-model>",  // from resolve-model gsd-codebase-mapper
-  run_in_background=true,
-  description="Re-index stale .planning/ files",
-  prompt="You are a lightweight re-indexing agent. Compare .planning/ file hashes against the manifest and re-index any that changed.
-
-1. Run: md5sum .planning/PROJECT.md .planning/ROADMAP.md .planning/STATE.md .planning/DESIGN.md .planning/REQUIREMENTS.md .planning/DECISIONS.md 2>/dev/null > /tmp/.planning-current-hashes
-2. Run: diff .planning/codebase/.planning-index-manifest /tmp/.planning-current-hashes 2>/dev/null
-3. For each file where the hash differs (or is new): read it and call ctx_index with title='planning:{NAME}' (e.g. planning:STATE) and the file content.
-4. If no files changed, do nothing.
-5. Update manifest: cp /tmp/.planning-current-hashes .planning/codebase/.planning-index-manifest
-6. Return a one-line summary: 'Re-indexed N files' or 'All files fresh'."
-)
-```
-
-Do NOT wait for this agent to complete. Continue immediately to init_context. The re-index runs in the background while the user sees their progress report.
-</step>
+<!-- Re-indexing step removed: claude-mem's PostToolUse hook automatically observes file reads.
+     Planning docs become available to subsequent sessions via smart_search without explicit indexing. -->
 
 <step name="init_context">
 **Load GSD progress context (conditional -- skipped if no project):**

@@ -1,314 +1,195 @@
 # fhhs-skills
 
-A workflow plugin for [Claude Code](https://claude.com/claude-code) that combines engineering discipline, design quality, and project tracking in one install.
+An all-in-one workflow plugin for [Claude Code](https://claude.com/claude-code) — 45 skills covering planning, building, reviewing, debugging, design quality, security, startup validation, and autonomous execution. One install, no other plugins required.
 
-## Why
+## What You Get
 
-Most AI coding tools forget everything between sessions. They repeat mistakes, re-research decisions, and can't tell you what they learned last time. This plugin fixes that.
+**Plan before you build.** `/fh:plan-work` researches your problem, brainstorms approaches, locks decisions, and outputs an execution-ready plan. `/fh:plan-review` stress-tests it against business alignment, engineering rigor, and blast radius before a single line of code is written.
 
-- **Learns from itself.** Every bug fix, code review, security scan, and research session persists its key findings. Next time, the same skill recalls what it discovered before — root causes, architectural decisions, vulnerability patterns, optimization wins.
-- **Manages its own context.** Large outputs (scan results, agent reports, build logs) are indexed in a session-scoped database instead of flooding the context window. Skills query the index for what they need, keeping the window clean for reasoning.
-- **Runs autonomously.** Hand off an entire project with `/fh:auto` — the system plans, reviews, builds, and verifies each phase without intervention. Every autonomous decision is logged with confidence levels for human audit.
-- **Ships quality gates, not just code.** Plans get stress-tested before building. Builds run integration checks (blast-radius analysis via Fallow), security review (OWASP top 10), and architecture artifact refresh before promoting. Bugs get TDD'd. Refactors keep tests green at every step.
+**Build with quality gates.** `/fh:build` turns plans into code using parallel subagents — each task runs in fresh context with TDD, LSP navigation, and framework-specific best practices. Phase completion triggers integration checks, goal verification, security review, and architecture artifact refresh.
 
-### The Memory Lifecycle
+**Review that actually catches things.** `/fh:review` runs static analysis, spec verification, goal verification against must-haves, and conditional quality refinement — dispatching sub-skills (polish, harden, normalize, security) based on what the diff actually touches. Recurring patterns across sessions are surfaced and escalated.
 
-Two optional MCP plugins power cross-session learning and context efficiency:
+**Fix bugs systematically.** `/fh:fix` triages by complexity, writes a failing test first, then patches. Complex bugs get parallel debugger subagents or persistent debug sessions.
 
-```
-  SESSION START              DURING                    SESSION END
+**Run autonomously.** `/fh:auto` chains plan → review → build → review for every phase without intervention. Decisions are logged with confidence levels. Crashes resume from state. Failed steps retry once, then skip with an audit trail.
 
-  claude-mem ──READ──▶  context-mode  ──WRITE──▶  claude-mem
-  smart_search          ctx_batch_execute            [*-learning]
-  (recall past)         ctx_search                   [*-finding]
-                        (index + distill)            (persist new)
-```
+**Cross-session memory.** Skills persist findings between sessions — root causes, architectural decisions, vulnerability patterns. Next time, the same skill recalls what it discovered before. Large outputs are indexed in a session-scoped database instead of flooding the context window.
 
-**[context-mode](https://github.com/mksglu/context-mode)** indexes large outputs into a searchable FTS5 database scoped to the session. Skills use `ctx_search` to extract relevant findings without loading raw data into context.
-
-**[claude-mem](https://github.com/thedotmack/claude-mem)** provides persistent cross-session memory. Skills read past learnings at the start (via `smart_search`) and output structured findings at the end (via semantic markers like `[fix-learning]`, `[security-finding]`) that claude-mem's hooks automatically capture.
-
-Both are optional — every skill includes "skip silently if unavailable" guards. The pipeline works identically without them, just without the indexing optimization and cross-session memory.
+**Validate startup ideas.** Five dedicated skills cover market research, competitive analysis, positioning, pitch scripts, and strategic advising — all feeding into the build pipeline when you're ready to code.
 
 ## Install
 
 ```
-/plugin marketplace add cinjoff/fhhs-skills
-/plugin install fh@fhhs-skills
-/reload-plugins
-/fh:setup
-```
-
-From terminal (Conductor or headless):
-```bash
 claude plugin marketplace add cinjoff/fhhs-skills
 claude plugin install fh@fhhs-skills
 ```
 
-Then start a Claude Code session and run `/fh:setup`. It detects your platform and walks you through installing dependencies (including Docker/OrbStack and Supabase CLI for local database development).
+Then run `/fh:setup` in a Claude Code session. It detects your platform and walks you through dependencies.
 
 ## Quick Start
 
-```
-/fh:new-project    set up a project with structure, tracking, and local Supabase
-/fh:plan-work      design a feature before building it
-/fh:plan-review    challenge the plan before committing to build
-/fh:build          execute the plan with parallel workers and quality gates
-/fh:review         code quality, security, verification, and branch promotion
-```
-
-When you come back to an existing project:
+### New Project
 
 ```
-/fh:progress    restore context, check cross-session memory, and route to next action
-improve 2       address an improvement item surfaced at session start
+/fh:new-project          scaffold a project with vision, stack, design language, and roadmap
+/fh:plan-work            design the first feature
+/fh:build                execute the plan
+/fh:review               verify and promote
 ```
 
-## Autonomous Execution
-
-Hand off an entire project and walk away. `/fh:auto` runs plan-work, plan-review, build, and review for every phase — no human intervention required.
+### Returning to a Project
 
 ```
-/fh:auto                         run all incomplete phases
-/fh:auto --phase 3               run only phase 3
-/fh:auto --budget 10             stop if estimated cost exceeds $10
-/fh:auto --resume                pick up where a crashed run left off
-/fh:new-project --auto "desc"    derive vision, stack, roadmap, then build everything
+/fh:progress             restore context from cross-session memory, route to next action
 ```
 
-Each step runs as a separate `claude -p` session with fresh context. The orchestrator loads context-mode and claude-mem into each session and shares a context-mode FTS5 database across all 4 steps via a deterministic `CLAUDE_SESSION_ID`. Plan-work indexes your project docs once; plan-review, build, and review all reuse that index.
+### Hands-Off Mode
 
-State persists to `.planning/.auto-state.json` between steps so crashes can resume. Decisions are logged to `.planning/DECISIONS.md` with confidence levels — LOW confidence decisions get flagged for human audit. Sessions exceeding 45 minutes are killed with a logged decision. Failed steps retry once, then skip with an audit trail.
+```
+/fh:auto                          run all incomplete phases
+/fh:auto --phase 3                run only phase 3
+/fh:auto --resume                 pick up where a crashed run left off
+/fh:new-project --auto "desc"     derive everything and build it all
+```
 
-## Commands
+## Skills Reference
 
-<details>
-<summary><strong>Build Pipeline</strong></summary>
+### Build Pipeline
 
-| Command | What it does |
-|---------|-------------|
-| `/fh:new-project` | Set up a project with vision, tech stack, design language, domain research, and roadmap |
-| `/fh:plan-work` | Brainstorm, research, and produce an execution-ready plan |
-| `/fh:plan-review` | Stress-test a plan — business + engineering alignment + impact radius |
-| `/fh:build` | Execute a plan with parallel subagents, TDD, quality gates, and verification |
-| `/fh:review` | Code quality, spec verification, goal verification, and branch promotion |
-| `/fh:auto` | Autonomous multi-phase execution without human intervention |
+| Skill | Purpose |
+|-------|---------|
+| `/fh:new-project` | Project scaffolding — vision, stack, design language, domain research, roadmap |
+| `/fh:plan-work` | Research, brainstorm, lock decisions, produce execution-ready plan |
+| `/fh:plan-review` | Stress-test a plan before committing — business + engineering + impact |
+| `/fh:build` | Execute plans with parallel subagents, TDD, quality gates, verification |
+| `/fh:review` | Static analysis, spec verification, quality refinement, branch promotion |
+| `/fh:auto` | Autonomous multi-phase execution with state persistence and audit trail |
 
-</details>
+### Engineering
 
-<details>
-<summary><strong>Startup Validation</strong></summary>
-
-| Command | What it does |
-|---------|-------------|
-| `/fh:startup-design` | Validate a startup idea from scratch — 8-phase process covering market research, strategy, brand, product, financials, and go/no-go scorecard |
-| `/fh:startup-competitors` | Deep competitive analysis with battle cards, pricing landscape, and feature matrix |
-| `/fh:startup-positioning` | Market positioning using April Dunford's framework, Moore statement, and category analysis |
-| `/fh:startup-pitch` | Investor-ready pitch scripts in 5 formats (10/5/2/1-min + email) with optional roleplay practice |
-| `/fh:startup-advisor` | Conversational startup advisor backed by 12 curated decision frameworks and web research |
-
-Startup artifacts in `.planning/startup/` automatically feed into `/fh:new-project`, `/fh:plan-work`, and `/fh:auto`.
-
-</details>
-
-<details>
-<summary><strong>Engineering</strong></summary>
-
-| Command | What it does |
-|---------|-------------|
-| `/fh:fix` | Auto-triage and fix bugs with systematic debugging |
+| Skill | Purpose |
+|-------|---------|
+| `/fh:fix` | Triage → failing test → patch → verify |
 | `/fh:refactor` | Restructure code safely, tests green at every step |
-| `/fh:simplify` | Review code for reuse, quality, and efficiency |
-| `/fh:research` | Investigate a topic before planning |
+| `/fh:simplify` | Review changed code for reuse, quality, and efficiency |
+| `/fh:research` | Investigate a topic — web search, docs, structured writeup |
+| `/fh:map-codebase` | Analyze and document codebase structure |
 
-</details>
+### Design & UI
 
-<details>
-<summary><strong>Design Quality</strong></summary>
+| Skill | Purpose |
+|-------|---------|
+| `/fh:ui-critique` | Visual hierarchy, information architecture, design quality feedback |
+| `/fh:ui-animate` | Motion and micro-interactions |
+| `/fh:ui-test` | Screenshot verification and functional QA |
+| `/fh:ui-branding` | One-time design language setup |
+| `/fh:audit` | Accessibility, performance, theming, responsive audit |
+| `/fh:secure` | OWASP Top 10 security scan |
 
-| Command | What it does |
-|---------|-------------|
-| `/fh:ui-critique` | Evaluate visual hierarchy, information architecture, and design quality |
-| `/fh:ui-animate` | Purposeful motion and micro-interactions |
-| `/fh:ui-test` | Visual verification and QA testing |
-| `/fh:ui-redesign` | Change art direction and design context |
-| `/fh:polish` | Fix alignment, spacing, consistency, and detail issues |
-| `/fh:normalize` | Match your design system and ensure consistency |
-| `/fh:harden` | Error handling, i18n, text overflow, edge cases |
-| `/fh:audit` | Full accessibility, performance, theming, and responsive audit |
-| `/fh:secure` | OWASP Top 10 security vulnerability scan |
-| `/fh:observability` | Query local Sentry error store for runtime errors |
-| `/fh:ui-branding` | One-time setup for your project's design language |
+Additional design skills invoked by pipelines or directly: `adapt`, `bolder`, `clarify`, `colorize`, `delight`, `distill`, `extract`, `harden`, `normalize`, `onboard`, `optimize`, `polish`, `quieter`.
 
-Additional design skills (also auto-invoked by pipelines): `/fh:adapt`, `/fh:bolder`, `/fh:quieter`, `/fh:distill`, `/fh:clarify`, `/fh:colorize`, `/fh:delight`, `/fh:extract`, `/fh:onboard`, `/fh:optimize`.
+### Startup Validation
 
-</details>
+| Skill | Purpose |
+|-------|---------|
+| `/fh:startup-design` | Validate an idea — market research, strategy, brand, product, financials |
+| `/fh:startup-competitors` | Battle cards, pricing landscape, feature matrix |
+| `/fh:startup-positioning` | April Dunford framework, Moore statement, category analysis |
+| `/fh:startup-pitch` | Pitch scripts in 5 formats with optional investor roleplay |
+| `/fh:startup-advisor` | Strategic advice backed by curated decision frameworks |
 
-<details>
-<summary><strong>Navigation & Tasks</strong></summary>
+Startup artifacts in `.planning/startup/` feed directly into `/fh:new-project` and `/fh:auto`.
 
-| Command | What it does |
-|---------|-------------|
+### Project Navigation
+
+| Skill | Purpose |
+|-------|---------|
 | `/fh:progress` | Restore context, check status, route to next action |
-| `/fh:tracker` | Launch the visual project dashboard (localhost:4111) |
-| `/fh:todos` | Manage project todos — add new or review pending |
+| `/fh:todos` | Track and manage project todos |
+| `/fh:learnings` | Surface improvement insights from cross-session memory |
+| `/fh:observability` | Query local Sentry error store |
 
-</details>
+### Setup & Maintenance
 
-<details>
-<summary><strong>Setup & Maintenance</strong></summary>
-
-| Command | What it does |
-|---------|-------------|
-| `/fh:setup` | One-time setup after installing |
+| Skill | Purpose |
+|-------|---------|
+| `/fh:setup` | One-time platform setup |
+| `/fh:update` | Update plugin + close setup gaps from new versions |
+| `/fh:health` | Validate project file integrity |
 | `/fh:settings` | Configure workflow preferences |
-| `/fh:health` | Check if your project files are in good shape |
-| `/fh:map-codebase` | Analyze codebase structure, generate FLOWS.md and ERD.md |
-| `/fh:revise-claude-md` | Update CLAUDE.md with learnings from the session |
-| `/fh:update` | Check for updates and install the latest version |
 | `/fh:help` | Command reference and architecture guide |
-
-</details>
 
 ## How It Works
 
-Each command is an orchestrator. It reads project state, dispatches specialized subagents that each run in fresh context, applies quality gates between steps, and updates state when done.
+Each skill is an orchestrator — it reads project state, dispatches specialized subagents in fresh context, applies quality gates between steps, and updates state when done. 15 specialized agent personas handle the subagent work (planning, execution, debugging, verification, etc.).
 
-The underlying skills come from seven open-source projects:
+### Pipeline: Build
 
-| Source | What it provides |
-|--------|-----------------|
-| [Superpowers](https://github.com/obra/superpowers) | Engineering discipline — TDD, verification, debugging, brainstorming |
-| [Impeccable](https://github.com/pbakaus/impeccable) | Design quality — critique, polish, normalize, harden, animate, audit |
-| [GSD](https://github.com/gsd-build/get-shit-done) | Project orchestration — planning, execution, verification, integration |
-| [gstack](https://github.com/garrytan/gstack) | Production safety — plan review (business + engineering), QA, anti-drift |
-| [feature-dev](https://github.com/anthropics/claude-code-plugin-examples) | Code intelligence — exploration, architecture, review |
-| [Next.js Best Practices](https://github.com/anthropics/claude-code-plugin-examples) | React/Next.js performance optimization (Vercel Engineering) |
-| [Playwright Best Practices](https://github.com/anthropics/claude-code-plugin-examples) | End-to-end testing patterns |
+```
+PLAN.md ──▶ WAVE 1 (parallel tasks) ──▶ WAVE 2 ──▶ ... ──▶ WAVE N
+                 Each task = fresh subagent with TDD + LSP
+                                                          │
+COMMIT + VERIFY ◀─────────────────────────────────────────┘
+     │
+PHASE COMPLETION
+     ├── Gate 0: Integration check (Fallow blast-radius)
+     ├── Gate 1: Goal verification (must_haves truth table)
+     └── Gate 3: Final verification + architecture refresh
+     │
+     ▼
+  /review
+```
+
+### Pipeline: Review
+
+```
+SCOPE ──▶ STATIC ANALYSIS ──▶ SPEC VERIFICATION
+  │
+  ├── Code Quality Agent
+  ├── Gap Analysis Agent
+  │
+GOAL VERIFICATION ──▶ QUALITY REFINEMENT (conditional sub-skills)
+  │
+EVIDENCE (tests, build, lint) ──▶ BLOCK / WARN / PASS
+```
+
+### Autonomous Execution
+
+Each `/fh:auto` step runs as a separate `claude -p` session with fresh context. State persists to `.planning/.auto-state.json` so crashes can resume. Decisions are logged with confidence levels — LOW confidence gets flagged for human audit.
+
+## Built On
+
+The underlying skills are composed from seven open-source projects:
+
+| Source | Contribution |
+|--------|-------------|
+| [Superpowers](https://github.com/obra/superpowers) | TDD, verification, debugging, brainstorming |
+| [Impeccable](https://github.com/pbakaus/impeccable) | Design critique, polish, normalize, harden, animate |
+| [GSD](https://github.com/gsd-build/get-shit-done) | Planning, execution, verification, integration |
+| [gstack](https://github.com/garrytan/gstack) | Plan review, QA, production safety |
+| [feature-dev](https://github.com/anthropics/claude-code-plugin-examples) | Code exploration, architecture, review |
+| [Next.js Best Practices](https://github.com/anthropics/claude-code-plugin-examples) | React/Next.js performance (Vercel Engineering) |
+| [Playwright Best Practices](https://github.com/anthropics/claude-code-plugin-examples) | E2E testing patterns |
 
 All upstreams are forked and bundled. See [PATCHES.md](PATCHES.md) for modifications.
 
-### Optional Integrations
+## Optional Integrations
 
 | Tool | What it adds |
 |------|-------------|
 | [context-mode](https://github.com/mksglu/context-mode) | Session-scoped FTS5 indexing — large outputs stay out of context window |
-| [claude-mem](https://github.com/thedotmack/claude-mem) | Cross-session persistent memory — learnings, patterns, decisions |
+| [claude-mem](https://github.com/thedotmack/claude-mem) | Persistent cross-session memory — learnings, patterns, decisions |
 | [Fallow](https://docs.fallow.tools/) | Deterministic static analysis — dead code, circular deps, duplication |
 | TypeScript LSP | Code navigation — go-to-definition, find-references, rename |
 
-All optional — skills degrade gracefully without them.
+All optional. Every skill includes graceful degradation — the pipeline works identically without them.
 
-<details>
-<summary><strong>Plugin Integration Map</strong></summary>
+## `/fh:new-project` — Default Stack
 
-Skills that read and write to cross-session memory:
+**Next.js + TypeScript + Tailwind + shadcn/ui + Supabase + Better Auth + Vercel.** With `--auto`, the entire setup is hands-off.
 
-| Skill | Reads (Past Learnings) | Indexes (context-mode) | Writes (Persist Findings) |
-|-------|----------------------|---------------------|------------------------|
-| plan-work | task keywords | planning docs | — (via build) |
-| build | phase name | source files + plans | learnings digest |
-| fix | bug area keywords | decisions/design | `[fix-learning]` |
-| review | diff scope | agent reports | `[review-learning]` |
-| plan-review | phase + architecture | planning state | `[plan-review-learning]` |
-| refactor | module/pattern | target module | `[refactor-learning]` |
-| audit | project/module | scan results | `[audit-finding]` |
-| optimize | component/page | metrics | `[optimize-learning]` |
-| secure | framework/stack | agent findings | `[security-finding]` |
-| research | topic keywords | web/doc sources | `[research-finding]` |
-
-Skills without plugins work identically — all integrations include "skip silently if unavailable" guards.
-
-</details>
-
-<details>
-<summary><strong>Pipeline Diagrams</strong></summary>
-
-### `/build` Pipeline
-
-```
- PLAN.md (from /plan-work)
-      |
-  FIND + ANALYZE ──▶ WAVE 1 (parallel) ──▶ WAVE 2 ──▶ ... ──▶ WAVE N
-      |                   |                                        |
-      |              Each task = fresh subagent with LSP           |
-      |              + TDD / Playwright / Next.js perf as needed   |
-      |                                                            |
-  COMMIT + VERIFY ◀────────────────────────────────────────────────┘
-      |
-  PHASE COMPLETION (if all plans done)
-      |  Gate 0: Integration check (fallow blast-radius analysis)
-      |  Gate 1: Goal verification (must_haves truth table)
-      |  Gate 1.5: Security review (OWASP top 10, phase-end only)
-      |  Gate 2: Design quality gates (if visual work > 30%)
-      |  Gate 3: Final verification + architecture artifact refresh
-      v
-  /review (or /ui-test for frontend)
-```
-
-### `/review` Pipeline
-
-```
-  SCOPE + RUNTIME ERRORS ──▶ STATIC ANALYSIS (Fallow) ──▶ SPEC VERIFICATION
-      |
-  2 PARALLEL AGENTS: Code Quality + Gap Analysis
-      |
-  GOAL VERIFICATION (must_haves truth table)
-      |
-  EVIDENCE (tests, build, lint — fresh runs)
-      |
-  GATE: BLOCK / WARN / PASS ──▶ Promote branch
-```
-
-### `/fix` Pipeline
-
-```
-  BUG REPORT ──▶ RUNTIME ERROR CHECK ──▶ LSP TRIAGE
-      |
-  SIMPLE ───────────────────────────────▶ TDD fix
-  MODERATE ──▶ systematic debugging ───▶ TDD fix
-  PARALLEL ──▶ N debugger subagents ───▶ TDD fix
-  COMPLEX ───▶ persistent debug session ▶ TDD fix
-      |
-  DESIGN CHECK (frontend) ──▶ VERIFICATION GATE ──▶ /review
-```
-
-### `/plan-work` Pipeline
-
-```
-  USER REQUEST ──▶ PHASE MATCH ──▶ COMPLEXITY ASSESSMENT
-      |
-  RESEARCH (conditional: complex/medium/skip)
-      |
-  BRAINSTORM ──▶ DISCUSS (lock decisions in CONTEXT.md)
-      |
-  WRITE PLAN (truths, artifacts, key links, waves)
-      |
-  PLAN-CHECK ──▶ /plan-review (default) ──▶ /build
-```
-
-</details>
-
-## `/new-project` — What Gets Set Up
-
-The default stack is **Next.js + TypeScript + Tailwind + shadcn/ui + Supabase + Better Auth + Vercel**. With `--auto`, the entire setup is hands-off.
-
-<details>
-<summary>Setup details</summary>
-
-- **Brand-aware design system** — extracts colors, fonts, and style from your brand references
-- **Better Auth** — generates secret, configures auth env vars
-- **Resend email** — walks you through signup, creates a sending key
-- **Organizations** — opt-in multi-tenant support (teams, roles, invitations)
-- **Supabase** — local (OrbStack/Docker) or cloud, with automatic runtime detection, migration handling, and seed data loading. OrbStack preferred on macOS 13+ for ~2x less power; Docker Desktop supported on all platforms
-- **Vercel** — links project, syncs env vars, enables auto-deploys
-- **shadcn/ui skills** — installs agent skills for component-aware workflows
-- **Observability** — scaffolds local Sentry error tracking (SQLite-backed)
-- **Conductor** — detects workspaces, creates `conductor.json` with `.env.local` symlinks
-
-Everything is optional — skip what you don't need.
-
-</details>
+Includes: brand-aware design system, Better Auth with email/organizations, Supabase (local or cloud), Vercel deployment, local Sentry observability, and Conductor workspace detection. Everything is optional — skip what you don't need.
 
 ## Updating
 
@@ -316,7 +197,7 @@ Everything is optional — skip what you don't need.
 /fh:update
 ```
 
-Updates the plugin and automatically closes any setup gaps introduced since your last version — new tools, plugins, env vars, hooks, and config are all installed inline. Detects migration drift in local Supabase projects (unapplied migrations on disk). No need to re-run `/fh:setup` or `/fh:new-project` after updating.
+Automatically closes setup gaps from new versions — tools, plugins, env vars, hooks, and config. No need to re-run `/fh:setup`.
 
 ## License
 

@@ -45,13 +45,10 @@ Run comprehensive checks across multiple dimensions:
 
 **CRITICAL**: This is an audit, not a fix. Document issues thoroughly with clear explanations of impact. Use other commands (normalize, optimize, harden, etc.) to fix issues after audit.
 
-### Context-Mode Acceleration
+### claude-mem Acceleration
 
-If ctx_batch_execute is available, index diagnostic scan output for efficient querying:
-- Run scan commands via ctx_batch_execute (linting, type checks, complexity metrics, dependency analysis)
-- Use ctx_search to filter findings by severity, category, or file path
-- This prevents large scan output from flooding the context window
-- If unavailable, run scans via Bash and process output directly
+If claude-mem is available (check tool list for `mcp__plugin_claude-mem_*`), use `smart_search` or `smart_outline` to recall prior audit findings for this project/module.
+If not available, fall back to Read/Grep/Glob directly.
 
 ### Past Learnings Check
 
@@ -145,7 +142,7 @@ Remember: You're a quality auditor with exceptional attention to detail. Documen
 ### Persist Findings
 
 After generating the audit report, output systemic findings for cross-session tracking:
-1. If ctx_search is available, query indexed scan results for critical/high severity items
+1. If claude-mem is available (check tool list for `mcp__plugin_claude-mem_*`), use `smart_search` to check for prior audit findings before persisting duplicates
 2. Skip individual lint warnings — only persist systemic issues (patterns across multiple files)
 3. Output each finding as:
    **[audit-finding]** {category}: {systemic issue} — severity: {critical/high/medium}
