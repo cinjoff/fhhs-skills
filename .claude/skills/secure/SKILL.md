@@ -17,10 +17,12 @@ You are a **lean orchestrator**. Stay under 10% context usage. Delegate all scan
 
 If claude-mem is available, recall known security patterns:
 1. Derive project name from `.planning/PROJECT.md` name field (fall back to basename of cwd). Use this as the `project` parameter for all claude-mem calls.
-2. Call `mcp__plugin_claude-mem_mcp-search__search` with query="security" + framework/stack name, limit=5, project=<project-name>
-3. Filter for: vulnerability, injection, XSS, auth bypass, exposure, CVE, security fix
-4. If relevant: "**Known security context:** - {summary}" — max 3 items. Feed into agent scan prompts.
-5. Skip silently if unavailable
+2. Call `mcp__plugin_claude-mem_mcp-search__search` with query="security" + framework/stack name, project=<project-name>, limit=10
+3. Scan the returned index for relevant observation IDs — prioritize types: gotcha, decision, trade-off. Filter for keywords: vulnerability, injection, XSS, auth bypass, exposure, CVE, security fix
+4. For the top 2-3 relevant IDs, call `mcp__plugin_claude-mem_mcp-search__get_observations` with ids=[ID1, ID2, ID3] to fetch full details
+5. If temporal context would help (e.g., understanding what led to a past vulnerability), call `mcp__plugin_claude-mem_mcp-search__timeline` with query="security" + area name, depth_before=3
+6. Present: "**Known security context:** - {full observation detail}" — max 3 items. Feed into agent scan prompts.
+7. Skip silently if unavailable
 
 ---
 

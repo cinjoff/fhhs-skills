@@ -39,10 +39,12 @@ If ctx_batch_execute is available, index performance analysis output:
 ### Past Learnings Check
 
 If claude-mem is available, recall prior optimization work:
-1. Call `mcp__plugin_claude-mem_mcp-search__search` with "optimize" + component/page name, project=<project-name>, limit=5
-2. Filter for: performance, optimize, bundle, render, "core web vitals", bottleneck, regression
-3. If relevant: "**Prior optimization context:** - {summary}" — max 3 items
-4. Skip silently if unavailable
+1. Call `mcp__plugin_claude-mem_mcp-search__search` with query="optimize" + component/page name, project=<project-name>, limit=10
+2. Scan the returned index for relevant observation IDs — prioritize types: gotcha, decision, trade-off. Filter for keywords: performance, optimize, bundle, render, "core web vitals", bottleneck, regression
+3. For the top 2-3 relevant IDs, call `mcp__plugin_claude-mem_mcp-search__get_observations` with ids=[ID1, ID2, ID3] to fetch full details
+4. If temporal context would help (e.g., understanding what previous optimizations were tried), call `mcp__plugin_claude-mem_mcp-search__timeline` with query=component/page name, depth_before=3
+5. Present: "**Prior optimization context:** - {full observation detail}" — max 3 items
+6. Skip silently if unavailable
 
 Create systematic improvement plan:
 
