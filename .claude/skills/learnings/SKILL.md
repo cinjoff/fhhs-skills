@@ -196,6 +196,61 @@ If fewer than 2 observations match any category, output:
 
 > No strong patterns detected in the last {N} days.
 
+### Codebase Mapping Drift Check
+
+If `.planning/codebase/` exists:
+1. Count observations from the working set matching architecture/convention drift keywords: `architecture`, `convention`, `structure`, `pattern`, `boundary`, `coupling`, `design`, `changed`, `refactor`, `moved`, `renamed`.
+2. If 3+ drift signals detected:
+   Add to insights dashboard:
+   "📐 Codebase mapping drift detected — {N} convention/architecture changes since last mapping. Recommend `/fh:map-codebase --refresh-stale`"
+
+---
+
+## Section 3.6: User Workflow Coaching
+
+Analyze observations for patterns that suggest workflow improvements the user could make.
+
+Do NOT make any new claude-mem API calls — use only observations already collected in the working set.
+
+**Pattern categories to detect:**
+
+1. **Repeated context loss**: User re-explains the same thing across sessions → suggest saving to CLAUDE.md or claude-mem
+2. **Manual steps that could be automated**: User runs the same sequence of commands repeatedly → suggest creating a skill or alias
+3. **Suboptimal tool usage**: Using Read when smart_outline would suffice, reading full files when smart_unfold targets one function → suggest tool efficiency improvements
+4. **Planning gaps**: Jumping to implementation without planning, or plans that miss edge cases → suggest using /fh:plan-work or /fh:plan-review
+5. **Testing anti-patterns**: Skipping tests, writing tests after implementation, mocking too much → suggest TDD workflow
+6. **Context window waste**: Loading unnecessary files, not using progressive disclosure → suggest context-mode or claude-mem patterns
+
+For each pattern category, scan the working set for keyword signals:
+
+| Pattern | Keywords |
+|---------|----------|
+| Repeated context loss | re-explained, forgot, context, repeated, same issue, again |
+| Manual steps | manual, sequence, same commands, repeat, every time |
+| Suboptimal tool usage | read full file, loaded, unnecessary, token, expensive |
+| Planning gaps | jumped to, skipped planning, missed, edge case, no plan |
+| Testing anti-patterns | skip test, wrote tests after, no tests, mocked, brittle |
+| Context window waste | loaded unnecessary, full file, context full, window |
+
+A pattern qualifies if **2 or more** observations match. Show **at most 3** workflow insights per run, prioritized by frequency (most repeated first).
+
+If qualifying patterns are found, present:
+
+```
+## 🎓 Workflow Insights
+
+Based on your recent sessions, here are opportunities to work more effectively:
+
+### [Category]
+**What I noticed:** [specific observation from claude-mem data]
+**Suggestion:** [actionable improvement]
+**Why it helps:** [brief benefit explanation]
+```
+
+Frame these as opportunities, not mistakes — helpful mentor tone, not critic.
+
+If no patterns qualify (fewer than 2 matching observations per category), skip this section silently.
+
 ---
 
 ## Section 4: File GitHub Issues (or Plan from Insights)
@@ -211,7 +266,7 @@ gh issue list --repo cinjoff/fhhs-skills --state open --search "{summary keyword
 ```
 
 - If a matching open issue exists: skip this issue. Note: "Already tracked in #N"
-- If no match: proceed to create.
+- If no match: proceed to confirmation.
 
 #### 4b. Prepare issue body
 
@@ -225,7 +280,31 @@ Fill in the placeholders:
 - `{{IMPACT}}` — brief statement of user impact
 - `{{SUGGESTION}}` — what the skill could do differently to address this
 
-#### 4c. Create the issue
+#### 4c. Confirm before filing
+
+**Never auto-file issues.** Present all identified issues (not yet skipped as duplicates) together in a single confirmation block, then wait for user input before filing any:
+
+> **Skill Issues to File** (N identified, M already tracked)
+>
+> For each issue, show:
+> - **Issue title**: [concise summary]
+> - **Affected skill**: which /fh: skill
+> - **Evidence**: [N observations — key phrases quoted]
+> - **Proposed fix**: [what the issue would suggest]
+>
+> Reply with a space-separated list of numbers to approve (e.g. `1 3`), `all` to file everything, or `none` to skip all.
+> Add `edit N` to modify issue N's title/description before filing (e.g. `1 3 edit 2`).
+
+Wait for the user's reply before proceeding.
+
+- **`all`**: file all issues as shown
+- **`none`**: skip all issues; proceed to next section
+- **Numbered list** (e.g. `1 3`): file only the listed issues
+- **`edit N`** (in combination with approvals): prompt the user to modify issue N's title and body before filing
+
+#### 4d. Create approved issues
+
+For each approved issue (and after any `edit` modifications are applied):
 
 ```bash
 gh issue create \
@@ -237,15 +316,15 @@ gh issue create \
 
 Replace `{type}` with the issue classification (e.g. `skill-bug`, `workflow-gap`, `feature-idea`, `common-mistake`).
 
-#### 4d. Report results
+#### 4e. Report results
 
 After processing all issues:
 
-> Created N issues, skipped M (already tracked).
+> Created N issues, skipped M (already tracked), skipped K (user declined).
 
-List each created issue with its URL and each skipped issue with its existing issue number.
+List each created issue with its URL and each skipped issue with its reason (already tracked or user declined).
 
-If `--dry-run` was passed: do NOT call `gh issue create`. Instead, print each issue that would be created with its title, type, and evidence count. Report: "Dry run complete — N issues would be filed, M already tracked."
+If `--dry-run` was passed: do NOT call `gh issue create` and do NOT ask for confirmation. Instead, print each issue that would be created with its title, type, and evidence count. Report: "Dry run complete — N issues would be filed, M already tracked."
 
 ---
 
@@ -388,3 +467,15 @@ If the user responds with a number:
 - Collect observations from Section 2 again, but **exclude observation IDs already processed** in the current session
 - Run Sections 3, 3.5, and 4 on the new observations only
 - Report: "Extended to {N} days. Found X additional observations."
+
+### Record analysis timestamp
+
+After completing the full analysis (whether or not the user extends the window), update `~/.claude/cache/learnings-digest.json`:
+- Set `last_full_analysis` to the current ISO timestamp (e.g. `2026-03-31T14:00:00Z`)
+- If the file does not exist yet, create it with `{ "last_full_analysis": "<timestamp>", "pending": [] }`
+- This field is read by the `fhhs-learnings.js` SessionStart hook to prevent over-recommending full analyses
+
+The digest schema supports these fields:
+- `last_full_analysis` — ISO timestamp of the most recent `/fh:learnings` run
+- `last_digest_update` — ISO timestamp of the most recent digest cache refresh
+- `pending` — array of unaddressed improvement items surfaced by past analyses

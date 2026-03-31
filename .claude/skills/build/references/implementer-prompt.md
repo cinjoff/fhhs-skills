@@ -27,7 +27,7 @@ Use `Read` only for files you intend to `Edit`. Use LSP (`goToDefinition`, `find
 
 {CLAUDE_MD_SECTIONS}
 
-If empty: try `smart_search({query: "conventions for {FILE_TYPES}"})`, then fall back to reading `./CLAUDE.md` and `.planning/codebase/`.
+If empty: try `smart_search({query: "conventions for {FILE_TYPES}"})`, then fall back to reading relevant files in `.planning/codebase/` (CONVENTIONS.md for style, STRUCTURE.md for placement, ARCHITECTURE.md for layers).
 
 ### Decisions & Scope
 

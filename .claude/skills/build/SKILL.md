@@ -98,7 +98,14 @@ Shared references (`testing-guide.md`, `claude-mem-rules.md`) are static between
    - Tasks with `tdd="true"`: `smart_unfold({path: "...", symbol: "Part B"})` + `smart_unfold({..., symbol: "Part C"})`
    - Tasks with E2E/Playwright scope: `smart_unfold({..., symbol: "Part D"})` + `smart_unfold({..., symbol: "Part C"})`
    - All other tasks: `smart_unfold({..., symbol: "Part A"})` + `smart_unfold({..., symbol: "Part C"})`
-3. Store extracted sections as `SHARED_REFERENCES_CACHE`
+3. For tasks involving tests (tdd="true", test tasks, or E2E tasks): also read `.planning/codebase/TESTING.md` if it exists — inject project-specific test patterns (runner, mocking approach, fixture conventions) alongside testing-guide.md sections for full TDD discipline.
+4. Store extracted sections as `SHARED_REFERENCES_CACHE`
+
+**Project-specific testing context:**
+For test runner commands, mocking patterns, fixture locations, and coverage targets: inject from `.planning/codebase/TESTING.md` (project-specific).
+For TDD discipline and philosophy: inject from `testing-guide.md` (universal).
+If claude-mem available: `smart_search({query: "test patterns for {task type}"})` to find the right source.
+Never read both full docs when only one is needed.
 
 **If claude-mem is not available**: Read `testing-guide.md` once via the Read tool. Store full content as `SHARED_REFERENCES_CACHE`.
 
@@ -165,7 +172,16 @@ For each wave, dispatch **one subagent per task** using the Agent tool with **`s
 Use the structured template at `references/implementer-prompt.md`. Fill its placeholders:
 
 - `{TASK_TEXT}` — Full task content (files, action, verify, done). Copy the text, don't reference the plan file.
-- `{CLAUDE_MD_SECTIONS}` — Relevant sections from CLAUDE.md for this task type, plus `.planning/codebase/CODEBASE.md` sections (fall back to individual files in `.planning/codebase/` if CODEBASE.md doesn't exist) (UI work → Conventions + Design; new files → Structure guidance; API work → Architecture patterns).
+- `{CLAUDE_MD_SECTIONS}` — Relevant sections from CLAUDE.md for this task type, plus task-type-routed codebase mapping files from `.planning/codebase/`:
+  - UI tasks (`.tsx`, `.css`, `.scss`) → inject CONVENTIONS.md + STRUCTURE.md
+  - API tasks (routes, handlers, endpoints) → inject ARCHITECTURE.md + CONVENTIONS.md
+  - DB tasks (migrations, models, schemas) → inject ARCHITECTURE.md + STACK.md
+  - Test tasks → inject TESTING.md + CONVENTIONS.md
+  - Infrastructure/config tasks → inject STACK.md + INTEGRATIONS.md
+  - General tasks → inject STRUCTURE.md + CONVENTIONS.md
+
+  If claude-mem available: use smart_search for task-relevant conventions instead of reading full files.
+  If not available: Read the specific granular file directly.
 - `{DESIGN_DECISIONS}` — If `.planning/phases/{phase}/{phase}-CONTEXT.md` exists, include the "Decisions", "Discretion Areas", and "Deferred Ideas" sections.
 - `{PHASE_DIR}` — Path to `.planning/phases/{phase}/` for deferred items logging.
 - `{PHASE_NAME}` — Phase directory name for smart_search queries (e.g. "13-pending-payments-invoicing").
@@ -279,6 +295,14 @@ If `.planning/codebase/CONCERNS.md` exists, do a quick scan:
 
 This is advisory only — never block completion. Budget: <1% context.
 
+### Post-build drift check (advisory)
+
+If claude-mem is available and `.planning/codebase/` exists:
+1. `smart_search({query: "new pattern convention not documented"})` across recent observations
+2. If 3+ drift signals found since last mapping:
+   - Log: "⚠️ Codebase mapping may be stale — {N} convention changes detected since last map. Consider `/fh:map-codebase --refresh-stale`"
+3. Never auto-run mapping — just advise. User decides when to spend the tokens.
+
 ### Learnings Digest (after SUMMARY.md)
 
 If claude-mem is available, generate a learnings digest:
@@ -296,10 +320,14 @@ If claude-mem is available, generate a learnings digest:
    c. Priority escalation: times_seen >= 3 → "medium", times_seen >= 5 → "high" (never downgrade)
    d. Items addressed by this build session (if the build's work matches an item's suggested_action) → mark addressed=true, addressed_at=ISO timestamp
    e. Compute stats: scanned = total observations checked, pending = items where addressed is falsy, addressed_since_last = items addressed in this merge
-7. Write updated digest to `~/.claude/cache/learnings-digest.json`
-8. Skip silently if claude-mem not installed or any MCP call fails
+7. Write updated digest to `~/.claude/cache/learnings-digest.json`. Include `"last_digest_update": ISO_TIMESTAMP` at the top level of the JSON object.
+8. After updating digest, count total unaddressed items (items where addressed is falsy).
+   If unaddressed >= 5 AND this is a phase completion (not just a plan):
+     Upgrade the suggestion from passive to active:
+     "📊 {N} improvement patterns detected across recent sessions. Run `/fh:learnings` to review workflow improvements and skill issues."
+9. Skip silently if claude-mem not installed or any MCP call fails
 
-Digest schema: `{ generated: ISO string, generated_by: "build"|"context-critical", project: cwd path, phase: current phase name, items: [{ id: string, priority: "low"|"medium"|"high", category: "retro"|"pattern"|"theme", summary: string, detail: string, suggested_action: string, times_seen: number, first_seen: ISO string, addressed: boolean, addressed_at?: ISO string }], stats: { scanned: number, pending: number, addressed_since_last: number } }`
+Digest schema: `{ last_digest_update: ISO string, generated: ISO string, generated_by: "build"|"context-critical", project: cwd path, phase: current phase name, items: [{ id: string, priority: "low"|"medium"|"high", category: "retro"|"pattern"|"theme", summary: string, detail: string, suggested_action: string, times_seen: number, first_seen: ISO string, addressed: boolean, addressed_at?: ISO string }], stats: { scanned: number, pending: number, addressed_since_last: number } }`
 
 Budget: <2% context for this substep.
 

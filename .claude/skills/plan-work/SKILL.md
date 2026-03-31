@@ -434,7 +434,15 @@ Keep plan total under **{words_per_plan} words**.
 ### Context optimization
 
 - In `<context>` blocks, reference only files the executor actually needs
-- Reference relevant sections of CODEBASE.md per task (Conventions for style, Structure for file placement, Architecture for layer boundaries)
+- Reference the specific granular codebase file each task needs:
+  - Style/patterns → `.planning/codebase/CONVENTIONS.md`
+  - File placement → `.planning/codebase/STRUCTURE.md`
+  - Layer boundaries → `.planning/codebase/ARCHITECTURE.md`
+  - External services → `.planning/codebase/INTEGRATIONS.md`
+  - Test approach → `.planning/codebase/TESTING.md`
+  - Tech stack → `.planning/codebase/STACK.md`
+  - Tech debt → `.planning/codebase/CONCERNS.md`
+- For codebase questions: if claude-mem is available, use `smart_search` for the specific question (it will hit the relevant granular file); otherwise Read the specific file directly
 - If GSD and CONTEXT.md exists: honor locked decisions, exclude deferred ideas
 
 ---

@@ -2047,7 +2047,7 @@ Commit: `chore: add conductor.json for workspace configuration`
 
 The starter template has enough code to produce a useful codebase map. Running it now means context-mode is immediately valuable from the first `/fh:plan-work` call.
 
-Invoke `/fh:map-codebase` — it spawns a mapper agent, writes `.planning/codebase/CODEBASE.md`, creates `.claude/rules/`, and records the freshness SHA. claude-mem automatically observes file reads via PostToolUse hook.
+Invoke `/fh:map-codebase` — it spawns 4 parallel mapper agents that write 7 granular documents to `.planning/codebase/` (STACK.md, INTEGRATIONS.md, ARCHITECTURE.md, STRUCTURE.md, CONVENTIONS.md, TESTING.md, CONCERNS.md), creates `.claude/rules/`, and records the freshness SHA. claude-mem automatically observes file reads via PostToolUse hook.
 
 If `uses_default_stack` is false (custom stack), skip — the codebase doesn't exist yet and will be scaffolded in Phase 1. The user can run `/fh:map-codebase` after scaffolding.
 

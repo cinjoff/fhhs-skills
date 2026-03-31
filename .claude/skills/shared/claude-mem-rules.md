@@ -155,3 +155,60 @@ If not available:
 ```
 
 Never fail a skill because claude-mem is missing. It's an enhancement, not a dependency.
+
+## Codebase Mapping Documents
+
+When needing project conventions, architecture, or structure, query the granular files in `.planning/codebase/`:
+
+| Need | File | Example query |
+|------|------|---------------|
+| Coding patterns, naming, error handling | CONVENTIONS.md | `smart_search({query: "error handling conventions"})` |
+| Directory layout, file placement | STRUCTURE.md | `smart_search({query: "directory layout"})` |
+| Layers, data flow, abstractions | ARCHITECTURE.md | `smart_search({query: "architecture layers"})` |
+| Tech stack, frameworks, versions | STACK.md | `smart_search({query: "tech stack"})` |
+| Test patterns, coverage, mocking | TESTING.md | `smart_search({query: "test patterns"})` |
+| External services, APIs, databases | INTEGRATIONS.md | `smart_search({query: "external integrations"})` |
+| Tech debt, known issues | CONCERNS.md | `smart_search({query: "tech debt concerns"})` |
+
+**Progressive disclosure:**
+1. `smart_search` for the specific question → hits the relevant granular file (~50 tokens)
+2. Only `Read` the full file if smart_search results are insufficient (~200-400 tokens)
+3. Never `Read` all 7 files — use progressive disclosure to load only what's needed
+
+## Codebase Mapping Drift Detection
+
+Skills should note divergences between `.planning/codebase/` docs and actual code during normal work. These signals accumulate in claude-mem and can be queried later.
+
+**Drift signals to observe (during build/fix/review):**
+- New error handling pattern not in CONVENTIONS.md
+- New external service not in INTEGRATIONS.md
+- Directory restructure not in STRUCTURE.md
+- New test framework/pattern not in TESTING.md
+- Dependency upgrade not in STACK.md
+- New architectural layer/pattern not in ARCHITECTURE.md
+- Tech debt resolved or introduced not in CONCERNS.md
+
+**How to surface:** At session start or during plan-work research:
+```
+smart_search({query: "convention drift new pattern not in codebase docs"})
+```
+If results show accumulated drift signals → recommend `/fh:map-codebase --refresh-stale`
+
+## Testing Documentation Hierarchy
+
+Two testing documents serve different purposes:
+
+| Question | Consult |
+|----------|---------|
+| "Should I write a test for this?" | `testing-guide.md` Part A (philosophy) |
+| "How do I structure the test?" | `testing-guide.md` Part B (TDD) + `.planning/codebase/TESTING.md` (project patterns) |
+| "What test runner/commands?" | `.planning/codebase/TESTING.md` (project-specific) |
+| "What mocking patterns?" | `.planning/codebase/TESTING.md` (project-specific) |
+| "Playwright patterns?" | `testing-guide.md` Part D + `playwright-testing/PROMPT.md` |
+| "What's the coverage target?" | `.planning/codebase/TESTING.md` (project-specific) |
+
+**Progressive disclosure:**
+1. smart_search for the specific testing question
+2. If about philosophy/discipline → testing-guide.md
+3. If about project patterns → .planning/codebase/TESTING.md
+4. Never read both fully — select the relevant one

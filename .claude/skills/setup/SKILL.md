@@ -439,7 +439,7 @@ fhhs-skills includes four hooks:
 |------|-------|-------------|
 | `fhhs-statusline.js` | Statusline | Shows model, current task, context usage, update indicator |
 | `fhhs-check-update.js` | SessionStart | Checks GitHub for new fhhs-skills versions (background, throttled to 6h) |
-| `fhhs-learnings.js` | SessionStart | Surfaces improvement areas from past sessions (reads cached digest) |
+| `fhhs-learnings.js` | SessionStart | Surfaces improvement areas from past sessions (reads cached digest; applies signal density logic to decide whether to prompt for full analysis) |
 | `fhhs-context-monitor.js` | PostToolUse | Warns the agent when context window is running low |
 
 ### 5a: Read current settings
@@ -494,6 +494,15 @@ Check if `settings.hooks.SessionStart` already contains hooks with commands incl
   }
 }
 ```
+
+**fhhs-learnings.js signal density logic** — the hook reads `~/.claude/cache/learnings-digest.json` and applies this decision matrix before outputting anything:
+
+1. Count pending (unaddressed) items in the digest
+2. Check `last_full_analysis` timestamp (if present in digest)
+3. Decision matrix:
+   - 5+ pending items AND >7 days since `last_full_analysis` → append: "💡 You have {N} unaddressed improvements. Run `/fh:learnings` for a full analysis."
+   - 10+ pending items (any time) → append: "⚠️ {N} improvements have accumulated. Consider `/fh:learnings` before starting new work."
+   - <5 pending OR <7 days since analysis → show items silently (current behavior)
 
 **PostToolUse hook** — add context monitor (only if not already present):
 

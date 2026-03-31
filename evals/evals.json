@@ -861,12 +861,12 @@
     {
       "id": 21,
       "command": "map-codebase",
-      "prompt": "map-codebase (codebase already mapped, .planning/codebase/CODEBASE.md exists)",
-      "expected_output": "Should detect existing CODEBASE.md and check staleness (commits since last mapping via .last-mapped SHA). Should show staleness context. Should offer Refresh (delete and remap) or Skip (use existing). Should wait for user choice before proceeding.",
+      "prompt": "map-codebase (codebase already mapped, .planning/codebase/ has 7 files from a previous run)",
+      "expected_output": "Should detect existing 7 granular files in .planning/codebase/ (STACK.md, CONVENTIONS.md, etc.) and check staleness (commits since last mapping via .last-mapped SHA). Should show staleness context. Should offer Refresh (delete and remap), Update (specific files), or Skip. Should wait for user choice before proceeding.",
       "files": [],
       "assertions": [
         {
-          "text": "Detects existing CODEBASE.md",
+          "text": "Detects existing granular files in .planning/codebase/",
           "type": "behavioral"
         },
         {
@@ -886,7 +886,16 @@
       "tags": [
         "edge-case"
       ],
-      "checks": []
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "STACK\\.md|CONVENTIONS\\.md|ARCHITECTURE\\.md"
+        },
+        {
+          "type": "regex",
+          "pattern": "[Rr]efresh|[Ss]kip|[Uu]pdate"
+        }
+      ]
     },
     {
       "id": 22,
@@ -924,7 +933,7 @@
       "id": 23,
       "command": "build",
       "prompt": "build the plan (plan has only frontend tasks - React component refactor, new page layout, CSS updates)",
-      "expected_output": "Should execute the frontend tasks via waves. Should dispatch subagents (model: sonnet) and run verification (tests, build check, lint) before writing SUMMARY.md. Build does NOT run design quality gates (ui-critique/polish/normalize) — those are review's responsibility. Should suggest /fh:review for quality gatekeeping after execution.",
+      "expected_output": "Should execute the frontend tasks via waves. Should dispatch subagents (model: sonnet) and run verification (tests, build check, lint) before writing SUMMARY.md. Build does NOT run design quality gates (ui-critique/polish/normalize) \u2014 those are review's responsibility. Should suggest /fh:review for quality gatekeeping after execution.",
       "files": [],
       "assertions": [
         {
@@ -936,7 +945,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Does NOT run design quality gates (ui-critique/polish/normalize) — those belong to review",
+          "text": "Does NOT run design quality gates (ui-critique/polish/normalize) \u2014 those belong to review",
           "type": "guard"
         },
         {
@@ -1739,7 +1748,7 @@
       "id": 36,
       "command": "plan-work",
       "prompt": "Plan and build adding user settings page with a dark mode toggle. The project already has a ThemeProvider and uses Tailwind dark: prefix.",
-      "expected_output": "Should run /plan-work first: skips research (dark mode toggle is well-known pattern), brainstorms design options (toggle placement, persistence strategy, system preference detection), discusses with user, derives must_haves with user-facing truths, creates PLAN.md with proper frontmatter. Then /build: dispatches subagents (model: sonnet) that self-discover Next.js perf rules and do NOT commit. Orchestrator makes single commit per plan. Verification (tests, build, lint) runs before SUMMARY.md. Build does NOT run design quality gates — those run in /review. User runs /review (quality + gap + spec verification, including ui-critique for frontend) and /simplify on demand. Should perform complexity assessment before deciding research path.",
+      "expected_output": "Should run /plan-work first: skips research (dark mode toggle is well-known pattern), brainstorms design options (toggle placement, persistence strategy, system preference detection), discusses with user, derives must_haves with user-facing truths, creates PLAN.md with proper frontmatter. Then /build: dispatches subagents (model: sonnet) that self-discover Next.js perf rules and do NOT commit. Orchestrator makes single commit per plan. Verification (tests, build, lint) runs before SUMMARY.md. Build does NOT run design quality gates \u2014 those run in /review. User runs /review (quality + gap + spec verification, including ui-critique for frontend) and /simplify on demand. Should perform complexity assessment before deciding research path.",
       "files": [
         "evals/fixtures/nextjs-app-deep/next.config.ts",
         "evals/fixtures/nextjs-app-deep/tsconfig.json",
@@ -1775,7 +1784,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Design quality gates (critique/polish/normalize) are NOT run by build — they run in /review",
+          "text": "Design quality gates (critique/polish/normalize) are NOT run by build \u2014 they run in /review",
           "type": "guard"
         },
         {
@@ -6828,8 +6837,8 @@
     {
       "id": 148,
       "command": "map-codebase",
-      "prompt": "map this codebase. .planning/codebase/CODEBASE.md already exists from a previous run",
-      "expected_output": "Should detect existing codebase map, show staleness (commits since last map), present refresh/skip options, and default to skip if recent. Should NOT overwrite without asking.",
+      "prompt": "map this codebase. .planning/codebase/ already has STACK.md, CONVENTIONS.md, etc. from a previous run",
+      "expected_output": "Should detect existing granular codebase map files, show staleness (commits since last map), present refresh/update/skip options. Should NOT overwrite without asking.",
       "files": [],
       "assertions": [
         {
@@ -6845,7 +6854,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Does NOT immediately overwrite existing CODEBASE.md",
+          "text": "Does NOT immediately overwrite existing granular files",
           "type": "guard"
         }
       ],
@@ -6854,7 +6863,16 @@
         "edge-case",
         "guard"
       ],
-      "checks": []
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "STACK|CONVENTIONS|ARCHITECTURE"
+        },
+        {
+          "type": "regex",
+          "pattern": "[Rr]efresh|[Ss]kip"
+        }
+      ]
     },
     {
       "id": 149,
@@ -10258,8 +10276,8 @@
     {
       "id": 303,
       "command": "map-codebase",
-      "prompt": "When fallow is NOT installed, /fh:map-codebase should skip static analysis silently and produce the same CODEBASE.md output without mentioning Fallow",
-      "expected_output": "Should detect that fallow is not available, skip static analysis without error, and proceed to map the codebase normally. The resulting CODEBASE.md output should be identical in structure to a run without Fallow \u2014 no error messages about missing fallow, no 'fallow not found' warnings in the output.",
+      "prompt": "When fallow is NOT installed, /fh:map-codebase should skip static analysis silently and produce the same 7-file output without mentioning Fallow",
+      "expected_output": "Should detect that fallow is not available, skip static analysis without error, and proceed to map the codebase normally with 4 parallel agents producing 7 granular files. No error messages about missing fallow.",
       "files": [],
       "assertions": [
         {
@@ -10271,7 +10289,7 @@
           "type": "guard"
         },
         {
-          "text": "Produces CODEBASE.md output regardless of fallow availability",
+          "text": "Produces 7 granular files regardless of fallow availability",
           "type": "output"
         },
         {
@@ -10286,11 +10304,12 @@
       ],
       "checks": [
         {
-          "type": "required_terms",
-          "terms": [
-            "graceful",
-            "skip"
-          ]
+          "type": "regex",
+          "pattern": "skip.*silent|silent.*skip|without.*error"
+        },
+        {
+          "type": "regex",
+          "pattern": "7.*file|granular|STACK|CONVENTIONS"
         }
       ]
     },
@@ -11429,7 +11448,7 @@
       "id": 333,
       "command": "learnings",
       "prompt": "Run /fh:learnings --dry-run from the fhhs-skills repository",
-      "expected_output": "Should produce Project Insights section AND file GitHub issues on cinjoff/fhhs-skills since we are in the plugin repo",
+      "expected_output": "Should produce Project Insights section, Workflow Coaching section, AND present GitHub issues for user confirmation before filing on cinjoff/fhhs-skills",
       "files": [],
       "assertions": [
         {
@@ -11437,7 +11456,11 @@
           "type": "behavioral"
         },
         {
-          "text": "Files or references GitHub issues on cinjoff/fhhs-skills",
+          "text": "Presents GitHub issues for user confirmation before filing on cinjoff/fhhs-skills",
+          "type": "behavioral"
+        },
+        {
+          "text": "Shows workflow coaching insights",
           "type": "behavioral"
         }
       ],
@@ -11453,6 +11476,10 @@
         {
           "type": "regex",
           "pattern": "(issue|GitHub)"
+        },
+        {
+          "type": "regex",
+          "pattern": "[Cc]onfirm|[Aa]pprov"
         }
       ],
       "tier": "smoke",
@@ -11910,7 +11937,7 @@
       "id": 347,
       "command": "ui-branding",
       "prompt": "update my design direction",
-      "expected_output": "Should handle existing DESIGN.md gracefully — offer to update/extend rather than overwriting. Should capture updated design direction and persist to DESIGN.md.",
+      "expected_output": "Should handle existing DESIGN.md gracefully \u2014 offer to update/extend rather than overwriting. Should capture updated design direction and persist to DESIGN.md.",
       "files": [],
       "assertions": [
         {
@@ -12032,7 +12059,7 @@
       "id": 350,
       "command": "build",
       "prompt": "build the current plan",
-      "expected_output": "Should execute the plan tasks in waves, verify with tests and build checks, and write SUMMARY.md. Should NOT run design quality gates (ui-critique/polish/normalize) — those are review's responsibility. Build stays lean: execute, verify, summarize.",
+      "expected_output": "Should execute the plan tasks in waves, verify with tests and build checks, and write SUMMARY.md. Should NOT run design quality gates (ui-critique/polish/normalize) \u2014 those are review's responsibility. Build stays lean: execute, verify, summarize.",
       "files": [],
       "assertions": [
         {
@@ -12118,7 +12145,7 @@
       "id": 352,
       "command": "auto",
       "prompt": "run autonomous execution on this project",
-      "expected_output": "Should run full autonomous loop: plan, build, then a complete final review using quality-refine sub-skills. The final review phase should be thorough — not skipped or abbreviated — covering quality, architecture, and goal verification.",
+      "expected_output": "Should run full autonomous loop: plan, build, then a complete final review using quality-refine sub-skills. The final review phase should be thorough \u2014 not skipped or abbreviated \u2014 covering quality, architecture, and goal verification.",
       "files": [],
       "assertions": [
         {
@@ -12126,7 +12153,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Final review is complete — not abbreviated or skipped",
+          "text": "Final review is complete \u2014 not abbreviated or skipped",
           "type": "behavioral"
         },
         {
@@ -12214,7 +12241,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Uses progressive disclosure — loads context on-demand",
+          "text": "Uses progressive disclosure \u2014 loads context on-demand",
           "type": "behavioral"
         }
       ],
@@ -12315,6 +12342,284 @@
         {
           "type": "regex",
           "pattern": "dispatch|invoke|conditional"
+        }
+      ]
+    },
+    {
+      "id": 357,
+      "command": "map-codebase",
+      "prompt": "map-codebase --refresh-stale (claude-mem available, drift detected in CONVENTIONS.md and STACK.md)",
+      "expected_output": "Should query claude-mem for drift signals, detect drift in conventions and stack, regenerate only CONVENTIONS.md and STACK.md (not all 7 files), spawn 1-2 targeted agents instead of 4. Should report which files were refreshed and which were kept.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Queries claude-mem for drift signals",
+          "type": "behavioral"
+        },
+        {
+          "text": "Only regenerates files with detected drift, not all 7",
+          "type": "behavioral"
+        },
+        {
+          "text": "Reports which files were refreshed vs kept",
+          "type": "output"
+        }
+      ],
+      "tier": "full",
+      "tags": [
+        "edge-case",
+        "claude-mem",
+        "drift"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "smart_search|drift"
+        },
+        {
+          "type": "regex",
+          "pattern": "CONVENTIONS|STACK"
+        },
+        {
+          "type": "regex",
+          "pattern": "refresh|regenerat|target"
+        }
+      ]
+    },
+    {
+      "id": 358,
+      "command": "map-codebase",
+      "prompt": "map this codebase. It's a fresh project, no .planning/codebase/ exists yet",
+      "expected_output": "Should create .planning/codebase/ directory, spawn 4 parallel gsd-codebase-mapper agents (tech, arch, quality, concerns), produce 7 granular files (STACK.md, INTEGRATIONS.md, ARCHITECTURE.md, STRUCTURE.md, CONVENTIONS.md, TESTING.md, CONCERNS.md), verify all files exist with >10 lines each, record .last-mapped SHA.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Spawns 4 parallel mapper agents",
+          "type": "behavioral"
+        },
+        {
+          "text": "Produces 7 granular files",
+          "type": "output"
+        },
+        {
+          "text": "Records .last-mapped SHA for freshness tracking",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "happy-path",
+        "core"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "Agent.*tech|Agent.*arch|Agent.*quality|Agent.*concerns|4.*agent|parallel"
+        },
+        {
+          "type": "regex",
+          "pattern": "STACK\\.md|CONVENTIONS\\.md|ARCHITECTURE\\.md"
+        },
+        {
+          "type": "regex",
+          "pattern": "last.mapped|freshness|SHA"
+        }
+      ]
+    },
+    {
+      "id": 359,
+      "command": "learnings",
+      "prompt": "run /fh:learnings to analyze my recent work patterns and suggest improvements",
+      "expected_output": "Should produce Workflow Coaching section with max 3 insights covering categories like repeated context loss, suboptimal tool usage, planning gaps, testing anti-patterns. Should frame as opportunities, not criticism. Should also produce standard Project Insights.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Produces Workflow Coaching / Workflow Insights section",
+          "type": "output"
+        },
+        {
+          "text": "Shows max 3 coaching insights",
+          "type": "behavioral"
+        },
+        {
+          "text": "Frames suggestions as opportunities, not criticism",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "full",
+      "tags": [
+        "happy-path",
+        "coaching",
+        "learnings"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "[Ww]orkflow|[Cc]oach|[Ii]mprovement"
+        },
+        {
+          "type": "regex",
+          "pattern": "[Ss]uggest|[Oo]pportunit|[Ii]mprov|[Pp]attern"
+        },
+        {
+          "type": "regex",
+          "pattern": "claude.mem|observation|session"
+        }
+      ]
+    },
+    {
+      "id": 360,
+      "command": "learnings",
+      "prompt": "/fh:learnings --dry-run from fhhs-skills repo. I want to see what issues would be filed",
+      "expected_output": "Should identify skill improvement issues AND present them for user confirmation before filing. Should show issue title, affected skill, evidence, and proposed fix for each. Should ask user to approve/skip/edit each issue. Should NOT auto-file without confirmation.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Presents issues for user confirmation before filing",
+          "type": "behavioral"
+        },
+        {
+          "text": "Shows issue title, affected skill, and evidence for each",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT auto-file GitHub issues without user approval",
+          "type": "guard"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "guard",
+        "learnings",
+        "confirmation"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "[Cc]onfirm|[Aa]pprov|[Yy]ou.*like.*file"
+        },
+        {
+          "type": "regex",
+          "pattern": "[Ii]ssue.*title|[Aa]ffected.*skill|[Ee]vidence"
+        },
+        {
+          "type": "regex",
+          "pattern": "skip|edit|approv"
+        }
+      ]
+    },
+    {
+      "id": 361,
+      "command": "build",
+      "prompt": "build just completed a phase. claude-mem has 6 unaddressed improvement items in the digest. what should happen post-phase?",
+      "expected_output": "Should detect 6 unaddressed items (>= 5 threshold), suggest running /fh:learnings to review workflow improvements and skill issues. Should also check for codebase mapping drift if .planning/codebase/ exists.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects unaddressed improvement count meets threshold",
+          "type": "behavioral"
+        },
+        {
+          "text": "Suggests /fh:learnings for workflow improvements",
+          "type": "output"
+        },
+        {
+          "text": "Checks for codebase drift post-phase",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "full",
+      "tags": [
+        "integration",
+        "learnings",
+        "build"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "/fh:learnings"
+        },
+        {
+          "type": "regex",
+          "pattern": "improvement|pattern|workflow"
+        }
+      ]
+    },
+    {
+      "id": 362,
+      "command": "build",
+      "prompt": "how does the build skill decide which codebase mapping file to inject into subagent prompts?",
+      "expected_output": "Should explain task-type routing: UI tasks get CONVENTIONS.md + STRUCTURE.md, API tasks get ARCHITECTURE.md + CONVENTIONS.md, DB tasks get ARCHITECTURE.md + STACK.md, test tasks get TESTING.md + CONVENTIONS.md, infra tasks get STACK.md + INTEGRATIONS.md. Should mention claude-mem smart_search as preferred method with Read fallback.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Describes task-type routing for codebase files",
+          "type": "output"
+        },
+        {
+          "text": "Mentions multiple granular files by name",
+          "type": "output"
+        },
+        {
+          "text": "References claude-mem smart_search with Read fallback",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "full",
+      "tags": [
+        "documentation",
+        "build",
+        "granular"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "CONVENTIONS|STRUCTURE|ARCHITECTURE"
+        },
+        {
+          "type": "regex",
+          "pattern": "UI|API|DB|test|infra"
+        },
+        {
+          "type": "regex",
+          "pattern": "smart_search|claude.mem|Read.*fallback"
+        }
+      ]
+    },
+    {
+      "id": 363,
+      "command": "map-codebase",
+      "prompt": "map-codebase --refresh-stale but claude-mem is not available",
+      "expected_output": "Should detect claude-mem is unavailable, fall back to full refresh based on commit count freshness. Should NOT error out. Should explain that --refresh-stale requires claude-mem for targeted refresh and is falling back to full mapping.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Falls back to full refresh when claude-mem unavailable",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT error when claude-mem is missing",
+          "type": "guard"
+        },
+        {
+          "text": "Explains the fallback reason",
+          "type": "output"
+        }
+      ],
+      "tier": "full",
+      "tags": [
+        "edge-case",
+        "degradation",
+        "claude-mem"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "fall.?back|full.*refresh|not.*available"
+        },
+        {
+          "type": "regex",
+          "pattern": "claude.mem|smart_search"
         }
       ]
     }

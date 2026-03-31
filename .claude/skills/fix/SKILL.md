@@ -203,7 +203,8 @@ Body: root cause, fix applied, test added, commit hash.
 Commit: `docs({phase}): fix summary for {description}`
 
 Update STATE.md: note the fix, update position.
-If known issue in CONCERNS.md, note resolution with commit hash.
+If known issue in `.planning/codebase/CONCERNS.md`, note resolution with commit hash.
+For bug investigation context: use `.planning/codebase/ARCHITECTURE.md` to understand system layers, `.planning/codebase/CONVENTIONS.md` for coding patterns, and `.planning/codebase/CONCERNS.md` for other known issues related to the fix.
 
 ### DECISIONS.md Correction (if applicable)
 

@@ -83,9 +83,9 @@ If `.planning/codebase/` doesn't exist, skip silently.
 Advisory only — never block.
 
 ### Architecture Artifacts Check
-Check for `.planning/codebase/FLOWS.md` and `.planning/codebase/ERD.md`.
-If missing, warn: "No FLOWS.md/ERD.md found. Run `/fh:map-codebase` to generate architecture artifacts for impact analysis."
-If present, note their existence for use in Section 4 Impact Radius Analysis.
+Check for `.planning/codebase/FLOWS.md`, `.planning/codebase/ERD.md`, `.planning/codebase/ARCHITECTURE.md`, and `.planning/codebase/STRUCTURE.md`.
+If FLOWS.md/ERD.md are missing, warn: "No FLOWS.md/ERD.md found. Run `/fh:map-codebase` to generate architecture artifacts for impact analysis."
+If ARCHITECTURE.md or STRUCTURE.md are present, note their existence for use in Section 4 Impact Radius Analysis — ARCHITECTURE.md documents system layers and boundaries, STRUCTURE.md documents the directory layout and module organization.
 
 ---
 
