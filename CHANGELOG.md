@@ -8,6 +8,12 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.59.1] - 2026-03-31
+
+### Fixed
+- **Auto orchestrator discovery** — adds fallback path resolution when FHHS_SKILLS_ROOT is unset or stale, with a hard guard preventing manual inline execution
+- **Phase names in auto metrics** — step history entries now include phase_name for human-readable tracker and metrics display
+
 ## [1.59.0] - 2026-03-30
 
 ### Added

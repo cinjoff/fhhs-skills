@@ -2110,6 +2110,7 @@ async function main() {
         });
         _autoStatus.stepHistory.push({
           phase: phase.id,
+          phase_name: phase.name,
           step,
           status: 'success',
           elapsed_ms: stepElapsedMs,
@@ -2434,6 +2435,7 @@ async function main() {
       const planMetrics = parseSessionMetrics(planStdout);
       _autoStatus.stepHistory.push({
         phase: phase.id,
+        phase_name: phase.name,
         step: 'plan-work',
         status: 'success',
         elapsed_ms: 0,
@@ -2584,6 +2586,7 @@ async function main() {
         // Record step in step_history
         _autoStatus.stepHistory.push({
           phase: phase.id,
+          phase_name: phase.name,
           step: 'plan-review',
           status: 'success',
           elapsed_ms: 0,
@@ -2795,6 +2798,7 @@ async function main() {
             // Record step in step_history
             _autoStatus.stepHistory.push({
               phase: phase.id,
+              phase_name: phase.name,
               step: 'build',
               status: 'success',
               elapsed_ms: 0,
@@ -2924,6 +2928,7 @@ async function main() {
             ? Date.now() - new Date(_autoStatus.stepStartedAt).getTime() : 0;
           _autoStatus.stepHistory.push({
             phase: phase.id,
+            phase_name: phase.name,
             step,
             status: 'success',
             elapsed_ms: seqStepElapsedMs,

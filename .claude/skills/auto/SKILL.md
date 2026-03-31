@@ -308,16 +308,28 @@ Confirm the config was set successfully before proceeding.
 **`FHHS_SKILLS_ROOT` is set by `/fh:setup` and refreshed by `/fh:update`.** Use it directly — no discovery needed:
 
 ```bash
-if [ -z "$FHHS_SKILLS_ROOT" ]; then
-  echo "ERROR: FHHS_SKILLS_ROOT not set. Run /fh:setup to configure."
+# Resolve ORCHESTRATOR path with fallback discovery
+ORCHESTRATOR=""
+if [ -n "$FHHS_SKILLS_ROOT" ] && [ -f "$FHHS_SKILLS_ROOT/.claude/skills/auto/auto-orchestrator.cjs" ]; then
+  ORCHESTRATOR="$FHHS_SKILLS_ROOT/.claude/skills/auto/auto-orchestrator.cjs"
+else
+  # FHHS_SKILLS_ROOT is unset or stale — search for latest installed version
+  LATEST=$(ls -d "$HOME/.claude/plugins/cache/fhhs-skills/fh/"*/ 2>/dev/null | sort -V | tail -1)
+  if [ -n "$LATEST" ] && [ -f "${LATEST}.claude/skills/auto/auto-orchestrator.cjs" ]; then
+    ORCHESTRATOR="${LATEST}.claude/skills/auto/auto-orchestrator.cjs"
+    echo "Note: FHHS_SKILLS_ROOT was stale — using latest installed version at $LATEST"
+    echo "Run /fh:setup to fix FHHS_SKILLS_ROOT permanently."
+  fi
+fi
+
+if [ -z "$ORCHESTRATOR" ]; then
+  echo "FATAL: auto-orchestrator.cjs not found."
+  echo "FHHS_SKILLS_ROOT=$FHHS_SKILLS_ROOT"
+  echo "Run /fh:setup to reconfigure the plugin path."
+  echo "STOP — do NOT proceed to execute phases manually. The orchestrator is required."
   exit 1
 fi
-ORCHESTRATOR="$FHHS_SKILLS_ROOT/.claude/skills/auto/auto-orchestrator.cjs"
-if [ ! -f "$ORCHESTRATOR" ]; then
-  echo "ERROR: orchestrator not found at $ORCHESTRATOR"
-  echo "FHHS_SKILLS_ROOT=$FHHS_SKILLS_ROOT may be stale. Run /fh:setup to reconfigure."
-  exit 1
-fi
+
 node "$ORCHESTRATOR" \
   --project-dir "$(pwd)" \
   --start-phase "${START_PHASE}" \
@@ -326,6 +338,8 @@ node "$ORCHESTRATOR" \
   ${DRY_RUN:+--dry-run} \
   ${RESUME:+--resume}
 ```
+
+**CRITICAL:** If the Bash command above fails (non-zero exit, or prints FATAL), **STOP immediately**. Do NOT attempt to run the phases manually or inline. The orchestrator is a required external process — the skill cannot substitute for it. Tell the user the exact error and suggest running `/fh:setup`.
 
 The orchestrator runs phases using `claude -p` for fresh-context sessions. Each session receives:
 - `--plugin-dir` pointing to the fh plugin root (so `/fh:` skills are available)
@@ -481,7 +495,7 @@ When invoked with `--check-corrections`, the orchestrator runs in a separate mod
 
 Invoke via:
 ```bash
-node "$FHHS_SKILLS_ROOT/.claude/skills/auto/auto-orchestrator.cjs" --project-dir "$(pwd)" --check-corrections
+node "$ORCHESTRATOR" --project-dir "$(pwd)" --check-corrections
 ```
 
 This mode is useful after a human reviews DECISIONS.md and marks entries as CORRECTED — the cascade propagates those corrections to affected artifacts automatically where possible.
