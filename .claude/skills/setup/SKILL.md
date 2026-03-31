@@ -32,9 +32,15 @@ as a single status table:
 | FHHS_SKILLS_ROOT           | ✓ {path} / ✗ not set          |
 | Hooks                      | ✓ configured / ✗ not configured |
 | claude-mem                 | ✓ installed / ○ not installed |
+| Native task tracking       | ✓ disabled / ✗ enabled        |
+| SKIP_TOOLS (Read/Glob/Grep)| ✓ not skipped / ✗ skipped    |
 | Fallow                     | ✓ installed / ○ not installed |
 | shadcn skills              | ✓ installed / ○ not installed |
 ```
+
+**Quick check logic for Native task tracking:** Read `~/.claude/settings.json` and check if `env.CLAUDE_CODE_ENABLE_TASKS` is `"0"`. If not set or set to anything else → `✗ enabled`.
+
+**Quick check logic for SKIP_TOOLS:** Read `~/.claude-mem/settings.json` and check if `CLAUDE_MEM_SKIP_TOOLS` contains `Read`, `Glob`, or `Grep`. If any are present → `✗ skipped`.
 
 If any required component (Node, LSP, CLI tools, hooks) is missing:
 ```
@@ -645,6 +651,8 @@ Read `~/.claude-mem/settings.json` using the **Read tool**. If it doesn't exist,
 }
 ```
 
+**Important:** If the existing `~/.claude-mem/settings.json` contains `Read`, `Glob`, or `Grep` in `CLAUDE_MEM_SKIP_TOOLS`, remove them — they are high-signal observation sources that should NOT be skipped.
+
 After applying, display:
 
 ```
@@ -654,23 +662,22 @@ After applying, display:
   ┌─────────────────────────────────────┬─────────┬─────────────┐
   │ Setting                             │ Default │ Applied     │
   ├─────────────────────────────────────┼─────────┼─────────────┤
-  │ CONTEXT_OBSERVATIONS                │ 50      │ 500         │
-  │ CONTEXT_SESSION_COUNT               │ 10      │ 50          │
-  │ CONTEXT_FULL_COUNT                  │ 5       │ 15          │
+  │ CONTEXT_OBSERVATIONS                │ 50      │ 0 (on-demand) │
+  │ CONTEXT_SESSION_COUNT               │ 10      │ 0 (on-demand) │
+  │ CONTEXT_FULL_COUNT                  │ 5       │ 0 (on-demand) │
   │ CONTEXT_FULL_FIELD                  │ —       │ narrative   │
-  │ FOLDER_CLAUDEMD_ENABLED             │ false   │ false       │
-  │ CONTEXT_SHOW_LAST_SUMMARY           │ true    │ true        │
+  │ FOLDER_CLAUDEMD_ENABLED             │ true    │ false       │
+  │ CONTEXT_SHOW_LAST_SUMMARY           │ true    │ false       │
   │ CONTEXT_SHOW_LAST_MESSAGE           │ true    │ false       │
   │ CONTEXT_SHOW_READ/WORK/SAVINGS      │ —       │ true        │
   │ CONTEXT_SHOW_TERMINAL_OUTPUT        │ —       │ true        │
   │ MAX_CONCURRENT_AGENTS               │ 4       │ 8           │
   └─────────────────────────────────────┴─────────┴─────────────┘
 
-  Why: fhhs-skills relies heavily on claude-mem for cross-session
-  continuity. /fh:auto runs many parallel agents that all generate
-  observations — high limits ensure nothing is lost. "narrative"
-  mode gives richer context than "facts" for complex multi-phase
-  work. Token stats visible so users can monitor context budget.
+  Why: fhhs-skills skills query claude-mem on-demand instead of
+  auto-injecting context. This saves tokens and gives skills control
+  over what context they pull. Token stats visible so users can
+  monitor context budget.
 
   Adjust further via dashboard at localhost:37777 or
   edit ~/.claude-mem/settings.json directly.
@@ -692,6 +699,22 @@ Add to the project's `.claude/settings.json`:
 Display:
 ```
 ✓ Native memory disabled — claude-mem handles cross-session context
+```
+
+---
+
+## Step 6b½: Disable Native Task Tracking
+
+Native task tracking must be disabled — progress is tracked via claude-mem timeline instead.
+
+Use the **Read tool** to load `~/.claude/settings.json`, then use the **Edit tool** to:
+- Set `CLAUDE_CODE_ENABLE_TASKS` to `"0"` in the `env` object (add if missing)
+- Remove `CLAUDE_CODE_TASK_LIST_ID` from the `env` object entirely if present
+
+Display:
+```
+✓ Native task tracking disabled (CLAUDE_CODE_ENABLE_TASKS="0")
+  Progress tracked via claude-mem timeline instead
 ```
 
 ---
@@ -927,7 +950,8 @@ Then present the status table and next steps as regular markdown text:
 | CLI Tools                  | ✓ linked                 |
 | Hooks                      | ✓ statusline + update check + context monitor |
 | claude-mem                 | ✓ installed / ○ skipped (optional)       |
-| Native memory              | ✓ disabled / ⚠ still enabled             |
+| Native task tracking       | ✓ disabled / ⚠ still enabled             |
+| SKIP_TOOLS                 | ✓ correct / ⚠ Read/Glob/Grep being skipped |
 | Fallow                     | ✓ installed / ⚠ manual install needed    |
 | shadcn skills              | ✓ installed / ⚠ manual install needed    |
 | Conductor                  | ✓ detected / ○ not installed (optional) |

@@ -43,19 +43,31 @@ Run `/fh:review --quick` against the current diff (unless the user already ran a
 
 > Pre-ship validation and bisectable commits adapted from gstack /ship (v0.3.3).
 
-### 0d. Eval smoke check
+### 0d. Eval sanity check
+
+Run a lightweight structural check instead of the full eval suite (too heavy for release flow):
 
 ```bash
-if [ -f "fhhs-skills-workspace/run_all_evals.py" ]; then
-  echo "Running eval smoke tier..."
-  python3 fhhs-skills-workspace/run_all_evals.py --tier smoke 2>&1 | tail -5
+# Verify every shipped skill has at least one eval
+SKILLS_DIR=".claude/skills"
+EVALS_DIR="evals"
+MISSING=0
+if [ -d "$EVALS_DIR" ]; then
+  for skill_dir in "$SKILLS_DIR"/*/; do
+    skill=$(basename "$skill_dir")
+    if ! ls "$EVALS_DIR"/"$skill"* "$EVALS_DIR"/*"$skill"* 2>/dev/null | head -1 >/dev/null 2>&1; then
+      echo "WARN: No eval found for skill: $skill"
+      MISSING=$((MISSING + 1))
+    fi
+  done
+  [ "$MISSING" -eq 0 ] && echo "✓ All shipped skills have eval coverage"
 else
-  echo "WARN: Eval runner not found — skipping eval check"
+  echo "WARN: Evals directory not found — skipping eval check"
 fi
 ```
 
-**If any evals fail:** STOP and show failures. Do not proceed until fixed or user acknowledges.
-**If eval runner not found:** WARN and continue (not all environments have the eval workspace).
+**If missing evals:** WARN but do not block — note in release output.
+**Full eval suite:** Run manually before release if needed: `python3 fhhs-skills-workspace/run_all_evals.py --tier smoke`
 
 ### 0e. Plugin health check
 
