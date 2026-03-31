@@ -861,25 +861,18 @@ If installed, display:
   │ $CONDUCTOR_DEFAULT_BRANCH  │ Default branch (usually main)    │
   └────────────────────────────┴──────────────────────────────────┘
 
-  Task tracking: Each workspace gets its own task list via the
-  setup script, which writes CLAUDE_CODE_TASK_LIST_ID into
-  .claude/settings.json using the workspace name.
+  Native task tracking is disabled (CLAUDE_CODE_ENABLE_TASKS="0").
+  Progress is tracked via claude-mem timeline instead.
   /fh:new-project configures this automatically.
 
   If you have an existing project, create conductor.json manually:
 
     {
       "scripts": {
-        "setup": "npm install && ln -sf \"$CONDUCTOR_ROOT_PATH/.env.local\" .env.local 2>/dev/null; true; ln -sf \"$CONDUCTOR_ROOT_PATH/.vercel\" .vercel 2>/dev/null; true; node -e \"var fs=require('fs'),f='.claude/settings.json',s={};try{s=JSON.parse(fs.readFileSync(f,'utf8'))}catch{}s.env=Object.assign(s.env||{},{CLAUDE_CODE_TASK_LIST_ID:process.env.CONDUCTOR_WORKSPACE_NAME||'default'});fs.writeFileSync(f,JSON.stringify(s,null,2)+'\\n')\"",
-        "run": "npm run dev -- --port $CONDUCTOR_PORT",
-        "archive": "rm -rf \"$HOME/.claude/tasks/${CONDUCTOR_WORKSPACE_NAME}\" 2>/dev/null; true"
+        "setup": "npm install && ln -sf \"$CONDUCTOR_ROOT_PATH/.env.local\" .env.local 2>/dev/null; true; ln -sf \"$CONDUCTOR_ROOT_PATH/.vercel\" .vercel 2>/dev/null; true",
+        "run": "npm run dev -- --port $CONDUCTOR_PORT"
       },
     }
-
-  Note: CLAUDE_CODE_TASK_LIST_ID must be set via the setup script
-  (not the env block) because Conductor does not interpolate shell
-  variables in env values. The setup script has access to
-  $CONDUCTOR_WORKSPACE_NAME and writes it to .claude/settings.json.
 ```
 
 ---

@@ -418,7 +418,19 @@ else:
 | ✓ | Native memory            | Disabled — claude-mem provides superior cross-session memory |
 ```
 
-**5. Stale projects check:**
+**5. Native task tracking (always enforced):**
+
+Use the Read tool to load `~/.claude/settings.json`, then use the Edit tool to:
+- Set `CLAUDE_CODE_ENABLE_TASKS` to `"0"` in the `env` object (add if missing)
+- Remove `CLAUDE_CODE_TASK_LIST_ID` from the `env` object entirely if present
+
+Add to reconciliation table:
+
+```
+| ✓ | CLAUDE_CODE_ENABLE_TASKS | Forced to "0" — tasks disabled, progress tracked via claude-mem timeline |
+```
+
+**6. Stale projects check:**
 
 Suggest the user check claude-mem for observations from projects tied to removed worktrees. This is informational only — do not auto-delete.
 
@@ -490,6 +502,7 @@ Use the **Read tool** to load `~/.claude/settings.json`, then use the **Edit too
 | ID | Value |
 |----|-------|
 | `CLAUDE_CODE_ENABLE_LSP` | `"1"` |
+| `CLAUDE_CODE_ENABLE_TASKS` | `"0"` |
 | `CLAUDE_CWD` | Derive from `process.cwd()` or `$CONDUCTOR_ROOT_PATH` — NOT a static value |
 | `CLAUDE_MEM_PROJECT` | Derive from `git rev-parse --git-common-dir` (worktree-safe) — NOT a static value |
 | Any other env | `"true"` (safe default) |
