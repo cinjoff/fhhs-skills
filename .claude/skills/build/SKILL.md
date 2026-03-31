@@ -90,27 +90,21 @@ If claude-mem is not available, fall back to Read/Grep/Glob directly — read th
 
 ### Reference Warm-Up (once per build)
 
-Shared references are static between updates — read them once here and inject into all subagent prompts. This eliminates N redundant reads per build (N = number of tasks).
+Shared references (`testing-guide.md`, `claude-mem-rules.md`) are static between plugin updates. Extract task-relevant sections once here and inject into all subagent prompts — eliminates N redundant full-file reads per build.
 
-**If context-mode is available** (`mcp__plugin_context-mode_context-mode__ctx_batch_execute`):
-```
-ctx_batch_execute({
-  commands: [
-    "cat .claude/skills/shared/testing-guide.md",
-    "cat .claude/skills/shared/claude-mem-rules.md"
-  ]
-})
-```
-Then use `ctx_search({queries: ["TDD red-green-refactor", "Playwright E2E locator"]})` to extract task-relevant sections. Store results as `SHARED_REFERENCES_CACHE`.
+**If claude-mem is available** (smart_outline/smart_unfold tools):
+1. `smart_outline({path: ".claude/skills/shared/testing-guide.md"})` — get heading structure
+2. For each task type, `smart_unfold` the relevant section:
+   - Tasks with `tdd="true"`: `smart_unfold({path: "...", symbol: "Part B"})` + `smart_unfold({..., symbol: "Part C"})`
+   - Tasks with E2E/Playwright scope: `smart_unfold({..., symbol: "Part D"})` + `smart_unfold({..., symbol: "Part C"})`
+   - All other tasks: `smart_unfold({..., symbol: "Part A"})` + `smart_unfold({..., symbol: "Part C"})`
+3. Store extracted sections as `SHARED_REFERENCES_CACHE`
 
-**If context-mode is not available**: Read both files via the Read tool. Store full content as `SHARED_REFERENCES_CACHE`.
+**If claude-mem is not available**: Read `testing-guide.md` once via the Read tool. Store full content as `SHARED_REFERENCES_CACHE`.
 
 **If both fail**: Leave `SHARED_REFERENCES_CACHE` empty — subagents will read files directly (graceful degradation).
 
-Inject `SHARED_REFERENCES_CACHE` into each subagent prompt via the `{SHARED_REFERENCES}` placeholder in the implementer-prompt. For task-specific filtering:
-- Tasks with `tdd="true"`: include Part B (TDD Discipline) + Part C (Stack Defaults)
-- Tasks with E2E/Playwright scope: include Part D (Playwright) + Part C
-- All other tasks: include Part A (Philosophy) + Part C only
+Inject `SHARED_REFERENCES_CACHE` into each subagent prompt via the `{SHARED_REFERENCES}` placeholder in the implementer-prompt.
 
 ---
 
@@ -356,38 +350,16 @@ Run fallow-based impact analysis on all files modified across the phase:
 If fallow is not installed or times out (30s), skip Gate 0 with warning: "fallow unavailable, skipping integration check".
 If fallow JSON is malformed, skip with warning: "fallow output unparseable, skipping integration check".
 
-### Gate 1 + Gate 2 (parallel)
-
-Dispatch in parallel:
+### Gate 1
 
 **Gate 1: Goal Verification**
 - For each `must_haves.truth` across all phase plans: find evidence (file exists, content matches, test passes)
 - Run `gsd-tools verify artifacts` and `gsd-tools verify key-links` for each plan
 - Requirements coverage: every requirement ID from ROADMAP in any plan's `requirements` must appear in at least one SUMMARY
 
-**Gate 1.5: Security Review (phase completion only)**
-
-Dispatch a `code-reviewer` agent with:
-- The production-safety-checklist from `.claude/skills/review/references/production-safety-checklist.md`
-- The full phase diff: `git diff $(git log --oneline --reverse --since="$(node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs config-get state.phase_started_at 2>/dev/null || echo '30 days ago')" | head -1 | cut -d' ' -f1)..HEAD`
-- Focus: OWASP top 10, input validation, auth bypass, XSS, SQL injection, secrets exposure
-- Severity: CRITICAL findings block. HIGH findings warn. MEDIUM/LOW pass with notes.
-
-This gate runs ONLY at phase completion (when all plans in the phase are done), not per-plan.
-If production-safety-checklist is not found, skip with warning.
-
-**Gate 2: Design Quality Gates (visual work only)**
-- Read `.planning/DESIGN.MD` and `.planning/PROJECT.MD` for design context (skip if missing)
-- Calculate visual file ratio across ALL phase plans (`.tsx`, `.css`, `.html`, `.svg` files / total files)
-- If visual ratio > 30% OR phase targets UI:
-  - **Round 1 (parallel):** `/fh:ui-critique` + `/fh:harden`. Fix Critical/High. Commit: `fix({phase}): critique + harden`
-  - **Round 2 (parallel):** `/fh:polish` + `/fh:adapt`. Fix Critical/High. Commit: `fix({phase}): polish + adapt`
-  - **Round 3:** `/fh:normalize` if design system defined. Commit: `fix({phase}): normalize`
-- If visual ratio ≤ 30% and phase doesn't target UI, skip.
-
 ### Gate 3: Final Verification
 
-Uses Step 4's verification results if from the same session. Only re-runs if Gate 2 made changes (design fixes could break tests).
+Uses Step 4's verification results if from the same session.
 
 **Architecture artifact refresh:**
 If `.planning/codebase/FLOWS.md` exists:
@@ -431,8 +403,7 @@ Route based on phase status:
 | Phase complete, more phases | "Phase complete." Suggest `/fh:plan-work {next}` or `/fh:review`. Also suggest `/fh:learnings --update-claude-md`. |
 | Last phase in milestone | "Milestone complete." Run `gsd-tools.cjs milestone complete`. Suggest `/fh:learnings --update-claude-md`. |
 
-Suggest `/fh:review` for deeper scrutiny (adds spec verification + gap analysis).
-If frontend changes: suggest `/fh:ui-test` for visual verification.
+Run `/fh:review` for quality refinement — it handles design quality, security, performance, and code simplification as needed.
 
 If claude-mem is installed (check: the Learnings Digest substep in Step 4 ran successfully), add to the phase-complete and milestone-complete routes:
 

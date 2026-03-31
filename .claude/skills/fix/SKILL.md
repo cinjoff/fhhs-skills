@@ -72,25 +72,6 @@ This step should consume <2% context. Don't deep-dive the errors yet — just su
 
 ---
 
-## Step 0½: Fallow Static Analysis (if available)
-
-Before triaging, gather deterministic findings from Fallow to augment investigation.
-
-```bash
-if command -v fallow &>/dev/null; then
-  FALLOW_CHECK=$(fallow check --format json --quiet 2>/dev/null) || FALLOW_CHECK=""
-  FALLOW_HEALTH=$(fallow health --format json --quiet 2>/dev/null) || FALLOW_HEALTH=""
-fi
-```
-
-If Fallow ran and produced output:
-- **`fallow check`** — unused exports, circular dependencies. If the bug involves an import or wiring issue, these findings are definitive ground truth.
-- **`fallow health`** — complexity metrics. High-complexity functions near the bug site are more likely to harbor subtle issues.
-
-**Cap:** Keep under 1% context. Filter to files mentioned in the bug report or error trace. Skip if Fallow is not installed — no mention in output.
-
----
-
 ## Step 1: Triage
 
 Quickly assess bug depth before choosing strategy. Spend <5% context.
@@ -130,12 +111,12 @@ Execute the chosen path:
 
 ## Step 2: TDD Fix
 
-Read `skills/test-driven-development/PROMPT.md` and follow it completely:
+If claude-mem is available, try `smart_search({query: "TDD red-green-refactor testing discipline"})` first — shared testing rules are often cached from prior sessions. If no results or claude-mem unavailable, read `.claude/skills/shared/testing-guide.md`. Follow Part B (TDD Discipline) completely:
 - **RED:** Write failing test proving the bug
 - **GREEN:** Minimal fix
 - **REFACTOR:** Cleanup
 
-If the bug is in frontend code and the project uses Playwright (check for `playwright.config.*`), write the failing test using Playwright patterns from `.claude/skills/playwright-testing/PROMPT.md`. Follow the Page Object Model pattern for test structure and use role-based locators (`getByRole`, `getByLabel`) over CSS selectors. See `.claude/skills/playwright-testing/PROMPT.md` for the full locator priority and assertion patterns.
+If the bug is in frontend code and the project uses Playwright (check for `playwright.config.*`), follow Part D (E2E with Playwright) from the testing guide, and read `.claude/skills/playwright-testing/PROMPT.md` for the full decision tree. Use Page Object Model, role-based locators (`getByRole`, `getByLabel`), and web-first assertions.
 
 **Breakpoint-specific verification:** If the fix targets a CSS/layout bug at a specific viewport or breakpoint, verify at that exact breakpoint. Resize to the target width (e.g., 768px for tablet, 375px for mobile) and confirm the layout is correct. If Playwright is available, use `page.setViewportSize()` in the test.
 
@@ -161,8 +142,8 @@ If the fix touches `.tsx`, `.css`, components, or styles:
 ### Context-Mode Acceleration
 
 When checking DECISIONS.md for related entries or reading DESIGN.md for frontend context:
-- If ctx_search is available: use `ctx_search` with queries like "decisions affecting {file}" and "design context for {component}". Faster and more compact than reading full files.
-- If not available: fall back to reading the files directly.
+- If claude-mem is available (check tool list for `mcp__plugin_claude-mem_*`): use `mcp__plugin_claude-mem_mcp-search__smart_search` with query="decisions affecting {file}" or "design context for {component}". Faster and more compact than reading full files.
+- If not available, fall back to Read/Grep/Glob directly.
 - Check against `skills/frontend-design/PROMPT.md` anti-patterns — no generic cards, cyan-on-dark, purple gradients, or other AI slop introduced by the fix
 - If significant UI change, suggest `/fh:ui-test`
 
@@ -191,7 +172,7 @@ or summary if the fix isn't verified.
 After the fix is verified, search the codebase for similar vulnerable patterns:
 
 1. Identify the root cause pattern (e.g., missing null check, unvalidated input, race condition)
-2. Use Grep or `ctx_search` to find similar patterns in other files
+2. If claude-mem is available (check tool list for `mcp__plugin_claude-mem_*`), use `mcp__plugin_claude-mem_mcp-search__smart_search` to find similar patterns in other files. If not available, fall back to Read/Grep/Glob directly.
 3. If similar vulnerabilities found: fix them now if trivial (<5 lines each), or note them in the summary as "Related patterns found in: {files}" for follow-up
 
 This step prevents the same class of bug from recurring elsewhere. Skip only if the root cause is truly unique to this one location.
@@ -245,7 +226,7 @@ Budget: <2% context.
 ### Persist Findings
 
 After the fix is verified, output a structured summary so claude-mem captures it for future sessions:
-1. If ctx_search is available, query for root cause analysis from this session's indexed data
+1. If claude-mem is available (check tool list for `mcp__plugin_claude-mem_*`), use `mcp__plugin_claude-mem_mcp-search__smart_search` to query for root cause analysis from this session's context. If not available, fall back to Read/Grep/Glob directly.
 2. Skip if the fix was trivial (single typo, missing import, config change)
 3. Output each significant finding as:
    **[fix-learning]** {subsystem/file}: {root cause pattern} → {fix approach that worked}

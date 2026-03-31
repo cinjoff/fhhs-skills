@@ -95,25 +95,12 @@ Before doing anything else, run a system audit. This is not the plan review — 
 
 ### Phase Context Check
 
-If ctx_search is available, verify the phase context index exists by running:
-`ctx_search(queries: ["project vision", "architecture patterns"])`
+If claude-mem is available (check tool list for `mcp__plugin_claude-mem_*`), use `smart_search` to check for prior planning context:
+`mcp__plugin_claude-mem_mcp-search__smart_search` with query="project vision architecture patterns", project=<project-name>
 
-If results are returned, the bootstrap from plan-work is still active — use ctx_search throughout this review instead of reading .planning/ files directly.
+If results are returned, claude-mem has observations from prior sessions — use them to supplement your review context.
 
-If no results (fresh session without shared context-mode DB), run the bootstrap:
-```
-ctx_batch_execute([
-  { label: "PROJECT", cmd: "cat .planning/PROJECT.md" },
-  { label: "ROADMAP", cmd: "cat .planning/ROADMAP.md" },
-  { label: "DESIGN", cmd: "cat .planning/DESIGN.md" },
-  { label: "CODEBASE", cmd: "cat .planning/codebase/CODEBASE.md 2>/dev/null || cat .planning/codebase/ARCHITECTURE.md .planning/codebase/STRUCTURE.md .planning/codebase/CONVENTIONS.md .planning/codebase/TESTING.md .planning/codebase/STACK.md 2>/dev/null" },
-  { label: "PROJECT_RESEARCH", cmd: "cat .planning/research/*.md 2>/dev/null || echo ''" },
-], queries: ["architecture", "conventions", "design context"])
-```
-
-Also indexes `.planning/research/*.md` (project-level research) and phase-specific RESEARCH.md when available.
-
-If ctx_search is not available, skip silently and use direct file reads as today.
+If not available, fall back to Read/Grep/Glob directly to read `.planning/PROJECT.md`, `.planning/ROADMAP.md`, `.planning/DESIGN.md`, `.planning/codebase/` files, and `.planning/research/*.md`.
 
 Run the following commands:
 ```bash
@@ -162,15 +149,16 @@ If it does, read it and verify during the review that:
 - LOW confidence findings from research are handled with appropriate caution
 If misalignment is found, surface it as an issue during Architecture Review (Section 1).
 
-### Context-Mode Acceleration
+### Claude-Mem Acceleration
 
-Before reading CONTEXT.md, DECISIONS.md, and RESEARCH.md files directly, check if ctx_search is available:
-- If available: use `ctx_search` with targeted queries like "locked decisions for phase {phase}", "research pitfalls for {topic}", and "design context for {project}". This retrieves relevant entries in a compact, relevance-ranked format.
-- If not available: fall back to reading the files directly.
+If claude-mem is available (check tool list for `mcp__plugin_claude-mem_*`), use `smart_search` for targeted queries before reading files directly:
+- `smart_search` with query="locked decisions for phase {phase}", project=<project-name>
+- `smart_search` with query="research pitfalls for {topic}", project=<project-name>
+- `smart_search` with query="design context", project=<project-name>
 
-If the Phase Context Bootstrap ran (either in this session or a prior plan-work step sharing the same session ID), CONTEXT.md, DECISIONS.md, and RESEARCH.md are already indexed. Prefer ctx_search over direct Read for these files.
+claude-mem observations persist across sessions, so prior plan-work context is automatically available.
 
-ctx_search is especially valuable for plan-review since it reads more .planning/ state than any other skill.
+If not available, fall back to Read/Grep/Glob directly for CONTEXT.md, DECISIONS.md, and RESEARCH.md files.
 
 ### Past Learnings Check
 
@@ -342,40 +330,30 @@ This section traces data through the system and interactions through the UI with
 
 For every plan with `files_modified`, run impact analysis using available tools:
 
-**Step 1: Batch dependency analysis**
-If `fallow` is installed:
-```bash
-FALLOW_DEPS=$(timeout 30 fallow dead-code --format json --quiet 2>/dev/null) || FALLOW_DEPS=""
-FALLOW_HEALTH=$(timeout 30 fallow health --file-scores --format json --quiet 2>/dev/null) || FALLOW_HEALTH=""
-```
-If fallow is not available or times out, fall back to grep-based import tracing with warning.
-
-**Step 2: Classify blast radius for each file in files_modified**
-From FALLOW_HEALTH, extract fan_in per file:
-- fan_in >= 10 → CRITICAL (flag for deep analysis)
-- fan_in >= 5 → HIGH (flag for review)
-- fan_in >= 2 → MEDIUM (note)
-- fan_in < 2 → LOW (skip)
-
-**Step 3: Trace affected downstream files**
-From FALLOW_DEPS, for each CRITICAL/HIGH file, extract all `referenced_by` entries.
+**Step 1: Trace dependencies via LSP and grep**
 If LSP is available, run `incomingCalls` on key exports for call-chain depth=2.
 Timeout: 30s per LSP operation. Skip on timeout.
+Fall back to grep-based import tracing if LSP is unavailable.
 
-**Step 4: Cross-reference with user flows**
+**Step 2: Classify blast radius for each file in files_modified**
+Count grep/LSP import references per file:
+- 10+ importers → CRITICAL (flag for deep analysis)
+- 5–9 importers → HIGH (flag for review)
+- 2–4 importers → MEDIUM (note)
+- 0–1 importers → LOW (skip)
+
+**Step 3: Cross-reference with user flows**
 If `.planning/codebase/FLOWS.md` exists, grep each CRITICAL/HIGH file against flow-meta `files:` entries.
 Report which user flows are affected.
 
-**Step 5: Report**
+**Step 4: Report**
 Present as a table:
 ```
-FILE                  | BLAST RADIUS | FAN_IN | AFFECTED FLOWS        | DOWNSTREAM FILES
-src/lib/auth.ts       | CRITICAL     | 21     | login, platform-admin | roles.ts, layout.tsx, 9 pages...
+FILE                  | BLAST RADIUS | IMPORTERS | AFFECTED FLOWS        | DOWNSTREAM FILES
+src/lib/auth.ts       | CRITICAL     | 21        | login, platform-admin | roles.ts, layout.tsx, 9 pages...
 ```
 
 For each CRITICAL/HIGH file: check whether the plan includes tests that cover the affected downstream files. If not, flag as WARNING.
-
-Cache fallow JSON in context-mode for the session if ctx_batch_execute is available.
 
 **Data Flow Tracing:** For every new data flow, produce an ASCII diagram showing:
 ```
@@ -708,7 +686,7 @@ If any AskUserQuestion goes unanswered, note it here. Never silently default.
 ### Persist Findings
 
 After the review is complete, output key architectural decisions and concerns for future sessions:
-1. If ctx_search is available, query for the most significant findings from this review session
+1. If claude-mem is available, persist significant findings as observations for cross-session recall
 2. Only persist decisions and concerns with cross-session value — skip ephemeral scope discussions
 3. Output each finding as:
    **[plan-review-learning]** {area}: {decision or concern} — {rationale}

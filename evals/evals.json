@@ -924,23 +924,11 @@
       "id": 23,
       "command": "build",
       "prompt": "build the plan (plan has only frontend tasks - React component refactor, new page layout, CSS updates)",
-      "expected_output": "Should detect all tasks are frontend. Should dispatch subagents (model: sonnet) with frontend-design directives from skills/frontend-design/PROMPT.md. Phase completion Gate 2 runs design quality gates (critique -> polish -> normalize) since visual ratio > 30%. Should read .planning/DESIGN.md for design context. Should check for frontend anti-patterns (AI slop, emoji in UI, generic gradients). Should run verification gate (tests, build check, lint) before writing SUMMARY.md.",
+      "expected_output": "Should execute the frontend tasks via waves. Should dispatch subagents (model: sonnet) and run verification (tests, build check, lint) before writing SUMMARY.md. Build does NOT run design quality gates (ui-critique/polish/normalize) — those are review's responsibility. Should suggest /fh:review for quality gatekeeping after execution.",
       "files": [],
       "assertions": [
         {
-          "text": "Detects frontend-only plan",
-          "type": "behavioral"
-        },
-        {
-          "text": "Includes frontend-design directives in subagent prompts",
-          "type": "behavioral"
-        },
-        {
-          "text": "Phase completion Gate 2 runs design quality gates: critique -> polish -> normalize",
-          "type": "behavioral"
-        },
-        {
-          "text": "Design quality gates check UI conventions and patterns",
+          "text": "Dispatches subagents to execute tasks in waves",
           "type": "behavioral"
         },
         {
@@ -948,7 +936,11 @@
           "type": "behavioral"
         },
         {
-          "text": "Gate 2 runs design quality checks for frontend-heavy phase",
+          "text": "Does NOT run design quality gates (ui-critique/polish/normalize) — those belong to review",
+          "type": "guard"
+        },
+        {
+          "text": "Suggests /fh:review for quality follow-up",
           "type": "behavioral"
         }
       ],
@@ -1747,7 +1739,7 @@
       "id": 36,
       "command": "plan-work",
       "prompt": "Plan and build adding user settings page with a dark mode toggle. The project already has a ThemeProvider and uses Tailwind dark: prefix.",
-      "expected_output": "Should run /plan-work first: skips research (dark mode toggle is well-known pattern), brainstorms design options (toggle placement, persistence strategy, system preference detection), discusses with user, derives must_haves with user-facing truths, creates PLAN.md with proper frontmatter. Then /build: dispatches subagents (model: sonnet) that self-discover Next.js perf rules and do NOT commit. Orchestrator makes single commit per plan. Verification (tests, build, lint) runs before SUMMARY.md. Phase completion gates include design quality gates (critique+harden, polish+adapt, normalize). User runs /review (quality + gap + spec verification) and /simplify on demand. Should perform complexity assessment before deciding research path.",
+      "expected_output": "Should run /plan-work first: skips research (dark mode toggle is well-known pattern), brainstorms design options (toggle placement, persistence strategy, system preference detection), discusses with user, derives must_haves with user-facing truths, creates PLAN.md with proper frontmatter. Then /build: dispatches subagents (model: sonnet) that self-discover Next.js perf rules and do NOT commit. Orchestrator makes single commit per plan. Verification (tests, build, lint) runs before SUMMARY.md. Build does NOT run design quality gates — those run in /review. User runs /review (quality + gap + spec verification, including ui-critique for frontend) and /simplify on demand. Should perform complexity assessment before deciding research path.",
       "files": [
         "evals/fixtures/nextjs-app-deep/next.config.ts",
         "evals/fixtures/nextjs-app-deep/tsconfig.json",
@@ -1779,12 +1771,12 @@
           "type": "behavioral"
         },
         {
-          "text": "Phase completion gates run at end of phase: goal verification, design quality gates, verification-before-completion",
+          "text": "Phase completion gates run at end of phase: goal verification, verification-before-completion",
           "type": "behavioral"
         },
         {
-          "text": "Design quality gates (critique \u2192 polish \u2192 normalize) run at phase completion for frontend-heavy work",
-          "type": "behavioral"
+          "text": "Design quality gates (critique/polish/normalize) are NOT run by build — they run in /review",
+          "type": "guard"
         },
         {
           "text": "Simplify before /review",
@@ -5493,19 +5485,19 @@
       "id": 114,
       "command": "build",
       "prompt": "Build the new dashboard landing page. It has 4 tasks: hero section with animated charts, responsive nav bar, data visualization widgets, and accessibility audit. Execute the plan at .planning/phases/11-dashboard/11-01-PLAN.md",
-      "expected_output": "Should execute the 4 frontend tasks. After completion, should suggest /fh:ui-test for visual verification of the frontend-heavy work. Gate 2 (design quality) triggers when visual ratio > 30% or phase targets UI, running critique/polish/normalize checks.",
+      "expected_output": "Should execute the 4 frontend tasks via waves. After completion, should suggest /fh:review for quality gatekeeping (which handles ui-critique for frontend) and /fh:ui-test for visual verification. Build does NOT run critique/polish/normalize gates directly.",
       "files": [],
       "assertions": [
         {
-          "text": "Suggests /fh:ui-test for frontend-heavy work",
+          "text": "Suggests /fh:review for quality gatekeeping after frontend work",
           "type": "behavioral"
         },
         {
-          "text": "Gate 2 triggers design quality gates for high visual ratio",
-          "type": "behavioral"
+          "text": "Does NOT run design quality gates (critique/polish/normalize) directly in build",
+          "type": "guard"
         },
         {
-          "text": "Recognizes frontend-prominent work for quality gates",
+          "text": "Completes all 4 tasks in execution waves",
           "type": "behavioral"
         }
       ],
@@ -11951,6 +11943,218 @@
         {
           "type": "regex",
           "pattern": "update|direction"
+        }
+      ]
+    },
+    {
+      "id": 348,
+      "command": "review",
+      "prompt": "review code with duplicated patterns",
+      "expected_output": "Should detect DRY violations and dispatch simplify sub-skill to address duplication. Should identify the duplicated patterns, propose consolidation, and report quality findings.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects DRY violations in the code",
+          "type": "behavioral"
+        },
+        {
+          "text": "Dispatches simplify sub-skill for duplication",
+          "type": "behavioral"
+        },
+        {
+          "text": "Reports quality findings with actionable recommendations",
+          "type": "output"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "smoke",
+        "review",
+        "quality"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "review"
+        },
+        {
+          "type": "regex",
+          "pattern": "simplify|DRY|duplication"
+        },
+        {
+          "type": "regex",
+          "pattern": "quality"
+        }
+      ]
+    },
+    {
+      "id": 349,
+      "command": "review",
+      "prompt": "review my React component changes",
+      "expected_output": "Should detect frontend/React code and dispatch ui-critique sub-skill for visual and design review. Should assess layout, readability, and component design quality.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects frontend React code",
+          "type": "behavioral"
+        },
+        {
+          "text": "Dispatches ui-critique sub-skill for visual design review",
+          "type": "behavioral"
+        },
+        {
+          "text": "Reports frontend-specific quality findings",
+          "type": "output"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "smoke",
+        "review",
+        "frontend"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "review"
+        },
+        {
+          "type": "regex",
+          "pattern": "ui-critique|visual|design"
+        },
+        {
+          "type": "regex",
+          "pattern": "frontend|React|component"
+        }
+      ]
+    },
+    {
+      "id": 350,
+      "command": "build",
+      "prompt": "build the current plan",
+      "expected_output": "Should execute the plan tasks in waves, verify with tests and build checks, and write SUMMARY.md. Should NOT run design quality gates (ui-critique/polish/normalize) — those are review's responsibility. Build stays lean: execute, verify, summarize.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Executes plan tasks in waves",
+          "type": "behavioral"
+        },
+        {
+          "text": "Runs verification (tests, build, lint) before SUMMARY",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT run ui-critique, polish, or normalize gates",
+          "type": "guard"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ],
+      "tier": "smoke",
+      "tags": [
+        "smoke",
+        "build",
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "build"
+        },
+        {
+          "type": "regex",
+          "pattern": "execute|wave|task"
+        },
+        {
+          "type": "regex",
+          "pattern": "verify|test"
+        }
+      ]
+    },
+    {
+      "id": 351,
+      "command": "review",
+      "prompt": "review code and check for recurring patterns",
+      "expected_output": "Should use claude-mem smart_search to surface recurring patterns from project history. Should dispatch quality-refine sub-skill with persistent pattern knowledge from claude-mem.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Uses claude-mem smart_search to check for recurring patterns",
+          "type": "behavioral"
+        },
+        {
+          "text": "Dispatches quality-refine sub-skill",
+          "type": "behavioral"
+        },
+        {
+          "text": "Surfaces patterns from project history",
+          "type": "output"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "smoke",
+        "review",
+        "quality",
+        "claude-mem"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "review"
+        },
+        {
+          "type": "regex",
+          "pattern": "claude-mem|smart_search|pattern"
+        },
+        {
+          "type": "regex",
+          "pattern": "quality.refin|sub-skill|sub_skill"
+        }
+      ]
+    },
+    {
+      "id": 352,
+      "command": "auto",
+      "prompt": "run autonomous execution on this project",
+      "expected_output": "Should run full autonomous loop: plan, build, then a complete final review using quality-refine sub-skills. The final review phase should be thorough — not skipped or abbreviated — covering quality, architecture, and goal verification.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Runs full plan-build-review loop autonomously",
+          "type": "behavioral"
+        },
+        {
+          "text": "Final review is complete — not abbreviated or skipped",
+          "type": "behavioral"
+        },
+        {
+          "text": "Quality-refine sub-skills run in final review phase",
+          "type": "behavioral"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ],
+      "tier": "smoke",
+      "tags": [
+        "smoke",
+        "auto",
+        "happy-path"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "auto"
+        },
+        {
+          "type": "regex",
+          "pattern": "final.review|final review|complete review"
+        },
+        {
+          "type": "regex",
+          "pattern": "quality.refin|quality-refine|complete"
         }
       ]
     }

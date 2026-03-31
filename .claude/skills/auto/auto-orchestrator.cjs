@@ -201,6 +201,7 @@ const STUCK_KILL_BY_STEP = {
   'plan-review': 8 * 60 * 1000,
   'build': 15 * 60 * 1000,     // builds can go silent during compilation/testing
   'review': 8 * 60 * 1000,
+  'final-review': 10 * 60 * 1000, // full review at end is comprehensive — slightly higher threshold
 };
 const MAX_RETRIES = 2;
 const API_HEALTH_TIMEOUT_MS = 15000;     // 15s for health check
@@ -484,7 +485,6 @@ function validateAutoState(state) {
 function loadAutoState(projectDir) {
   const p = autoStatePath(projectDir);
   if (!fs.existsSync(p)) return null;
-  let parsed;
   try {
     const raw = fs.readFileSync(p, 'utf-8');
     const state = JSON.parse(raw);
@@ -664,7 +664,7 @@ function parseSessionMetrics(stdout) {
     num_turns: 0, duration_api_ms: 0,
     context_window_pct: 0,
     tool_calls: {},  // { Read: N, Edit: N, Bash: N, ... }
-    read_calls: 0, ctx_search_hits: 0,
+    read_calls: 0,
   };
   // claude -p with --output-format json emits JSON-lines (one object per line),
   // not a single JSON object. Parse each line and accumulate usage.
@@ -693,7 +693,6 @@ function parseSessionMetrics(stdout) {
   }
   // Legacy counters (kept for backward compat)
   metrics.read_calls = (stdout.match(/"tool":"Read"/g) || []).length;
-  metrics.ctx_search_hits = (stdout.match(/ctx_search|ctx_batch_execute/g) || []).length;
   // Context window utilization: estimate % of 200K context used
   // (input tokens represent the cumulative context seen by the model)
   const CONTEXT_LIMIT = 200000;
@@ -724,13 +723,12 @@ function aggregatePhaseMetrics(stepHistory, phaseId) {
   for (const entry of (stepHistory || [])) {
     if (!entry.phase) continue;
     if (!phases[entry.phase]) {
-      phases[entry.phase] = { tokens_in: 0, tokens_out: 0, cost_estimate: 0, elapsed_ms: 0, steps: 0, read_calls: 0, ctx_search_hits: 0 };
+      phases[entry.phase] = { tokens_in: 0, tokens_out: 0, cost_estimate: 0, elapsed_ms: 0, steps: 0, read_calls: 0 };
     }
     const p = phases[entry.phase];
     p.tokens_in += (entry.metrics && entry.metrics.tokens_in) || 0;
     p.tokens_out += (entry.metrics && entry.metrics.tokens_out) || 0;
     p.read_calls += (entry.metrics && entry.metrics.read_calls) || 0;
-    p.ctx_search_hits += (entry.metrics && entry.metrics.ctx_search_hits) || 0;
     p.cost_estimate += entry.cost_estimate || 0;
     p.elapsed_ms += entry.elapsed_ms || 0;
     p.steps++;
@@ -749,23 +747,27 @@ function resolveProjectName(cwd) {
       return process.env.CLAUDE_MEM_PROJECT.trim();
     }
 
-    // Tier 2: Conductor workspace detection — extract project name from path pattern
-    // /Users/x/conductor/workspaces/{project-name}/{branch-name}/
-    const conductorMatch = cwd.match(/\/conductor\/workspaces\/([^/]+)\//);
-    if (conductorMatch) {
-      return conductorMatch[1];
+    // Tier 2: GitHub remote nameWithOwner (e.g., "cinjoff/fhhs-skills")
+    try {
+      const nameWithOwner = execFileSync('gh', ['repo', 'view', '--json', 'nameWithOwner', '-q', '.nameWithOwner'], {
+        cwd,
+        timeout: 5000,
+        stdio: ['ignore', 'pipe', 'ignore'],
+      }).toString().trim();
+      if (nameWithOwner && nameWithOwner.includes('/')) {
+        return nameWithOwner;
+      }
+    } catch {
+      // gh not installed or not in a GitHub repo — fall through
     }
 
-    // Tier 3: Git common dir for worktree support (returns /path/to/repo/.git)
-    const commonDir = execFileSync('git', ['rev-parse', '--git-common-dir'], {
+    // Tier 3: Git toplevel basename (last resort)
+    const toplevel = execFileSync('git', ['rev-parse', '--show-toplevel'], {
       cwd,
       timeout: 5000,
       stdio: ['ignore', 'pipe', 'ignore'],
     }).toString().trim();
-    const resolved = path.resolve(cwd, commonDir);
-    // Strip trailing /.git or /.git/worktrees/xxx
-    const repoRoot = resolved.replace(/\/\.git(\/worktrees\/[^/]+)?$/, '');
-    return path.basename(repoRoot);
+    return path.basename(toplevel);
   } catch {
     return path.basename(cwd);
   }
@@ -785,16 +787,9 @@ function runClaudeSession(prompt, opts) {
       '--plugin-dir', pluginDir,
     ];
 
-    // Resolve MCP plugin directories for context-mode and claude-mem
+    // Resolve MCP plugin directories for claude-mem
     const homeDir = require('os').homedir();
     const pluginCacheDir = path.join(homeDir, '.claude', 'plugins', 'cache');
-
-    // Find context-mode — check common install locations
-    const contextModeDirs = [
-      path.join(pluginCacheDir, 'context-mode'),
-      path.join(homeDir, '.claude', 'context-mode'),
-    ];
-    const contextModeDir = contextModeDirs.find(d => fs.existsSync(d));
 
     // Find claude-mem
     const claudeMemDirs = [
@@ -803,10 +798,6 @@ function runClaudeSession(prompt, opts) {
     ];
     const claudeMemDir = claudeMemDirs.find(d => fs.existsSync(d));
 
-    if (contextModeDir) {
-      args.push('--plugin-dir', contextModeDir);
-      log(`  MCP: context-mode from ${contextModeDir}`);
-    }
     if (claudeMemDir) {
       args.push('--plugin-dir', claudeMemDir);
       log(`  MCP: claude-mem from ${claudeMemDir}`);
@@ -831,6 +822,8 @@ function runClaudeSession(prompt, opts) {
         ...process.env,
         ...(opts.sessionId ? { CLAUDE_SESSION_ID: opts.sessionId } : {}),
         CLAUDE_MEM_PROJECT: projectName,
+        CLAUDE_MEM_CONTEXT_OBSERVATIONS: '0',
+        CLAUDE_MEM_SKIP_TOOLS: 'ListMcpResourcesTool,ReadMcpResourceTool,SlashCommand,Skill,TodoWrite,AskUserQuestion,ToolSearch,TaskCreate,TaskUpdate,TaskGet,TaskList,TaskOutput,TaskStop,SendMessage,EnterPlanMode,ExitPlanMode,EnterWorktree,ExitWorktree,LSP,CronCreate,CronDelete,CronList,TeamCreate,TeamDelete,NotebookEdit,mcp__plugin_claude-mem_mcp-search____IMPORTANT,mcp__plugin_claude-mem_mcp-search__search,mcp__plugin_claude-mem_mcp-search__get_observations,mcp__plugin_claude-mem_mcp-search__timeline,mcp__plugin_claude-mem_mcp-search__smart_search,mcp__plugin_claude-mem_mcp-search__smart_unfold,mcp__plugin_claude-mem_mcp-search__smart_outline',
       },
     });
 
@@ -1008,8 +1001,12 @@ async function executeStep(projectDir, phaseId, step, planPath) {
         `You are in auto mode (workflow.auto_advance=true). Read .planning/STATE.md and .planning/ROADMAP.md for context. ` +
         `Plan phase ${phaseId}. Phase goal: "${phaseGoal}". ` +
         `Use /fh:plan-work to create the plan. Auto-decide all gray areas using best judgment. ` +
+        `PLANNING QUALITY RULES: ` +
+        `(1) Assess scope FIRST — if the phase has >6 requirements or decomposes into independent features, create MULTIPLE focused plans (3-4 tasks each) rather than one large plan. ` +
+        `(2) Each plan must stay under 2500 words and target <60% context usage. ` +
+        `(3) Task actions must be specific enough that a different Claude instance could execute without clarifying questions. ` +
+        `(4) Check claude-mem for past learnings about this domain before making architectural decisions. ` +
         `Write the plan to .planning/phases/ directory. Do not ask questions — make decisions autonomously.` +
-        ` Prefer ctx_search over Read for planning docs that were pre-indexed.` +
         researchHint,
         { cwd: projectDir, sessionId, stepName: 'plan-work' }
       );
@@ -1037,8 +1034,7 @@ async function executeStep(projectDir, phaseId, step, planPath) {
       const relPlan = path.relative(projectDir, latestPlan);
       return await runClaudeSession(
         `You are in auto mode. Execute the plan at ${relPlan} using /fh:build. ` +
-        `Phase goal: "${phaseGoal}". Build all tasks, run tests, commit changes. Do not ask questions.` +
-        ` Prefer ctx_search over Read for planning and source files that were pre-indexed.`,
+        `Phase goal: "${phaseGoal}". Build all tasks, run tests, commit changes. Do not ask questions.`,
         { cwd: projectDir, sessionId, stepName: 'build' }
       );
     }
@@ -1589,12 +1585,6 @@ function assignWaves(depGraph) {
 
   return waves;
 }
-
-// ─── Pre-Index Shared Docs ────────────────────────────────────────────────────
-
-/**
- * (Removed: preIndexSharedDocs — context bootstrapping delegated to skills)
- */
 
 // ─── Session History ──────────────────────────────────────────────────────────
 
@@ -2268,10 +2258,7 @@ async function main() {
     // State write reduction: in stable runs write only at phase start/end
     let stableRun = true;
 
-    // Context bootstrapping delegated to skills (plan-work Step -0.5 indexes into shared per-project DB)
-    const crypto = require('crypto');
-    const ctxDbHash = crypto.createHash('sha256').update(projectDir).digest('hex').slice(0, 16);
-    log(`  Context-mode DB: ~/.claude/context-mode/sessions/${ctxDbHash}.db (shared across all steps)`);
+    // Context bootstrapping delegated to skills and claude-mem
 
     // ── Exclude already-complete phases from pipeline entirely ──────────────────
     const completedPhaseIds = new Set();
@@ -2405,6 +2392,11 @@ async function main() {
           ` Read .planning/STATE.md and .planning/ROADMAP.md for context. ` +
           `Plan phase ${phase.id}. Phase goal: "${phaseGoal}". ` +
           `Use /fh:plan-work to create the plan. Auto-decide all gray areas using best judgment. ` +
+          `PLANNING QUALITY RULES: ` +
+          `(1) Assess scope FIRST — if the phase has >6 requirements or decomposes into independent features, create MULTIPLE focused plans (3-4 tasks each) rather than one large plan. ` +
+          `(2) Each plan must stay under 2500 words and target <60% context usage. ` +
+          `(3) Task actions must be specific enough that a different Claude instance could execute without clarifying questions. ` +
+          `(4) Check claude-mem for past learnings about this domain before making architectural decisions. ` +
           `Write the plan to .planning/phases/ directory. Do not ask questions — make decisions autonomously.` +
           researchHint + assumeEarlier + decisionsRedirect,
           { cwd: projectDir, sessionId }
@@ -2991,6 +2983,50 @@ async function main() {
     }
   } // end else (pipeline)
 
+  // ── Final full review (all phases combined) ──────────────────────────────────
+  // Per-phase reviews use --quick for speed. After all phases complete, run one
+  // comprehensive /fh:review (no --quick) to catch cross-cutting quality issues
+  // and dispatch Quality Refinement sub-skills as needed.
+  let finalReviewStatus = 'SKIP';
+  if (_autoStatus.phasesCompleted > 0) {
+    log('');
+    log('── Final quality review (all phases) ──');
+    finalReviewStatus = 'RUNNING';
+    const finalReviewStarted = Date.now();
+    try {
+      await runClaudeSession(
+        `You are in auto mode. All build phases are complete. ` +
+        `Run /fh:review (full review, no --quick flag) covering the entire branch diff — all phases combined. ` +
+        `Evaluate quality holistically, dispatch sub-skills as needed, and fix any issues found. Do not ask questions.`,
+        { cwd: projectDir, sessionId: 'final-review', stepName: 'final-review' }
+      );
+      finalReviewStatus = 'PASS';
+      log('  ✓ Final review complete');
+    } catch (err) {
+      const elapsedMin = Math.round((Date.now() - finalReviewStarted) / 60000);
+      if (err.message && (err.message.includes('STUCK') || err.message.includes('timeout') || err.message.includes('SIGTERM') || err.message.includes('SIGKILL'))) {
+        finalReviewStatus = 'TIMEOUT';
+        log(`  ⚠ Final review timed out after ${elapsedMin}m — skipping (auto still complete)`);
+      } else {
+        finalReviewStatus = 'WARN';
+        log(`  ⚠ Final review error after ${elapsedMin}m: ${err.message.slice(0, 120)} — skipping (auto still complete)`);
+      }
+    }
+
+    // Record in step_history
+    _autoStatus.stepHistory.push({
+      phase: 'all',
+      phase_name: 'all',
+      step: 'final-review',
+      status: finalReviewStatus === 'PASS' ? 'complete' : 'warn',
+      elapsed_ms: 0,
+      tokens_in: 0,
+      tokens_out: 0,
+      cost_estimate: 0,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
   // Write session history before final status
   appendSessionHistory(projectDir);
 
@@ -3019,8 +3055,11 @@ async function main() {
   log(`  Decisions logged: ${decisionsLogged}`);
   log(`  Cost estimate: $${totalCostEstimate.toFixed(2)}${opts.budget ? ` / $${opts.budget} budget` : ''}`);
   log(`  Duration: ${durationMin}m`);
+  if (finalReviewStatus !== 'SKIP') {
+    log(`  Final review: ${finalReviewStatus}`);
+  }
 
-  // Per-phase cost breakdown table with ctx_search efficiency
+  // Per-phase cost breakdown table
   const phaseCosts = aggregatePhaseMetrics(_autoStatus.stepHistory);
   printMilestoneCostSummary(phaseCosts);
 
@@ -3044,8 +3083,7 @@ async function main() {
 // ─── Milestone Cost Summary ───────────────────────────────────────────────────
 
 /**
- * Print a formatted cost summary table with ctx_search efficiency per phase.
- * Flags phases below 50% efficiency with a warning suffix.
+ * Print a formatted cost summary table per phase.
  */
 function printMilestoneCostSummary(phaseCosts) {
   const phaseIds = Object.keys(phaseCosts || {});
@@ -3053,50 +3091,34 @@ function printMilestoneCostSummary(phaseCosts) {
 
   log('');
   log('=== Milestone Cost Summary ===');
-  log('  Phase                | Steps | Tokens In | Tokens Out | Reads | ctx Hits | Efficiency | Cost    | Time');
-  log('  ---------------------|-------|-----------|------------|-------|----------|------------|---------|------');
+  log('  Phase                | Steps | Tokens In | Tokens Out | Reads | Cost    | Time');
+  log('  ---------------------|-------|-----------|------------|-------|---------|------');
 
-  let totSteps = 0, totIn = 0, totOut = 0, totReads = 0, totCtx = 0, totCost = 0, totMs = 0;
-  const lowEfficiency = [];
+  let totSteps = 0, totIn = 0, totOut = 0, totReads = 0, totCost = 0, totMs = 0;
 
   for (const pid of phaseIds) {
     const pc = phaseCosts[pid];
     const reads = pc.read_calls || 0;
-    const ctxHits = pc.ctx_search_hits || 0;
-    const denom = reads + ctxHits;
-    const efficiency = denom > 0 ? Math.round((ctxHits / denom) * 100) : 0;
-    const flag = (denom > 0 && efficiency < 50) ? ' \u26A0' : '';
-    if (denom > 0 && efficiency < 50) lowEfficiency.push(pid);
 
     const padPhase = pid.padEnd(21);
     const padSteps = String(pc.steps).padStart(5);
     const padIn = String(pc.tokens_in).padStart(9);
     const padOut = String(pc.tokens_out).padStart(10);
     const padReads = String(reads).padStart(5);
-    const padCtx = String(ctxHits).padStart(8);
-    const padEff = (efficiency + '%' + flag).padStart(10 + flag.length);
     const padCost = ('$' + pc.cost_estimate.toFixed(2)).padStart(7);
     const padTime = (Math.round(pc.elapsed_ms / 60000) + 'm').padStart(5);
-    log(`  ${padPhase} | ${padSteps} | ${padIn} | ${padOut} | ${padReads} | ${padCtx} | ${padEff} | ${padCost} | ${padTime}`);
+    log(`  ${padPhase} | ${padSteps} | ${padIn} | ${padOut} | ${padReads} | ${padCost} | ${padTime}`);
 
     totSteps += pc.steps;
     totIn += pc.tokens_in;
     totOut += pc.tokens_out;
     totReads += reads;
-    totCtx += ctxHits;
     totCost += pc.cost_estimate;
     totMs += pc.elapsed_ms;
   }
 
-  const totDenom = totReads + totCtx;
-  const totEff = totDenom > 0 ? Math.round((totCtx / totDenom) * 100) : 0;
-  log('  ---------------------|-------|-----------|------------|-------|----------|------------|---------|------');
-  log(`  ${'TOTAL'.padEnd(21)} | ${String(totSteps).padStart(5)} | ${String(totIn).padStart(9)} | ${String(totOut).padStart(10)} | ${String(totReads).padStart(5)} | ${String(totCtx).padStart(8)} | ${(totEff + '%').padStart(10)} | ${('$' + totCost.toFixed(2)).padStart(7)} | ${(Math.round(totMs / 60000) + 'm').padStart(5)}`);
-
-  if (lowEfficiency.length > 0) {
-    log('');
-    log(`  Phases below 50% ctx efficiency may benefit from better pre-indexing`);
-  }
+  log('  ---------------------|-------|-----------|------------|-------|---------|------');
+  log(`  ${'TOTAL'.padEnd(21)} | ${String(totSteps).padStart(5)} | ${String(totIn).padStart(9)} | ${String(totOut).padStart(10)} | ${String(totReads).padStart(5)} | ${('$' + totCost.toFixed(2)).padStart(7)} | ${(Math.round(totMs / 60000) + 'm').padStart(5)}`);
 }
 
 // Export for testing when required as a module

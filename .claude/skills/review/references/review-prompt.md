@@ -151,6 +151,33 @@ If no Fallow data is provided, use your existing analysis approach for these are
 
 ---
 
+## Quality Refinement Category Flags
+
+At the end of your report, include a `### Quality Refinement Signals` section. For each category below, indicate whether findings from your review trigger it. This section is consumed by Step 2.5 (Quality Refinement) — be accurate and concise.
+
+| Category | Flag as triggered if... |
+|---|---|
+| `simplify` | You found 2+ DRY violations, code duplication, or redundant patterns |
+| `harden` | You found any unhandled error path in changed code (swallowed errors, missing rejection handling, no-op catch blocks) |
+| `adapt` | Frontend files were changed AND you found cross-device, responsive, or accessibility gaps |
+| `normalize` | Frontend files were changed AND you found design system drift (inconsistent tokens, spacing, component usage) |
+| `ui-critique` | Visual file ratio exceeds 30% of changed files OR you found explicit UI quality concerns (layout issues, AI-generated aesthetic slop) |
+
+Output format (add at the end of your report):
+
+```
+### Quality Refinement Signals
+- simplify: YES — [brief reason] / NO
+- harden: YES — [brief reason] / NO
+- adapt: YES — [brief reason] / NO
+- normalize: YES — [brief reason] / NO
+- ui-critique: YES — [brief reason] / NO
+```
+
+If none are triggered, write: `Quality Refinement Signals: none — no sub-skill triggers met.`
+
+---
+
 ## Severity Classification
 
 - **Critical:** Bugs, security issues, data loss risks, broken functionality. **Must fix before merge.**
