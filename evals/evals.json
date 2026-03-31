@@ -7165,7 +7165,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Effective concurrency is 1 despite higher concurrency setting",
+          "text": "When all phases share files_modified, the dependency graph forces sequential build order",
           "type": "behavioral"
         }
       ],
@@ -7721,7 +7721,7 @@
     {
       "id": 171,
       "command": "auto",
-      "prompt": "Context-mode is not installed on this system. How does the auto pipeline ensure build agents still get project conventions, locked decisions, and architecture context without ctx_search?",
+      "prompt": "claude-mem is not installed on this system. How does the auto pipeline ensure build agents still get project conventions, locked decisions, and architecture context without smart_search?",
       "assertions": [
         {
           "type": "keyword",
@@ -7733,11 +7733,11 @@
         },
         {
           "type": "behavioral",
-          "text": "Describes how project conventions and architecture context are injected into agent prompts when context-mode is unavailable"
+          "text": "Describes how project conventions and architecture context are injected into agent prompts when claude-mem is unavailable"
         },
         {
           "type": "behavioral",
-          "text": "The pipeline still works without context-mode by falling back to direct file reads and template injection"
+          "text": "Pipeline still functions without claude-mem by falling back to direct file reads"
         }
       ],
       "tier": "micro",
@@ -7849,7 +7849,7 @@
     {
       "id": 174,
       "command": "auto",
-      "prompt": "How does the auto pipeline minimize token usage across 10 phases? Specifically, how does pre-indexing and ctx_search-first reduce redundant file reads in build agents?",
+      "prompt": "How does the auto pipeline minimize token usage across 10 phases? Specifically, how does claude-mem observations and smart_search-first reduce redundant file reads in build agents?",
       "assertions": [
         {
           "text": "Stable planning docs are indexed once and shared across all 4 steps via CLAUDE_SESSION_ID",
@@ -7860,7 +7860,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Post-wave re-indexing ensures next wave sees fresh content without re-reading",
+          "text": "Wave 2 agents can query Wave 1 observations via smart_search without explicit re-indexing",
           "type": "behavioral"
         }
       ],
@@ -7873,7 +7873,7 @@
         {
           "type": "required_terms",
           "terms": [
-            "ctx_search"
+            "smart_search"
           ]
         },
         {
@@ -7927,7 +7927,7 @@
     {
       "id": 176,
       "command": "auto",
-      "prompt": "In the auto pipeline, plan-work indexes 9 stable docs into context-mode. Then plan-review runs. Then build runs with source file pre-indexing. How does the pipeline avoid re-reading the same planning docs (PROJECT.md, ARCHITECTURE.md, etc.) across these 4 steps?",
+      "prompt": "In the auto pipeline, plan-work observes file reads via claude-mem PostToolUse hook. Then plan-review runs. Then build runs with source file pre-indexing. How does the pipeline avoid re-reading the same planning docs (PROJECT.md, ARCHITECTURE.md, etc.) across these 4 steps?",
       "assertions": [
         {
           "text": "All 4 steps share one context-mode FTS5 database via a common CLAUDE_SESSION_ID",
@@ -7981,7 +7981,7 @@
           "type": "behavioral"
         },
         {
-          "text": "The unified patch adds env var check as the first tier in gp() before worktree and basename detection",
+          "text": "CLAUDE_MEM_PROJECT environment variable is injected by the orchestrator to ensure correct project attribution",
           "type": "behavioral"
         }
       ],
@@ -8010,7 +8010,7 @@
     {
       "id": 178,
       "command": "auto",
-      "prompt": "A build agent for task 3 needs to understand the project's authentication patterns before editing src/auth/login.ts. With context-mode available and source files pre-indexed in Step 3, what should the agent do? What if context-mode is NOT available?",
+      "prompt": "A build agent for task 3 needs to understand the project's authentication patterns before editing src/auth/login.ts. With claude-mem available, what should the agent do to get context, and what is the fallback if claude-mem is not installed?",
       "assertions": [
         {
           "text": "With context-mode: agent uses ctx_search to query for auth patterns from the pre-indexed source files",
@@ -8035,12 +8035,12 @@
         {
           "type": "required_terms",
           "terms": [
-            "ctx_search"
+            "smart_search"
           ]
         },
         {
           "type": "regex",
-          "pattern": "fallback|without.*context|not.*available|unavailable"
+          "pattern": "fallback|without.*claude-mem|not.*available|unavailable"
         },
         {
           "type": "regex",
@@ -9478,7 +9478,7 @@
           "type": "output"
         },
         {
-          "text": "Does NOT construct path using only normalizePhaseName() which drops the slug suffix",
+          "text": "Phase path resolution handles fractional phases like 04.5 correctly without dropping the slug suffix",
           "type": "guard"
         }
       ],
@@ -9513,7 +9513,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Does NOT return null when STATE.md uses Active Phase instead of Current Phase",
+          "text": "Correctly handles STATE.md with both Active Phase and Current Phase field names in parseCurrentPhase",
           "type": "guard"
         }
       ],
@@ -9523,14 +9523,16 @@
         "guard",
         "state-parsing"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "Active Phase",
-          "Current Phase",
-          "parseCurrentPhase"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "Active Phase",
+            "Current Phase",
+            "parseCurrentPhase"
+          ]
+        }
+      ]
     },
     {
       "id": 285,
@@ -9562,19 +9564,21 @@
         "guard",
         "completion-detection"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "SUMMARY.md",
-          "summaryExists",
-          "findLatestPlan"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "SUMMARY.md",
+            "summaryExists",
+            "findLatestPlan"
+          ]
+        }
+      ]
     },
     {
       "id": 286,
       "command": "auto",
-      "prompt": "The auto orchestrator writes .auto-state.json for the tracker dashboard. What mechanism prevents the tracker from reading a half-written JSON file during a write?",
+      "prompt": "The auto orchestrator writes .auto-state.json for the tracker dashboard. What mechanism prevents the tracker from reading a half-written JSON file during a write? Read the auto-orchestrator.cjs source code and identify the specific atomic write pattern used (e.g., write to temp file then rename).",
       "expected_output": "All three write paths (writeAutoStatus, saveAutoState, and the debounced log() updater) use atomic writes: write to a .tmp file first, then fs.renameSync() to the target path. rename is atomic on POSIX filesystems, so the tracker always reads either the old complete file or the new complete file, never a partial write.",
       "files": [],
       "assertions": [
@@ -9601,14 +9605,15 @@
         "atomicity",
         "tracker"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "renameSync",
-          ".tmp",
-          "atomic"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "atomic",
+            "rename"
+          ]
+        }
+      ]
     },
     {
       "id": 287,
@@ -9640,15 +9645,17 @@
         "crash-recovery",
         "state-persistence"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "saveAutoState",
-          "planning-wave-complete",
-          "review-wave-complete",
-          "phase_plan_paths"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "saveAutoState",
+            "planning-wave-complete",
+            "review-wave-complete",
+            "phase_plan_paths"
+          ]
+        }
+      ]
     },
     {
       "id": 288,
@@ -9676,14 +9683,16 @@
         "sequential-mode",
         "state-persistence"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "saveAutoState",
-          "sequential",
-          "steps_completed"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "saveAutoState",
+            "sequential",
+            "steps_completed"
+          ]
+        }
+      ]
     },
     {
       "id": 289,
@@ -9711,15 +9720,15 @@
         "tracker",
         "completion"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "auto-state.json",
-          "active",
-          "false",
-          "clearAutoState"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "active",
+            "false"
+          ]
+        }
+      ]
     },
     {
       "id": 290,
@@ -9755,14 +9764,16 @@
         "tracker",
         "frontend"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "stepAliases",
-          "plan-work",
-          "plan-review"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "stepAliases",
+            "plan-work",
+            "plan-review"
+          ]
+        }
+      ]
     },
     {
       "id": 291,
@@ -9798,14 +9809,16 @@
         "tracker",
         "server"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "buildProjectSummary",
-          "autoState",
-          ".auto-state.json"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "buildProjectSummary",
+            "autoState",
+            ".auto-state.json"
+          ]
+        }
+      ]
     },
     {
       "id": 292,
@@ -9840,14 +9853,16 @@
         "happy-path",
         "global-update"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "global",
-          "projects.json",
-          "reconcil"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "global",
+            "projects.json",
+            "reconcil"
+          ]
+        }
+      ]
     },
     {
       "id": 293,
@@ -9882,14 +9897,16 @@
         "edge-case",
         "global-update"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "stale",
-          "removed",
-          "registry"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "stale",
+            "removed",
+            "registry"
+          ]
+        }
+      ]
     },
     {
       "id": 294,
@@ -9920,14 +9937,16 @@
         "edge-case",
         "global-update"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "planning",
-          "skip",
-          "reconcil"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "planning",
+            "skip",
+            "reconcil"
+          ]
+        }
+      ]
     },
     {
       "id": 295,
@@ -9959,14 +9978,16 @@
         "global-update",
         "conductor"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "worktree",
-          "git-common-dir",
-          "workspace"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "worktree",
+            "git-common-dir",
+            "workspace"
+          ]
+        }
+      ]
     },
     {
       "id": 296,
@@ -9997,14 +10018,16 @@
         "edge-case",
         "global-update"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "gap",
-          "reconcil",
-          "/fh:update"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "gap",
+            "reconcil",
+            "/fh:update"
+          ]
+        }
+      ]
     },
     {
       "id": 297,
@@ -10031,14 +10054,16 @@
         "edge-case",
         "global-update"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "projects.json",
-          "conductor",
-          "scan"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "projects.json",
+            "conductor",
+            "scan"
+          ]
+        }
+      ]
     },
     {
       "id": 298,
@@ -10069,14 +10094,16 @@
         "happy-path",
         "global-update"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "--global",
-          "projects",
-          "reconcil"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "--global",
+            "projects",
+            "reconcil"
+          ]
+        }
+      ]
     },
     {
       "id": 299,
@@ -10103,14 +10130,16 @@
         "happy-path",
         "global-update"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "reconcil",
-          "tracker",
-          "health"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "reconcil",
+            "tracker",
+            "health"
+          ]
+        }
+      ]
     },
     {
       "id": 300,
@@ -10141,12 +10170,14 @@
         "onboarding",
         "phase-04"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "/fh:setup"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "/fh:setup"
+          ]
+        }
+      ]
     },
     {
       "id": 301,
@@ -10181,13 +10212,15 @@
         "onboarding",
         "phase-04"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "SETUP STATUS",
-          "check"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "SETUP STATUS",
+            "check"
+          ]
+        }
+      ]
     },
     {
       "id": 302,
@@ -10218,15 +10251,17 @@
         "fallow",
         "integration"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "fallow check",
-          "fallow health",
-          "Static Analysis Data",
-          "command -v fallow"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "fallow check",
+            "fallow health",
+            "Static Analysis Data",
+            "command -v fallow"
+          ]
+        }
+      ]
     },
     {
       "id": 303,
@@ -10257,13 +10292,15 @@
         "fallow",
         "degradation"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "graceful",
-          "skip"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "graceful",
+            "skip"
+          ]
+        }
+      ]
     },
     {
       "id": 304,
@@ -10294,14 +10331,16 @@
         "fallow",
         "integration"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "Fallow Scope Augmentation",
-          "circular dependency",
-          "unused exports"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "Fallow Scope Augmentation",
+            "circular dependency",
+            "unused exports"
+          ]
+        }
+      ]
     },
     {
       "id": 306,
@@ -10399,7 +10438,7 @@
     {
       "id": 308,
       "command": "auto",
-      "prompt": "Verify that auto-orchestrator.cjs checks for a .auto-kill sentinel file to allow external kill requests, and that server.cjs exposes a /api/kill endpoint to create it",
+      "prompt": "Verify that auto-orchestrator.cjs checks for a .auto-kill sentinel file to allow external kill requests, and that server.cjs exposes a /api/kill endpoint to create it Read the orchestrator source code to verify the specific shutdown sequence when the kill sentinel is detected.",
       "expected_output": "auto-orchestrator.cjs should check for existence of a .auto-kill file in its main loop and exit gracefully when found. server.cjs should expose a /api/kill POST endpoint that creates the .auto-kill sentinel file.",
       "files": [],
       "assertions": [
@@ -10412,7 +10451,7 @@
           "type": "output"
         },
         {
-          "text": "Kill sentinel triggers graceful shutdown, not abrupt process.exit",
+          "text": "Kill sentinel file detection leads to cleanup actions before the process exits, not an immediate process.exit()",
           "type": "behavioral"
         }
       ],
@@ -10871,31 +10910,37 @@
     {
       "id": 320,
       "command": "build",
-      "prompt": "Build the plan. context-mode is installed.",
-      "expected_output": "Should include token efficiency guidance and prefer ctx_search over Read for convention lookups",
+      "prompt": "Build the plan. claude-mem is installed with smart_search and smart_outline available.",
+      "expected_output": "Should prefer claude-mem smart_search/smart_outline for code exploration, include graceful degradation guard",
       "files": [],
       "assertions": [
         {
-          "text": "Includes token efficiency guidance when context-mode is installed",
+          "text": "Uses claude-mem smart tools for code exploration",
           "type": "behavioral"
         },
         {
-          "text": "Prefers ctx_search over Read for convention and pattern lookups",
+          "text": "Falls back to Read for files that need editing",
           "type": "behavioral"
         }
       ],
       "tier": "full",
       "tags": [
-        "context-mode",
+        "claude-mem",
+        "smart-explore",
         "token-efficiency"
       ],
       "checks": [
         {
-          "type": "required_terms",
-          "terms": [
-            "ctx_search",
-            "Token Efficiency"
-          ]
+          "type": "regex",
+          "pattern": "smart_search|smart_outline"
+        },
+        {
+          "type": "regex",
+          "pattern": "claude.mem|mcp__plugin_claude-mem"
+        },
+        {
+          "type": "regex",
+          "pattern": "fall.?back|not available|degradation"
         }
       ]
     },
@@ -11197,15 +11242,17 @@
         "serena",
         "degradation"
       ],
-      "checks": {
-        "type": "required_terms",
-        "terms": [
-          "find_symbol",
-          "find_referencing_symbols",
-          "rename_symbol",
-          "fallback"
-        ]
-      }
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "find_symbol",
+            "find_referencing_symbols",
+            "rename_symbol",
+            "fallback"
+          ]
+        }
+      ]
     },
     {
       "id": 329,
@@ -11684,6 +11731,226 @@
         {
           "type": "regex",
           "pattern": "smart_unfold|implementation detail|function.level"
+        }
+      ]
+    },
+    {
+      "id": 341,
+      "command": "plan-work",
+      "prompt": "Plan a new auth feature for my Next.js app. I don't have claude-mem installed \u2014 no mcp__plugin_claude-mem tools are available.",
+      "expected_output": "Should proceed with planning using Read/Grep/Glob fallbacks, never call mcp__plugin_claude-mem tools",
+      "files": [],
+      "assertions": [],
+      "tier": "smoke",
+      "tags": [
+        "claude-mem",
+        "degradation",
+        "plan-work"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "Read|Grep|Glob"
+        },
+        {
+          "type": "regex",
+          "pattern": "fall.?back|not available|skip"
+        },
+        {
+          "type": "regex",
+          "pattern": "Step [0-9]|phase|plan"
+        }
+      ]
+    },
+    {
+      "id": 342,
+      "command": "auto",
+      "prompt": "Run auto mode on phase 3. claude-mem is not available, no mcp__plugin_claude-mem tools exist.",
+      "expected_output": "Should proceed with auto execution without failing on missing claude-mem",
+      "files": [],
+      "assertions": [],
+      "tier": "full",
+      "tags": [
+        "claude-mem",
+        "degradation",
+        "auto"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "phase.?3|auto|execut"
+        },
+        {
+          "type": "regex",
+          "pattern": "claude.mem.*(not|unavail)|without.*claude.mem|fall.?back"
+        },
+        {
+          "type": "regex",
+          "pattern": "plan|build|review"
+        }
+      ]
+    },
+    {
+      "id": 343,
+      "command": "auto",
+      "prompt": "Run auto mode. My repo is github.com/acme/widgets. Make sure claude-mem observations use the right project name.",
+      "expected_output": "Should derive CLAUDE_MEM_PROJECT from gh repo nameWithOwner",
+      "files": [],
+      "assertions": [],
+      "tier": "full",
+      "tags": [
+        "claude-mem",
+        "auto",
+        "project-id"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "CLAUDE_MEM_PROJECT|nameWithOwner|project.*name"
+        },
+        {
+          "type": "regex",
+          "pattern": "acme.*widgets|gh repo"
+        },
+        {
+          "type": "regex",
+          "pattern": "env|subprocess|claude -p"
+        }
+      ]
+    },
+    {
+      "id": 344,
+      "command": "setup",
+      "prompt": "Run setup on my new project. I don't want claude-mem \u2014 when you ask me, I'll decline.",
+      "expected_output": "Should offer claude-mem as optional, accept decline gracefully, note skills work without it",
+      "files": [],
+      "assertions": [],
+      "tier": "smoke",
+      "tags": [
+        "claude-mem",
+        "setup",
+        "consent"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "optional|recommend|choice|consent|Y/n"
+        },
+        {
+          "type": "regex",
+          "pattern": "work without|skip|decline|not required"
+        },
+        {
+          "type": "regex",
+          "pattern": "cross.session|memory|observation"
+        }
+      ]
+    },
+    {
+      "id": 345,
+      "command": "plan-work",
+      "prompt": "I want to plan adding a payment system. Show me what tools the plan-work skill recommends for code exploration.",
+      "expected_output": "Should recommend smart_search/smart_outline/smart_unfold, NOT ctx_batch_execute or ctx_search",
+      "files": [],
+      "assertions": [],
+      "tier": "smoke",
+      "tags": [
+        "claude-mem",
+        "removal",
+        "guard"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "smart_search|smart_outline|smart_unfold"
+        },
+        {
+          "type": "regex",
+          "pattern": "claude.mem|progressive.disclosure"
+        },
+        {
+          "type": "negative_regex",
+          "pattern": "ctx_batch_execute|ctx_search|ctx_index"
+        }
+      ]
+    },
+    {
+      "id": 346,
+      "command": "learnings",
+      "prompt": "update claude md with recent learnings",
+      "expected_output": "Should run learnings --update-claude-md flow: check claude-mem, gather observations, surface patterns/gotchas/conventions, and update CLAUDE.md with approved additions",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Runs --update-claude-md flow (Section 4.5 only)",
+          "type": "behavioral"
+        },
+        {
+          "text": "Surfaces patterns, gotchas, or conventions from observations",
+          "type": "output"
+        },
+        {
+          "text": "Updates or proposes updates to CLAUDE.md",
+          "type": "output"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "smoke",
+        "learnings"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "learnings"
+        },
+        {
+          "type": "regex",
+          "pattern": "CLAUDE\\.md"
+        },
+        {
+          "type": "regex",
+          "pattern": "pattern|gotcha|convention"
+        }
+      ]
+    },
+    {
+      "id": 347,
+      "command": "ui-branding",
+      "prompt": "update my design direction",
+      "expected_output": "Should handle existing DESIGN.md gracefully — offer to update/extend rather than overwriting. Should capture updated design direction and persist to DESIGN.md.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects or creates DESIGN.md for design direction",
+          "type": "behavioral"
+        },
+        {
+          "text": "Handles update/extend flow when DESIGN.md already exists",
+          "type": "behavioral"
+        },
+        {
+          "text": "Persists updated design direction",
+          "type": "output"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "smoke",
+        "ui-branding"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "branding"
+        },
+        {
+          "type": "regex",
+          "pattern": "DESIGN\\.md"
+        },
+        {
+          "type": "regex",
+          "pattern": "update|direction"
         }
       ]
     }

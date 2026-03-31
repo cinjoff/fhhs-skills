@@ -68,7 +68,7 @@ This project already has `.planning/` state — likely from a previous `/fh:new-
 
 | Check | How | If missing |
 |-------|-----|------------|
-| `CLAUDE.md` | `[ -f CLAUDE.md ]` | Run `/fh:revise-claude-md init` |
+| `CLAUDE.md` | `[ -f CLAUDE.md ]` | Create directly (see Step 5 below) |
 | `.claude/rules/` | `[ -d .claude/rules ]` | Will be created by `/fh:map-codebase` below |
 
 #### Codebase mapping (context-mode)
@@ -769,14 +769,17 @@ If the user wants to skip this step and set up design later, allow it. They can 
 
 ## Step 5: CLAUDE.md Generation
 
-Invoke `/fh:revise-claude-md init` — this generates a high-quality CLAUDE.md from the context gathered in Steps 1-4 using the templates co-located in the `revise-claude-md` skill directory.
+Generate a CLAUDE.md directly using the context gathered in Steps 1-4.
 
-Pass it:
+Include:
 - Project name and description (from Step 1)
-- Tech stack (from Step 2)
-- Whether `.planning/DESIGN.md` was created (from Step 4)
+- Tech stack with key commands adapted to the chosen framework (from Step 2)
+- Architecture overview and code style with conventional commits
+- Testing conventions
+- Planning state reference (`.planning/` dirs)
+- Design system reference if `.planning/DESIGN.md` was created (from Step 4)
 
-The `/fh:revise-claude-md` skill's co-located `templates.md` has the fhhs-skills Project template. CLAUDE.md should include: tech stack, commands adapted to the chosen framework, architecture, code style with conventional commits, testing conventions, planning state reference, and design system reference.
+CLAUDE.md should provide Claude with the conventions needed to work effectively on the project.
 
 Keep it under 40 lines. Commit: `docs: initialize CLAUDE.md with project conventions`
 
@@ -2047,7 +2050,7 @@ Commit: `chore: add conductor.json for workspace configuration`
 
 The starter template has enough code to produce a useful codebase map. Running it now means context-mode is immediately valuable from the first `/fh:plan-work` call.
 
-Invoke `/fh:map-codebase` — it spawns 4 parallel mapper agents, writes `.planning/codebase/` docs, creates `.claude/rules/`, indexes into FTS5 via `ctx_index` (if context-mode installed), and records the freshness SHA.
+Invoke `/fh:map-codebase` — it spawns a mapper agent, writes `.planning/codebase/CODEBASE.md`, creates `.claude/rules/`, and records the freshness SHA. claude-mem automatically observes file reads via PostToolUse hook.
 
 If `uses_default_stack` is false (custom stack), skip — the codebase doesn't exist yet and will be scaffolded in Phase 1. The user can run `/fh:map-codebase` after scaffolding.
 

@@ -11,6 +11,7 @@ $ARGUMENTS
 Parse `$ARGUMENTS` for flags:
 - `--days N` — override the default 14-day window with N days
 - `--dry-run` — show what would be filed without creating any GitHub issues
+- `--update-claude-md` — run only Section 4.5 (CLAUDE.md maintenance); skip GitHub issues / plan-from-insights
 
 ---
 
@@ -285,6 +286,94 @@ Present a structured improvement brief:
 > 3. **[Category]** — [Pattern summary] → [Suggested action]
 >
 > To turn these into a tracked plan, run `/fh:new-project` first to initialize GSD planning, then re-run `/fh:learnings`.
+
+---
+
+## Section 4.5: CLAUDE.md Maintenance
+
+> **Skip condition:** If claude-mem is unavailable (Section 1a check failed), skip this section silently and proceed to Section 5.
+> **Standalone mode:** If `--update-claude-md` was passed, run Sections 1a, 2, 3.5, and this section only — then stop (skip Sections 4 and 5).
+
+### 4.5a. Check for CLAUDE.md
+
+```bash
+[ -f CLAUDE.md ] && echo "EXISTS" || echo "MISSING"
+```
+
+If `MISSING`: output a single line — "No CLAUDE.md found in project root — skipping CLAUDE.md maintenance." — then proceed to Section 5.
+
+### 4.5b. Read relevant CLAUDE.md sections
+
+Read `CLAUDE.md`. Focus on these sections (they are the canonical targets for new entries):
+- `## Gotchas` (or similar heading)
+- `## Key Constraints`
+- `## Code Style`
+
+Hold the current content of these sections as `CURRENT_CLAUDE_MD`.
+
+### 4.5c. Identify CLAUDE.md-worthy patterns
+
+From the observations already classified in Section 3.5, apply the following filter — do NOT make any new claude-mem API calls:
+
+A pattern qualifies for CLAUDE.md if it meets **at least one** of these criteria:
+
+| Criterion | Threshold | Target section |
+|-----------|-----------|----------------|
+| Recurring gotcha | 3+ observations matching the same mistake pattern | `## Gotchas` |
+| Convention violation | Any pattern showing a convention was missed or misapplied | `## Code Style` |
+| Constraint discovery | A thing that broke with a repeatable, preventable lesson | `## Key Constraints` |
+
+**Lean rule (from claude-mem-rules.md):** Only surface conventions, gotchas, and hard constraints. Exclude:
+- Session-specific details (dates, PR numbers, one-off fixes)
+- Implementation specifics (exact function names, internal IDs)
+- Items that are obvious from the code itself
+
+### 4.5d. Deduplicate against existing CLAUDE.md
+
+For each candidate, perform a fuzzy keyword match against `CURRENT_CLAUDE_MD`:
+- Extract 2–3 key terms from the candidate (e.g. `str.replace`, `$&`, `dynamic content`)
+- If all key terms appear within the same paragraph of `CURRENT_CLAUDE_MD`: mark candidate as **duplicate** and skip it
+- If at least one key term is absent: mark as **new**
+
+### 4.5e. Present proposed additions
+
+If one or more new candidates remain after deduplication, present:
+
+> **Suggested CLAUDE.md updates:**
+> - **[Gotchas | Key Constraints | Code Style]:** [one-sentence description of the gotcha/constraint/convention]
+> - ...
+
+Include a confidence indicator for each:
+- `(high)` — 3+ observations, clear pattern
+- `(medium)` — 2 observations, inferred pattern
+- `(low)` — 1 strong observation, worth noting
+
+Then ask:
+
+> Approve additions? Reply `yes` to write all, `skip` to discard, or list the numbers to approve selectively (e.g. `1 3`).
+
+If no new candidates remain after deduplication:
+
+> CLAUDE.md is up to date — no new patterns detected.
+
+Proceed to Section 5 (or stop if `--update-claude-md` was passed).
+
+### 4.5f. Write approved additions
+
+Wait for user reply before writing anything.
+
+On `yes` (all approved): append each addition to the appropriate section in CLAUDE.md. If the target section does not exist, create it at the end of the file.
+
+On selective approval (e.g. `1 3`): write only the numbered candidates.
+
+On `skip`: discard all candidates without editing CLAUDE.md.
+
+Format for each appended entry:
+```
+- [one-sentence description] *(learnings: YYYY-MM-DD)*
+```
+
+Use today's date for the `YYYY-MM-DD` suffix so entries are traceable.
 
 ---
 

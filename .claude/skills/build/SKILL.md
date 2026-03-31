@@ -77,69 +77,40 @@ AUTO_MODE=$(node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs config-get workfl
 
 If `AUTO_MODE` is `"true"` AND `.planning/DECISIONS.md` exists, include the last 10 entries for this phase as `{DECISIONS_CONTEXT}`. Otherwise empty string.
 
-### Verify stable context exists
+### Smart Context Loading
 
-Before building the pre-indexing manifest, check if stable docs are already indexed from a prior step:
+If claude-mem is available (check tool list for `mcp__plugin_claude-mem_*`), use smart_search to find relevant patterns before reading files. Use smart_outline to understand file structure before editing. Don't read full files to find one function — use smart_outline then smart_unfold, then Read only when you need to Edit.
 
+Specifically before wave execution:
+1. `smart_search({query: "patterns in <primary module>"})` to find existing conventions
+2. `smart_outline({path: "<plan target files>"})` to understand structure without full reads
+3. `smart_search({query: "locked decisions for <phase>"})` to retrieve phase context compactly
+
+If claude-mem is not available, fall back to Read/Grep/Glob directly — read the planning docs and source files as needed. Zero behavioral change for systems without claude-mem.
+
+### Reference Warm-Up (once per build)
+
+Shared references are static between updates — read them once here and inject into all subagent prompts. This eliminates N redundant reads per build (N = number of tasks).
+
+**If context-mode is available** (`mcp__plugin_context-mode_context-mode__ctx_batch_execute`):
 ```
-ctx_search(queries: ["project vision", "architecture patterns", "conventions"])
+ctx_batch_execute({
+  commands: [
+    "cat .claude/skills/shared/testing-guide.md",
+    "cat .claude/skills/shared/claude-mem-rules.md"
+  ]
+})
 ```
+Then use `ctx_search({queries: ["TDD red-green-refactor", "Playwright E2E locator"]})` to extract task-relevant sections. Store results as `SHARED_REFERENCES_CACHE`.
 
-If results are returned with content from PROJECT.md, ARCHITECTURE.md, and CONVENTIONS.md:
-- Stable context is available from plan-work Step -0.5 — skip re-indexing planning docs
-- Only index: source files, test files, and mutable docs (PLAN.md, CONTEXT.md)
-- This saves re-reading ~70KB of stable planning docs
+**If context-mode is not available**: Read both files via the Read tool. Store full content as `SHARED_REFERENCES_CACHE`.
 
-If no results or sparse results:
-- Run full bootstrap — index everything including stable planning docs
-- This is the fallback for when plan-work was skipped, failed, or ran without context-mode
+**If both fail**: Leave `SHARED_REFERENCES_CACHE` empty — subagents will read files directly (graceful degradation).
 
-The probe is a single ctx_search call (~100ms) that can save indexing 9+ files (~2s + context window space).
-
-### Pre-Index Source Files + Test Files
-
-If ctx_batch_execute is available, build a comprehensive file manifest for pre-indexing:
-
-1. **Source files:** All files from `files_modified` frontmatter
-2. **Per-task files:** All files from each task's `<files>` element (may include read-only context files not in files_modified)
-3. **Test file discovery:** For each source file, find its test counterpart:
-   - `{name}.test.{ext}` in the same directory
-   - `__tests__/{name}.test.{ext}` in parent directory
-   - `tests/{name}.test.{ext}` in project root
-   - `e2e/{name}.spec.{ext}` for page/route files
-4. **Test-spec skeletons:** If Step 2.5 ran, include all files it created (test skeletons from plan specification)
-5. **Deduplicate** the combined list
-6. Index all unique files plus planning docs:
-
-```
-ctx_batch_execute([
-  // For each file in the deduplicated manifest:
-  { label: "{filename}", cmd: "cat {filepath}" },
-  // Planning docs:
-  { label: "PLAN", cmd: "cat {planPath}" },
-  { label: "CONTEXT", cmd: "cat .planning/phases/{phase}/{phase}-CONTEXT.md" },
-], queries: [
-  "existing patterns in modified files",
-  "existing test patterns and assertions",
-  "locked decisions for this phase",
-  "plan tasks and requirements"
-])
-```
-
-If the Phase Context Bootstrap ran in a prior step, stable docs (ARCHITECTURE, CONVENTIONS, etc.) are already indexed. Only source files, test files, and mutable planning docs need fresh indexing.
-
-### Conditional Context Injection
-
-If pre-indexing succeeded (ctx_batch_execute returned without error):
-- Leave `{CLAUDE_MD_SECTIONS}` **empty** when filling the implementer-prompt template
-- Leave `{DESIGN_DECISIONS}` **empty** when filling the template
-- Agents will fetch this context via ctx_search (pre-indexed and compact)
-
-If pre-indexing was skipped (context-mode unavailable):
-- Populate `{CLAUDE_MD_SECTIONS}` and `{DESIGN_DECISIONS}` as today
-- Zero behavioral change for systems without context-mode
-
-If ctx_batch_execute is not available, skip silently.
+Inject `SHARED_REFERENCES_CACHE` into each subagent prompt via the `{SHARED_REFERENCES}` placeholder in the implementer-prompt. For task-specific filtering:
+- Tasks with `tdd="true"`: include Part B (TDD Discipline) + Part C (Stack Defaults)
+- Tasks with E2E/Playwright scope: include Part D (Playwright) + Part C
+- All other tasks: include Part A (Philosophy) + Part C only
 
 ---
 
@@ -159,7 +130,7 @@ Dispatch a **test-spec subagent** (`general-purpose`, model `$EXEC_MODEL`) **bef
 ```
 You are writing test skeletons from a plan specification. You have NOT seen the implementation.
 
-Read `.claude/skills/build/references/testing-manifesto.md` for testing rules.
+Read `.claude/skills/shared/testing-guide.md` for testing rules.
 
 ## Spec
 Must-haves: {PLAN_MUST_HAVES}
@@ -202,14 +173,15 @@ For each wave, dispatch **one subagent per task** using the Agent tool with **`s
 Use the structured template at `references/implementer-prompt.md`. Fill its placeholders:
 
 - `{TASK_TEXT}` — Full task content (files, action, verify, done). Copy the text, don't reference the plan file.
-- `{CLAUDE_MD_SECTIONS}` — Relevant sections from CLAUDE.md for this task type, plus `.planning/codebase/CODEBASE.md` sections (fall back to individual files in `.planning/codebase/` if CODEBASE.md doesn't exist) (UI work → Conventions + Design; new files → Structure guidance; API work → Architecture patterns). **Follow Conditional Context Injection** (Step 2): empty when pre-indexed, populated when context-mode unavailable.
-- `{DESIGN_DECISIONS}` — If `.planning/phases/{phase}/{phase}-CONTEXT.md` exists, include the "Decisions", "Discretion Areas", and "Deferred Ideas" sections. **Follow Conditional Context Injection** (Step 2): empty when pre-indexed, populated when context-mode unavailable.
+- `{CLAUDE_MD_SECTIONS}` — Relevant sections from CLAUDE.md for this task type, plus `.planning/codebase/CODEBASE.md` sections (fall back to individual files in `.planning/codebase/` if CODEBASE.md doesn't exist) (UI work → Conventions + Design; new files → Structure guidance; API work → Architecture patterns).
+- `{DESIGN_DECISIONS}` — If `.planning/phases/{phase}/{phase}-CONTEXT.md` exists, include the "Decisions", "Discretion Areas", and "Deferred Ideas" sections.
 - `{PHASE_DIR}` — Path to `.planning/phases/{phase}/` for deferred items logging.
-- `{PHASE_NAME}` — Phase directory name for ctx_search queries (e.g. "13-pending-payments-invoicing").
+- `{PHASE_NAME}` — Phase directory name for smart_search queries (e.g. "13-pending-payments-invoicing").
 - `{FILE_TYPES}` — Comma-separated file type descriptions for convention queries (e.g. "tsx components", "test files").
 - `{TASK_NAME}` — Task identifier for deferred items format.
 - `{TASK_ID}` — Native task ID if tracking is active. Empty string otherwise.
 - `{PROJECT_CONSTRAINTS}` — See population rule below.
+- `{SHARED_REFERENCES}` — Pre-loaded testing/TDD rules from `SHARED_REFERENCES_CACHE` (populated in Reference Warm-Up). Task-filtered: TDD tasks get Part B, E2E tasks get Part D, all get Part A + C. If empty, subagent reads files directly.
 
 **{PROJECT_CONSTRAINTS} population:**
 Read the `## Gotchas` section from `./CLAUDE.md`. Extract each gotcha as an imperative constraint:
@@ -219,20 +191,18 @@ Read the `## Gotchas` section from `./CLAUDE.md`. Extract each gotcha as an impe
 Inject as `{PROJECT_CONSTRAINTS}`. Max 15 lines.
 If no Gotchas section exists, leave {PROJECT_CONSTRAINTS} empty (do not error).
 
-### Context-Mode Acceleration
+### claude-mem Context Acceleration
 
-Before reading CONTEXT.md and DECISIONS.md files directly, check if ctx_search is available:
-- If available: use `ctx_search` with queries like "locked decisions for phase {phase}" and "decisions affecting {files}" to retrieve relevant entries. This is faster and consumes less context than reading full files.
-- If not available: fall back to the existing pattern of reading the files directly.
-
-The ctx_search results replace the file reads — they provide the same information in a more compact, relevance-ranked format.
+Before reading CONTEXT.md and DECISIONS.md files directly, check if claude-mem is available (tool list contains `mcp__plugin_claude-mem_*`):
+- If available: use `smart_search({query: "locked decisions for phase {phase}"})` and `smart_search({query: "decisions affecting {files}"})` to find relevant entries. Use `smart_outline` to understand file structure before editing. Don't read full files to find one function — use `smart_outline` → `smart_unfold`, then Read only when you need to Edit.
+- If not available: fall back to Read/Grep/Glob directly — skills work identically without claude-mem.
 
 The template tells subagents to self-discover relevant skill context (Playwright, Next.js, frontend design) by reading skill files when their task involves those domains. No orchestrator pre-processing needed.
 
 ### Token Efficiency Notes
 
 When executing tasks, be aware of tool call efficiency:
-- **Prefer ctx_search** over Read for CONTEXT.md, DECISIONS.md, and convention lookups — returns snippets, not full files
+- **Default to Smart Explore** (smart_search/smart_outline/smart_unfold) for targeted lookups; escalate to Explore Agent only for open-ended synthesis
 - **Avoid re-reading** files already in context from earlier steps (freshness check, plan read, CONTEXT.md injection)
 - **Fallow output is authoritative** — do not re-derive dead code, complexity, or duplication findings that Fallow already provided
 - **Note tool call patterns:** If you find yourself reading the same file multiple times across tasks, flag it as a context optimization opportunity in the SUMMARY.md
@@ -249,26 +219,9 @@ When auto-approving checkpoints, log as a decision in `.planning/DECISIONS.md` w
 
 ### After each wave completes
 
-### Post-Wave Re-Index
+### Post-Wave Context
 
-If ctx_batch_execute is available, re-index files that were modified by agents in the completed wave. Parse each agent's report for "Files Changed" and re-index:
-
-```
-ctx_batch_execute([
-  // For each file in agent reports' "Files Changed":
-  { label: "{filename}-v{wave}", cmd: "cat {filepath}" },
-], queries: ["updated implementation"])
-```
-
-This ensures the next wave sees fresh content when using ctx_search. Skip silently if ctx_batch_execute is not available.
-
-### Post-Wave Cache Lifecycle
-
-After a wave completes, the re-index step serves as cache invalidation:
-- Files modified by wave agents are re-indexed with fresh content
-- Files NOT modified remain in the index unchanged (still valid cache)
-- Test files created by wave agents are added to the index
-- Next wave agents see up-to-date content via ctx_search
+claude-mem's PostToolUse hook automatically observes all file reads and edits from each wave's agents. Subsequent waves can query these observations via `search` or `timeline` — no explicit re-indexing needed.
 
 Triage subagent outcomes:
 
@@ -475,8 +428,8 @@ Route based on phase status:
 | Condition | Action |
 |-----------|--------|
 | More plans in phase | "Plan X of Y complete." Suggest `/fh:build` for next plan. |
-| Phase complete, more phases | "Phase complete." Suggest `/fh:plan-work {next}` or `/fh:review`. Also suggest `/fh:revise-claude-md`. |
-| Last phase in milestone | "Milestone complete." Run `gsd-tools.cjs milestone complete`. Suggest `/fh:revise-claude-md`. |
+| Phase complete, more phases | "Phase complete." Suggest `/fh:plan-work {next}` or `/fh:review`. Also suggest `/fh:learnings --update-claude-md`. |
+| Last phase in milestone | "Milestone complete." Run `gsd-tools.cjs milestone complete`. Suggest `/fh:learnings --update-claude-md`. |
 
 Suggest `/fh:review` for deeper scrutiny (adds spec verification + gap analysis).
 If frontend changes: suggest `/fh:ui-test` for visual verification.
