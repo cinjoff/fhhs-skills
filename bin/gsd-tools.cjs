@@ -139,17 +139,6 @@
 const fs = require('fs');
 const path = require('path');
 const { error } = require('./lib/core.cjs');
-const state = require('./lib/state.cjs');
-const phase = require('./lib/phase.cjs');
-const roadmap = require('./lib/roadmap.cjs');
-const verify = require('./lib/verify.cjs');
-const config = require('./lib/config.cjs');
-const template = require('./lib/template.cjs');
-const milestone = require('./lib/milestone.cjs');
-const commands = require('./lib/commands.cjs');
-const init = require('./lib/init.cjs');
-const frontmatter = require('./lib/frontmatter.cjs');
-const changelog = require('./lib/changelog.cjs');
 
 // ─── CLI Router ───────────────────────────────────────────────────────────────
 
@@ -188,6 +177,7 @@ async function main() {
 
   switch (command) {
     case 'state': {
+      const state = require('./lib/state.cjs');
       const subcommand = args[1];
       if (subcommand === 'json') {
         state.cmdStateJson(cwd, raw);
@@ -274,16 +264,19 @@ async function main() {
     }
 
     case 'resolve-model': {
+      const commands = require('./lib/commands.cjs');
       commands.cmdResolveModel(cwd, args[1], raw);
       break;
     }
 
     case 'find-phase': {
+      const phase = require('./lib/phase.cjs');
       phase.cmdFindPhase(cwd, args[1], raw);
       break;
     }
 
     case 'commit': {
+      const commands = require('./lib/commands.cjs');
       const amend = args.includes('--amend');
       const filesIndex = args.indexOf('--files');
       // Collect all positional args between command name and first flag,
@@ -298,6 +291,7 @@ async function main() {
     }
 
     case 'verify-summary': {
+      const verify = require('./lib/verify.cjs');
       const summaryPath = args[1];
       const countIndex = args.indexOf('--check-count');
       const checkCount = countIndex !== -1 ? parseInt(args[countIndex + 1], 10) : 2;
@@ -306,6 +300,7 @@ async function main() {
     }
 
     case 'template': {
+      const template = require('./lib/template.cjs');
       const subcommand = args[1];
       if (subcommand === 'select') {
         template.cmdTemplateSelect(cwd, args[2], raw);
@@ -332,6 +327,7 @@ async function main() {
     }
 
     case 'frontmatter': {
+      const frontmatter = require('./lib/frontmatter.cjs');
       const subcommand = args[1];
       const file = args[2];
       if (subcommand === 'get') {
@@ -354,6 +350,7 @@ async function main() {
     }
 
     case 'verify': {
+      const verify = require('./lib/verify.cjs');
       const subcommand = args[1];
       if (subcommand === 'plan-structure') {
         verify.cmdVerifyPlanStructure(cwd, args[2], raw);
@@ -376,46 +373,55 @@ async function main() {
     }
 
     case 'generate-slug': {
+      const commands = require('./lib/commands.cjs');
       commands.cmdGenerateSlug(args[1], raw);
       break;
     }
 
     case 'current-timestamp': {
+      const commands = require('./lib/commands.cjs');
       commands.cmdCurrentTimestamp(args[1] || 'full', raw);
       break;
     }
 
     case 'list-todos': {
+      const commands = require('./lib/commands.cjs');
       commands.cmdListTodos(cwd, args[1], raw);
       break;
     }
 
     case 'verify-path-exists': {
+      const commands = require('./lib/commands.cjs');
       commands.cmdVerifyPathExists(cwd, args[1], raw);
       break;
     }
 
     case 'config-ensure-section': {
+      const config = require('./lib/config.cjs');
       config.cmdConfigEnsureSection(cwd, raw);
       break;
     }
 
     case 'config-set': {
+      const config = require('./lib/config.cjs');
       config.cmdConfigSet(cwd, args[1], args[2], raw);
       break;
     }
 
     case 'config-get': {
+      const config = require('./lib/config.cjs');
       config.cmdConfigGet(cwd, args[1], raw);
       break;
     }
 
     case 'history-digest': {
+      const commands = require('./lib/commands.cjs');
       commands.cmdHistoryDigest(cwd, raw);
       break;
     }
 
     case 'phases': {
+      const phase = require('./lib/phase.cjs');
       const subcommand = args[1];
       if (subcommand === 'list') {
         const typeIndex = args.indexOf('--type');
@@ -433,6 +439,7 @@ async function main() {
     }
 
     case 'roadmap': {
+      const roadmap = require('./lib/roadmap.cjs');
       const subcommand = args[1];
       if (subcommand === 'get-phase') {
         roadmap.cmdRoadmapGetPhase(cwd, args[2], raw);
@@ -447,6 +454,7 @@ async function main() {
     }
 
     case 'requirements': {
+      const milestone = require('./lib/milestone.cjs');
       const subcommand = args[1];
       if (subcommand === 'mark-complete') {
         milestone.cmdRequirementsMarkComplete(cwd, args.slice(2), raw);
@@ -457,6 +465,7 @@ async function main() {
     }
 
     case 'phase': {
+      const phase = require('./lib/phase.cjs');
       const subcommand = args[1];
       if (subcommand === 'next-decimal') {
         phase.cmdPhaseNextDecimal(cwd, args[2], raw);
@@ -476,6 +485,7 @@ async function main() {
     }
 
     case 'milestone': {
+      const milestone = require('./lib/milestone.cjs');
       const subcommand = args[1];
       if (subcommand === 'complete') {
         const nameIndex = args.indexOf('--name');
@@ -498,6 +508,7 @@ async function main() {
     }
 
     case 'validate': {
+      const verify = require('./lib/verify.cjs');
       const subcommand = args[1];
       if (subcommand === 'consistency') {
         verify.cmdValidateConsistency(cwd, raw);
@@ -511,12 +522,14 @@ async function main() {
     }
 
     case 'progress': {
+      const commands = require('./lib/commands.cjs');
       const subcommand = args[1] || 'json';
       commands.cmdProgressRender(cwd, subcommand, raw);
       break;
     }
 
     case 'todo': {
+      const commands = require('./lib/commands.cjs');
       const subcommand = args[1];
       if (subcommand === 'complete') {
         commands.cmdTodoComplete(cwd, args[2], raw);
@@ -527,6 +540,7 @@ async function main() {
     }
 
     case 'scaffold': {
+      const commands = require('./lib/commands.cjs');
       const scaffoldType = args[1];
       const phaseIndex = args.indexOf('--phase');
       const nameIndex = args.indexOf('--name');
@@ -539,6 +553,7 @@ async function main() {
     }
 
     case 'init': {
+      const init = require('./lib/init.cjs');
       const workflow = args[1];
       switch (workflow) {
         case 'execute-phase':
@@ -584,16 +599,19 @@ async function main() {
     }
 
     case 'phase-plan-index': {
+      const phase = require('./lib/phase.cjs');
       phase.cmdPhasePlanIndex(cwd, args[1], raw);
       break;
     }
 
     case 'state-snapshot': {
+      const state = require('./lib/state.cjs');
       state.cmdStateSnapshot(cwd, raw);
       break;
     }
 
     case 'summary-extract': {
+      const commands = require('./lib/commands.cjs');
       const summaryPath = args[1];
       const fieldsIndex = args.indexOf('--fields');
       const fields = fieldsIndex !== -1 ? args[fieldsIndex + 1].split(',') : null;
@@ -602,6 +620,7 @@ async function main() {
     }
 
     case 'websearch': {
+      const commands = require('./lib/commands.cjs');
       const query = args[1];
       const limitIdx = args.indexOf('--limit');
       const freshnessIdx = args.indexOf('--freshness');
@@ -613,6 +632,7 @@ async function main() {
     }
 
     case 'changelog': {
+      const changelog = require('./lib/changelog.cjs');
       const sub = args[1];
       if (sub === 'reconcile') {
         const fromIdx = args.indexOf('--from');
