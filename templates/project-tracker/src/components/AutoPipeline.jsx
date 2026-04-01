@@ -112,82 +112,188 @@ function mapCurrentStepToDisplay(step) {
 
 // -- PhaseStepRow ------------------------------------------------------------
 
-function PhaseStepRow({ phaseNum, phaseName, phaseState, isCurrentPhase, currentStep }) {
+// Active states that warrant showing activity badge
+const ACTIVE_PHASE_STATES = new Set(['planning', 'reviewing', 'building', 'verifying']);
+
+function PhaseStepRow({ phaseNum, phaseName, phaseState, isCurrentPhase, currentStep, activityInfo, phaseCost, now }) {
   const stepStatuses = deriveStepStatuses(phaseState, isCurrentPhase, currentStep);
   const isDone = phaseState === 'complete';
   const isFailed = phaseState === 'failed';
+  const showActivity = ACTIVE_PHASE_STATES.has(phaseState) && activityInfo;
+  const showCost = phaseCost != null && phaseCost > 0.01;
 
   return (
     <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      height: '32px',
-      padding: '0 4px',
+      padding: '2px 4px',
       opacity: isDone ? 0.65 : 1,
-      ...(isCurrentPhase && !isDone && !isFailed
-        ? { animation: 'auto-pulse 2s ease-in-out infinite' }
-        : {}),
     }}>
-      {/* Phase label */}
-      <span style={{
-        fontSize: '12px',
-        fontFamily: 'var(--font-family-sans)',
-        color: isDone
-          ? 'var(--color-status-done)'
-          : isFailed
-            ? 'var(--color-status-error)'
-            : isCurrentPhase
-              ? 'var(--color-text-primary)'
-              : 'var(--color-text-secondary)',
-        whiteSpace: 'nowrap',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis',
-        maxWidth: '140px',
-        flexShrink: 0,
-      }}>
-        {isDone && '\u2713 '}{isFailed && '\u2717 '}
-        {phaseNum}{phaseName ? `. ${phaseName}` : ''}
-      </span>
-
-      {/* Step tokens */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
-        gap: '3px',
-        flexShrink: 0,
+        justifyContent: 'space-between',
+        minHeight: '28px',
+        ...(isCurrentPhase && !isDone && !isFailed
+          ? { animation: 'auto-pulse 2s ease-in-out infinite' }
+          : {}),
       }}>
-        {STEP_NAMES.map((s, i) => (
-          <span key={s} style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-            <StepToken name={s} status={stepStatuses[s]} />
-            {i < STEP_NAMES.length - 1 && <StepSeparator />}
+        {/* Phase label + optional cost badge */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0, maxWidth: '160px' }}>
+          <span style={{
+            fontSize: '12px',
+            fontFamily: 'var(--font-family-sans)',
+            color: isDone
+              ? 'var(--color-status-done)'
+              : isFailed
+                ? 'var(--color-status-error)'
+                : isCurrentPhase
+                  ? 'var(--color-text-primary)'
+                  : 'var(--color-text-secondary)',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}>
+            {isDone && '\u2713 '}{isFailed && '\u2717 '}
+            {phaseNum}{phaseName ? `. ${phaseName}` : ''}
           </span>
-        ))}
+          {showCost && (
+            <span style={{
+              fontSize: '10px',
+              fontFamily: 'var(--font-family-mono)',
+              color: 'var(--color-text-tertiary)',
+              background: 'var(--color-border-default)',
+              borderRadius: '3px',
+              padding: '0 4px',
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+            }}>{formatCost(phaseCost)}</span>
+          )}
+        </div>
+
+        {/* Step tokens */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '3px',
+          flexShrink: 0,
+        }}>
+          {STEP_NAMES.map((s, i) => (
+            <span key={s} style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+              <StepToken name={s} status={stepStatuses[s]} />
+              {i < STEP_NAMES.length - 1 && <StepSeparator />}
+            </span>
+          ))}
+        </div>
       </div>
+
+      {/* Activity badge — shown below for active phases */}
+      {showActivity && (
+        <ActivityBadge activityInfo={activityInfo} now={now} />
+      )}
     </div>
   );
 }
 
 // -- LogTail -----------------------------------------------------------------
 
-function LogTail({ logBuffer, lastLogLine, autoExpand }) {
-  const [collapsed, setCollapsed] = useState(!autoExpand);
+const LOG_FILTERS = ['All', 'Sessions', 'Tools', 'Errors'];
+
+function filterEntries(entries, filter) {
+  if (filter === 'All') return entries;
+  if (filter === 'Sessions') return entries.filter(e => e.type === 'session-start' || e.type === 'session-end' || e.type === 'session-killed');
+  if (filter === 'Tools') return entries.filter(e => e.type === 'tool-call');
+  if (filter === 'Errors') return entries.filter(e => e.type === 'session-killed' || e.level === 'error');
+  return entries;
+}
+
+function formatLogEntry(entry) {
+  const ts = entry.ts ? formatLogTimestamp(entry.ts) : '';
+  const tsPrefix = ts ? `[${ts}] ` : '';
+  const type = entry.type;
+
+  if (type === 'tool-call') {
+    const label = `${tsPrefix}Phase ${entry.phase != null ? entry.phase : '?'} ${entry.step || ''}: ${entry.tool || entry.msg || ''} (#${entry.tool_count != null ? entry.tool_count : '?'})`;
+    return { label, color: 'var(--color-text-tertiary)' };
+  }
+  if (type === 'session-start') {
+    const label = `${tsPrefix}\u25B8 Phase ${entry.phase != null ? entry.phase : '?'} ${entry.step || ''} started`;
+    return { label, color: 'var(--color-status-info, oklch(0.6 0.15 240))' };
+  }
+  if (type === 'session-end') {
+    const elapsed = entry.elapsed_s != null ? entry.elapsed_s : (entry.elapsed_ms != null ? Math.round(entry.elapsed_ms / 1000) : '?');
+    const label = `${tsPrefix}\u2713 Phase ${entry.phase != null ? entry.phase : '?'} ${entry.step || ''} done (${elapsed}s, ${entry.tool_count != null ? entry.tool_count : '?'} tools)`;
+    return { label, color: 'var(--color-status-done)' };
+  }
+  if (type === 'session-killed') {
+    const label = `${tsPrefix}\u2717 Phase ${entry.phase != null ? entry.phase : '?'} ${entry.step || ''} killed (${entry.reason || 'unknown'}, last: ${entry.last_tool || 'none'})`;
+    return { label, color: 'var(--color-status-error)' };
+  }
+  // default / type === 'log'
+  const label = `${tsPrefix}${entry.msg || JSON.stringify(entry)}`;
+  return { label, color: 'var(--color-text-secondary)' };
+}
+
+function LogTail({ logBuffer, lastLogLine, refreshTick }) {
+  const [collapsed, setCollapsed] = useState(false);
+  const [apiEntries, setApiEntries] = useState(null);
+  const [activeFilter, setActiveFilter] = useState('All');
+  const latestTsRef = useRef(null);
   const scrollRef = useRef(null);
 
-  const entries = Array.isArray(logBuffer) && logBuffer.length > 0
+  // Fetch /api/logs on mount and on each SSE refresh
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchLogs = () => {
+      const url = latestTsRef.current
+        ? `/api/logs?limit=200&since=${encodeURIComponent(latestTsRef.current)}`
+        : '/api/logs?limit=200';
+
+      fetch(url)
+        .then(r => r.ok ? r.text() : Promise.reject(r.status))
+        .then(text => {
+          if (cancelled) return;
+          const lines = text.trim().split('\n').filter(Boolean);
+          const parsed = [];
+          for (const line of lines) {
+            try { parsed.push(JSON.parse(line)); } catch (_) {}
+          }
+          if (parsed.length > 0) {
+            setApiEntries(prev => {
+              // Merge: if incremental, append; if initial, replace
+              const base = latestTsRef.current ? (prev || []) : [];
+              const merged = [...base, ...parsed];
+              // Update latest ts for next incremental fetch
+              const last = merged[merged.length - 1];
+              if (last && last.ts) latestTsRef.current = last.ts;
+              return merged;
+            });
+          }
+        })
+        .catch(() => {});
+    };
+
+    fetchLogs();
+    return () => { cancelled = true; };
+  }, [refreshTick]);
+
+  // Fallback entries from log_buffer / last_log_line
+  const fallbackEntries = Array.isArray(logBuffer) && logBuffer.length > 0
     ? logBuffer
     : lastLogLine
       ? [{ ts: null, msg: lastLogLine }]
       : [];
+
+  const allEntries = (apiEntries && apiEntries.length > 0) ? apiEntries : fallbackEntries;
+  const visibleEntries = filterEntries(allEntries, activeFilter);
 
   // Auto-scroll on new entries
   useEffect(() => {
     if (!collapsed && scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [entries.length, collapsed]);
+  }, [visibleEntries.length, collapsed]);
 
-  if (entries.length === 0) return null;
+  if (allEntries.length === 0) return null;
 
   return (
     <div style={{ marginTop: '6px' }}>
@@ -203,35 +309,65 @@ function LogTail({ logBuffer, lastLogLine, autoExpand }) {
           marginBottom: collapsed ? 0 : '4px',
         }}
       >
-        {collapsed ? '\u25B8' : '\u25BE'} Log ({entries.length})
+        {collapsed ? '\u25B8' : '\u25BE'} Log ({allEntries.length})
       </div>
 
       {/* Log entries */}
       {!collapsed && (
-        <div
-          ref={scrollRef}
-          style={{
-            maxHeight: '100px',
-            overflowY: 'auto',
-            fontFamily: 'var(--font-family-mono)',
-            fontSize: '11px',
-            lineHeight: '16px',
-            background: 'var(--color-bg-raised)',
-            borderRadius: '4px',
-            padding: '4px 6px',
-            border: '1px solid var(--color-border-default)',
-          }}
-        >
-          {entries.map((entry, i) => (
-            <div key={i} style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {entry.ts && (
-                <span style={{ color: 'var(--color-text-tertiary)', marginRight: '6px' }}>
-                  {formatLogTimestamp(entry.ts)}
-                </span>
-              )}
-              <span style={{ color: 'var(--color-text-secondary)' }}>{entry.msg}</span>
-            </div>
-          ))}
+        <div>
+          {/* Filter row */}
+          <div style={{
+            display: 'flex',
+            gap: '4px',
+            marginBottom: '4px',
+          }}>
+            {LOG_FILTERS.map(f => (
+              <button
+                key={f}
+                onClick={(e) => { e.stopPropagation(); setActiveFilter(f); }}
+                style={{
+                  fontSize: '10px',
+                  fontFamily: 'var(--font-family-mono)',
+                  padding: '1px 6px',
+                  borderRadius: '3px',
+                  cursor: 'pointer',
+                  border: activeFilter === f
+                    ? '1px solid var(--color-text-secondary)'
+                    : '1px solid var(--color-border-default)',
+                  background: activeFilter === f
+                    ? 'var(--color-border-default)'
+                    : 'transparent',
+                  color: activeFilter === f
+                    ? 'var(--color-text-primary)'
+                    : 'var(--color-text-tertiary)',
+                }}
+              >{f}</button>
+            ))}
+          </div>
+
+          <div
+            ref={scrollRef}
+            style={{
+              maxHeight: '400px',
+              overflowY: 'auto',
+              fontFamily: 'var(--font-family-mono)',
+              fontSize: '11px',
+              lineHeight: '16px',
+              background: 'var(--color-bg-raised)',
+              borderRadius: '4px',
+              padding: '4px 6px',
+              border: '1px solid var(--color-border-default)',
+            }}
+          >
+            {visibleEntries.map((entry, i) => {
+              const { label, color } = formatLogEntry(entry);
+              return (
+                <div key={i} style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color }}>
+                  {label}
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>
@@ -250,24 +386,27 @@ function formatLogTimestamp(ts) {
 
 // -- FreshnessIndicator -------------------------------------------------------
 
+// Shared color thresholds for freshness — used by FreshnessIndicator and ActivityBadge
+function getFreshnessColor(silenceMs) {
+  if (silenceMs < 60000) return 'var(--color-status-done)';      // <1m: green
+  if (silenceMs < 180000) return 'var(--color-status-warning)';  // <3m: yellow
+  if (silenceMs < 480000) return 'oklch(0.7 0.15 70)';           // <8m: amber
+  return 'var(--color-status-error)';                             // >8m: red
+}
+
 function FreshnessIndicator({ lastActivityAt, now }) {
   if (!lastActivityAt) return null;
 
   const silenceMs = now - new Date(lastActivityAt).getTime();
   if (isNaN(silenceMs) || silenceMs < 0) return null;
 
-  let color, label;
+  const color = getFreshnessColor(silenceMs);
+  let label;
   if (silenceMs < 60000) {
-    color = 'var(--color-status-done)'; // green
     label = Math.round(silenceMs / 1000) + 's ago';
   } else if (silenceMs < 180000) {
-    color = 'var(--color-status-warning)'; // yellow
     label = Math.round(silenceMs / 60000) + 'm ago';
-  } else if (silenceMs < 480000) {
-    color = 'oklch(0.7 0.15 70)'; // amber
-    label = Math.round(silenceMs / 60000) + 'm ago (silent)';
   } else {
-    color = 'var(--color-status-error)'; // red
     label = Math.round(silenceMs / 60000) + 'm ago (silent)';
   }
 
@@ -289,6 +428,138 @@ function FreshnessIndicator({ lastActivityAt, now }) {
       }} />
       {label}
     </span>
+  );
+}
+
+// -- ActivityBadge ------------------------------------------------------------
+
+// Shows live activity for an active session (from session_activity in auto-state)
+// activityInfo: { last_tool, last_tool_at, tool_count, started_at } | null
+function ActivityBadge({ activityInfo, now }) {
+  if (!activityInfo) return null;
+  const { last_tool, last_tool_at, tool_count, started_at } = activityInfo;
+
+  const silenceMs = last_tool_at ? now - new Date(last_tool_at).getTime() : null;
+  const elapsedMs = started_at ? now - new Date(started_at).getTime() : null;
+
+  const color = silenceMs != null && !isNaN(silenceMs) && silenceMs >= 0
+    ? getFreshnessColor(silenceMs)
+    : 'var(--color-text-tertiary)';
+
+  let sinceLabel = '';
+  if (silenceMs != null && !isNaN(silenceMs) && silenceMs >= 0) {
+    sinceLabel = silenceMs < 60000
+      ? Math.round(silenceMs / 1000) + 's ago'
+      : Math.round(silenceMs / 60000) + 'm ago';
+  }
+
+  let elapsedLabel = '';
+  if (elapsedMs != null && !isNaN(elapsedMs) && elapsedMs >= 0) {
+    elapsedLabel = elapsedMs < 60000
+      ? Math.round(elapsedMs / 1000) + 's elapsed'
+      : Math.round(elapsedMs / 60000) + 'm elapsed';
+  }
+
+  const parts = [];
+  if (last_tool) parts.push(last_tool);
+  if (sinceLabel) parts.push(sinceLabel);
+  if (tool_count != null) parts.push(tool_count + ' tools');
+  if (elapsedLabel) parts.push(elapsedLabel);
+
+  if (parts.length === 0) return null;
+
+  return (
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: '6px',
+      fontSize: '10px',
+      fontFamily: 'var(--font-family-mono)',
+      color,
+      paddingLeft: '4px',
+      marginTop: '1px',
+    }}>
+      <span style={{
+        width: '5px',
+        height: '5px',
+        borderRadius: '50%',
+        background: color,
+        flexShrink: 0,
+        animation: 'auto-pulse 2s ease-in-out infinite',
+      }} />
+      {parts.join(' | ')}
+    </div>
+  );
+}
+
+// -- ErrorPanel ---------------------------------------------------------------
+
+const COST_PER_INPUT_TOKEN = 0.003 / 1000;
+const COST_PER_OUTPUT_TOKEN = 0.015 / 1000;
+
+function formatErrorTimestamp(ts) {
+  if (!ts) return '';
+  try {
+    const d = new Date(ts);
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  } catch { return ''; }
+}
+
+function ErrorPanel({ errors }) {
+  // Collapsed by default only if >5 errors; expand for <=5
+  const [collapsed, setCollapsed] = useState(() => !errors || errors.length > 5);
+
+  if (!errors || errors.length === 0) return null;
+
+  return (
+    <div style={{
+      borderLeft: '3px solid var(--color-status-error)',
+      paddingLeft: '8px',
+      marginBottom: '8px',
+    }}>
+      <div
+        onClick={() => setCollapsed(!collapsed)}
+        style={{
+          cursor: 'pointer',
+          fontSize: '11px',
+          fontFamily: 'var(--font-family-mono)',
+          color: 'var(--color-status-error)',
+          userSelect: 'none',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '4px',
+        }}
+      >
+        <span>{collapsed ? '\u25B8' : '\u25BE'}</span>
+        <span>\u26A0 {errors.length} error{errors.length !== 1 ? 's' : ''}</span>
+      </div>
+
+      {!collapsed && (
+        <div style={{ marginTop: '4px' }}>
+          {errors.map((err, i) => {
+            const isLast = i === errors.length - 1;
+            const prefix = isLast ? '\u2514\u2500' : '\u251C\u2500';
+            const tsLabel = formatErrorTimestamp(err.ts || err.timestamp);
+            const parts = [];
+            if (err.phase != null) parts.push(`Phase ${err.phase}`);
+            if (err.step) parts.push(err.step);
+            const location = parts.join(' ');
+            const errType = err.error_type || err.type || 'error';
+            const attempts = err.attempts != null ? ` (${err.attempts} attempt${err.attempts !== 1 ? 's' : ''})` : '';
+            return (
+              <div key={i} style={{
+                fontSize: '10px',
+                fontFamily: 'var(--font-family-mono)',
+                color: 'var(--color-status-error)',
+                lineHeight: '15px',
+              }}>
+                {prefix} {location}{location ? ': ' : ''}{errType}{attempts}{tsLabel ? ' \u2014 ' + tsLabel : ''}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -364,7 +635,23 @@ export function AutoPipeline({ autoState }) {
     last_log_line,
     last_activity_at,
     build_order = [],
+    session_activity = {},
+    errors = [],
+    phase_costs: rawPhaseCosts,
   } = autoState;
+
+  // Compute per-phase costs: use phase_costs from state if available, else calculate from step_history
+  const phaseCosts = (() => {
+    if (rawPhaseCosts && typeof rawPhaseCosts === 'object') return rawPhaseCosts;
+    const acc = {};
+    for (const h of (step_history || [])) {
+      if (h.phase == null || !h.metrics) continue;
+      const { tokens_in = 0, tokens_out = 0 } = h.metrics;
+      const cost = tokens_in * COST_PER_INPUT_TOKEN + tokens_out * COST_PER_OUTPUT_TOKEN;
+      acc[h.phase] = (acc[h.phase] || 0) + cost;
+    }
+    return acc;
+  })();
 
   // Compute live elapsed
   const liveElapsed = started_at
@@ -487,6 +774,9 @@ export function AutoPipeline({ autoState }) {
             // Try to find phase name from step_history or fallback
             const histEntry = (step_history || []).find(h => h.phase === p);
             const pName = isCurrent ? phase_name : (histEntry ? histEntry.phase_name : null);
+            // session_activity keyed by phase number (string or number)
+            const activityInfo = (session_activity && (session_activity[p] || session_activity[String(p)])) || null;
+            const phaseCost = phaseCosts[p] != null ? phaseCosts[p] : (phaseCosts[String(p)] != null ? phaseCosts[String(p)] : null);
             return (
               <PhaseStepRow
                 key={p}
@@ -495,6 +785,9 @@ export function AutoPipeline({ autoState }) {
                 phaseState={pState}
                 isCurrentPhase={isCurrent}
                 currentStep={step}
+                activityInfo={activityInfo}
+                phaseCost={phaseCost}
+                now={now}
               />
             );
           })}
@@ -506,8 +799,11 @@ export function AutoPipeline({ autoState }) {
         </div>
       )}
 
+      {/* Error panel — shown above log if errors present */}
+      <ErrorPanel errors={errors} />
+
       {/* Log tail */}
-      <LogTail logBuffer={log_buffer} lastLogLine={last_log_line} autoExpand={true} />
+      <LogTail logBuffer={log_buffer} lastLogLine={last_log_line} refreshTick={last_activity_at} />
     </div>
   );
 }

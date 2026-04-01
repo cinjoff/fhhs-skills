@@ -59,6 +59,12 @@ const LOG_BUFFER_MAX = 50;
 // JSONL log file path (set once projectDir is known)
 let _jsonlLogPath = null;
 
+// Per-session activity map — keyed by sessionId, updated on tool calls, cleaned up on session end
+const _sessionActivity = {};  // { sessionId: { phase, step, last_tool, last_tool_at, tool_count, tools, started_at, elapsed_s } }
+
+// Throttle map for JSONL tool-call events — prevents write storms
+const _toolLogThrottles = new Map();  // key: `${sessionId}-${toolName}` → last log timestamp
+
 // Optimization counters — module-level, included in every writeAutoStatus() call
 const _optimizations = {
   health_checks_cached: 0,
@@ -128,6 +134,14 @@ function cascadePlanFailures(phasesToRun, phase_states, depGraph, log) {
 function buildAutoStatus(_projectDir, overrides) {
   const now = Date.now();
 
+  // Staleness reaper: prune _sessionActivity entries where last_tool_at exceeds MAX_TIMEOUT_CAP + 5min
+  const reapThreshold = now - (MAX_TIMEOUT_CAP + 5 * 60 * 1000);
+  for (const [sid, activity] of Object.entries(_sessionActivity)) {
+    if (activity.last_tool_at && new Date(activity.last_tool_at).getTime() < reapThreshold) {
+      delete _sessionActivity[sid];
+    }
+  }
+
   // Derive current_wave from the step that will be set via overrides
   const stepForWave = (overrides && overrides.step) || null;
   let current_wave = null;
@@ -185,6 +199,7 @@ function buildAutoStatus(_projectDir, overrides) {
     last_activity_at: _autoStatus.lastActivityAt,
     activity_events: [..._activityEvents],
     phase_costs: aggregatePhaseMetrics(_autoStatus.stepHistory),
+    session_activity: { ..._sessionActivity },
   }, overrides);
 }
 
@@ -203,6 +218,15 @@ const STUCK_KILL_BY_STEP = {
   'review': 8 * 60 * 1000,
   'final-review': 10 * 60 * 1000, // full review at end is comprehensive — slightly higher threshold
 };
+// Tool-aware timeout extensions: added ON TOP of STUCK_KILL_BY_STEP (additive, capped)
+const TOOL_TIMEOUT_EXTENSIONS = {
+  'Bash': 5 * 60 * 1000,     // +5min — tests, compilation
+  'Agent': 3 * 60 * 1000,    // +3min — subagent research
+  'Edit': 1 * 60 * 1000,     // +1min — writing files
+  'Write': 1 * 60 * 1000,    // +1min — creating files
+};
+const MAX_TIMEOUT_CAP = 25 * 60 * 1000;  // 25min absolute max
+
 const MAX_RETRIES = 2;
 const API_HEALTH_TIMEOUT_MS = 15000;     // 15s for health check
 const API_BACKOFF_BASE_MS = 10000;       // 10s initial backoff on API failure
@@ -773,8 +797,35 @@ function resolveProjectName(cwd) {
   }
 }
 
+// ─── Real-time JSON Line Parser ───────────────────────────────────────────────
+
+function createJsonLineParser(onLine) {
+  let buffer = '';
+  return function feed(chunk) {
+    buffer += chunk;
+    // Buffer cap at 1MB to prevent OOM on non-newline output
+    if (buffer.length > 1024 * 1024) {
+      buffer = '';
+      return;
+    }
+    let nlIdx;
+    while ((nlIdx = buffer.indexOf('\n')) !== -1) {
+      const line = buffer.slice(0, nlIdx).trim();
+      buffer = buffer.slice(nlIdx + 1);
+      if (!line) continue;
+      try {
+        const obj = JSON.parse(line);
+        onLine(obj);
+      } catch { /* non-JSON line — ignore */ }
+    }
+  };
+}
+
 // ─── Claude Session Runner (with stuck detection + activity monitoring) ───────
 
+// INVARIANT: spawn('claude', ...) must appear ONLY inside runClaudeSession.
+// All callers must pass opts.sessionId (for activity tracking + JSONL correlation)
+// and opts.stepName (for per-step stuck-kill thresholds). Never call spawn directly.
 function runClaudeSession(prompt, opts) {
   return new Promise((resolve, reject) => {
     // Resolve plugin dir: auto-orchestrator lives at <plugin-root>/.claude/skills/auto/
@@ -833,12 +884,78 @@ function runClaudeSession(prompt, opts) {
     let lastActivityAt = Date.now();
     let stuckWarned = false;
 
+    // Activity tracking for tool-aware stuck detection
+    let lastToolName = null;
+    let lastToolAt = sessionStart;
+    let sessionToolCount = 0;
+    const sessionTools = {};  // { Read: 3, Edit: 2, ... }
+
+    let lastActivityWriteAt = 0;
+
+    function onToolCall(toolName, ts) {
+      // Guard against null/undefined toolName
+      if (!toolName) return;
+      lastToolName = toolName;
+      lastToolAt = ts;
+      sessionToolCount++;
+      sessionTools[toolName] = (sessionTools[toolName] || 0) + 1;
+      lastActivityAt = ts;  // reset silence timer
+
+      const now = Date.now();
+
+      // Update _sessionActivity (throttled to at most once per 5s)
+      if (opts.sessionId && (now - lastActivityWriteAt) >= 5000) {
+        lastActivityWriteAt = now;
+        _sessionActivity[opts.sessionId] = {
+          phase: opts.phase || null,
+          step: opts.stepName || null,
+          last_tool: lastToolName,
+          last_tool_at: new Date(lastToolAt).toISOString(),
+          tool_count: sessionToolCount,
+          tools: { ...sessionTools },
+          started_at: new Date(sessionStart).toISOString(),
+          elapsed_s: Math.round((now - sessionStart) / 1000),
+        };
+      }
+
+      // Emit tool-call event to JSONL (throttled to at most 1 per tool per 10s)
+      const toolThrottleKey = `${opts.sessionId}-${toolName}`;
+      const lastToolLogAt = _toolLogThrottles.get(toolThrottleKey) || 0;
+      if (now - lastToolLogAt >= 10000) {
+        _toolLogThrottles.set(toolThrottleKey, now);
+        logEvent('tool-call', {
+          phase: opts.phase || null,
+          step: opts.stepName || null,
+          extra: { tool: toolName, session: opts.sessionId, tool_count: sessionToolCount, elapsed_s: Math.round((now - sessionStart) / 1000) }
+        });
+      }
+    }
+
+    // Real-time JSON line parser — feeds parsed objects to onToolCall and usage tracking
+    let liveTokensIn = 0;
+    let liveTokensOut = 0;
+    let sessionCompleting = false;
+    const feedJsonLine = createJsonLineParser((obj) => {
+      if (obj.tool) {
+        onToolCall(obj.tool, Date.now());
+      }
+      if (obj.usage) {
+        liveTokensIn += (obj.usage.input_tokens || 0);
+        liveTokensOut += (obj.usage.output_tokens || 0);
+      }
+      if (obj.type === 'result') {
+        sessionCompleting = true;
+      }
+    });
+
     child.stdout.on('data', (data) => {
       const chunk = data.toString();
       stdout += chunk;
       lastActivityAt = Date.now();
       _autoStatus.lastActivityAt = new Date().toISOString();
       stuckWarned = false; // reset warning on new output
+      // Real-time JSON line parsing (additive layer on top of post-session parseSessionMetrics)
+      feedJsonLine(chunk);
       // Feed last non-empty line into rolling log buffer for tracker visibility
       const lines = chunk.split('\n').filter(l => l.trim());
       if (lines.length > 0) {
@@ -873,15 +990,26 @@ function runClaudeSession(prompt, opts) {
         }
       }
 
-      if (silenceMs >= stepKillMs) {
-        log(`  ✗ STUCK: no output for ${Math.round(silenceMs / 60000)}min — killing session (elapsed: ${elapsedMin}min)`);
+      // Tool-aware graduated timeout: TOOL_TIMEOUT_EXTENSIONS adds to stepKillMs (additive), capped at MAX_TIMEOUT_CAP
+      const toolExtension = (lastToolName && TOOL_TIMEOUT_EXTENSIONS[lastToolName]) || 0;
+      const effectiveKillMs = Math.min(stepKillMs + toolExtension, MAX_TIMEOUT_CAP);
+      const effectiveKillMin = Math.round(effectiveKillMs / 60000);
+      const silenceMin = Math.round(silenceMs / 60000);
+
+      if (silenceMs >= effectiveKillMs) {
+        log(`  ✗ STUCK: no output for ${silenceMin}min after ${lastToolName || 'start'} — killing session (elapsed: ${elapsedMin}min)`);
+        logEvent('session-killed', {
+          phase: opts.phase || null,
+          step: opts.stepName || null,
+          extra: { reason: `stuck (no output for ${silenceMin}min)`, silence_s: Math.round(silenceMs / 1000), last_tool: lastToolName, elapsed_s: Math.round((Date.now() - sessionStart) / 1000), session: opts.sessionId }
+        });
         child.kill('SIGTERM');
         setTimeout(() => {
           try { child.kill('SIGKILL'); } catch { /* already dead */ }
         }, 5000);
       } else if (silenceMs >= STUCK_SILENCE_MS && !stuckWarned) {
         stuckWarned = true;
-        log(`  ⚠ SILENT: no output for ${Math.round(silenceMs / 60000)}min (will kill at ${Math.round(stepKillMs / 60000)}min silence)`);
+        log(`  ⚠ SILENT: no output for ${silenceMin}min after ${lastToolName || 'start'} — kill at ${effectiveKillMin}min`);
       }
     }, 30000); // check every 30s
 
@@ -918,6 +1046,24 @@ function runClaudeSession(prompt, opts) {
       const elapsedMs = Date.now() - sessionStart;
       const silenceMs = Date.now() - lastActivityAt;
 
+      // Emit session-end event to JSONL
+      logEvent('session-end', {
+        phase: opts.phase || null,
+        step: opts.stepName || null,
+        extra: { exit_code: code, signal, elapsed_s: Math.round(elapsedMs / 1000), tool_count: sessionToolCount, tools: { ...sessionTools }, session: opts.sessionId }
+      });
+
+      // Clean up session activity and throttle entries
+      if (opts.sessionId) {
+        delete _sessionActivity[opts.sessionId];
+        // Clean up _toolLogThrottles entries for this session to prevent memory leak
+        for (const key of _toolLogThrottles.keys()) {
+          if (key.startsWith(`${opts.sessionId}-`)) {
+            _toolLogThrottles.delete(key);
+          }
+        }
+      }
+
       if (signal === 'SIGTERM' || signal === 'SIGKILL') {
         const reason = silenceMs >= stepKillMs
           ? `stuck (no output for ${Math.round(silenceMs / 60000)}min)`
@@ -926,6 +1072,8 @@ function runClaudeSession(prompt, opts) {
         err.timeout = true;
         err.stuck = silenceMs >= stepKillMs;
         err.elapsedMs = elapsedMs;
+        err.silenceMs = silenceMs;
+        err.promptText = prompt;
         err.stdout = stdout;
         reject(err);
       } else if (code !== 0) {
@@ -934,6 +1082,8 @@ function runClaudeSession(prompt, opts) {
         err.exitCode = code;
         err.stderr = stderr;
         err.stdout = stdout;
+        err.promptText = prompt;
+        err.elapsedMs = elapsedMs;
         reject(err);
       } else {
         resolve({ stdout, stderr, exitCode: code, elapsedMs, promptText: prompt });
@@ -1188,7 +1338,7 @@ async function runCorrectionCascade(projectDir) {
         `Update these files to reflect the correction: ${artifactList}. ` +
         `Make minimal targeted changes only.`;
       try {
-        await runClaudeSession(prompt, { cwd: projectDir });
+        await runClaudeSession(prompt, { cwd: projectDir, sessionId: `correction-${fix.entry.id}`, stepName: 'build' });
         log(`  ✓ ${fix.entry.id} — mechanical fix applied`);
       } catch (err) {
         log(`  ✗ ${fix.entry.id} — fix failed: ${err.message}`);
@@ -1502,6 +1652,7 @@ async function validateSpeculativePlan(projectDir, phaseId, depGraph, planMap) {
     const sessionResult = await runClaudeSession(validationPrompt, {
       cwd: projectDir,
       sessionId: `validate-phase-${phaseId}`,
+      stepName: 'plan-review',
     });
     const stdout = sessionResult.stdout || '';
     if (/\bREPLAN\b/.test(stdout)) {
@@ -1855,6 +2006,11 @@ async function main() {
         log(`  ✗ ${step} ${errType} (attempt ${attempts}/${MAX_RETRIES}): ${err.message.slice(0, 200)}`);
         if (isApiError(err) && attempts < MAX_RETRIES) {
           try { await waitForHealthyApi(); } catch { /* continue to retry logic */ }
+        } else if ((err.stuck || err.timeout) && attempts < MAX_RETRIES) {
+          // Brief backoff after timeout kills to avoid immediately re-hitting
+          // the same transient issue (API congestion, resource contention)
+          log(`  Waiting 10s before retry (timeout recovery)...`);
+          await new Promise(r => setTimeout(r, 10000));
         }
         if (attempts >= MAX_RETRIES) {
           const skipDecId = nextDecisionId(projectDir);
@@ -1882,13 +2038,17 @@ async function main() {
                 `Exit code: ${err.exitCode || 'N/A'}`,
                 `Reason: ${reason}`,
                 `Attempts: ${attempts}`,
-                `Elapsed: ${err.elapsedMs ? Math.round(err.elapsedMs / 1000) + 's' : 'N/A'}`,
+                `Session duration: ${err.elapsedMs ? Math.round(err.elapsedMs / 1000) + 's' : 'N/A'}`,
+                `Silence before kill: ${err.silenceMs ? Math.round(err.silenceMs / 1000) + 's' : 'N/A'}`,
+                '',
+                '## Prompt excerpt (first 1000 chars)',
+                (err.promptText || '').slice(0, 1000) || '(not captured)',
                 '',
                 '## stderr',
                 err.stderr || '(empty)',
                 '',
-                '## stdout (last 3000 chars)',
-                (err.stdout || '').slice(-3000),
+                '## stdout (last 5000 chars)',
+                (err.stdout || '').slice(-5000),
               ].join('\n');
               fs.writeFileSync(errorLogPath, errorLog, 'utf-8');
               log(`  Error log written to ${errorLogPath}`);
@@ -2280,9 +2440,21 @@ async function main() {
     //                  'review-failed' | 'built' | 'build-failed' | 'blocked' |
     //                  'rescheduled-sequential'
     const phase_states = {};
-    for (const phase of phasesToRun) phase_states[phase.id] = 'pending';
+    for (const phase of phasesToRun) {
+      // Detect phases that already have plans on disk (e.g., from a prior run
+      // without --resume, or from manual /fh:plan-work invocations).
+      const existingPlan = findLatestPlan(projectDir, phase.id);
+      if (existingPlan) {
+        phase_states[phase.id] = 'planned';
+        log(`  Phase ${phase.id}: existing PLAN.md found — marking as 'planned'`);
+      } else {
+        phase_states[phase.id] = 'pending';
+      }
+    }
 
     // ── Resume: restore phase_states from auto-state ───────────────────────────
+    // Resume states override the disk-based detection above (they may be further
+    // along, e.g. 'reviewed' or 'built').
     if (opts.resume && resumeState && resumeState.phase_states) {
       log('  Restoring phase_states from saved auto-state for granular resume...');
       for (const phase of phasesToRun) {
@@ -2345,6 +2517,8 @@ async function main() {
         return;
       }
       log(`  ▸ Planning phase ${phase.id}: ${phase.name}`);
+      const stepStartedAt = new Date().toISOString();
+      const stepStartMs = Date.now();
 
       // Build planning prompt additions
       const assumeEarlier = phaseIdx > 0
@@ -2400,7 +2574,7 @@ async function main() {
           `(4) Check claude-mem for past learnings about this domain before making architectural decisions. ` +
           `Write the plan to .planning/phases/ directory. Do not ask questions — make decisions autonomously.` +
           researchHint + assumeEarlier + decisionsRedirect,
-          { cwd: projectDir, sessionId }
+          { cwd: projectDir, sessionId, stepName: 'plan-work' }
         );
       } catch (err) {
         log(`  ✗ Planning failed for phase ${phase.id}: ${err.message.slice(0, 200)}`);
@@ -2438,9 +2612,9 @@ async function main() {
         phase_name: phase.name,
         step: 'plan-work',
         status: 'success',
-        elapsed_ms: 0,
+        elapsed_ms: Date.now() - stepStartMs,
         cost_estimate: sessionCost,
-        started_at: new Date().toISOString(),
+        started_at: stepStartedAt,
         completed_at: new Date().toISOString(),
         metrics: planMetrics,
       });
@@ -2576,6 +2750,8 @@ async function main() {
         return;
       }
       log(`  ▸ Reviewing phase ${phase.id}`);
+      const reviewStartedAt = new Date().toISOString();
+      const reviewStartMs = Date.now();
       const outcome = await runStepWithRetry(phase, 'plan-review', phasePlanPaths[phase.id]);
       if (outcome.skipped) {
         log(`  ✗ Review failed for phase ${phase.id} (${outcome.reason}) — rescheduling to sequential`);
@@ -2589,9 +2765,9 @@ async function main() {
           phase_name: phase.name,
           step: 'plan-review',
           status: 'success',
-          elapsed_ms: 0,
+          elapsed_ms: Date.now() - reviewStartMs,
           cost_estimate: outcome.cost || 0,
-          started_at: new Date().toISOString(),
+          started_at: reviewStartedAt,
           completed_at: new Date().toISOString(),
           metrics: parseSessionMetrics((outcome.result && outcome.result.stdout) || ''),
         });
@@ -2673,6 +2849,7 @@ async function main() {
         await runClaudeSession(reviewPrompt, {
           cwd: projectDir,
           sessionId: `batch-review-${batchPhases.map(p => p.id).join('-')}`,
+          stepName: 'review',
         });
         log(`  ✓ Batched review complete for phases: ${phaseIds}`);
       } catch (err) {
@@ -2718,12 +2895,18 @@ async function main() {
           const planOutcome = await runStepWithRetry(phase, 'plan-work', null);
           if (!planOutcome.skipped) {
             const newPlanPath = findLatestPlan(projectDir, phase.id);
-            if (newPlanPath) phasePlanPaths[phase.id] = newPlanPath;
+            if (newPlanPath) {
+              phasePlanPaths[phase.id] = newPlanPath;
+              // Update planMap so subsequent validations use fresh files_modified
+              planMap[phase.id] = parsePlanFrontmatter(newPlanPath);
+            }
             await runStepWithRetry(phase, 'plan-review', phasePlanPaths[phase.id]);
           }
         }
 
         log(`  ▸ Building phase ${phase.id}`);
+        const buildStartedAt = new Date().toISOString();
+        const buildStartMs = Date.now();
 
         // State write reduction: in stable run, only write at phase-start
         // Build plan path with fallback
@@ -2801,9 +2984,9 @@ async function main() {
               phase_name: phase.name,
               step: 'build',
               status: 'success',
-              elapsed_ms: 0,
+              elapsed_ms: Date.now() - buildStartMs,
               cost_estimate: outcome.cost || 0,
-              started_at: new Date().toISOString(),
+              started_at: buildStartedAt,
               completed_at: new Date().toISOString(),
               metrics: parseSessionMetrics((outcome.result && outcome.result.stdout) || ''),
             });
@@ -2895,6 +3078,19 @@ async function main() {
             log(`  ↷ Reusing existing plan from planning wave: ${path.relative(projectDir, currentPlanPath)}`);
             completedSteps.push(step);
             continue;
+          }
+
+          // Skip plan-review if this phase was already successfully reviewed
+          // (check step_history for a prior successful review entry)
+          if (step === 'plan-review') {
+            const alreadyReviewed = _autoStatus.stepHistory.some(
+              e => String(e.phase) === String(phase.id) && e.step === 'plan-review' && e.status === 'success'
+            );
+            if (alreadyReviewed) {
+              log(`  ↷ Skipping review for phase ${phase.id} (already reviewed in prior wave)`);
+              completedSteps.push(step);
+              continue;
+            }
           }
 
           writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
@@ -3128,17 +3324,29 @@ function printMilestoneCostSummary(phaseCosts) {
 
 // Export for testing when required as a module
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { validateAutoState, parseSessionMetrics, aggregatePhaseMetrics, parsePlanFrontmatter, buildDependencyGraph, assignWaves, comparePhaseNum, estimateSessionCost, printMilestoneCostSummary, cascadePlanFailures };
+  module.exports = { validateAutoState, parseSessionMetrics, aggregatePhaseMetrics, parsePlanFrontmatter, buildDependencyGraph, assignWaves, comparePhaseNum, estimateSessionCost, printMilestoneCostSummary, cascadePlanFailures, createJsonLineParser, TOOL_TIMEOUT_EXTENSIONS, MAX_TIMEOUT_CAP };
 }
 
 // Only run main() when executed directly (not when required for testing)
 if (require.main === module) {
-  main().catch((err) => {
-    writeAutoStatus(_autoStatus.projectDir || process.cwd(), {
-      active: false,
-      last_log_line: `Fatal error: ${err.message.slice(0, 200)}`,
-      errors: [{ phase: null, step: null, attempt: 1, error_type: 'fatal', message: err.message.slice(0, 300), timestamp: new Date().toISOString() }],
-    });
+  main().catch(async (err) => {
+    // Write error state synchronously to avoid race with process.exit.
+    // Build the state object inline (not via buildAutoStatus) because this
+    // handler must work even if main() crashed before initializing _autoStatus.
+    const stateDir = _autoStatus.projectDir || process.cwd();
+    const statusPath = path.join(stateDir, '.planning', '.auto-state.json');
+    try {
+      const errorState = {
+        active: false,
+        last_log_line: `Fatal error: ${err.message.slice(0, 200)}`,
+        errors: [{ phase: null, step: null, attempt: 1, error_type: 'fatal', message: err.message.slice(0, 300), timestamp: new Date().toISOString() }],
+        timestamp: new Date().toISOString(),
+      };
+      fs.writeFileSync(statusPath + '.tmp', JSON.stringify(errorState, null, 2));
+      fs.renameSync(statusPath + '.tmp', statusPath);
+    } catch (e) {
+      try { process.stderr.write(`Failed to write error state: ${e.message}\n`); } catch { /* truly best effort */ }
+    }
     fatal(err.message);
   });
 }

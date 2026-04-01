@@ -763,6 +763,86 @@ function serveState(req, res) {
 }
 
 // ---------------------------------------------------------------------------
+// API: /api/logs — returns parsed .auto-log.jsonl entries with filtering
+// ---------------------------------------------------------------------------
+function serveLogs(req, res) {
+  try {
+    if (!activePlanningDir) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'No active project' }));
+      return;
+    }
+
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const filterType = url.searchParams.get('type') || null;
+    const filterPhase = url.searchParams.get('phase') || null;
+    const filterSince = url.searchParams.get('since') || null;
+    const limitParam = url.searchParams.get('limit');
+    const limit = limitParam ? Math.max(1, parseInt(limitParam, 10) || 100) : null;
+
+    const logPath = path.join(activePlanningDir, '.auto-log.jsonl');
+
+    if (!fs.existsSync(logPath)) {
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' });
+      res.end(JSON.stringify({ entries: [], total: 0 }));
+      return;
+    }
+
+    // Tail-read: only read last 10MB if file exceeds 10MB
+    const stats = fs.statSync(logPath);
+    let content;
+    if (stats.size > 10 * 1024 * 1024) {
+      const fd = fs.openSync(logPath, 'r');
+      const buf = Buffer.alloc(10 * 1024 * 1024);
+      fs.readSync(fd, buf, 0, buf.length, stats.size - buf.length);
+      fs.closeSync(fd);
+      content = buf.toString('utf-8');
+      // Skip first partial line (may be cut off at the tail boundary)
+      const firstNl = content.indexOf('\n');
+      if (firstNl !== -1) content = content.slice(firstNl + 1);
+    } else {
+      content = fs.readFileSync(logPath, 'utf-8');
+    }
+
+    // Parse each line as JSON; skip unparseable lines
+    const sinceMs = filterSince ? new Date(filterSince).getTime() : null;
+    const entries = [];
+    for (const line of content.split('\n')) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      let entry;
+      try {
+        entry = JSON.parse(trimmed);
+      } catch {
+        continue;
+      }
+
+      // Apply filters
+      if (filterType && entry.type !== filterType) continue;
+      if (filterPhase && String(entry.phase) !== String(filterPhase)) continue;
+      if (sinceMs) {
+        const entryMs = entry.timestamp ? new Date(entry.timestamp).getTime() : 0;
+        if (isNaN(entryMs) || entryMs < sinceMs) continue;
+      }
+
+      entries.push(entry);
+    }
+
+    const total = entries.length;
+
+    // Apply limit (take last N entries to preserve recency)
+    const result = limit && entries.length > limit ? entries.slice(entries.length - limit) : entries;
+
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' });
+    res.end(JSON.stringify({ entries: result, total }));
+  } catch (err) {
+    console.error('  Error serving logs:', err.message);
+    res.writeHead(500, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: err.message }));
+  }
+}
+
+// ---------------------------------------------------------------------------
 // API: /api/activity — returns recent activity (stub for now)
 // ---------------------------------------------------------------------------
 function serveActivity(res) {
@@ -896,6 +976,10 @@ const server = http.createServer((req, res) => {
 
   if (req.method === 'GET' && pathname === '/api/activity') {
     return serveActivity(res);
+  }
+
+  if (req.method === 'GET' && pathname === '/api/logs') {
+    return serveLogs(req, res);
   }
 
   if (req.method === 'GET' && pathname === '/api/events') {

@@ -8,6 +8,17 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.61.0] - 2026-04-01
+
+### Added
+- **Real-time tool event parsing** — auto-orchestrator parses stdout JSON lines in real-time with buffered chunking, enabling activity-aware stuck detection with tool-specific timeout extensions (Bash +5min, Agent +3min, Edit/Write +1min, capped at 25min)
+- **Tracker live operations center** — expanded 400px log window with color-coded event types, live activity badges showing current tool and elapsed time per session, collapsible error panel, and filter buttons (All/Sessions/Tools/Errors)
+- **claude-mem agent integration** — all 15 GSD agents gain claude-mem MCP tools access and usage guidance via shared reference doc, enabling cross-session memory and efficient code exploration
+
+### Changed
+- **Build skill** — implementer-prompt and test-spec subagents now use claude-mem for cross-session pattern reuse
+- **New-project skill** — shadcn detection and non-interactive installation fixes for Conductor environments
+
 ## [1.60.1] - 2026-04-01
 
 ### Fixed
