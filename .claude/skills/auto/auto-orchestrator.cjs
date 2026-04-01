@@ -491,12 +491,63 @@ function validateAutoState(state) {
     warnings.push('State is not a valid object');
     return { warnings };
   }
-  if (state.phase !== null && state.phase !== undefined && typeof state.phase !== 'string') {
-    warnings.push(`state.phase must be a string or null, got ${typeof state.phase}`);
+
+  // Required fields (aligned with bin/lib/schemas.cjs canonical schema)
+  if (state.active === undefined) {
+    warnings.push('state.active is required');
+  } else if (typeof state.active !== 'boolean') {
+    warnings.push(`state.active must be a boolean, got ${typeof state.active}`);
   }
-  if (state.phase_states !== undefined && (typeof state.phase_states !== 'object' || Array.isArray(state.phase_states) || state.phase_states === null)) {
+
+  if (!('phase' in state)) {
+    warnings.push('state.phase is required');
+  } else if (state.phase !== null && typeof state.phase !== 'string' && typeof state.phase !== 'number') {
+    warnings.push(`state.phase must be a string, number, or null, got ${typeof state.phase}`);
+  }
+
+  if (!('started_at' in state)) {
+    warnings.push('state.started_at is required');
+  } else if (state.started_at !== null && typeof state.started_at !== 'string') {
+    warnings.push(`state.started_at must be a string or null, got ${typeof state.started_at}`);
+  }
+
+  if (state.phases_total === undefined) {
+    warnings.push('state.phases_total is required');
+  } else if (typeof state.phases_total !== 'number') {
+    warnings.push(`state.phases_total must be a number, got ${typeof state.phases_total}`);
+  }
+
+  if (state.phases_completed === undefined) {
+    warnings.push('state.phases_completed is required');
+  } else if (typeof state.phases_completed !== 'number') {
+    warnings.push(`state.phases_completed must be a number, got ${typeof state.phases_completed}`);
+  }
+
+  if (state.phase_states === undefined) {
+    warnings.push('state.phase_states is required');
+  } else if (typeof state.phase_states !== 'object' || Array.isArray(state.phase_states) || state.phase_states === null) {
     warnings.push('state.phase_states must be an object');
   }
+
+  if (state.activity_events === undefined) {
+    warnings.push('state.activity_events is required');
+  } else if (!Array.isArray(state.activity_events)) {
+    warnings.push(`state.activity_events must be an array, got ${typeof state.activity_events}`);
+  }
+
+  if (state.session_activity === undefined) {
+    warnings.push('state.session_activity is required');
+  } else if (typeof state.session_activity !== 'object' || Array.isArray(state.session_activity) || state.session_activity === null) {
+    warnings.push('state.session_activity must be an object');
+  }
+
+  if (state.log_buffer === undefined) {
+    warnings.push('state.log_buffer is required');
+  } else if (!Array.isArray(state.log_buffer)) {
+    warnings.push(`state.log_buffer must be an array, got ${typeof state.log_buffer}`);
+  }
+
+  // Orchestrator-specific optional fields
   if (state.total_cost_estimate !== undefined && (typeof state.total_cost_estimate !== 'number' || state.total_cost_estimate < 0)) {
     warnings.push(`state.total_cost_estimate must be a non-negative number, got ${state.total_cost_estimate}`);
   }
@@ -759,7 +810,7 @@ function aggregatePhaseMetrics(stepHistory, phaseId) {
       }
       elapsed_ms += entry.elapsed_ms || 0;
     }
-    return { tokens_in, tokens_out, elapsed_ms, step_count: entries.length };
+    return { tokens_in, tokens_out, elapsed_ms, steps: entries.length, read_calls: 0, cost_estimate: 0 };
   }
   // No phaseId: aggregate all phases into a map
   const phases = {};

@@ -7,7 +7,7 @@ disable-model-invocation: true
 
 $ARGUMENTS
 
-Use the UI patterns from `references/gsd/ui-brand.md` for all output in this command, but use `FHHS ►` prefix in stage banners instead of `GSD ►`.
+Use the UI patterns from `skills/setup/references/ui-brand.md` for all output in this command, but use `FHHS ►` prefix in stage banners instead of `GSD ►`.
 
 ## Quick Check Mode
 
