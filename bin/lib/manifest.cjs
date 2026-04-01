@@ -104,7 +104,7 @@ function checkManifest(merged, projectRoot) {
   const hasProject = projectRoot && fs.existsSync(path.join(projectRoot, '.planning'));
 
   for (const item of items) {
-    const { type, check, id, required, deprecated, removeAction } = item;
+    const { type, check, id, required, deprecated, action: removeAction } = item;
     let status = 'ok';
     let details = '';
     let hint = item.hint || undefined;
@@ -770,7 +770,7 @@ function checkAndRemediate(globalPath, projectPath, projectRoot, opts = {}) {
     const checkResults = checkManifest(merged, projectRoot);
 
     let remediateResults = null;
-    if (!opts.noRemediate) {
+    if (opts.remediate !== false && !opts.noRemediate) {
       remediateResults = remediate(checkResults, projectRoot);
       // Re-run checks after remediation to get updated statuses
       const recheckResults = checkManifest(merged, projectRoot);

@@ -676,21 +676,16 @@ async function main() {
     }
 
     case 'changelog': {
-      const changelog = require('./lib/changelog.cjs');
       const sub = args[1];
       if (sub === 'reconcile') {
-        const fromIdx = args.indexOf('--from');
-        const toIdx = args.indexOf('--to');
-        const fileIdx = args.indexOf('--changelog-file');
+        // Reconciliation logic moved to manifest.cjs — delegate there
         const projIdx = args.indexOf('--project-root');
-        const fromVal = fromIdx !== -1 ? args[fromIdx + 1] : undefined;
-        const toVal = toIdx !== -1 ? args[toIdx + 1] : undefined;
-        if (!fromVal || !toVal || !/^\d+\.\d+\.\d+$/.test(fromVal) || !/^\d+\.\d+\.\d+$/.test(toVal)) {
-          error('Usage: changelog reconcile --from X.Y.Z --to X.Y.Z [--changelog-file PATH] [--project-root PATH]');
-        }
-        const changelogFile = fileIdx !== -1 ? args[fileIdx + 1] : path.join(cwd, 'CHANGELOG.md');
         const projectRoot = projIdx !== -1 ? args[projIdx + 1] : cwd;
-        changelog.cmdChangelogReconcile(changelogFile, fromVal, toVal, projectRoot, raw);
+        const manifest = require('./lib/manifest.cjs');
+        const globalManifestPath = path.join(os.homedir(), '.claude', 'fhhs-manifest.json');
+        const projectManifestPath = path.join(projectRoot, '.claude', 'fhhs-manifest.json');
+        const result = manifest.checkAndRemediate(globalManifestPath, projectManifestPath, projectRoot, {});
+        output(result, raw);
       } else {
         error('Unknown changelog subcommand: ' + sub + '. Available: reconcile');
       }
