@@ -1,0 +1,26 @@
+{
+  "model_profile": "balanced",
+  "commit_docs": true,
+  "search_gitignored": false,
+  "branching_strategy": "none",
+  "research": true,
+  "plan_checker": true,
+  "verifier": true,
+  "parallelization": true,
+  "plan_limits": {
+    "tasks_per_plan": [
+      4,
+      6
+    ],
+    "files_per_plan": [
+      8,
+      15
+    ],
+    "words_per_plan": 2500,
+    "context_target": 60
+  },
+  "workflow": {
+    "auto_advance": false,
+    "nyquist_validation": true
+  }
+}

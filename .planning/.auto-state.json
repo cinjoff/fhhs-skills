@@ -1,0 +1,118 @@
+{
+  "active": false,
+  "phase": null,
+  "phase_name": null,
+  "step": null,
+  "step_index": 0,
+  "steps_total": 4,
+  "steps_completed": [],
+  "started_at": "2026-04-01T21:44:17.810Z",
+  "phase_started_at": null,
+  "elapsed_ms": 10,
+  "total_cost_estimate": 0,
+  "budget": null,
+  "phases_total": 1,
+  "phases_completed": 0,
+  "phases_failed": 0,
+  "phases_skipped": 0,
+  "current_plan_path": null,
+  "step_history": [],
+  "errors": [],
+  "last_log_line": "Milestone complete — all phases shipped",
+  "log_buffer": [
+    {
+      "ts": "2026-04-01 21:44:17Z",
+      "msg": "Opening dashboard..."
+    },
+    {
+      "ts": "2026-04-01 21:44:17Z",
+      "msg": "Auto-execution starting"
+    },
+    {
+      "ts": "2026-04-01 21:44:17Z",
+      "msg": "  Project: /Users/konstantin/conductor/workspaces/fhhs-skills/fix-orchestrator-tool-listening"
+    },
+    {
+      "ts": "2026-04-01 21:44:17Z",
+      "msg": "  Phases: 7–7 (1 phases)"
+    },
+    {
+      "ts": "2026-04-01 21:44:17Z",
+      "msg": ""
+    },
+    {
+      "ts": "2026-04-01 21:44:17Z",
+      "msg": "Mode: speculative pipeline (planning wave → review wave → build wave)"
+    },
+    {
+      "ts": "2026-04-01 21:44:17Z",
+      "msg": "  Phase 7: already complete — excluding from pipeline"
+    },
+    {
+      "ts": "2026-04-01 21:44:17Z",
+      "msg": "  1 phase(s) excluded, 0 remaining"
+    },
+    {
+      "ts": "2026-04-01 21:44:17Z",
+      "msg": ""
+    },
+    {
+      "ts": "2026-04-01 21:44:17Z",
+      "msg": "═══ Planning wave ═══"
+    },
+    {
+      "ts": "2026-04-01 21:44:17Z",
+      "msg": "  Merging phase-local decisions..."
+    },
+    {
+      "ts": "2026-04-01 21:44:17Z",
+      "msg": "  [waves] All phases share files — running sequentially (no parallelization benefit)"
+    },
+    {
+      "ts": "2026-04-01 21:44:17Z",
+      "msg": "  Dependency graph built. Wave assignments: {}"
+    },
+    {
+      "ts": "2026-04-01 21:44:17Z",
+      "msg": ""
+    },
+    {
+      "ts": "2026-04-01 21:44:17Z",
+      "msg": "═══ Review wave ═══"
+    },
+    {
+      "ts": "2026-04-01 21:44:17Z",
+      "msg": ""
+    },
+    {
+      "ts": "2026-04-01 21:44:17Z",
+      "msg": "═══ Build wave ═══"
+    },
+    {
+      "ts": "2026-04-01 21:44:17Z",
+      "msg": "  Session history appended to /Users/konstantin/.claude/tracker/history.jsonl"
+    }
+  ],
+  "optimizations": {
+    "health_checks_cached": 0,
+    "state_writes_saved": 0,
+    "reviews_batched": 0,
+    "speculative_plans_validated": 0,
+    "speculative_plans_replanned": 0
+  },
+  "project_dir": "/Users/konstantin/conductor/workspaces/fhhs-skills/fix-orchestrator-tool-listening",
+  "claude_tmp_base": "/var/folders/rf/w6p2hmfs4z7995q921j9vmxw0000gn/T/claude-501/-Users-konstantin-conductor-workspaces-fhhs-skills-fix-orchestrator-tool-listening",
+  "current_wave": null,
+  "concurrency": {
+    "max": 1,
+    "active": 0
+  },
+  "phase_states": {},
+  "dep_graph": {},
+  "build_order": [],
+  "last_activity_at": null,
+  "activity_events": [],
+  "phase_costs": {},
+  "session_activity": {},
+  "milestone_complete": true
+}

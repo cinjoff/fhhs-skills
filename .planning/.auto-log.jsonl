@@ -1,0 +1,33 @@
+{"ts":"2026-04-01T21:44:17.812Z","type":"session-start","phase":null,"step":null,"level":"info","msg":"Auto-execution starting: phases 7–7 (1 phases)","phases_total":1,"start_phase":"7","end_phase":"7","resume":false}
+{"ts":"2026-04-01T21:44:17.813Z","type":"log","phase":null,"step":null,"level":"info","msg":"Opening dashboard..."}
+{"ts":"2026-04-01T21:44:17.816Z","type":"log","phase":null,"step":null,"level":"info","msg":"Auto-execution starting"}
+{"ts":"2026-04-01T21:44:17.817Z","type":"log","phase":null,"step":null,"level":"info","msg":"  Project: /Users/konstantin/conductor/workspaces/fhhs-skills/fix-orchestrator-tool-listening"}
+{"ts":"2026-04-01T21:44:17.817Z","type":"log","phase":null,"step":null,"level":"info","msg":"  Phases: 7–7 (1 phases)"}
+{"ts":"2026-04-01T21:44:17.817Z","type":"log","phase":null,"step":null,"level":"info","msg":""}
+{"ts":"2026-04-01T21:44:17.817Z","type":"log","phase":null,"step":null,"level":"info","msg":"Mode: speculative pipeline (planning wave → review wave → build wave)"}
+{"ts":"2026-04-01T21:44:17.818Z","type":"log","phase":null,"step":null,"level":"info","msg":"  Phase 7: already complete — excluding from pipeline"}
+{"ts":"2026-04-01T21:44:17.818Z","type":"log","phase":null,"step":null,"level":"info","msg":"  1 phase(s) excluded, 0 remaining"}
+{"ts":"2026-04-01T21:44:17.818Z","type":"log","phase":null,"step":null,"level":"info","msg":""}
+{"ts":"2026-04-01T21:44:17.818Z","type":"log","phase":null,"step":null,"level":"info","msg":"═══ Planning wave ═══"}
+{"ts":"2026-04-01T21:44:17.819Z","type":"log","phase":null,"step":null,"level":"info","msg":"  Merging phase-local decisions..."}
+{"ts":"2026-04-01T21:44:17.820Z","type":"log","phase":null,"step":null,"level":"info","msg":"  [waves] All phases share files — running sequentially (no parallelization benefit)"}
+{"ts":"2026-04-01T21:44:17.820Z","type":"log","phase":null,"step":null,"level":"info","msg":"  Dependency graph built. Wave assignments: {}"}
+{"ts":"2026-04-01T21:44:17.820Z","type":"dep-graph","phase":null,"step":null,"level":"info","msg":"Dependency graph: 0 edges, 0 waves","dep_graph":{"edges":[],"phases":[]},"build_waves":[]}
+{"ts":"2026-04-01T21:44:17.820Z","type":"log","phase":null,"step":null,"level":"info","msg":""}
+{"ts":"2026-04-01T21:44:17.820Z","type":"log","phase":null,"step":null,"level":"info","msg":"═══ Review wave ═══"}
+{"ts":"2026-04-01T21:44:17.820Z","type":"log","phase":null,"step":null,"level":"info","msg":""}
+{"ts":"2026-04-01T21:44:17.820Z","type":"log","phase":null,"step":null,"level":"info","msg":"═══ Build wave ═══"}
+{"ts":"2026-04-01T21:44:17.820Z","type":"log","phase":null,"step":null,"level":"info","msg":"  Session history appended to /Users/konstantin/.claude/tracker/history.jsonl"}
+{"ts":"2026-04-01T21:44:17.821Z","type":"log","phase":null,"step":null,"level":"info","msg":""}
+{"ts":"2026-04-01T21:44:17.821Z","type":"log","phase":null,"step":null,"level":"info","msg":"Auto-execution complete:"}
+{"ts":"2026-04-01T21:44:17.821Z","type":"log","phase":null,"step":null,"level":"info","msg":"  Phases: 7–7 (0 phases)"}
+{"ts":"2026-04-01T21:44:17.821Z","type":"log","phase":null,"step":null,"level":"info","msg":"  Plans executed: 0"}
+{"ts":"2026-04-01T21:44:17.821Z","type":"log","phase":null,"step":null,"level":"info","msg":"  Decisions logged: 0"}
+{"ts":"2026-04-01T21:44:17.821Z","type":"log","phase":null,"step":null,"level":"info","msg":"  Cost estimate: $0.00"}
+{"ts":"2026-04-01T21:44:17.821Z","type":"log","phase":null,"step":null,"level":"info","msg":"  Duration: 0m"}
+{"ts":"2026-04-01T21:44:17.821Z","type":"log","phase":null,"step":null,"level":"info","msg":"  Milestone: COMPLETE — all 0 phases shipped"}
+{"ts":"2026-04-01T21:44:17.821Z","type":"log","phase":null,"step":null,"level":"info","msg":""}
+{"ts":"2026-04-01T21:44:17.821Z","type":"log","phase":null,"step":null,"level":"info","msg":"══════════════════════════════════════"}
+{"ts":"2026-04-01T21:44:17.821Z","type":"log","phase":null,"step":null,"level":"info","msg":"ALL PHASES COMPLETE — Milestone ready for archive"}
+{"ts":"2026-04-01T21:44:17.821Z","type":"log","phase":null,"step":null,"level":"info","msg":"Run: gsd-tools milestone complete <version>"}
+{"ts":"2026-04-01T21:44:17.821Z","type":"log","phase":null,"step":null,"level":"info","msg":"══════════════════════════════════════"}
