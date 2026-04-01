@@ -475,6 +475,7 @@ For each missing item, match on `check` type and apply the fix:
 |----|----------------|
 | `fallow` | `pnpm install -g fallow` |
 | `typescript-language-server` | `npm install -g typescript-language-server typescript` |
+| `agent-browser` | `npm install -g agent-browser` |
 | Any other tool | `pnpm install -g $ID` (best-effort) |
 
 ```bash

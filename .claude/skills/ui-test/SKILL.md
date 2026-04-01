@@ -16,12 +16,40 @@ If `$ARGUMENTS` contains `--qa`, run **QA Mode** below. Otherwise, run **Visual 
 
 ## Step 1: Ensure Dev Server
 
-Check if a dev server is running on a common port (3000, 5173, 4321, 8080):
+Detect the dev server URL. Check in order:
+
+1. **User-provided URL** — if the user gave you a URL, use it directly.
+2. **`$PORT` environment variable** — Conductor sets this when port-forwarding. If set, use `http://localhost:$PORT`.
+3. **Common local ports** — scan for a listening server:
+
 ```bash
-lsof -i :3000 -i :5173 -i :4321 -i :8080 -P -n 2>/dev/null | grep LISTEN | head -5
+# Check $PORT first (Conductor port forwarding)
+if [ -n "$PORT" ]; then
+  echo "PORT_ENV=$PORT"
+fi
+# Then scan common dev ports
+for p in 3000 5173 4321 8080 4000 8000; do
+  lsof -i :$p -P -n 2>/dev/null | grep -q LISTEN && echo "LISTENING=$p"
+done
 ```
 
-If not running, start it with `pnpm dev` (or the project's dev command) in the background and wait for ready.
+Use the first detected port as `$DEV_PORT`. If nothing is found, detect the package manager and start the dev server:
+
+```bash
+# Detect package manager from lockfile
+if [ -f "pnpm-lock.yaml" ]; then PM="pnpm"
+elif [ -f "yarn.lock" ]; then PM="yarn"
+elif [ -f "bun.lockb" ] || [ -f "bun.lock" ]; then PM="bun"
+else PM="npm"; fi
+echo "PM=$PM"
+```
+
+Start with `$PM run dev` (or `$PM dev` for pnpm/bun) in the background and wait for ready.
+
+Store the base URL for use in all subsequent steps:
+```bash
+DEV_URL="http://localhost:${DEV_PORT}"
+```
 
 ---
 
@@ -40,15 +68,15 @@ Capture desktop, tablet, and mobile viewports:
 
 ```bash
 # Desktop (1440x900)
-agent-browser open http://localhost:3000 --viewport 1440x900 --wait 3000
+agent-browser open "$DEV_URL" --viewport 1440x900 --wait 3000
 agent-browser screenshot /tmp/ui-test-desktop.png
 
 # Tablet (768x1024)
-agent-browser open http://localhost:3000 --viewport 768x1024 --wait 2000
+agent-browser open "$DEV_URL" --viewport 768x1024 --wait 2000
 agent-browser screenshot /tmp/ui-test-tablet.png
 
 # Mobile (375x812)
-agent-browser open http://localhost:3000 --viewport 375x812 --wait 2000
+agent-browser open "$DEV_URL" --viewport 375x812 --wait 2000
 agent-browser screenshot /tmp/ui-test-mobile.png
 
 # Accessibility snapshot
@@ -57,11 +85,11 @@ agent-browser snapshot -c > /tmp/ui-test-a11y.txt
 
 For authenticated pages, log in first:
 ```bash
-agent-browser open http://localhost:3000/login --viewport 1440x900
+agent-browser open "$DEV_URL/login" --viewport 1440x900
 agent-browser fill 'input[type="email"]' "$TEST_USER_EMAIL"
 agent-browser fill 'input[type="password"]' "$TEST_USER_PASSWORD"
 agent-browser click 'button[type="submit"]'
-agent-browser open http://localhost:3000/protected --wait 5000
+agent-browser open "$DEV_URL/protected" --wait 5000
 agent-browser screenshot /tmp/ui-test-desktop.png
 ```
 
@@ -138,7 +166,7 @@ This skill requires **agent-browser** CLI to be installed globally. If `agent-br
 
 | Parameter | Default | Override example |
 |-----------|---------|-----------------|
-| Target URL | (auto-detect or required) | `https://myapp.com`, `http://localhost:3000` |
+| Target URL | (auto-detect or required) | `https://myapp.com`, `http://localhost:$PORT` |
 | Mode | full | `--quick`, `--regression .planning/qa-reports/baseline.json` |
 | Output dir | `.planning/qa-reports/` | `Output to /tmp/qa` |
 | Scope | Full app (or diff-scoped) | `Focus on the billing page` |
@@ -185,13 +213,16 @@ This is the **primary mode** for developers verifying their work. When the user 
    - API endpoints -> test them directly with `agent-browser eval "await fetch('/api/...')"`
    - Static pages (markdown, HTML) -> navigate to them directly
 
-3. **Detect the running app** — check common local dev ports:
+3. **Detect the running app** — resolve the dev server URL using the same priority as Visual Verification mode:
+   - If the user provided a URL, use it.
+   - If `$PORT` is set (Conductor port forwarding), use `http://localhost:$PORT`.
+   - Otherwise scan common ports:
    ```bash
-   agent-browser --session "qa-${BRANCH}" open http://localhost:3000 2>/dev/null && echo "Found app on :3000" || \
-   agent-browser --session "qa-${BRANCH}" open http://localhost:4000 2>/dev/null && echo "Found app on :4000" || \
-   agent-browser --session "qa-${BRANCH}" open http://localhost:8080 2>/dev/null && echo "Found app on :8080"
+   for p in 3000 5173 4321 8080 4000 8000; do
+     lsof -i :$p -P -n 2>/dev/null | grep -q LISTEN && echo "LISTENING=$p" && break
+   done
    ```
-   If no local app is found, check for a staging/preview URL in the PR or environment. If nothing works, ask the user for the URL.
+   Store as `DEV_URL` and use throughout. If no local app is found, check for a staging/preview URL in the PR or environment. If nothing works, ask the user for the URL.
 
 4. **Test each affected page/route:**
    - Navigate to the page

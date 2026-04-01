@@ -8,6 +8,14 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.61.4] - 2026-04-01
+
+### Fixed
+- **ui-test port detection** — replaces hardcoded localhost:3000 with dynamic port detection: checks `$PORT` env var (Conductor port forwarding), then scans common dev ports (3000, 5173, 4321, 8080, 4000, 8000)
+- **ui-test package manager detection** — detects pnpm/yarn/bun/npm from lockfile instead of assuming pnpm
+- **agent-browser in setup** — adds agent-browser to the tool check loop so `/fh:setup` detects and reports its availability [setup:tool:agent-browser]
+- **agent-browser in update** — adds agent-browser to the remediation map so `/fh:update` auto-installs it when missing [setup:tool:agent-browser]
+
 ## [1.61.3] - 2026-04-01
 
 ### Fixed
