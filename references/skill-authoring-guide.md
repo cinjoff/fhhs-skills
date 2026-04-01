@@ -73,3 +73,32 @@ checks:
   - "checkpoint:human-verify"
   - "non-interactive"
 ```
+
+## Data Contracts
+
+Rules for cross-skill artifacts and shared data structures.
+
+**Schema-first:** Every new cross-skill artifact MUST have a schema entry in `references/schemas/` before code is written. If no schema file exists, create it first.
+
+**Update before modify:** When changing an existing artifact's fields, update the schema file first, then update the code.
+
+**Central paths:** Use `bin/lib/paths.cjs` for all `.planning/` path construction in CJS code. Never construct these paths inline.
+
+```js
+// Good
+const { planningPath } = require('./paths.cjs');
+const statePath = planningPath('STATE.md');
+
+// Bad — anti-pattern
+const statePath = path.join(process.cwd(), '.planning', 'STATE.md');
+```
+
+**Single writer:** Never write to `.auto-state.json` directly. All writes MUST go through `buildAutoStatus()` — single writer pattern prevents state corruption.
+
+**Schema format:** Schema files document each field with: field name, type, required/optional, producer, consumer.
+
+**Reference schemas:**
+- `references/schemas/auto-state.schema.md` — Auto-orchestrator runtime state
+- `references/schemas/planning-structure.md` — Planning directory naming and structure
+
+**Anti-pattern:** Hardcoding path patterns inline instead of importing from `paths.cjs` — breaks when path conventions change and bypasses the single source of truth.
