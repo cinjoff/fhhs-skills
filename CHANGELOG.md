@@ -13,6 +13,21 @@ Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliat
 ### Removed
 - **context-mode** plugin dependency — replaced by native context tools
 
+## [1.62.0] - 2026-04-02
+
+### Added
+- **Manifest-driven update infrastructure** — deterministic `fhhs-manifest.json` replaces LLM-heavy update checks; single source of truth for expected environment state with check/remediate engine [project:file:.claude/fhhs-manifest.json]
+- **Runtime schema validation** — `bin/lib/schemas.cjs` with fail-open `validateAutoState()` at write boundaries; 3 schema compliance evals
+
+### Changed
+- **Lazy require in gsd-tools.cjs** — only `fs`, `path`, and `core.cjs` load at startup; 11 lib modules deferred to their respective commands, reducing cold-start token cost
+- **validateAutoState aligned** — orchestrator's inline validator now matches canonical `schemas.cjs` contract (required: `active`, `phase`, `started_at`, `phases_total`, `phases_completed`, `phase_states`, `activity_events`, `session_activity`, `log_buffer`)
+- **aggregatePhaseMetrics** — single-phase and all-phases modes now return consistent field names (`steps`, not `step_count`)
+
+### Fixed
+- **Dashboard SSE timestamp filter** — `server.cjs` was reading `entry.ts` (nonexistent) instead of `entry.timestamp`, breaking incremental log fetching
+- **Setup shipping boundary** — co-located `ui-brand.md` into `.claude/skills/setup/references/` so plugin installs can find it at runtime
+
 ## [1.61.4] - 2026-04-01
 
 ### Fixed
