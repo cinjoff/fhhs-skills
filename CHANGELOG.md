@@ -8,6 +8,11 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.61.2] - 2026-04-01
+
+### Fixed
+- **Subagent dispatch errors** — adds `fh:` prefix to all subagent_type references across 12 skill/command files, fixing "Agent type not found" errors when dispatching plugin agents from review, build, fix, plan-work, map-codebase, new-project, and other skills
+
 ## [1.61.1] - 2026-04-01
 
 ### Fixed
