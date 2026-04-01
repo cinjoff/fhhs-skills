@@ -34,13 +34,13 @@ Every project goes through this process. A todo list, a single-function utility,
 - Focus on understanding: purpose, constraints, success criteria
 
 **Deep codebase exploration (for complex features):**
-For features that touch multiple areas or need architectural understanding, dispatch 2-3 `code-explorer` agents in parallel to explore different aspects (similar features, architecture, integration points). After agents return, **read the essential files they identify** — this builds deep context in the main session before designing approaches.
+For features that touch multiple areas or need architectural understanding, dispatch 2-3 `fh:code-explorer` agents in parallel to explore different aspects (similar features, architecture, integration points). After agents return, **read the essential files they identify** — this builds deep context in the main session before designing approaches.
 
 Skip this for simple changes where you already understand the relevant code.
 
 **Exploring approaches:**
 - Propose 2-3 different approaches with trade-offs
-- For complex features, consider dispatching 2-3 `code-architect` agents with different lenses (minimal changes, clean architecture, pragmatic balance) to independently flesh out approaches
+- For complex features, consider dispatching 2-3 `fh:code-architect` agents with different lenses (minimal changes, clean architecture, pragmatic balance) to independently flesh out approaches
 - Present options conversationally with your recommendation and reasoning
 - Lead with your recommended option and explain why
 

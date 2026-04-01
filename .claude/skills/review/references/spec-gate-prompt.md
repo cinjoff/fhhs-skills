@@ -1,6 +1,6 @@
 # Spec Verification Prompt Template
 
-Reference template for `/fh:review` Step 1.8. The orchestrator dispatches one `code-reviewer`
+Reference template for `/fh:review` Step 1.8. The orchestrator dispatches one `fh:code-reviewer`
 agent to check implementation against plan specs.
 
 Purpose: Catch spec deviations and implementation gaps before the branch is promoted.

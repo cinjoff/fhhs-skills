@@ -117,7 +117,7 @@ Budget: less than 1% context. Fallow runs in <1 second.
 
 Only runs if a `.planning/` directory exists with PLAN.md files in scope.
 
-Dispatch one `code-reviewer` agent using `references/spec-gate-prompt.md` (co-located with this skill).
+Dispatch one `fh:code-reviewer` agent using `references/spec-gate-prompt.md` (co-located with this skill).
 
 Agent receives:
 - **Task specs:** done criteria from the relevant PLAN.md tasks
@@ -159,7 +159,7 @@ Based on mode, dispatch parallel subagents. Each agent receives ONLY the diff + 
 
 ### Full mode — dispatch 2 parallel agents:
 
-**Agent 1 — Code Quality + Architecture** (`subagent_type: "code-reviewer"`)
+**Agent 1 — Code Quality + Architecture** (`subagent_type: "fh:code-reviewer"`)
 - Prompt: `skills/review/references/review-prompt.md`
 - Also include: `skills/review/references/production-safety-checklist.md` (two-pass safety review)
 - If Fallow data is available from Step 1.7, include it in the agent prompt under '## Static Analysis Findings'
@@ -168,7 +168,7 @@ Based on mode, dispatch parallel subagents. Each agent receives ONLY the diff + 
 - If Next.js: include `.claude/skills/nextjs-perf/PROMPT.md` criteria
 - **Note:** The production safety checklist has an explicit suppressions section — the subagent must honor it to reduce noise.
 
-**Agent 2 — Gap Analysis** (`subagent_type: "code-reviewer"`)
+**Agent 2 — Gap Analysis** (`subagent_type: "fh:code-reviewer"`)
 - Prompt: gap analysis section of `skills/review/references/review-prompt.md`
 - Input: full diff
 - If Fallow data is available from Step 1.7, include the `FALLOW_CHECK` unused-exports findings in the agent prompt
@@ -178,7 +178,7 @@ For security vulnerability detection, run `/fh:secure` or configure a pre-PR hoo
 
 ### --quick mode — dispatch 1 agent:
 
-**Agent 1 — Code Quality** (`subagent_type: "code-reviewer"`)
+**Agent 1 — Code Quality** (`subagent_type: "fh:code-reviewer"`)
 - Same as full mode Agent 1, but skip architecture deep-dive
 - Focus: naming, structure, error handling, test quality, cross-file consistency
 

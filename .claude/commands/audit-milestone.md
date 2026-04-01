@@ -74,7 +74,7 @@ Milestone Requirements:
 MUST map each integration finding to affected requirement IDs where applicable.
 
 Verify cross-phase wiring and E2E user flows.",
-  subagent_type="gsd-integration-checker",
+  subagent_type="fh:gsd-integration-checker",
   model="{integration_checker_model}"
 )
 ```

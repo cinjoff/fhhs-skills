@@ -20,7 +20,7 @@ You are a **lean orchestrator**. Stay under 15% context usage. Delegate all heav
 > **Execution pipeline:**
 > Task execution: **`general-purpose`** subagents using `references/implementer-prompt.md`. Model is resolved from config via `gsd-tools resolve-model gsd-executor --raw`. Fresh context per task.
 > Subagents write code but do NOT commit. Orchestrator makes one commit per plan after all waves complete.
-> Do not use `gsd-executor` or `gsd-planner` — their state management conflicts with this orchestrator.
+> Do not use `fh:gsd-executor` or `fh:gsd-planner` — their state management conflicts with this orchestrator.
 
 > **GSD project context:**
 > Read `STATE.md` and `ROADMAP.md` for current position. All state updates use `gsd-tools.cjs`.

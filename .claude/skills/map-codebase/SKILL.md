@@ -156,7 +156,7 @@ Continue to spawn_agents.
 </step>
 
 <step name="spawn_agents">
-Spawn 4 parallel gsd-codebase-mapper agents. Use Agent tool with `subagent_type="gsd-codebase-mapper"`, `model="{mapper_model}"`, `mode="bypassPermissions"`, and `run_in_background=true`.
+Spawn 4 parallel gsd-codebase-mapper agents. Use Agent tool with `subagent_type="fh:gsd-codebase-mapper"`, `model="{mapper_model}"`, `mode="bypassPermissions"`, and `run_in_background=true`.
 
 **CRITICAL: `mode="bypassPermissions"` is required.** Without it, the agent cannot surface Write permission prompts in interactive sessions — it fails silently.
 
@@ -185,7 +185,7 @@ If `LEGACY_CODEBASE` is empty, omit this block entirely — agents explore from 
 
 ```
 Agent(
-  subagent_type="gsd-codebase-mapper",
+  subagent_type="fh:gsd-codebase-mapper",
   model="{mapper_model}",
   mode="bypassPermissions",
   run_in_background=true,
@@ -306,7 +306,7 @@ Check .env.example, package.json imports, config files to identify integrations.
 
 ```
 Agent(
-  subagent_type="gsd-codebase-mapper",
+  subagent_type="fh:gsd-codebase-mapper",
   model="{mapper_model}",
   mode="bypassPermissions",
   run_in_background=true,
@@ -451,7 +451,7 @@ Use tree-based exploration. Focus on top-level dirs and where NEW code goes.
 
 ```
 Agent(
-  subagent_type="gsd-codebase-mapper",
+  subagent_type="fh:gsd-codebase-mapper",
   model="{mapper_model}",
   mode="bypassPermissions",
   run_in_background=true,
@@ -621,7 +621,7 @@ Document actual patterns used, not ideal patterns.
 
 ```
 Agent(
-  subagent_type="gsd-codebase-mapper",
+  subagent_type="fh:gsd-codebase-mapper",
   model="{mapper_model}",
   mode="bypassPermissions",
   run_in_background=true,
@@ -872,7 +872,7 @@ End workflow.
 <success_criteria>
 - .planning/codebase/ directory created before agents spawn
 - Legacy CODEBASE.md used as seed context for agents if present, then removed after verification
-- 4 gsd-codebase-mapper agents spawned in parallel with `mode="bypassPermissions"` and `run_in_background=true`
+- 4 fh:gsd-codebase-mapper agents spawned in parallel with `mode="bypassPermissions"` and `run_in_background=true`
 - Agents write their files directly (orchestrator doesn't receive document contents)
 - Orchestrator waits for all 4 completion notifications (no sleep-polling)
 - All 7 files exist: STACK.md, INTEGRATIONS.md, ARCHITECTURE.md, STRUCTURE.md, CONVENTIONS.md, TESTING.md, CONCERNS.md

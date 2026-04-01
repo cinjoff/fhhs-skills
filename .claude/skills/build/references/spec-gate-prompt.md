@@ -1,6 +1,6 @@
 # Per-Wave Spec Gate Prompt Template
 
-Reference template for `/build` Step 3b. The orchestrator dispatches one `code-reviewer`
+Reference template for `/build` Step 3b. The orchestrator dispatches one `fh:code-reviewer`
 agent per wave after all tasks in that wave complete.
 
 Purpose: Catch spec deviations BEFORE dependent waves build on wrong foundations.

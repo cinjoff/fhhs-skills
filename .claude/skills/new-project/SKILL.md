@@ -821,13 +821,13 @@ Task(prompt="Project Research — Features dimension for [domain].
 Project: [one-line description from Step 1]. Target users: [from Step 1]. Stack: [from Step 2].
 Discover table-stakes features users expect, differentiator opportunities, and anti-features to avoid.
 Write to: .planning/research/FEATURES.md",
-subagent_type="gsd-project-researcher", description="Features research")
+subagent_type="fh:gsd-project-researcher", description="Features research")
 
 Task(prompt="Project Research — Pitfalls dimension for [domain].
 Project: [one-line description from Step 1]. Target users: [from Step 1]. Stack: [from Step 2].
 Discover common failure modes, technical pitfalls, and mistakes teams make building this type of project.
 Write to: .planning/research/PITFALLS.md",
-subagent_type="gsd-project-researcher", description="Pitfalls research")
+subagent_type="fh:gsd-project-researcher", description="Pitfalls research")
 ```
 
 **If `stack_decided` is false, also spawn:**
@@ -837,13 +837,13 @@ Task(prompt="Project Research — Stack dimension for [domain].
 Project: [one-line description from Step 1]. Requirements: [from Step 1].
 Evaluate framework and tooling options. Recommend a stack with trade-off analysis.
 Write to: .planning/research/STACK.md",
-subagent_type="gsd-project-researcher", description="Stack research")
+subagent_type="fh:gsd-project-researcher", description="Stack research")
 
 Task(prompt="Project Research — Architecture dimension for [domain].
 Project: [one-line description from Step 1]. Stack: [from Step 2].
 Recommend architecture patterns, data flow, and project structure for this domain.
 Write to: .planning/research/ARCHITECTURE.md",
-subagent_type="gsd-project-researcher", description="Architecture research")
+subagent_type="fh:gsd-project-researcher", description="Architecture research")
 ```
 
 **After all researchers complete, synthesize:**
@@ -858,7 +858,7 @@ Task(prompt="Synthesize research outputs into a unified summary.
 </files_to_read>
 Produce a concise summary with: key features to build, pitfalls to avoid, and (if researched) stack recommendation and architecture guidance.
 Write to: .planning/research/SUMMARY.md",
-subagent_type="gsd-research-synthesizer", description="Synthesize research")
+subagent_type="fh:gsd-research-synthesizer", description="Synthesize research")
 ```
 
 Research complete. Proceed to Step 7.
