@@ -8,7 +8,7 @@ const {
   validateAutoState, parseSessionMetrics, aggregatePhaseMetrics,
   parsePlanFrontmatter, buildDependencyGraph, assignWaves,
   comparePhaseNum, estimateSessionCost, printMilestoneCostSummary,
-  cascadePlanFailures,
+  cascadePlanFailures, createJsonLineParser, TOOL_TIMEOUT_EXTENSIONS, MAX_TIMEOUT_CAP,
 } = require('./auto-orchestrator.cjs');
 
 // ─── parseSessionMetrics tests ───────────────────────────────────────────────
@@ -467,5 +467,117 @@ describe('aggregatePhaseMetrics (single-phase mode)', () => {
     const result = aggregatePhaseMetrics([], 'phase-01');
     assert.equal(result.tokens_in, 0);
     assert.equal(result.step_count, 0);
+  });
+});
+
+// ─── createJsonLineParser tests ───────────────────────────────────────────────
+
+describe('createJsonLineParser', () => {
+  it('emits complete JSON object from a single chunk with newline', () => {
+    const received = [];
+    const feed = createJsonLineParser((obj) => received.push(obj));
+    feed(JSON.stringify({ tool: 'Read' }) + '\n');
+    assert.equal(received.length, 1);
+    assert.equal(received[0].tool, 'Read');
+  });
+
+  it('reassembles JSON line split across two data events', () => {
+    const received = [];
+    const feed = createJsonLineParser((obj) => received.push(obj));
+    const line = JSON.stringify({ tool: 'Edit', usage: { input_tokens: 10 } });
+    feed(line.slice(0, 10));
+    assert.equal(received.length, 0, 'should not emit partial line');
+    feed(line.slice(10) + '\n');
+    assert.equal(received.length, 1);
+    assert.equal(received[0].tool, 'Edit');
+  });
+
+  it('ignores non-JSON lines mixed with JSON lines', () => {
+    const received = [];
+    const feed = createJsonLineParser((obj) => received.push(obj));
+    feed('Starting session...\n');
+    feed(JSON.stringify({ type: 'result' }) + '\n');
+    feed('Done.\n');
+    assert.equal(received.length, 1);
+    assert.equal(received[0].type, 'result');
+  });
+
+  it('emits multiple JSON objects from one chunk', () => {
+    const received = [];
+    const feed = createJsonLineParser((obj) => received.push(obj));
+    const chunk = [
+      JSON.stringify({ tool: 'Read' }),
+      JSON.stringify({ tool: 'Write' }),
+      JSON.stringify({ usage: { input_tokens: 5, output_tokens: 2 } }),
+    ].join('\n') + '\n';
+    feed(chunk);
+    assert.equal(received.length, 3);
+    assert.equal(received[0].tool, 'Read');
+    assert.equal(received[1].tool, 'Write');
+    assert.equal(received[2].usage.input_tokens, 5);
+  });
+
+  it('discards buffer and stops emitting when buffer exceeds 1MB', () => {
+    const received = [];
+    const feed = createJsonLineParser((obj) => received.push(obj));
+    // Fill buffer past 1MB with no newline
+    feed('x'.repeat(1024 * 1024 + 1));
+    // After cap hit, buffer is cleared — subsequent valid JSON should work again
+    feed(JSON.stringify({ tool: 'Bash' }) + '\n');
+    // The oversized chunk clears buffer; then new line arrives and is parsed
+    assert.equal(received.length, 1);
+    assert.equal(received[0].tool, 'Bash');
+  });
+
+  it('skips empty lines without error', () => {
+    const received = [];
+    const feed = createJsonLineParser((obj) => received.push(obj));
+    feed('\n\n' + JSON.stringify({ tool: 'Agent' }) + '\n\n');
+    assert.equal(received.length, 1);
+  });
+});
+
+// ─── TOOL_TIMEOUT_EXTENSIONS / graduated timeout tests ───────────────────────
+
+describe('TOOL_TIMEOUT_EXTENSIONS', () => {
+  it('exports TOOL_TIMEOUT_EXTENSIONS as an object with expected keys', () => {
+    assert.ok(typeof TOOL_TIMEOUT_EXTENSIONS === 'object');
+    assert.ok('Bash' in TOOL_TIMEOUT_EXTENSIONS);
+    assert.ok('Agent' in TOOL_TIMEOUT_EXTENSIONS);
+    assert.ok('Edit' in TOOL_TIMEOUT_EXTENSIONS);
+    assert.ok('Write' in TOOL_TIMEOUT_EXTENSIONS);
+  });
+
+  it('Bash extension is 5 minutes in ms', () => {
+    assert.equal(TOOL_TIMEOUT_EXTENSIONS['Bash'], 5 * 60 * 1000);
+  });
+
+  it('graduated timeout: stepKillMs + Bash extension does not exceed MAX_TIMEOUT_CAP', () => {
+    const stepKillMs = 15 * 60 * 1000;  // build step
+    const toolExtension = TOOL_TIMEOUT_EXTENSIONS['Bash'] || 0;
+    const effectiveKillMs = Math.min(stepKillMs + toolExtension, MAX_TIMEOUT_CAP);
+    assert.equal(effectiveKillMs, 20 * 60 * 1000);
+    assert.ok(effectiveKillMs <= MAX_TIMEOUT_CAP);
+  });
+
+  it('MAX_TIMEOUT_CAP is enforced when combined value exceeds it', () => {
+    const stepKillMs = 24 * 60 * 1000;  // near cap
+    const toolExtension = TOOL_TIMEOUT_EXTENSIONS['Bash'] || 0;  // +5min → 29min total
+    const effectiveKillMs = Math.min(stepKillMs + toolExtension, MAX_TIMEOUT_CAP);
+    assert.equal(effectiveKillMs, MAX_TIMEOUT_CAP);  // capped at 25min
+  });
+
+  it('null toolName gets 0 extension', () => {
+    const toolExtension = (null && TOOL_TIMEOUT_EXTENSIONS[null]) || 0;
+    assert.equal(toolExtension, 0);
+  });
+
+  it('unknown toolName gets 0 extension', () => {
+    const toolExtension = (TOOL_TIMEOUT_EXTENSIONS['UnknownTool']) || 0;
+    assert.equal(toolExtension, 0);
+  });
+
+  it('MAX_TIMEOUT_CAP is 25 minutes in ms', () => {
+    assert.equal(MAX_TIMEOUT_CAP, 25 * 60 * 1000);
   });
 });
