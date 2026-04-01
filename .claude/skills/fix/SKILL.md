@@ -102,8 +102,8 @@ Quickly assess bug depth before choosing strategy. Spend <5% context.
 Execute the chosen path:
 - **SIMPLE:** Skip to Step 2 — cause is clear from triage.
 - **MODERATE:** Read `skills/systematic-debugging/PROMPT.md` and follow it completely. Then Step 2.
-- **PARALLEL:** Dispatch one **`gsd-debugger`** agent per subsystem (specialized — scientific debugging with hypothesis tracking). Each agent gets: the specific failure, relevant files, and instruction to produce root cause + proposed fix. Collect results. Then Step 2 for each fix.
-- **COMPLEX:** Write triage findings to `.planning/debug/{issue-slug}.md` with: error message, files investigated, hypotheses formed, test results observed. Slug convention: `YYYY-MM-DD-{first-3-words-kebab}` (e.g., `2026-03-06-payment-timeout-error`). If slug exists, append `-2`. Then dispatch a `gsd-debugger` agent with the session file for sustained scientific investigation. If user says try anyway → MODERATE path.
+- **PARALLEL:** Dispatch one **`fh:gsd-debugger`** agent per subsystem (specialized — scientific debugging with hypothesis tracking). Each agent gets: the specific failure, relevant files, and instruction to produce root cause + proposed fix. Collect results. Then Step 2 for each fix.
+- **COMPLEX:** Write triage findings to `.planning/debug/{issue-slug}.md` with: error message, files investigated, hypotheses formed, test results observed. Slug convention: `YYYY-MM-DD-{first-3-words-kebab}` (e.g., `2026-03-06-payment-timeout-error`). If slug exists, append `-2`. Then dispatch a `fh:gsd-debugger` agent with the session file for sustained scientific investigation. If user says try anyway → MODERATE path.
 
 **Todo integration:** After triage, scan `.planning/todos/` for items matching the bug (same file, same subsystem, or same error). If a todo matches, note its ID — mark it resolved after the fix lands in Step 2.
 

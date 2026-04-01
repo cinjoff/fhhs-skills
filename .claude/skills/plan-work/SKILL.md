@@ -135,7 +135,7 @@ The complexity assessment from Step 0.5 determines the research path:
 
 ### Deep research path (complex tasks)
 
-When the complexity assessment suggests deep research, spawn a `gsd-phase-researcher` subagent:
+When the complexity assessment suggests deep research, spawn a `fh:gsd-phase-researcher` subagent:
 
 ```
 Task(
@@ -145,7 +145,7 @@ Task(
   </files_to_read>
   Phase requirements: [list from ROADMAP.md]
   Write to: .planning/phases/XX-name/XX-RESEARCH.md",
-  subagent_type="gsd-phase-researcher",
+  subagent_type="fh:gsd-phase-researcher",
   description="Phase research"
 )
 ```
@@ -162,7 +162,7 @@ After the agent completes, read the RESEARCH.md and carry its findings into Step
 
 ### Codebase exploration path (unfamiliar codebase)
 
-When working in an unfamiliar codebase, suggest dispatching a `code-explorer` agent before brainstorming to understand existing patterns. The agent scans for:
+When working in an unfamiliar codebase, suggest dispatching a `fh:code-explorer` agent before brainstorming to understand existing patterns. The agent scans for:
 - Existing abstractions and utilities relevant to the task
 - Naming conventions and file organization patterns
 - Similar features already implemented that can serve as templates
