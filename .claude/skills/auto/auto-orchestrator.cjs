@@ -65,6 +65,9 @@ const _sessionActivity = {};  // { sessionId: { phase, step, last_tool, last_too
 // Throttle map for JSONL tool-call events — prevents write storms
 const _toolLogThrottles = new Map();  // key: `${sessionId}-${toolName}` → last log timestamp
 
+// Active child process reference for graceful shutdown
+let _activeChild = null;
+
 // Optimization counters — module-level, included in every writeAutoStatus() call
 const _optimizations = {
   health_checks_cached: 0,
@@ -85,6 +88,10 @@ function writeAutoStatus(projectDir, status) {
   // Route through _stateWriteQueue to prevent races with saveAutoState and log()
   _stateWriteQueue = _stateWriteQueue.then(() => {
     try {
+      const { warnings } = validateAutoState(status);
+      if (warnings.length > 0) {
+        process.stderr.write(`Warning: auto-state validation: ${warnings.join('; ')}\n`);
+      }
       const p = path.join(projectDir, '.planning', '.auto-state.json');
       const tmp = p + '.tmp';
       fs.writeFileSync(tmp, JSON.stringify(status, null, 2), 'utf-8');
@@ -479,31 +486,33 @@ function autoStatePath(projectDir) {
 }
 
 function validateAutoState(state) {
+  const warnings = [];
   if (!state || typeof state !== 'object' || Array.isArray(state)) {
-    return { valid: false, reason: 'State is not a valid object' };
+    warnings.push('State is not a valid object');
+    return { warnings };
   }
   if (state.phase !== null && state.phase !== undefined && typeof state.phase !== 'string') {
-    return { valid: false, reason: `state.phase must be a string or null, got ${typeof state.phase}` };
+    warnings.push(`state.phase must be a string or null, got ${typeof state.phase}`);
   }
   if (state.phase_states !== undefined && (typeof state.phase_states !== 'object' || Array.isArray(state.phase_states) || state.phase_states === null)) {
-    return { valid: false, reason: 'state.phase_states must be an object' };
+    warnings.push('state.phase_states must be an object');
   }
   if (state.total_cost_estimate !== undefined && (typeof state.total_cost_estimate !== 'number' || state.total_cost_estimate < 0)) {
-    return { valid: false, reason: `state.total_cost_estimate must be a non-negative number, got ${state.total_cost_estimate}` };
+    warnings.push(`state.total_cost_estimate must be a non-negative number, got ${state.total_cost_estimate}`);
   }
   if (state.retry_count !== undefined) {
     const rc = state.retry_count;
     if (typeof rc === 'number' && rc < 0) {
-      return { valid: false, reason: `state.retry_count must be non-negative, got ${rc}` };
+      warnings.push(`state.retry_count must be non-negative, got ${rc}`);
     }
     if (typeof rc === 'object' && (Array.isArray(rc) || rc === null)) {
-      return { valid: false, reason: 'state.retry_count must be a number or object map' };
+      warnings.push('state.retry_count must be a number or object map');
     }
   }
   if (state.phase_plan_paths !== undefined && (typeof state.phase_plan_paths !== 'object' || Array.isArray(state.phase_plan_paths) || state.phase_plan_paths === null)) {
-    return { valid: false, reason: 'state.phase_plan_paths must be an object' };
+    warnings.push('state.phase_plan_paths must be an object');
   }
-  return { valid: true, state };
+  return { warnings };
 }
 
 function loadAutoState(projectDir) {
@@ -513,9 +522,9 @@ function loadAutoState(projectDir) {
     const raw = fs.readFileSync(p, 'utf-8');
     const state = JSON.parse(raw);
     const validation = validateAutoState(state);
-    if (!validation.valid) {
+    if (validation.warnings.length > 0) {
       const corruptPath = p + '.corrupt';
-      process.stderr.write(`Warning: corrupt .auto-state.json — ${validation.reason}. Renaming to ${corruptPath}\n`);
+      process.stderr.write(`Warning: corrupt .auto-state.json — ${validation.warnings.join('; ')}. Renaming to ${corruptPath}\n`);
       try { fs.renameSync(p, corruptPath); } catch { /* best-effort */ }
       return null;
     }
@@ -690,33 +699,43 @@ function parseSessionMetrics(stdout) {
     tool_calls: {},  // { Read: N, Edit: N, Bash: N, ... }
     read_calls: 0,
   };
-  // claude -p with --output-format json emits JSON-lines (one object per line),
-  // not a single JSON object. Parse each line and accumulate usage.
+  // claude -p with --output-format stream-json emits JSON-lines (one object per line).
+  // Tool calls appear as assistant messages with content[].type === "tool_use".
   for (const line of stdout.split('\n')) {
     const trimmed = line.trim();
     if (!trimmed) continue;
     try {
       const obj = JSON.parse(trimmed);
+      // Usage can appear at root or nested in message
       if (obj.usage) {
         metrics.tokens_in += obj.usage.input_tokens || 0;
         metrics.tokens_out += obj.usage.output_tokens || 0;
+      }
+      if (obj.type === 'assistant' && obj.message) {
+        if (obj.message.usage) {
+          metrics.tokens_in += obj.message.usage.input_tokens || 0;
+          metrics.tokens_out += obj.message.usage.output_tokens || 0;
+        }
+        // Count tool calls from assistant message content
+        if (Array.isArray(obj.message.content)) {
+          for (const item of obj.message.content) {
+            if (item.type === 'tool_use' && item.name) {
+              metrics.tool_calls[item.name] = (metrics.tool_calls[item.name] || 0) + 1;
+            }
+          }
+        }
       }
       // Result line has session-level stats
       if (obj.type === 'result') {
         metrics.num_turns = obj.num_turns || 0;
         metrics.duration_api_ms = obj.duration_api_ms || 0;
       }
-      // Count tool calls by name
-      if (obj.tool) {
-        const name = obj.tool;
-        metrics.tool_calls[name] = (metrics.tool_calls[name] || 0) + 1;
-      }
     } catch {
       // Non-JSON line — skip
     }
   }
   // Legacy counters (kept for backward compat)
-  metrics.read_calls = (stdout.match(/"tool":"Read"/g) || []).length;
+  metrics.read_calls = (metrics.tool_calls['Read'] || 0);
   // Context window utilization: estimate % of 200K context used
   // (input tokens represent the cumulative context seen by the model)
   const CONTEXT_LIMIT = 200000;
@@ -834,7 +853,8 @@ function runClaudeSession(prompt, opts) {
     const args = [
       '-p', prompt,
       '--permission-mode', 'bypassPermissions',
-      '--output-format', 'json',
+      '--output-format', 'stream-json',
+      '--verbose',
       '--plugin-dir', pluginDir,
     ];
 
@@ -869,6 +889,7 @@ function runClaudeSession(prompt, opts) {
     const child = spawn('claude', args, {
       stdio: ['ignore', 'pipe', 'pipe'],
       cwd: opts.cwd,
+      detached: false,
       env: {
         ...process.env,
         ...(opts.sessionId ? { CLAUDE_SESSION_ID: opts.sessionId } : {}),
@@ -877,6 +898,8 @@ function runClaudeSession(prompt, opts) {
         CLAUDE_MEM_SKIP_TOOLS: 'ListMcpResourcesTool,ReadMcpResourceTool,SlashCommand,Skill,TodoWrite,AskUserQuestion,ToolSearch,TaskCreate,TaskUpdate,TaskGet,TaskList,TaskOutput,TaskStop,SendMessage,EnterPlanMode,ExitPlanMode,EnterWorktree,ExitWorktree,LSP,CronCreate,CronDelete,CronList,TeamCreate,TeamDelete,NotebookEdit,mcp__plugin_claude-mem_mcp-search____IMPORTANT,mcp__plugin_claude-mem_mcp-search__search,mcp__plugin_claude-mem_mcp-search__get_observations,mcp__plugin_claude-mem_mcp-search__timeline,mcp__plugin_claude-mem_mcp-search__smart_search,mcp__plugin_claude-mem_mcp-search__smart_unfold,mcp__plugin_claude-mem_mcp-search__smart_outline',
       },
     });
+
+    _activeChild = child;
 
     let stdout = '';
     let stderr = '';
@@ -936,9 +959,21 @@ function runClaudeSession(prompt, opts) {
     let liveTokensOut = 0;
     let sessionCompleting = false;
     const feedJsonLine = createJsonLineParser((obj) => {
-      if (obj.tool) {
-        onToolCall(obj.tool, Date.now());
+      // stream-json format: tool calls are nested in assistant messages
+      // as content items with type "tool_use" and a "name" field
+      if (obj.type === 'assistant' && obj.message && Array.isArray(obj.message.content)) {
+        for (const item of obj.message.content) {
+          if (item.type === 'tool_use' && item.name) {
+            onToolCall(item.name, Date.now());
+          }
+        }
+        // Usage is nested in the message object
+        if (obj.message.usage) {
+          liveTokensIn += (obj.message.usage.input_tokens || 0);
+          liveTokensOut += (obj.message.usage.output_tokens || 0);
+        }
       }
+      // Top-level usage (some events emit it at root)
       if (obj.usage) {
         liveTokensIn += (obj.usage.input_tokens || 0);
         liveTokensOut += (obj.usage.output_tokens || 0);
@@ -1042,6 +1077,7 @@ function runClaudeSession(prompt, opts) {
     });
 
     child.on('close', (code, signal) => {
+      _activeChild = null;
       cleanup();
       const elapsedMs = Date.now() - sessionStart;
       const silenceMs = Date.now() - lastActivityAt;
@@ -3185,50 +3221,9 @@ async function main() {
   } // end else (pipeline)
 
   // ── Final full review (all phases combined) ──────────────────────────────────
-  // Per-phase reviews use --quick for speed. After all phases complete, run one
-  // comprehensive /fh:review (no --quick) to catch cross-cutting quality issues
-  // and dispatch Quality Refinement sub-skills as needed.
-  let finalReviewStatus = 'SKIP';
-  if (_autoStatus.phasesCompleted > 0) {
-    log('');
-    log('── Final quality review (all phases) ──');
-    finalReviewStatus = 'RUNNING';
-    const finalReviewStarted = Date.now();
-    try {
-      await runClaudeSession(
-        `You are in auto mode. All build phases are complete. ` +
-        `Run /fh:review (full review, no --quick flag) covering the entire branch diff — all phases combined. ` +
-        `Evaluate quality holistically, dispatch sub-skills as needed, and fix any issues found. Do not ask questions.`,
-        { cwd: projectDir, sessionId: 'final-review', stepName: 'final-review' }
-      );
-      finalReviewStatus = 'PASS';
-      log('  ✓ Final review complete');
-    } catch (err) {
-      const elapsedMin = Math.round((Date.now() - finalReviewStarted) / 60000);
-      if (err.message && (err.message.includes('STUCK') || err.message.includes('timeout') || err.message.includes('SIGTERM') || err.message.includes('SIGKILL'))) {
-        finalReviewStatus = 'TIMEOUT';
-        log(`  ⚠ Final review timed out after ${elapsedMin}m — skipping (auto still complete)`);
-      } else {
-        finalReviewStatus = 'WARN';
-        log(`  ⚠ Final review error after ${elapsedMin}m: ${err.message.slice(0, 120)} — skipping (auto still complete)`);
-      }
-    }
-
-    // Record in step_history
-    _autoStatus.stepHistory.push({
-      phase: 'all',
-      phase_name: 'all',
-      step: 'final-review',
-      status: finalReviewStatus === 'PASS' ? 'complete' : 'warn',
-      elapsed_ms: 0,
-      tokens_in: 0,
-      tokens_out: 0,
-      cost_estimate: 0,
-      timestamp: new Date().toISOString(),
-    });
-  }
-
-  // Write session history before final status
+  // Write session history and finalize state BEFORE the optional final review.
+  // This ensures that if the review hangs or the orchestrator is killed, the state
+  // file is already marked active:false with a clean completion record.
   appendSessionHistory(projectDir);
 
   // Determine milestone completion
@@ -3256,9 +3251,6 @@ async function main() {
   log(`  Decisions logged: ${decisionsLogged}`);
   log(`  Cost estimate: $${totalCostEstimate.toFixed(2)}${opts.budget ? ` / $${opts.budget} budget` : ''}`);
   log(`  Duration: ${durationMin}m`);
-  if (finalReviewStatus !== 'SKIP') {
-    log(`  Final review: ${finalReviewStatus}`);
-  }
 
   // Per-phase cost breakdown table
   const phaseCosts = aggregatePhaseMetrics(_autoStatus.stepHistory);
@@ -3276,9 +3268,34 @@ async function main() {
     log(`  Milestone: PARTIAL — ${_autoStatus.phasesCompleted}/${phasesToRun.length} phases completed, ${_autoStatus.phasesFailed} failed`);
   }
 
-  // Write completed_at timestamp but keep the file — tracker shows "completed" status.
-  // The file has active:false so --resume won't treat it as in-progress.
-  // Next auto run overwrites it. No cleanup needed.
+  // Final quality review — runs AFTER state is saved, so a hang or kill won't
+  // leave .auto-state.json with active:true. This is a bonus step.
+  if (_autoStatus.phasesCompleted > 0) {
+    log('');
+    log('── Final quality review (all phases, bonus step) ──');
+    let finalReviewStatus = 'RUNNING';
+    const finalReviewStarted = Date.now();
+    try {
+      await runClaudeSession(
+        `You are in auto mode. All build phases are complete. ` +
+        `Run /fh:review (full review, no --quick flag) covering the entire branch diff — all phases combined. ` +
+        `Evaluate quality holistically, dispatch sub-skills as needed, and fix any issues found. Do not ask questions.`,
+        { cwd: projectDir, sessionId: 'final-review', stepName: 'final-review' }
+      );
+      finalReviewStatus = 'PASS';
+      log('  ✓ Final review complete');
+    } catch (err) {
+      const elapsedMin = Math.round((Date.now() - finalReviewStarted) / 60000);
+      if (err.message && (err.message.includes('STUCK') || err.message.includes('timeout') || err.message.includes('SIGTERM') || err.message.includes('SIGKILL'))) {
+        finalReviewStatus = 'TIMEOUT';
+        log(`  ⚠ Final review timed out after ${elapsedMin}m — skipping (auto still complete)`);
+      } else {
+        finalReviewStatus = 'WARN';
+        log(`  ⚠ Final review error after ${elapsedMin}m: ${err.message.slice(0, 120)} — skipping (auto still complete)`);
+      }
+    }
+    log(`  Final review: ${finalReviewStatus}`);
+  }
 }
 
 // ─── Milestone Cost Summary ───────────────────────────────────────────────────
@@ -3327,9 +3344,55 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = { validateAutoState, parseSessionMetrics, aggregatePhaseMetrics, parsePlanFrontmatter, buildDependencyGraph, assignWaves, comparePhaseNum, estimateSessionCost, printMilestoneCostSummary, cascadePlanFailures, createJsonLineParser, TOOL_TIMEOUT_EXTENSIONS, MAX_TIMEOUT_CAP };
 }
 
+// ─── Graceful Shutdown ──────────────────────────────────────────────────────
+
+function handleShutdown(signal) {
+  const stateDir = _autoStatus.projectDir;
+  try { process.stderr.write(`\nAuto-orchestrator received ${signal} — shutting down gracefully\n`); } catch { /* */ }
+
+  // Kill active child process
+  if (_activeChild) {
+    try { _activeChild.kill('SIGTERM'); } catch { /* already dead */ }
+    _activeChild = null;
+  }
+
+  // Write interrupted status to .auto-state.json
+  if (stateDir) {
+    const statusPath = path.join(stateDir, '.planning', '.auto-state.json');
+    try {
+      const interruptedState = {
+        active: false,
+        last_log_line: `Interrupted by ${signal}`,
+        errors: [{ phase: null, step: null, attempt: 1, error_type: 'interrupted', message: `Process received ${signal}`, timestamp: new Date().toISOString() }],
+        step_history: _autoStatus.stepHistory || [],
+        phases_completed: _autoStatus.phasesCompleted || 0,
+        phases_failed: _autoStatus.phasesFailed || 0,
+        timestamp: new Date().toISOString(),
+      };
+      fs.writeFileSync(statusPath + '.tmp', JSON.stringify(interruptedState, null, 2));
+      fs.renameSync(statusPath + '.tmp', statusPath);
+    } catch { /* best effort */ }
+
+    // Log interruption event
+    if (_jsonlLogPath) {
+      try {
+        const entry = JSON.stringify({ type: 'interrupted', signal, timestamp: new Date().toISOString() });
+        fs.appendFileSync(_jsonlLogPath, entry + '\n');
+      } catch { /* best effort */ }
+    }
+  }
+
+  process.exit(1);
+}
+
+process.on('SIGTERM', () => handleShutdown('SIGTERM'));
+process.on('SIGINT', () => handleShutdown('SIGINT'));
+
 // Only run main() when executed directly (not when required for testing)
 if (require.main === module) {
-  main().catch(async (err) => {
+  main().then(() => {
+    process.exit(0);
+  }).catch(async (err) => {
     // Write error state synchronously to avoid race with process.exit.
     // Build the state object inline (not via buildAutoStatus) because this
     // handler must work even if main() crashed before initializing _autoStatus.

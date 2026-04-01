@@ -19,7 +19,6 @@ describe('parseSessionMetrics', () => {
     assert.equal(m.tokens_in, 0);
     assert.equal(m.tokens_out, 0);
     assert.equal(m.read_calls, 0);
-    assert.equal(m.ctx_search_hits, 0);
   });
 
   it('parses single JSON-line with usage', () => {
@@ -57,23 +56,25 @@ describe('parseSessionMetrics', () => {
     assert.equal(m.tokens_out, 0);
   });
 
-  it('counts Read tool calls', () => {
+  it('counts Read tool calls from stream-json format', () => {
     const lines = [
-      JSON.stringify({ tool: 'Read' }),
-      JSON.stringify({ tool: 'Read' }),
-      JSON.stringify({ tool: 'Edit' }),
+      JSON.stringify({ type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Read', id: 't1', input: {} }] } }),
+      JSON.stringify({ type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Read', id: 't2', input: {} }] } }),
+      JSON.stringify({ type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Edit', id: 't3', input: {} }] } }),
     ].join('\n');
     const m = parseSessionMetrics(lines);
     assert.equal(m.read_calls, 2);
+    assert.equal(m.tool_calls['Read'], 2);
+    assert.equal(m.tool_calls['Edit'], 1);
   });
 
-  it('counts ctx_search hits', () => {
+  it('extracts usage from nested message.usage', () => {
     const lines = [
-      'called ctx_search for docs',
-      JSON.stringify({ tool: 'ctx_batch_execute' }),
+      JSON.stringify({ type: 'assistant', message: { usage: { input_tokens: 500, output_tokens: 200 }, content: [{ type: 'text', text: 'hi' }] } }),
     ].join('\n');
     const m = parseSessionMetrics(lines);
-    assert.equal(m.ctx_search_hits, 2);
+    assert.equal(m.tokens_in, 500);
+    assert.equal(m.tokens_out, 200);
   });
 });
 
@@ -89,7 +90,7 @@ describe('aggregatePhaseMetrics', () => {
     const history = [{
       phase: '07-auto-mode',
       step: 'build',
-      metrics: { tokens_in: 1000, tokens_out: 500, read_calls: 3, ctx_search_hits: 5 },
+      metrics: { tokens_in: 1000, tokens_out: 500, read_calls: 3 },
       cost_estimate: 0.15,
       elapsed_ms: 60000,
     }];
@@ -97,7 +98,6 @@ describe('aggregatePhaseMetrics', () => {
     assert.equal(result['07-auto-mode'].tokens_in, 1000);
     assert.equal(result['07-auto-mode'].tokens_out, 500);
     assert.equal(result['07-auto-mode'].read_calls, 3);
-    assert.equal(result['07-auto-mode'].ctx_search_hits, 5);
     assert.equal(result['07-auto-mode'].cost_estimate, 0.15);
     assert.equal(result['07-auto-mode'].elapsed_ms, 60000);
     assert.equal(result['07-auto-mode'].steps, 1);
@@ -133,7 +133,7 @@ describe('aggregatePhaseMetrics', () => {
     assert.equal(result['07-auto-mode'].tokens_in, 0);
     assert.equal(result['07-auto-mode'].tokens_out, 0);
     assert.equal(result['07-auto-mode'].read_calls, 0);
-    assert.equal(result['07-auto-mode'].ctx_search_hits, 0);
+    // ctx_search_hits removed — no longer tracked in aggregation
   });
 
   it('skips entries without phase field', () => {
@@ -417,25 +417,43 @@ describe('cascadePlanFailures', () => {
 describe('validateAutoState', () => {
   it('accepts valid state with phase field', () => {
     const result = validateAutoState({ phase: 'phase-01', phase_states: { 'phase-01': 'done' } });
-    assert.equal(result.valid, true);
+    assert.equal(result.warnings.length, 0);
   });
 
   it('rejects null input', () => {
     const result = validateAutoState(null);
-    assert.equal(result.valid, false);
-    assert.ok(typeof result.reason === 'string' && result.reason.length > 0);
+    assert.ok(result.warnings.length > 0);
+    assert.ok(result.warnings[0].length > 0);
   });
 
   it('rejects string input', () => {
     const result = validateAutoState('some string');
-    assert.equal(result.valid, false);
-    assert.ok(typeof result.reason === 'string');
+    assert.ok(result.warnings.length > 0);
   });
 
   it('rejects number input', () => {
     const result = validateAutoState(42);
-    assert.equal(result.valid, false);
-    assert.ok(typeof result.reason === 'string');
+    assert.ok(result.warnings.length > 0);
+  });
+});
+
+// ─── schemas.validateAutoState tests ─────────────────────────────────────────
+
+const schemas = require('../../../bin/lib/schemas.cjs');
+
+describe('schemas.validateAutoState', () => {
+  it('returns warnings for missing required fields', () => {
+    const r = schemas.validateAutoState({ active: true });
+    assert.ok(r.warnings.length > 0);
+  });
+  it('returns no warnings for complete state', () => {
+    const r = schemas.validateAutoState({
+      active: true, phase: '01', started_at: null,
+      phases_total: 1, phases_completed: 0,
+      phase_states: {}, activity_events: [],
+      session_activity: {}, log_buffer: []
+    });
+    assert.equal(r.warnings.length, 0);
   });
 });
 

@@ -12622,6 +12622,126 @@
           "pattern": "claude.mem|smart_search"
         }
       ]
+    },
+    {
+      "id": 364,
+      "command": "review",
+      "prompt": "Review the project's schema documentation — check that references/schemas/ has schema files covering the key artifacts (auto-state, planning structure)",
+      "expected_output": "Should identify references/schemas/ directory, note the presence of schema files for auto-state and planning-structure artifacts, and confirm the XX-NN-PLAN.md naming pattern is documented.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "References references/schemas/ directory",
+          "type": "output"
+        },
+        {
+          "text": "Mentions auto-state schema coverage",
+          "type": "output"
+        },
+        {
+          "text": "Mentions planning structure or naming pattern",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "schema",
+        "compliance"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": ["schema"]
+        },
+        {
+          "type": "required_terms",
+          "terms": ["references/schemas"]
+        },
+        {
+          "type": "required_terms",
+          "terms": ["auto-state", "planning"]
+        }
+      ]
+    },
+    {
+      "id": 365,
+      "command": "review",
+      "prompt": "Review auto-orchestrator.cjs for schema compliance — verify validateAutoState is called at write boundaries and uses the warnings-based return type",
+      "expected_output": "Should confirm validateAutoState is called within writeAutoStatus, that the function returns or uses a warnings array, and that schema validation is enforced at write boundaries.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Confirms validateAutoState is called in writeAutoStatus",
+          "type": "output"
+        },
+        {
+          "text": "Mentions warnings-based return type",
+          "type": "output"
+        },
+        {
+          "text": "Confirms write boundary enforcement",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "schema",
+        "compliance"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": ["validateAutoState"]
+        },
+        {
+          "type": "required_terms",
+          "terms": ["writeAutoStatus"]
+        },
+        {
+          "type": "required_terms",
+          "terms": ["warnings"]
+        }
+      ]
+    },
+    {
+      "id": 366,
+      "command": "review",
+      "prompt": "Review the project's path centralization — verify bin/lib/paths.cjs exists with exports for planPath, summaryPath, contextPath and that init.cjs and verify.cjs import from it",
+      "expected_output": "Should confirm bin/lib/paths.cjs exists, lists planPath/summaryPath/contextPath exports, and verifies that init.cjs and verify.cjs import from it rather than defining paths inline.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Confirms bin/lib/paths.cjs exists",
+          "type": "output"
+        },
+        {
+          "text": "Lists planPath, summaryPath, or contextPath exports",
+          "type": "output"
+        },
+        {
+          "text": "Verifies init.cjs and verify.cjs import from paths.cjs",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "schema",
+        "compliance"
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": ["paths.cjs"]
+        },
+        {
+          "type": "required_terms",
+          "terms": ["planPath"]
+        },
+        {
+          "type": "required_terms",
+          "terms": ["require", "import"]
+        }
+      ]
     }
   ]
 }
