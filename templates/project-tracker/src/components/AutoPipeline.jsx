@@ -249,14 +249,10 @@ function LogTail({ logBuffer, lastLogLine, refreshTick }) {
         : '/api/logs?limit=200';
 
       fetch(url)
-        .then(r => r.ok ? r.text() : Promise.reject(r.status))
-        .then(text => {
+        .then(r => r.ok ? r.json() : Promise.reject(r.status))
+        .then(data => {
           if (cancelled) return;
-          const lines = text.trim().split('\n').filter(Boolean);
-          const parsed = [];
-          for (const line of lines) {
-            try { parsed.push(JSON.parse(line)); } catch (_) {}
-          }
+          const parsed = data.entries || [];
           if (parsed.length > 0) {
             setApiEntries(prev => {
               // Merge: if incremental, append; if initial, replace

@@ -8,6 +8,11 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.61.1] - 2026-04-01
+
+### Fixed
+- **Tracker log panel** — LogTail now correctly parses the `/api/logs` JSON response instead of treating it as JSONL, fixing empty log display in the tracker dashboard
+
 ## [1.61.0] - 2026-04-01
 
 ### Added
