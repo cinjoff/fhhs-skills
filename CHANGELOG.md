@@ -8,6 +8,11 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [Unreleased]
+
+### Removed
+- **context-mode** plugin dependency — replaced by native context tools
+
 ## [1.61.4] - 2026-04-01
 
 ### Fixed

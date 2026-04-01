@@ -134,11 +134,21 @@
  *     --from X.Y.Z --to X.Y.Z
  *     [--changelog-file PATH]
  *     [--project-root PATH]
+ *
+ * Manifest:
+ *   manifest check [--project-root PATH] [--global-only] [--no-remediate]
+ *                                        Check+remediate single project manifest
+ *   manifest check --all [--no-remediate]
+ *                                        Multi-project sweep (replaces global-reconcile.cjs)
+ *   manifest generate [--project-root PATH] [--global]
+ *                                        Generate manifest from detected state
+ *   manifest show [--project-root PATH]  Display current merged manifest (read-only)
  */
 
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
-const { error } = require('./lib/core.cjs');
+const { output, error } = require('./lib/core.cjs');
 
 // ─── CLI Router ───────────────────────────────────────────────────────────────
 
@@ -628,6 +638,40 @@ async function main() {
         limit: limitIdx !== -1 ? parseInt(args[limitIdx + 1], 10) : 10,
         freshness: freshnessIdx !== -1 ? args[freshnessIdx + 1] : null,
       }, raw);
+      break;
+    }
+
+    case 'manifest': {
+      const manifest = () => require('./lib/manifest.cjs');
+      const sub = args[1];
+      const projectRootIdx = args.indexOf('--project-root');
+      const projectRoot = projectRootIdx !== -1 ? args[projectRootIdx + 1] : cwd;
+      const globalManifestPath = path.join(os.homedir(), '.claude', 'fhhs-manifest.json');
+      const projectManifestPath = path.join(projectRoot, '.claude', 'fhhs-manifest.json');
+      if (sub === 'check') {
+        const all = args.includes('--all');
+        const noRemediate = args.includes('--no-remediate');
+        if (all) {
+          const result = manifest().checkAll(globalManifestPath, { remediate: !noRemediate });
+          output(result, raw);
+        } else {
+          const result = manifest().checkAndRemediate(globalManifestPath, projectManifestPath, projectRoot, { remediate: !noRemediate });
+          output(result, raw);
+        }
+      } else if (sub === 'generate') {
+        const isGlobal = args.includes('--global');
+        const result = manifest().generateManifest(projectRoot);
+        const targetPath = isGlobal ? globalManifestPath : projectManifestPath;
+        const fs = require('fs');
+        fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+        fs.writeFileSync(targetPath, JSON.stringify(result, null, 2) + '\n');
+        output({ path: targetPath, manifest: result }, raw);
+      } else if (sub === 'show') {
+        const result = manifest().readManifest(globalManifestPath, projectManifestPath);
+        output(result, raw);
+      } else {
+        error('Unknown manifest subcommand. Available: check, generate, show');
+      }
       break;
     }
 
