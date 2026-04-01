@@ -70,9 +70,20 @@ Test tasks marked `wave: same` as their implementation task run in the same wave
 Report the execution plan to the user: "N tasks in M waves. Wave 1 has X parallel tasks."
 
 ```bash
+# Ensure GSD CLI symlink exists (self-heals if /fh:setup wasn't run)
+if [ ! -f "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" ]; then
+  _FHHS="$(ls -d "$HOME/.claude/plugins/cache/fhhs-skills/fh"/*/ 2>/dev/null | sort | tail -1)"
+  _FHHS="${_FHHS%/}"
+  if [ -n "$_FHHS" ] && [ -d "$_FHHS/bin" ]; then
+    mkdir -p "$HOME/.claude/get-shit-done"
+    ln -sfn "$_FHHS/bin" "$HOME/.claude/get-shit-done/bin"
+    [ -d "$_FHHS/hooks" ] && ln -sfn "$_FHHS/hooks" "$HOME/.claude/get-shit-done/hooks"
+  fi
+fi
+
 PLAN_START_EPOCH=$(date +%s)
 WAVE_START_SHA=$(git rev-parse HEAD)
-AUTO_MODE=$(node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs config-get workflow.auto_advance 2>/dev/null || echo "false")
+AUTO_MODE=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" config-get workflow.auto_advance 2>/dev/null || echo "false")
 ```
 
 If `AUTO_MODE` is `"true"` AND `.planning/DECISIONS.md` exists, include the last 10 entries for this phase as `{DECISIONS_CONTEXT}`. Otherwise empty string.
@@ -120,7 +131,7 @@ Inject `SHARED_REFERENCES_CACHE` into each subagent prompt via the `{SHARED_REFE
 Resolve the execution model (needed for both this step and Step 3):
 
 ```bash
-EXEC_MODEL=$(node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs resolve-model gsd-executor --raw)
+EXEC_MODEL=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" resolve-model gsd-executor --raw)
 ```
 
 If the plan has `must_haves.truths` and at least one task modifies `.ts`, `.tsx`, `.js`, `.jsx` files (excluding config-only, types-only, or constants-only files):
@@ -162,7 +173,7 @@ Skip if: no `must_haves.truths`, all tasks are config/docs only, or plan has few
 Use `$EXEC_MODEL` resolved in Step 2.5 (or resolve here if Step 2.5 was skipped):
 
 ```bash
-[ -z "$EXEC_MODEL" ] && EXEC_MODEL=$(node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs resolve-model gsd-executor --raw)
+[ -z "$EXEC_MODEL" ] && EXEC_MODEL=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" resolve-model gsd-executor --raw)
 ```
 
 For each wave, dispatch **one subagent per task** using the Agent tool with **`subagent_type: "general-purpose"`** and **`model: "$EXEC_MODEL"`** (use the resolved value, e.g. `"sonnet"` or `"opus"`).
@@ -341,14 +352,14 @@ Read `references/gsd-state-updates.md` and run the batch state update command. T
 
 These run once at plan completion. No state writes during wave execution.
 
-Resolve via `node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs resolve-model gsd-codebase-mapper --raw` — mechanical state updates don't require deep reasoning.
+Resolve via `node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" resolve-model gsd-codebase-mapper --raw` — mechanical state updates don't require deep reasoning.
 
 ---
 
 ## Step 6: Phase Completion Detection
 
 ```bash
-node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs verify phase-completeness "${PHASE_NUM}"
+node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" verify phase-completeness "${PHASE_NUM}"
 ```
 
 **If NOT all plans complete:** Report "Plan X of Y complete, Z remaining." Suggest `/fh:build` for next plan. Done.

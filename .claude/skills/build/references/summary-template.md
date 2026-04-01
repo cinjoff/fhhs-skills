@@ -9,7 +9,7 @@ Use this template when generating SUMMARY.md after plan execution.
 ## Scaffold with gsd-tools
 
 ```bash
-node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs template fill summary \
+node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" template fill summary \
   --phase "${PHASE_NUM}" --plan "${PLAN_NUM}" \
   --name "${PLAN_DESCRIPTION}" \
   --fields '{"subsystem":"...", "duration":"...", "requirements-completed": [...]}'
