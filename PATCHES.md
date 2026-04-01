@@ -281,6 +281,12 @@ No changes. (Template variables adopted from upstream v1.2.0.)
 | 8 | Added GitHub Release creation step with install/update instructions | gstack /ship created a PR; fhhs /release creates a tagged GitHub Release |
 | 9 | Removed gstack update check preamble | No gstack binary dependency |
 
+## gsd-tools.cjs (fhhs-original)
+
+| # | Change | Rationale |
+|---|--------|-----------|
+| 1 | Lazy require() — lib modules loaded per-command, not eagerly at startup | Reduces per-invocation overhead; only fs, path, and core.cjs are eager. Saves ~10-20ms per call across 15-50 invocations per session |
+
 ## GSD (forked from v1.22.4)
 
 ### resume-work → progress (merge)
