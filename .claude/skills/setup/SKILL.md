@@ -128,9 +128,26 @@ brew --version
 
 If the platform is `windows`, skip the Homebrew step — Windows uses its own installers handled below.
 
-Check all tools:
+Check all tools. The dependency list is declared in `.claude/skills/manifest.json` — read it to get the authoritative list of required and optional tools:
 
 ```bash
+# Read manifest for tool list (manifest.json is the single source of truth)
+MANIFEST="$FHHS_SKILLS_ROOT/.claude/skills/manifest.json"
+if [ -f "$MANIFEST" ]; then
+  echo "MANIFEST_FOUND"
+  # Extract tool names from manifest dependencies
+  node -e "
+    const m = require('$MANIFEST');
+    const req = Object.keys(m.dependencies.required || {});
+    const opt = Object.keys(m.dependencies.optional || {});
+    req.forEach(t => console.log('REQUIRED ' + t));
+    opt.forEach(t => console.log('OPTIONAL ' + t));
+  "
+else
+  echo "MANIFEST_NOT_FOUND"
+fi
+
+# Check each tool
 for cmd in node npm git gh vercel typescript-language-server agent-browser docker supabase; do
   if command -v "$cmd" >/dev/null 2>&1; then
     VERSION=$("$cmd" --version 2>/dev/null | head -1)
@@ -141,7 +158,7 @@ for cmd in node npm git gh vercel typescript-language-server agent-browser docke
 done
 ```
 
-Present results using status symbols:
+Present results using status symbols. Mark tools as `(optional)` or `(required)` based on the manifest:
 
 ```
 | Tool                       | Status              |
@@ -152,7 +169,7 @@ Present results using status symbols:
 | gh                         | ✗ MISSING (optional) |
 | vercel                     | ✗ MISSING (optional) |
 | typescript-language-server  | ✗ MISSING            |
-| agent-browser              | ✗ MISSING (optional) |
+| agent-browser              | ✗ MISSING (optional — needed by /fh:ui-test) |
 | docker                     | ✓ v27.1.0 (OrbStack) |
 | supabase                   | ✓ v2.1.0             |
 ```
@@ -972,6 +989,17 @@ Then present the status table and next steps as regular markdown text:
 **Also available:**
 - `/fh:help` — full command reference and architecture guide
 - `/fh:resume` — pick up an existing project with `.planning/`
+
+───────────────────────────────────────────────────────────────
+
+## Final Step: Generate Manifest
+
+Generate the global plugin manifest and initialize a manifest for the current project:
+
+```bash
+node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" manifest generate --global
+node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" manifest generate --project-root "$CLAUDE_CWD"
+```
 
 ───────────────────────────────────────────────────────────────
 ```

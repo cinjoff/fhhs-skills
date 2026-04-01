@@ -12626,20 +12626,20 @@
     {
       "id": 364,
       "command": "review",
-      "prompt": "Review the project's schema documentation — check that references/schemas/ has schema files covering the key artifacts (auto-state, planning structure)",
-      "expected_output": "Should identify references/schemas/ directory, note the presence of schema files for auto-state and planning-structure artifacts, and confirm the XX-NN-PLAN.md naming pattern is documented.",
+      "prompt": "Review bin/lib/schemas.cjs — check that validateAutoState validates all required auto-state fields and returns a warnings-based result",
+      "expected_output": "Should confirm validateAutoState exists in bin/lib/schemas.cjs, validates required fields (active, phase, started_at, phases_total, phases_completed, phase_states, activity_events, session_activity, log_buffer), and returns { warnings: string[] }.",
       "files": [],
       "assertions": [
         {
-          "text": "References references/schemas/ directory",
+          "text": "References bin/lib/schemas.cjs",
           "type": "output"
         },
         {
-          "text": "Mentions auto-state schema coverage",
+          "text": "Mentions validateAutoState function",
           "type": "output"
         },
         {
-          "text": "Mentions planning structure or naming pattern",
+          "text": "Mentions warnings-based return type",
           "type": "behavioral"
         }
       ],
@@ -12655,11 +12655,11 @@
         },
         {
           "type": "required_terms",
-          "terms": ["references/schemas"]
+          "terms": ["validateAutoState"]
         },
         {
           "type": "required_terms",
-          "terms": ["auto-state", "planning"]
+          "terms": ["warnings"]
         }
       ]
     },
@@ -12706,20 +12706,20 @@
     {
       "id": 366,
       "command": "review",
-      "prompt": "Review the project's path centralization — verify bin/lib/paths.cjs exists with exports for planPath, summaryPath, contextPath and that init.cjs and verify.cjs import from it",
-      "expected_output": "Should confirm bin/lib/paths.cjs exists, lists planPath/summaryPath/contextPath exports, and verifies that init.cjs and verify.cjs import from it rather than defining paths inline.",
+      "prompt": "Review how path construction is handled in bin/lib/ — check that verify.cjs and core.cjs use path.join for building .planning/ paths and that the autoStatePath helper exists in auto-orchestrator.cjs",
+      "expected_output": "Should confirm path.join is used for .planning/ paths in verify.cjs and core.cjs, and that autoStatePath helper centralizes the .auto-state.json path in auto-orchestrator.cjs.",
       "files": [],
       "assertions": [
         {
-          "text": "Confirms bin/lib/paths.cjs exists",
+          "text": "Confirms path.join usage for .planning/ paths",
           "type": "output"
         },
         {
-          "text": "Lists planPath, summaryPath, or contextPath exports",
+          "text": "Mentions autoStatePath helper in auto-orchestrator",
           "type": "output"
         },
         {
-          "text": "Verifies init.cjs and verify.cjs import from paths.cjs",
+          "text": "Checks verify.cjs or core.cjs path patterns",
           "type": "behavioral"
         }
       ],
@@ -12731,15 +12731,309 @@
       "checks": [
         {
           "type": "required_terms",
-          "terms": ["paths.cjs"]
+          "terms": ["path.join"]
         },
         {
           "type": "required_terms",
-          "terms": ["planPath"]
+          "terms": ["autoStatePath", ".planning"]
         },
         {
           "type": "required_terms",
-          "terms": ["require", "import"]
+          "terms": ["verify", "core"]
+        }
+      ]
+    },
+    {
+      "id": 367,
+      "command": "fix",
+      "prompt": "Verify that the fix skill uses smart_explore as primary code navigation tool during triage, not as an optional 'if available' enhancement",
+      "expected_output": "fix/SKILL.md Step 1 Triage should instruct smart_outline and smart_unfold as numbered primary steps, with 'If smart_explore tools are unavailable' as the fallback. Should NOT say 'If claude-mem smart_explore tools are available'.",
+      "files": [".claude/skills/fix/SKILL.md"],
+      "assertions": [
+        {"text": "smart_outline appears as primary triage tool, not optional", "type": "output"},
+        {"text": "Fallback language uses 'unavailable' not 'if available'", "type": "output"},
+        {"text": "smart_unfold mentioned for reading specific functions", "type": "output"}
+      ],
+      "tier": "micro",
+      "tags": ["smart-explore", "tool-priority"],
+      "checks": [
+        {"type": "required_terms", "terms": ["smart_outline", "smart_unfold"]},
+        {"type": "required_terms", "terms": ["unavailable"]},
+        {"type": "forbidden_terms", "terms": ["If claude-mem smart_explore tools are available"]}
+      ]
+    },
+    {
+      "id": 368,
+      "command": "review",
+      "prompt": "Verify that the review skill uses smart_explore as primary tool for understanding code context around diffs, not as optional",
+      "expected_output": "review/SKILL.md Token-Efficient Review Context section should lead with 'Use smart_explore as the primary tool' and list smart_outline/smart_unfold as numbered steps. Fallback should say 'unavailable' not 'if available'.",
+      "files": [".claude/skills/review/SKILL.md"],
+      "assertions": [
+        {"text": "smart_explore is presented as primary, not optional", "type": "output"},
+        {"text": "Fallback uses 'unavailable' framing", "type": "output"},
+        {"text": "Past learnings check uses direct imperative, not conditional", "type": "output"}
+      ],
+      "tier": "micro",
+      "tags": ["smart-explore", "tool-priority"],
+      "checks": [
+        {"type": "required_terms", "terms": ["smart_explore as the primary tool"]},
+        {"type": "required_terms", "terms": ["smart_outline", "smart_unfold"]},
+        {"type": "forbidden_terms", "terms": ["If claude-mem smart_explore tools are available"]}
+      ]
+    },
+    {
+      "id": 369,
+      "command": "plan-work",
+      "prompt": "Verify that plan-work uses code-explorer for Medium+ tasks and code-architect for Complex tasks, not as soft suggestions",
+      "expected_output": "plan-work/SKILL.md complexity matrix should list code-explorer for Medium and both code-explorer + code-architect for Complex. Codebase exploration section should say 'dispatch' not 'suggest dispatching'. Brainstorming prompt should say 'do this before designing' not 'skip this'.",
+      "files": [".claude/skills/plan-work/SKILL.md", ".claude/skills/plan-work/references/brainstorming-prompt.md"],
+      "assertions": [
+        {"text": "Complexity matrix includes code-explorer for Medium tasks", "type": "output"},
+        {"text": "Complexity matrix includes code-architect for Complex tasks", "type": "output"},
+        {"text": "Uses imperative 'dispatch' not soft 'suggest'", "type": "output"}
+      ],
+      "tier": "micro",
+      "tags": ["smart-explore", "agent-dispatch", "tool-priority"],
+      "checks": [
+        {"type": "required_terms", "terms": ["code-explorer"]},
+        {"type": "required_terms", "terms": ["code-architect"]},
+        {"type": "required_terms", "terms": ["dispatch"]},
+        {"type": "forbidden_terms", "terms": ["suggest dispatching a"]}
+      ]
+    },
+    {
+      "id": 370,
+      "command": "refactor",
+      "prompt": "Verify that the refactor skill uses smart_explore for structural analysis as primary tool, not optional",
+      "expected_output": "refactor/SKILL.md Step 3 should lead with 'Use smart_explore to understand module structure' and list smart_outline/smart_unfold as numbered steps. Code Structure Discovery section should present smart_search as primary.",
+      "files": [".claude/skills/refactor/SKILL.md"],
+      "assertions": [
+        {"text": "Structural analysis uses smart_explore as primary", "type": "output"},
+        {"text": "Code Structure Discovery presents smart_search as default", "type": "output"},
+        {"text": "Fallback uses 'unavailable' framing", "type": "output"}
+      ],
+      "tier": "micro",
+      "tags": ["smart-explore", "tool-priority"],
+      "checks": [
+        {"type": "required_terms", "terms": ["smart_explore to understand"]},
+        {"type": "required_terms", "terms": ["smart_outline", "smart_unfold"]},
+        {"type": "forbidden_terms", "terms": ["If claude-mem smart_explore tools are available"]}
+      ]
+    },
+    {
+      "id": 371,
+      "command": "build",
+      "prompt": "Verify that build skill uses smart_explore as primary for context loading and reference warm-up, not optional",
+      "expected_output": "build/SKILL.md Smart Context Loading should lead with 'Use smart_explore as the primary tool'. Reference Warm-Up should say 'Reference extraction via smart_explore (preferred)' not 'If claude-mem is available'. Context Acceleration should present smart_search steps first with fallback at end.",
+      "files": [".claude/skills/build/SKILL.md"],
+      "assertions": [
+        {"text": "Smart Context Loading presents smart_explore as primary", "type": "output"},
+        {"text": "Reference Warm-Up uses 'preferred' framing not conditional", "type": "output"},
+        {"text": "Context Acceleration lists smart_search steps first", "type": "output"}
+      ],
+      "tier": "micro",
+      "tags": ["smart-explore", "tool-priority"],
+      "checks": [
+        {"type": "required_terms", "terms": ["smart_explore as the primary tool"]},
+        {"type": "required_terms", "terms": ["Reference extraction via smart_explore"]},
+        {"type": "forbidden_terms", "terms": ["If claude-mem is available (check tool list"]}
+      ]
+    },
+    {
+      "id": 372,
+      "command": "build",
+      "prompt": "Verify that agent definitions (code-explorer, code-architect) use smart_explore as primary code navigation, not just LSP",
+      "expected_output": "code-explorer.md should list smart_outline/smart_unfold/smart_search before LSP tools. code-architect.md should list smart_explore before LSP. Both should have fallback to LSP/Read if unavailable.",
+      "files": ["agents/code-explorer.md", "agents/code-architect.md"],
+      "assertions": [
+        {"text": "code-explorer uses smart_explore as primary analysis tool", "type": "output"},
+        {"text": "code-architect uses smart_explore for architectural analysis", "type": "output"},
+        {"text": "Both have LSP as secondary, not primary", "type": "output"}
+      ],
+      "tier": "micro",
+      "tags": ["smart-explore", "agent-definition"],
+      "checks": [
+        {"type": "required_terms", "terms": ["smart_explore as the primary tool"]},
+        {"type": "required_terms", "terms": ["smart_outline", "smart_unfold", "smart_search"]},
+        {"type": "required_terms", "terms": ["fall back to LSP"]}
+      ]
+    },
+    {
+      "id": 373,
+      "command": "plan-work",
+      "prompt": "Verify that claude-mem-rules.md presents smart_explore as primary default with Read/Grep as fallback, not the reverse",
+      "expected_output": "Graceful Degradation section should say 'Skills treat smart_explore as the primary code exploration tool' and 'always try it first'. Should NOT say 'It's an enhancement, not a dependency' in a way that makes it optional.",
+      "files": [".claude/skills/shared/claude-mem-rules.md"],
+      "assertions": [
+        {"text": "Smart_explore framed as primary default", "type": "output"},
+        {"text": "Read/Grep framed as fallback for unavailable", "type": "output"},
+        {"text": "Says 'always try it first'", "type": "output"}
+      ],
+      "tier": "micro",
+      "tags": ["smart-explore", "shared-rules"],
+      "checks": [
+        {"type": "required_terms", "terms": ["primary"]},
+        {"type": "required_terms", "terms": ["always try it first"]},
+        {"type": "forbidden_terms", "terms": ["It's an enhancement, not a dependency"]}
+      ]
+    },
+    {
+      "id": 374,
+      "command": "update",
+      "prompt": "Run /fh:update. After updating, verify the manifest check ran and report the environment status table showing Component, Status, and Details columns with a 'What changed in your setup' header.",
+      "expected_output": "Should run manifest check, format JSON output as a status table with Component/Status/Details columns under a 'What changed in your setup' header. Table should use box-drawing characters (┌│└ or similar). Summary line should show N fixed / N removed / N errors.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Shows 'What changed in your setup' header",
+          "type": "output"
+        },
+        {
+          "text": "Table has Component, Status, Details columns",
+          "type": "output"
+        },
+        {
+          "text": "Uses box-drawing characters for table borders",
+          "type": "output"
+        },
+        {
+          "text": "Runs manifest check step",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": ["update", "manifest", "infrastructure"],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": ["What changed in your setup"]
+        },
+        {
+          "type": "required_terms",
+          "terms": ["manifest check"]
+        },
+        {
+          "type": "required_terms",
+          "terms": ["Component", "Status", "Details"]
+        }
+      ]
+    },
+    {
+      "id": 375,
+      "command": "update",
+      "prompt": "Run /fh:update on a project that has no fhhs-manifest.json file. The manifest check should auto-generate a manifest with defaults and report that it was created.",
+      "expected_output": "Should detect missing fhhs-manifest.json, auto-generate it with defaults based on detected profile, and report that the manifest was generated. Should show profile detection in the output.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects missing fhhs-manifest.json",
+          "type": "behavioral"
+        },
+        {
+          "text": "Auto-generates manifest with defaults",
+          "type": "behavioral"
+        },
+        {
+          "text": "Reports manifest was created/generated",
+          "type": "output"
+        },
+        {
+          "text": "Shows profile detection",
+          "type": "output"
+        }
+      ],
+      "tier": "smoke",
+      "tags": ["update", "manifest", "backfill", "infrastructure"],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": ["defaults"]
+        },
+        {
+          "type": "required_terms",
+          "terms": ["generat"]
+        },
+        {
+          "type": "required_terms",
+          "terms": ["profile", "manifest"]
+        }
+      ]
+    },
+    {
+      "id": 376,
+      "command": "update",
+      "prompt": "Run /fh:update on a project that still has deprecated context-mode configuration. Verify the output shows context-mode as deprecated and removed from the setup.",
+      "expected_output": "Should detect context-mode as a deprecated item, show it in the status table with removed/deprecated status. The manifest check should handle the removal and report it clearly.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects context-mode as deprecated",
+          "type": "behavioral"
+        },
+        {
+          "text": "Shows context-mode in status table with removed/deprecated status",
+          "type": "output"
+        },
+        {
+          "text": "Reports removal in summary",
+          "type": "output"
+        }
+      ],
+      "tier": "smoke",
+      "tags": ["update", "manifest", "deprecation", "infrastructure"],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": ["deprecated"]
+        },
+        {
+          "type": "required_terms",
+          "terms": ["removed"]
+        },
+        {
+          "type": "required_terms",
+          "terms": ["context-mode"]
+        }
+      ]
+    },
+    {
+      "id": 377,
+      "command": "update",
+      "prompt": "Run /fh:update when an update is available. Verify the output includes both a 'What's new for you' changelog section with user-facing entries AND the environment status table from manifest check.",
+      "expected_output": "Should show 'What's new for you' header with bullet points for user-facing changelog entries (feat:/fix: lines). Should also show the manifest check table with box-drawing characters. Both sections should be present. Summary line shows N fixed · N removed · N errors.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Shows 'What's new for you' header with changelog bullets",
+          "type": "output"
+        },
+        {
+          "text": "Shows environment status table with box-drawing characters",
+          "type": "output"
+        },
+        {
+          "text": "Both sections present in output",
+          "type": "output"
+        },
+        {
+          "text": "Summary line shows fixed/removed/errors counts",
+          "type": "output"
+        }
+      ],
+      "tier": "smoke",
+      "tags": ["update", "manifest", "changelog", "infrastructure"],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": ["What's new for you"]
+        },
+        {
+          "type": "required_terms",
+          "terms": ["fixed", "removed", "errors"]
+        },
+        {
+          "type": "required_terms",
+          "terms": ["Component", "Status"]
         }
       ]
     }

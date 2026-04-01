@@ -71,11 +71,11 @@ This project already has `.planning/` state — likely from a previous `/fh:new-
 | `CLAUDE.md` | `[ -f CLAUDE.md ]` | Create directly (see Step 5 below) |
 | `.claude/rules/` | `[ -d .claude/rules ]` | Will be created by `/fh:map-codebase` below |
 
-#### Codebase mapping (context-mode)
+#### Codebase mapping
 
 | Check | How | If missing |
 |-------|-----|------------|
-| `.planning/codebase/` | `[ -d .planning/codebase ]` | Run `/fh:map-codebase` — spawns 4 mapper agents, writes codebase docs, creates `.claude/rules/`, indexes into FTS5 |
+| `.planning/codebase/` | `[ -d .planning/codebase ]` | Run `/fh:map-codebase` — spawns 4 mapper agents, writes codebase docs, creates `.claude/rules/` |
 | Mapping freshness | Check if `.planning/codebase/` exists but is stale (significant commits since last map) | Re-run `/fh:map-codebase` to refresh |
 
 #### Agent skills (global)
@@ -118,7 +118,7 @@ These are one-time external integrations. Sync mode only checks and reports stat
 1. Run the audit silently — do NOT ask the user about project vision, tech stack, or brand. Those decisions are already made.
 2. For each missing item, create it by inferring from existing project context (read `CLAUDE.md`, `package.json`, `.planning/` files, and the codebase).
 3. For `config.json`: run `gsd-tools config-ensure-section` — creates with defaults if missing, skips if already present. Users can keep a minimal config (e.g. just `plan_limits`) since `loadConfig()` provides runtime defaults for anything omitted.
-4. For codebase mapping: if `.planning/codebase/` is missing, run `/fh:map-codebase`. This is important for context-mode to work well.
+4. For codebase mapping: if `.planning/codebase/` is missing, run `/fh:map-codebase`.
 5. For observability: if any sentry-local files are missing, scaffold the full set from `/fh:observability` templates. Partial scaffolding causes runtime errors.
 6. Report what was added/updated and what was already present.
 
@@ -771,7 +771,22 @@ If the user wants to skip this step and set up design later, allow it. They can 
 
 Generate a CLAUDE.md directly using the context gathered in Steps 1-4.
 
-Include:
+**The first section of CLAUDE.md must always be Code Exploration** — this sets the default behavior for all interactions before any skill triggers:
+
+```markdown
+## Code Exploration
+
+When claude-mem is available (`mcp__plugin_claude-mem_*` in tool list), use it as the primary tool for understanding code:
+- `smart_outline` — see file structure (functions, classes, exports) without reading the full file (~1,500 tokens vs ~12,000)
+- `smart_unfold` — read a specific function by name instead of loading the full file (8-19x cheaper)
+- `smart_search` — find symbols, patterns, and definitions across the codebase (AST-aware, better than grep for structural queries)
+- `search` / `get_observations` — recall decisions, gotchas, and patterns from prior sessions
+- `timeline` — understand what happened recently in a specific area
+
+Fall back to Read only when you need the full file for editing. Fall back to Grep when smart_search is unavailable.
+```
+
+Then include:
 - Project name and description (from Step 1)
 - Tech stack with key commands adapted to the chosen framework (from Step 2)
 - Architecture overview and code style with conventional commits
@@ -781,7 +796,7 @@ Include:
 
 CLAUDE.md should provide Claude with the conventions needed to work effectively on the project.
 
-Keep it under 40 lines. Commit: `docs: initialize CLAUDE.md with project conventions`
+Keep it under 50 lines. Commit: `docs: initialize CLAUDE.md with project conventions`
 
 ---
 
@@ -969,6 +984,14 @@ Then run the post-update-reconcile script to populate `CLAUDE_MEM_PROJECT` and r
 ```
 
 Commit: `docs: initialize project planning with GSD structure`
+
+### 7c: Generate Manifest
+
+Register the new project in the manifest so `/fh:update` can track it:
+
+```bash
+node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" manifest generate --project-root "$PWD"
+```
 
 ---
 
@@ -2045,7 +2068,7 @@ Commit: `chore: add conductor.json for workspace configuration`
 
 **Only run this step if `uses_default_stack` is true** (starter template was cloned in Step 3).
 
-The starter template has enough code to produce a useful codebase map. Running it now means context-mode is immediately valuable from the first `/fh:plan-work` call.
+The starter template has enough code to produce a useful codebase map. Running it now means claude-mem has rich structural context from the first `/fh:plan-work` call.
 
 Invoke `/fh:map-codebase` — it spawns 4 parallel mapper agents that write 7 granular documents to `.planning/codebase/` (STACK.md, INTEGRATIONS.md, ARCHITECTURE.md, STRUCTURE.md, CONVENTIONS.md, TESTING.md, CONCERNS.md), creates `.claude/rules/`, and records the freshness SHA. claude-mem automatically observes file reads via PostToolUse hook.
 
