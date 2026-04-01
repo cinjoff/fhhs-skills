@@ -296,7 +296,18 @@ If `--dry-run` is set:
 Enable autonomous advance so downstream skills (build, plan-work) make decisions without stopping:
 
 ```bash
-node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs config-set workflow.auto_advance true
+# Ensure GSD CLI symlink exists (self-heals if /fh:setup wasn't run)
+if [ ! -f "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" ]; then
+  _FHHS="$(ls -d "$HOME/.claude/plugins/cache/fhhs-skills/fh"/*/ 2>/dev/null | sort | tail -1)"
+  _FHHS="${_FHHS%/}"
+  if [ -n "$_FHHS" ] && [ -d "$_FHHS/bin" ]; then
+    mkdir -p "$HOME/.claude/get-shit-done"
+    ln -sfn "$_FHHS/bin" "$HOME/.claude/get-shit-done/bin"
+    [ -d "$_FHHS/hooks" ] && ln -sfn "$_FHHS/hooks" "$HOME/.claude/get-shit-done/hooks"
+  fi
+fi
+
+node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" config-set workflow.auto_advance true
 ```
 
 Confirm the config was set successfully before proceeding.
@@ -451,7 +462,7 @@ Whether the orchestrator completes successfully or is interrupted, always:
 
 1. **Reset AUTO_MODE:**
    ```bash
-   node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs config-set workflow.auto_advance false
+   node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" config-set workflow.auto_advance false
    ```
 
 2. **Report final state** (format as a clear summary the user can act on):

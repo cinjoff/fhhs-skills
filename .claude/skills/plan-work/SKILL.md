@@ -223,7 +223,18 @@ Save approved design to `.planning/designs/YYYY-MM-DD-<topic>.md`.
 
 Check auto-mode:
 ```bash
-AUTO_MODE=$(node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs config-get workflow.auto_advance 2>/dev/null || echo "false")
+# Ensure GSD CLI symlink exists (self-heals if /fh:setup wasn't run)
+if [ ! -f "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" ]; then
+  _FHHS="$(ls -d "$HOME/.claude/plugins/cache/fhhs-skills/fh"/*/ 2>/dev/null | sort | tail -1)"
+  _FHHS="${_FHHS%/}"
+  if [ -n "$_FHHS" ] && [ -d "$_FHHS/bin" ]; then
+    mkdir -p "$HOME/.claude/get-shit-done"
+    ln -sfn "$_FHHS/bin" "$HOME/.claude/get-shit-done/bin"
+    [ -d "$_FHHS/hooks" ] && ln -sfn "$_FHHS/hooks" "$HOME/.claude/get-shit-done/hooks"
+  fi
+fi
+
+AUTO_MODE=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" config-get workflow.auto_advance 2>/dev/null || echo "false")
 ```
 
 If `AUTO_MODE` is `"true"`, skip interactive gray area discussion. Instead:
@@ -454,8 +465,8 @@ Before presenting the plan to the user, run this verification checklist. If any 
 **GSD mode — run structural validation first:**
 
 ```bash
-node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs verify plan-structure "${PLAN_PATH}"
-node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs frontmatter validate "${PLAN_PATH}" --schema plan
+node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" verify plan-structure "${PLAN_PATH}"
+node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" frontmatter validate "${PLAN_PATH}" --schema plan
 ```
 
 These catch schema issues (missing frontmatter fields, malformed tasks) automatically. Then run the semantic checks below.

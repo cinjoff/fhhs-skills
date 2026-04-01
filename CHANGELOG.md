@@ -8,6 +8,12 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliation tags
 (`[setup:TYPE:ID]`, `[project:TYPE:ID]`) used by `/fh:update` for post-update checks.
 
+## [1.61.3] - 2026-04-01
+
+### Fixed
+- **GSD CLI path resolution** — adds self-healing symlink guard to 8 skills (build, plan-work, auto, progress, health, todos, map-codebase, settings) so gsd-tools.cjs auto-discovers its path from the plugin cache on first use, eliminating MODULE_NOT_FOUND errors on fresh installs without `/fh:setup`
+- **Shell quoting** — properly quotes all `$HOME` path references in skill templates to prevent empty-string expansion in fish shell and non-standard bash configs
+
 ## [1.61.2] - 2026-04-01
 
 ### Fixed
