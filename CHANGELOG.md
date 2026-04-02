@@ -10,6 +10,14 @@ Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliat
 
 ## [Unreleased]
 
+## [1.62.2] - 2026-04-02
+
+### Changed
+- **Learnings skill** — simplifies claude-mem integration by removing digest cache and querying claude-mem directly
+
+### Fixed
+- **Planning symlink** — uses `ln -sfn` to prevent recursive .planning symlink creation
+
 ## [1.62.1] - 2026-04-02
 
 ### Removed
