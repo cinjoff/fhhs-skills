@@ -11897,11 +11897,11 @@
       "id": 346,
       "command": "learnings",
       "prompt": "update claude md with recent learnings",
-      "expected_output": "Should run learnings --update-claude-md flow: check claude-mem, gather observations, surface patterns/gotchas/conventions, and update CLAUDE.md with approved additions",
+      "expected_output": "Should run learnings workflow: query claude-mem for observations, surface patterns/gotchas/conventions, file GitHub issues for skill improvements, and update CLAUDE.md (Step 5) with approved additions",
       "files": [],
       "assertions": [
         {
-          "text": "Runs --update-claude-md flow (Section 4.5 only)",
+          "text": "Runs CLAUDE.md maintenance (Step 5)",
           "type": "behavioral"
         },
         {
@@ -12511,21 +12511,17 @@
     {
       "id": 361,
       "command": "build",
-      "prompt": "build just completed a phase. claude-mem has 6 unaddressed improvement items in the digest. what should happen post-phase?",
-      "expected_output": "Should detect 6 unaddressed items (>= 5 threshold), suggest running /fh:learnings to review workflow improvements and skill issues. Should also check for codebase mapping drift if .planning/codebase/ exists.",
+      "prompt": "After completing a phase in the build skill, what does the skill suggest regarding learnings?",
+      "expected_output": "Should suggest running /fh:learnings at phase or milestone completion to review workflow improvements, surface patterns, and address skill issues.",
       "files": [],
       "assertions": [
         {
-          "text": "Detects unaddressed improvement count meets threshold",
-          "type": "behavioral"
-        },
-        {
-          "text": "Suggests /fh:learnings for workflow improvements",
+          "text": "Suggests /fh:learnings at phase/milestone completion",
           "type": "output"
         },
         {
-          "text": "Checks for codebase drift post-phase",
-          "type": "behavioral"
+          "text": "Mentions workflow improvements or patterns",
+          "type": "output"
         }
       ],
       "tier": "full",
@@ -12626,7 +12622,7 @@
     {
       "id": 364,
       "command": "review",
-      "prompt": "Review bin/lib/schemas.cjs — check that validateAutoState validates all required auto-state fields and returns a warnings-based result",
+      "prompt": "Review bin/lib/schemas.cjs \u2014 check that validateAutoState validates all required auto-state fields and returns a warnings-based result",
       "expected_output": "Should confirm validateAutoState exists in bin/lib/schemas.cjs, validates required fields (active, phase, started_at, phases_total, phases_completed, phase_states, activity_events, session_activity, log_buffer), and returns { warnings: string[] }.",
       "files": [],
       "assertions": [
@@ -12651,22 +12647,28 @@
       "checks": [
         {
           "type": "required_terms",
-          "terms": ["schema"]
+          "terms": [
+            "schema"
+          ]
         },
         {
           "type": "required_terms",
-          "terms": ["validateAutoState"]
+          "terms": [
+            "validateAutoState"
+          ]
         },
         {
           "type": "required_terms",
-          "terms": ["warnings"]
+          "terms": [
+            "warnings"
+          ]
         }
       ]
     },
     {
       "id": 365,
       "command": "review",
-      "prompt": "Review auto-orchestrator.cjs for schema compliance — verify validateAutoState is called at write boundaries and uses the warnings-based return type",
+      "prompt": "Review auto-orchestrator.cjs for schema compliance \u2014 verify validateAutoState is called at write boundaries and uses the warnings-based return type",
       "expected_output": "Should confirm validateAutoState is called within writeAutoStatus, that the function returns or uses a warnings array, and that schema validation is enforced at write boundaries.",
       "files": [],
       "assertions": [
@@ -12691,22 +12693,28 @@
       "checks": [
         {
           "type": "required_terms",
-          "terms": ["validateAutoState"]
+          "terms": [
+            "validateAutoState"
+          ]
         },
         {
           "type": "required_terms",
-          "terms": ["writeAutoStatus"]
+          "terms": [
+            "writeAutoStatus"
+          ]
         },
         {
           "type": "required_terms",
-          "terms": ["warnings"]
+          "terms": [
+            "warnings"
+          ]
         }
       ]
     },
     {
       "id": 366,
       "command": "review",
-      "prompt": "Review how path construction is handled in bin/lib/ — check that verify.cjs and core.cjs use path.join for building .planning/ paths and that the autoStatePath helper exists in auto-orchestrator.cjs",
+      "prompt": "Review how path construction is handled in bin/lib/ \u2014 check that verify.cjs and core.cjs use path.join for building .planning/ paths and that the autoStatePath helper exists in auto-orchestrator.cjs",
       "expected_output": "Should confirm path.join is used for .planning/ paths in verify.cjs and core.cjs, and that autoStatePath helper centralizes the .auto-state.json path in auto-orchestrator.cjs.",
       "files": [],
       "assertions": [
@@ -12731,15 +12739,23 @@
       "checks": [
         {
           "type": "required_terms",
-          "terms": ["path.join"]
+          "terms": [
+            "path.join"
+          ]
         },
         {
           "type": "required_terms",
-          "terms": ["autoStatePath", ".planning"]
+          "terms": [
+            "autoStatePath",
+            ".planning"
+          ]
         },
         {
           "type": "required_terms",
-          "terms": ["verify", "core"]
+          "terms": [
+            "verify",
+            "core"
+          ]
         }
       ]
     },
@@ -12748,18 +12764,48 @@
       "command": "fix",
       "prompt": "Verify that the fix skill uses smart_explore as primary code navigation tool during triage, not as an optional 'if available' enhancement",
       "expected_output": "fix/SKILL.md Step 1 Triage should instruct smart_outline and smart_unfold as numbered primary steps, with 'If smart_explore tools are unavailable' as the fallback. Should NOT say 'If claude-mem smart_explore tools are available'.",
-      "files": [".claude/skills/fix/SKILL.md"],
+      "files": [
+        ".claude/skills/fix/SKILL.md"
+      ],
       "assertions": [
-        {"text": "smart_outline appears as primary triage tool, not optional", "type": "output"},
-        {"text": "Fallback language uses 'unavailable' not 'if available'", "type": "output"},
-        {"text": "smart_unfold mentioned for reading specific functions", "type": "output"}
+        {
+          "text": "smart_outline appears as primary triage tool, not optional",
+          "type": "output"
+        },
+        {
+          "text": "Fallback language uses 'unavailable' not 'if available'",
+          "type": "output"
+        },
+        {
+          "text": "smart_unfold mentioned for reading specific functions",
+          "type": "output"
+        }
       ],
       "tier": "micro",
-      "tags": ["smart-explore", "tool-priority"],
+      "tags": [
+        "smart-explore",
+        "tool-priority"
+      ],
       "checks": [
-        {"type": "required_terms", "terms": ["smart_outline", "smart_unfold"]},
-        {"type": "required_terms", "terms": ["unavailable"]},
-        {"type": "forbidden_terms", "terms": ["If claude-mem smart_explore tools are available"]}
+        {
+          "type": "required_terms",
+          "terms": [
+            "smart_outline",
+            "smart_unfold"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "unavailable"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "If claude-mem smart_explore tools are available"
+          ]
+        }
       ]
     },
     {
@@ -12767,18 +12813,48 @@
       "command": "review",
       "prompt": "Verify that the review skill uses smart_explore as primary tool for understanding code context around diffs, not as optional",
       "expected_output": "review/SKILL.md Token-Efficient Review Context section should lead with 'Use smart_explore as the primary tool' and list smart_outline/smart_unfold as numbered steps. Fallback should say 'unavailable' not 'if available'.",
-      "files": [".claude/skills/review/SKILL.md"],
+      "files": [
+        ".claude/skills/review/SKILL.md"
+      ],
       "assertions": [
-        {"text": "smart_explore is presented as primary, not optional", "type": "output"},
-        {"text": "Fallback uses 'unavailable' framing", "type": "output"},
-        {"text": "Past learnings check uses direct imperative, not conditional", "type": "output"}
+        {
+          "text": "smart_explore is presented as primary, not optional",
+          "type": "output"
+        },
+        {
+          "text": "Fallback uses 'unavailable' framing",
+          "type": "output"
+        },
+        {
+          "text": "Past learnings check uses direct imperative, not conditional",
+          "type": "output"
+        }
       ],
       "tier": "micro",
-      "tags": ["smart-explore", "tool-priority"],
+      "tags": [
+        "smart-explore",
+        "tool-priority"
+      ],
       "checks": [
-        {"type": "required_terms", "terms": ["smart_explore as the primary tool"]},
-        {"type": "required_terms", "terms": ["smart_outline", "smart_unfold"]},
-        {"type": "forbidden_terms", "terms": ["If claude-mem smart_explore tools are available"]}
+        {
+          "type": "required_terms",
+          "terms": [
+            "smart_explore as the primary tool"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "smart_outline",
+            "smart_unfold"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "If claude-mem smart_explore tools are available"
+          ]
+        }
       ]
     },
     {
@@ -12786,19 +12862,55 @@
       "command": "plan-work",
       "prompt": "Verify that plan-work uses code-explorer for Medium+ tasks and code-architect for Complex tasks, not as soft suggestions",
       "expected_output": "plan-work/SKILL.md complexity matrix should list code-explorer for Medium and both code-explorer + code-architect for Complex. Codebase exploration section should say 'dispatch' not 'suggest dispatching'. Brainstorming prompt should say 'do this before designing' not 'skip this'.",
-      "files": [".claude/skills/plan-work/SKILL.md", ".claude/skills/plan-work/references/brainstorming-prompt.md"],
+      "files": [
+        ".claude/skills/plan-work/SKILL.md",
+        ".claude/skills/plan-work/references/brainstorming-prompt.md"
+      ],
       "assertions": [
-        {"text": "Complexity matrix includes code-explorer for Medium tasks", "type": "output"},
-        {"text": "Complexity matrix includes code-architect for Complex tasks", "type": "output"},
-        {"text": "Uses imperative 'dispatch' not soft 'suggest'", "type": "output"}
+        {
+          "text": "Complexity matrix includes code-explorer for Medium tasks",
+          "type": "output"
+        },
+        {
+          "text": "Complexity matrix includes code-architect for Complex tasks",
+          "type": "output"
+        },
+        {
+          "text": "Uses imperative 'dispatch' not soft 'suggest'",
+          "type": "output"
+        }
       ],
       "tier": "micro",
-      "tags": ["smart-explore", "agent-dispatch", "tool-priority"],
+      "tags": [
+        "smart-explore",
+        "agent-dispatch",
+        "tool-priority"
+      ],
       "checks": [
-        {"type": "required_terms", "terms": ["code-explorer"]},
-        {"type": "required_terms", "terms": ["code-architect"]},
-        {"type": "required_terms", "terms": ["dispatch"]},
-        {"type": "forbidden_terms", "terms": ["suggest dispatching a"]}
+        {
+          "type": "required_terms",
+          "terms": [
+            "code-explorer"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "code-architect"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "dispatch"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "suggest dispatching a"
+          ]
+        }
       ]
     },
     {
@@ -12806,18 +12918,48 @@
       "command": "refactor",
       "prompt": "Verify that the refactor skill uses smart_explore for structural analysis as primary tool, not optional",
       "expected_output": "refactor/SKILL.md Step 3 should lead with 'Use smart_explore to understand module structure' and list smart_outline/smart_unfold as numbered steps. Code Structure Discovery section should present smart_search as primary.",
-      "files": [".claude/skills/refactor/SKILL.md"],
+      "files": [
+        ".claude/skills/refactor/SKILL.md"
+      ],
       "assertions": [
-        {"text": "Structural analysis uses smart_explore as primary", "type": "output"},
-        {"text": "Code Structure Discovery presents smart_search as default", "type": "output"},
-        {"text": "Fallback uses 'unavailable' framing", "type": "output"}
+        {
+          "text": "Structural analysis uses smart_explore as primary",
+          "type": "output"
+        },
+        {
+          "text": "Code Structure Discovery presents smart_search as default",
+          "type": "output"
+        },
+        {
+          "text": "Fallback uses 'unavailable' framing",
+          "type": "output"
+        }
       ],
       "tier": "micro",
-      "tags": ["smart-explore", "tool-priority"],
+      "tags": [
+        "smart-explore",
+        "tool-priority"
+      ],
       "checks": [
-        {"type": "required_terms", "terms": ["smart_explore to understand"]},
-        {"type": "required_terms", "terms": ["smart_outline", "smart_unfold"]},
-        {"type": "forbidden_terms", "terms": ["If claude-mem smart_explore tools are available"]}
+        {
+          "type": "required_terms",
+          "terms": [
+            "smart_explore to understand"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "smart_outline",
+            "smart_unfold"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "If claude-mem smart_explore tools are available"
+          ]
+        }
       ]
     },
     {
@@ -12825,18 +12967,47 @@
       "command": "build",
       "prompt": "Verify that build skill uses smart_explore as primary for context loading and reference warm-up, not optional",
       "expected_output": "build/SKILL.md Smart Context Loading should lead with 'Use smart_explore as the primary tool'. Reference Warm-Up should say 'Reference extraction via smart_explore (preferred)' not 'If claude-mem is available'. Context Acceleration should present smart_search steps first with fallback at end.",
-      "files": [".claude/skills/build/SKILL.md"],
+      "files": [
+        ".claude/skills/build/SKILL.md"
+      ],
       "assertions": [
-        {"text": "Smart Context Loading presents smart_explore as primary", "type": "output"},
-        {"text": "Reference Warm-Up uses 'preferred' framing not conditional", "type": "output"},
-        {"text": "Context Acceleration lists smart_search steps first", "type": "output"}
+        {
+          "text": "Smart Context Loading presents smart_explore as primary",
+          "type": "output"
+        },
+        {
+          "text": "Reference Warm-Up uses 'preferred' framing not conditional",
+          "type": "output"
+        },
+        {
+          "text": "Context Acceleration lists smart_search steps first",
+          "type": "output"
+        }
       ],
       "tier": "micro",
-      "tags": ["smart-explore", "tool-priority"],
+      "tags": [
+        "smart-explore",
+        "tool-priority"
+      ],
       "checks": [
-        {"type": "required_terms", "terms": ["smart_explore as the primary tool"]},
-        {"type": "required_terms", "terms": ["Reference extraction via smart_explore"]},
-        {"type": "forbidden_terms", "terms": ["If claude-mem is available (check tool list"]}
+        {
+          "type": "required_terms",
+          "terms": [
+            "smart_explore as the primary tool"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "Reference extraction via smart_explore"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "If claude-mem is available (check tool list"
+          ]
+        }
       ]
     },
     {
@@ -12844,18 +13015,50 @@
       "command": "build",
       "prompt": "Verify that agent definitions (code-explorer, code-architect) use smart_explore as primary code navigation, not just LSP",
       "expected_output": "code-explorer.md should list smart_outline/smart_unfold/smart_search before LSP tools. code-architect.md should list smart_explore before LSP. Both should have fallback to LSP/Read if unavailable.",
-      "files": ["agents/code-explorer.md", "agents/code-architect.md"],
+      "files": [
+        "agents/code-explorer.md",
+        "agents/code-architect.md"
+      ],
       "assertions": [
-        {"text": "code-explorer uses smart_explore as primary analysis tool", "type": "output"},
-        {"text": "code-architect uses smart_explore for architectural analysis", "type": "output"},
-        {"text": "Both have LSP as secondary, not primary", "type": "output"}
+        {
+          "text": "code-explorer uses smart_explore as primary analysis tool",
+          "type": "output"
+        },
+        {
+          "text": "code-architect uses smart_explore for architectural analysis",
+          "type": "output"
+        },
+        {
+          "text": "Both have LSP as secondary, not primary",
+          "type": "output"
+        }
       ],
       "tier": "micro",
-      "tags": ["smart-explore", "agent-definition"],
+      "tags": [
+        "smart-explore",
+        "agent-definition"
+      ],
       "checks": [
-        {"type": "required_terms", "terms": ["smart_explore as the primary tool"]},
-        {"type": "required_terms", "terms": ["smart_outline", "smart_unfold", "smart_search"]},
-        {"type": "required_terms", "terms": ["fall back to LSP"]}
+        {
+          "type": "required_terms",
+          "terms": [
+            "smart_explore as the primary tool"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "smart_outline",
+            "smart_unfold",
+            "smart_search"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "fall back to LSP"
+          ]
+        }
       ]
     },
     {
@@ -12863,25 +13066,54 @@
       "command": "plan-work",
       "prompt": "Verify that claude-mem-rules.md presents smart_explore as primary default with Read/Grep as fallback, not the reverse",
       "expected_output": "Graceful Degradation section should say 'Skills treat smart_explore as the primary code exploration tool' and 'always try it first'. Should NOT say 'It's an enhancement, not a dependency' in a way that makes it optional.",
-      "files": [".claude/skills/shared/claude-mem-rules.md"],
+      "files": [
+        ".claude/skills/shared/claude-mem-rules.md"
+      ],
       "assertions": [
-        {"text": "Smart_explore framed as primary default", "type": "output"},
-        {"text": "Read/Grep framed as fallback for unavailable", "type": "output"},
-        {"text": "Says 'always try it first'", "type": "output"}
+        {
+          "text": "Smart_explore framed as primary default",
+          "type": "output"
+        },
+        {
+          "text": "Read/Grep framed as fallback for unavailable",
+          "type": "output"
+        },
+        {
+          "text": "Says 'always try it first'",
+          "type": "output"
+        }
       ],
       "tier": "micro",
-      "tags": ["smart-explore", "shared-rules"],
+      "tags": [
+        "smart-explore",
+        "shared-rules"
+      ],
       "checks": [
-        {"type": "required_terms", "terms": ["primary"]},
-        {"type": "required_terms", "terms": ["always try it first"]},
-        {"type": "forbidden_terms", "terms": ["It's an enhancement, not a dependency"]}
+        {
+          "type": "required_terms",
+          "terms": [
+            "primary"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "always try it first"
+          ]
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "It's an enhancement, not a dependency"
+          ]
+        }
       ]
     },
     {
       "id": 374,
       "command": "update",
       "prompt": "Run /fh:update. After updating, verify the manifest check ran and report the environment status table showing Component, Status, and Details columns with a 'What changed in your setup' header.",
-      "expected_output": "Should run manifest check, format JSON output as a status table with Component/Status/Details columns under a 'What changed in your setup' header. Table should use box-drawing characters (┌│└ or similar). Summary line should show N fixed / N removed / N errors.",
+      "expected_output": "Should run manifest check, format JSON output as a status table with Component/Status/Details columns under a 'What changed in your setup' header. Table should use box-drawing characters (\u250c\u2502\u2514 or similar). Summary line should show N fixed / N removed / N errors.",
       "files": [],
       "assertions": [
         {
@@ -12902,19 +13134,31 @@
         }
       ],
       "tier": "smoke",
-      "tags": ["update", "manifest", "infrastructure"],
+      "tags": [
+        "update",
+        "manifest",
+        "infrastructure"
+      ],
       "checks": [
         {
           "type": "required_terms",
-          "terms": ["What changed in your setup"]
+          "terms": [
+            "What changed in your setup"
+          ]
         },
         {
           "type": "required_terms",
-          "terms": ["manifest check"]
+          "terms": [
+            "manifest check"
+          ]
         },
         {
           "type": "required_terms",
-          "terms": ["Component", "Status", "Details"]
+          "terms": [
+            "Component",
+            "Status",
+            "Details"
+          ]
         }
       ]
     },
@@ -12943,19 +13187,31 @@
         }
       ],
       "tier": "smoke",
-      "tags": ["update", "manifest", "backfill", "infrastructure"],
+      "tags": [
+        "update",
+        "manifest",
+        "backfill",
+        "infrastructure"
+      ],
       "checks": [
         {
           "type": "required_terms",
-          "terms": ["defaults"]
+          "terms": [
+            "defaults"
+          ]
         },
         {
           "type": "required_terms",
-          "terms": ["generat"]
+          "terms": [
+            "generat"
+          ]
         },
         {
           "type": "required_terms",
-          "terms": ["profile", "manifest"]
+          "terms": [
+            "profile",
+            "manifest"
+          ]
         }
       ]
     },
@@ -12980,19 +13236,30 @@
         }
       ],
       "tier": "smoke",
-      "tags": ["update", "manifest", "deprecation", "infrastructure"],
+      "tags": [
+        "update",
+        "manifest",
+        "deprecation",
+        "infrastructure"
+      ],
       "checks": [
         {
           "type": "required_terms",
-          "terms": ["deprecated"]
+          "terms": [
+            "deprecated"
+          ]
         },
         {
           "type": "required_terms",
-          "terms": ["removed"]
+          "terms": [
+            "removed"
+          ]
         },
         {
           "type": "required_terms",
-          "terms": ["context-mode"]
+          "terms": [
+            "context-mode"
+          ]
         }
       ]
     },
@@ -13000,7 +13267,7 @@
       "id": 377,
       "command": "update",
       "prompt": "Run /fh:update when an update is available. Verify the output includes both a 'What's new for you' changelog section with user-facing entries AND the environment status table from manifest check.",
-      "expected_output": "Should show 'What's new for you' header with bullet points for user-facing changelog entries (feat:/fix: lines). Should also show the manifest check table with box-drawing characters. Both sections should be present. Summary line shows N fixed · N removed · N errors.",
+      "expected_output": "Should show 'What's new for you' header with bullet points for user-facing changelog entries (feat:/fix: lines). Should also show the manifest check table with box-drawing characters. Both sections should be present. Summary line shows N fixed \u00b7 N removed \u00b7 N errors.",
       "files": [],
       "assertions": [
         {
@@ -13021,19 +13288,408 @@
         }
       ],
       "tier": "smoke",
-      "tags": ["update", "manifest", "changelog", "infrastructure"],
+      "tags": [
+        "update",
+        "manifest",
+        "changelog",
+        "infrastructure"
+      ],
       "checks": [
         {
           "type": "required_terms",
-          "terms": ["What's new for you"]
+          "terms": [
+            "What's new for you"
+          ]
         },
         {
           "type": "required_terms",
-          "terms": ["fixed", "removed", "errors"]
+          "terms": [
+            "fixed",
+            "removed",
+            "errors"
+          ]
         },
         {
           "type": "required_terms",
-          "terms": ["Component", "Status"]
+          "terms": [
+            "Component",
+            "Status"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 378,
+      "command": "fix",
+      "prompt": "The checkout flow crashes when applying a discount code. Error: TypeError cannot read property total of undefined in src/services/cart.ts:87. claude-mem is installed with all mcp__plugin_claude-mem_* tools available. Describe your step-by-step approach.",
+      "expected_output": "Should reference Pattern A from claude-mem-rules.md for past learnings check (not inline the full search/get_observations steps). Should reference Pattern B for code navigation using smart_outline/smart_unfold. Should reference Pattern D for persisting findings with [fix-learning] tag.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "References Pattern A from claude-mem-rules.md for past learnings",
+          "type": "behavioral"
+        },
+        {
+          "text": "References Pattern B for code structure exploration",
+          "type": "behavioral"
+        },
+        {
+          "text": "References Pattern D for persist findings with [fix-learning] tag",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "claude-mem",
+        "pattern-reference",
+        "fix",
+        "behavioral"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "[Pp]attern A|Past Learnings Check"
+        },
+        {
+          "type": "regex",
+          "pattern": "[Pp]attern B|Code Structure Exploration|smart_outline"
+        },
+        {
+          "type": "regex",
+          "pattern": "[Pp]attern D|Persist Findings|fix.learning"
+        },
+        {
+          "type": "regex",
+          "pattern": "fix.learning|\\[fix-learning\\]"
+        }
+      ]
+    },
+    {
+      "id": 379,
+      "command": "review",
+      "prompt": "Review the latest changes to the API middleware in src/middleware/auth.ts. claude-mem tools are available (mcp__plugin_claude-mem_*). There were issues with this module last sprint. Walk me through your approach.",
+      "expected_output": "Should reference Pattern A from claude-mem-rules.md for past learnings (not inline search/get_observations steps). Should reference Pattern B for code structure exploration via smart_outline/smart_unfold. Should reference Pattern D with [review-learning] tag.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "References Pattern A for past learnings check",
+          "type": "behavioral"
+        },
+        {
+          "text": "References Pattern B for code context",
+          "type": "behavioral"
+        },
+        {
+          "text": "Uses shared/claude-mem-rules.md patterns not inline steps",
+          "type": "behavioral"
+        },
+        {
+          "text": "Mentions [review-learning] tag for Pattern D",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "claude-mem",
+        "pattern-reference",
+        "review",
+        "behavioral"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "[Pp]attern A|Past Learnings Check"
+        },
+        {
+          "type": "regex",
+          "pattern": "[Pp]attern B|Code Structure Exploration|smart_outline"
+        },
+        {
+          "type": "regex",
+          "pattern": "claude-mem-rules|shared.*rules"
+        },
+        {
+          "type": "regex",
+          "pattern": "review.learning|\\[review-learning\\]|[Pp]attern D|[Pp]ersist [Ff]indings"
+        }
+      ]
+    },
+    {
+      "id": 380,
+      "command": "build",
+      "prompt": "After completing a build phase, what learnings-related step does the build skill perform?",
+      "expected_output": "Should mention Pattern D (Persist Findings) with [build-learning] tag for persisting learnings discovered during the build phase.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "References Pattern D for persisting findings",
+          "type": "behavioral"
+        },
+        {
+          "text": "Mentions [build-learning] tag",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "claude-mem",
+        "digest-path",
+        "build",
+        "behavioral"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "[Pp]attern D|Persist Findings|build.learning"
+        },
+        {
+          "type": "regex",
+          "pattern": "\\[build-learning\\]"
+        }
+      ]
+    },
+    {
+      "id": 381,
+      "command": "setup",
+      "prompt": "Run setup --check on my project. The project has a CLAUDE.md but it does not have a Code Exploration section. What would you report?",
+      "expected_output": "Should report CLAUDE.md Code Exploration as missing in the status table. Should mention smart_outline, smart_unfold, smart_search as the tools that should be referenced in the Code Exploration section.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Reports CLAUDE.md Code Exploration status in check table",
+          "type": "behavioral"
+        },
+        {
+          "text": "Identifies missing Code Exploration section",
+          "type": "behavioral"
+        },
+        {
+          "text": "Mentions smart_outline, smart_unfold, smart_search",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "claude-mem",
+        "setup",
+        "claude-md",
+        "behavioral"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "Code Exploration"
+        },
+        {
+          "type": "regex",
+          "pattern": "missing|not present|absent"
+        },
+        {
+          "type": "regex",
+          "pattern": "smart_outline|smart_unfold|smart_search"
+        }
+      ]
+    },
+    {
+      "id": 382,
+      "command": "setup",
+      "prompt": "Run full setup on my new Next.js project. The project already has a CLAUDE.md with project description but no Code Exploration section. What would you do in step 6d?",
+      "expected_output": "Should insert the Code Exploration section as the first ## section in CLAUDE.md. Section should reference smart_outline over Read, smart_unfold over Read with offset, smart_search over Grep/Glob. Should mention 8-19x token savings.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Inserts Code Exploration as first ## section",
+          "type": "behavioral"
+        },
+        {
+          "text": "References smart_outline, smart_unfold, smart_search",
+          "type": "behavioral"
+        },
+        {
+          "text": "Mentions token savings (8-19x)",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "claude-mem",
+        "setup",
+        "claude-md",
+        "behavioral"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "Code Exploration"
+        },
+        {
+          "type": "regex",
+          "pattern": "smart_outline|smart_unfold|smart_search"
+        },
+        {
+          "type": "regex",
+          "pattern": "8.19x|token|efficien|cheaper|fewer|save|cross.session|memory|prevent.*re.discover"
+        }
+      ]
+    },
+    {
+      "id": 383,
+      "command": "fix",
+      "prompt": "The login form is broken \u2014 users get a blank page. claude-mem is NOT available (no mcp__plugin_claude-mem tools in tool list). How would you navigate the code to triage this bug?",
+      "expected_output": "Should fall back to Read/Grep/Glob for code navigation since claude-mem is unavailable. Should NOT mention smart_outline or smart_unfold as tools to use. Should mention graceful degradation or fallback. The skill should work identically without claude-mem.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Falls back to Read/Grep/Glob when claude-mem unavailable",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does not plan to use smart_outline/smart_unfold",
+          "type": "guard"
+        },
+        {
+          "text": "Skill works identically without claude-mem",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "claude-mem",
+        "graceful-degradation",
+        "fix",
+        "behavioral"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "Read|Grep|Glob"
+        },
+        {
+          "type": "regex",
+          "pattern": "fall.?back|not available|unavailable|without|skip"
+        },
+        {
+          "type": "regex",
+          "pattern": "triage|investigate|diagnos"
+        }
+      ]
+    },
+    {
+      "id": 384,
+      "command": "review",
+      "prompt": "Review the auth changes. claude-mem is NOT installed. How do you handle the Past Learnings Check and code context steps?",
+      "expected_output": "Should explain that without claude-mem, Past Learnings Check (Pattern A) is skipped silently. Code context falls back to Read/Grep/Glob instead of smart_outline/smart_unfold. The review still functions normally.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Skips Past Learnings Check silently when claude-mem unavailable",
+          "type": "behavioral"
+        },
+        {
+          "text": "Falls back to Read/Grep/Glob for code navigation",
+          "type": "behavioral"
+        },
+        {
+          "text": "Review functions normally without claude-mem",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "claude-mem",
+        "graceful-degradation",
+        "review",
+        "behavioral"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "skip|fall.?back|not available"
+        },
+        {
+          "type": "regex",
+          "pattern": "Read|Grep"
+        },
+        {
+          "type": "regex",
+          "pattern": "review|analyz|check"
+        }
+      ]
+    },
+    {
+      "id": 385,
+      "command": "progress",
+      "prompt": "Show me project progress. What does the progress skill do regarding learnings?",
+      "expected_output": "Should suggest running /fh:learnings for improvement work when there are learnings to process. Does not read a digest file directly.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Suggests /fh:learnings for improvement work",
+          "type": "output"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "claude-mem",
+        "digest-path",
+        "progress",
+        "behavioral"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "/fh:learnings"
+        },
+        {
+          "type": "regex",
+          "pattern": "improvement|suggest|learnings"
+        }
+      ]
+    },
+    {
+      "id": 386,
+      "command": "fix",
+      "prompt": "Explain how the fix skill references claude-mem patterns. Does it inline the full search/get_observations/timeline steps, or does it reference shared rules? Be specific about Pattern A, B, C, and D.",
+      "expected_output": "Should explain that the fix skill references Pattern A, B, D from shared/claude-mem-rules.md rather than inlining the full MCP call sequences. Pattern A for past learnings, Pattern B for code structure exploration, Pattern D for persisting findings.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "References shared/claude-mem-rules.md as the source of patterns",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT inline full mcp__plugin_claude-mem call sequences",
+          "type": "guard"
+        },
+        {
+          "text": "Identifies patterns A, B, D",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "claude-mem",
+        "pattern-reference",
+        "fix",
+        "shared-rules",
+        "behavioral"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "claude-mem-rules|shared.*rules"
+        },
+        {
+          "type": "regex",
+          "pattern": "[Pp]attern A"
+        },
+        {
+          "type": "regex",
+          "pattern": "[Pp]attern B"
+        },
+        {
+          "type": "regex",
+          "pattern": "[Pp]attern D|Persist Findings"
         }
       ]
     }

@@ -1,16 +1,14 @@
 #!/usr/bin/env node
-// Learnings Check - SessionStart hook
-// Instructs the agent to query claude-mem directly for recent learnings
-// and surface actionable improvements. Degrades silently if claude-mem
-// is unavailable.
+// Learnings Nudge - SessionStart hook
+// Checks when /fh:learnings last ran and nudges the user if it's been too long.
+// Lightweight: reads one tiny timestamp file, no MCP calls, no digest cache.
+// The $CMEM SessionStart hook (from claude-mem plugin) handles memory surfacing.
 
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
 
-const homeDir = os.homedir();
-const claudeDir = process.env.CLAUDE_CONFIG_DIR || path.join(homeDir, '.claude');
-const cacheDir = path.join(claudeDir, 'cache');
+const cwd = process.cwd();
+const NUDGE_AFTER_DAYS = 7;
 
 // Consume stdin with 3-second timeout to prevent pipe hangs
 let input = '';
@@ -19,32 +17,43 @@ process.stdin.setEncoding('utf8');
 process.stdin.on('data', chunk => { input += chunk; });
 process.stdin.on('end', () => {
   clearTimeout(stdinTimeout);
-  try {
-    // Parse but don't use — just drain the pipe
-    JSON.parse(input);
-  } catch (e) {}
-
+  try { JSON.parse(input); } catch (e) {}
   run();
 });
 
 function run() {
-  // Ensure cache directory exists
-  if (!fs.existsSync(cacheDir)) {
-    try {
-      fs.mkdirSync(cacheDir, { recursive: true });
-    } catch (e) {}
+  const tsPath = path.join(cwd, '.planning', '.learnings-last-run');
+
+  let daysSince = null;
+  try {
+    if (fs.existsSync(tsPath)) {
+      const lastRun = new Date(fs.readFileSync(tsPath, 'utf8').trim());
+      daysSince = Math.floor((Date.now() - lastRun.getTime()) / (1000 * 60 * 60 * 24));
+    }
+  } catch (e) {}
+
+  // No .planning directory = no GSD project = nothing to nudge about
+  if (!fs.existsSync(path.join(cwd, '.planning', 'PROJECT.md'))) {
+    process.exit(0);
   }
 
-  // Instead of reading a pre-computed digest, instruct the agent to query
-  // claude-mem directly for recent learnings and improvements.
-  const message =
-    'Session start: Check for recent learnings and improvements.\n' +
-    'If claude-mem is available (mcp__plugin_claude-mem_mcp-search__smart_search),\n' +
-    'query: smart_search({ query: "learnings improvements mistakes pitfalls", limit: 5 })\n' +
-    'and timeline({ query: "recent session work", depth_before: 3, depth_after: 0 }).\n' +
-    'Surface any actionable items as brief notes (max 3). If none found, continue silently.\n' +
-    'This is a background check — do not block the user\'s main task.\n' +
-    'If claude-mem is not available, skip silently.';
+  // Recently ran or timestamp exists and is fresh — stay silent
+  if (daysSince !== null && daysSince < NUDGE_AFTER_DAYS) {
+    process.exit(0);
+  }
+
+  // Build nudge message
+  let message;
+  if (daysSince === null) {
+    message =
+      '/fh:learnings has never been run on this project. ' +
+      'It analyzes claude-mem observations to surface improvement patterns, ' +
+      'file GitHub issues, and update CLAUDE.md. Consider running it when convenient.';
+  } else {
+    message =
+      `It's been ${daysSince} days since the last /fh:learnings run. ` +
+      'Run it to review accumulated observations and surface improvement patterns.';
+  }
 
   const output = {
     hookSpecificOutput: {

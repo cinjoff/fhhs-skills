@@ -32,11 +32,14 @@ as a single status table:
 | FHHS_SKILLS_ROOT           | ✓ {path} / ✗ not set          |
 | Hooks                      | ✓ configured / ✗ not configured |
 | claude-mem                 | ✓ installed / ○ not installed |
+| CLAUDE.md Code Exploration | ✓ present / ✗ missing         |
 | Native task tracking       | ✓ disabled / ✗ enabled        |
 | SKIP_TOOLS (Read/Glob/Grep)| ✓ not skipped / ✗ skipped    |
 | Fallow                     | ✓ installed / ○ not installed |
 | shadcn skills              | ✓ installed / ○ not installed |
 ```
+
+**Quick check logic for CLAUDE.md Code Exploration:** Read `CLAUDE.md` and check if it contains a `## Code Exploration` section that references `smart_outline`, `smart_unfold`, and `smart_search`. If any are missing → `✗ missing`. If CLAUDE.md doesn't exist → `✗ missing (no CLAUDE.md)`.
 
 **Quick check logic for Native task tracking:** Read `~/.claude/settings.json` and check if `env.CLAUDE_CODE_ENABLE_TASKS` is `"0"`. If not set or set to anything else → `✗ enabled`.
 
@@ -463,7 +466,7 @@ fhhs-skills includes four hooks:
 |------|-------|-------------|
 | `fhhs-statusline.js` | Statusline | Shows model, current task, context usage, update indicator |
 | `fhhs-check-update.js` | SessionStart | Checks GitHub for new fhhs-skills versions (background, throttled to 6h) |
-| `fhhs-learnings.js` | SessionStart | Surfaces improvement areas from past sessions (reads cached digest; applies signal density logic to decide whether to prompt for full analysis) |
+| `fhhs-learnings.js` | SessionStart | Nudges the user to run `/fh:learnings` when it hasn't been run recently (checks a lightweight timestamp file) |
 | `fhhs-context-monitor.js` | PostToolUse | Warns the agent when context window is running low |
 
 ### 5a: Read current settings
@@ -518,15 +521,6 @@ Check if `settings.hooks.SessionStart` already contains hooks with commands incl
   }
 }
 ```
-
-**fhhs-learnings.js signal density logic** — the hook reads `~/.claude/cache/learnings-digest.json` and applies this decision matrix before outputting anything:
-
-1. Count pending (unaddressed) items in the digest
-2. Check `last_full_analysis` timestamp (if present in digest)
-3. Decision matrix:
-   - 5+ pending items AND >7 days since `last_full_analysis` → append: "💡 You have {N} unaddressed improvements. Run `/fh:learnings` for a full analysis."
-   - 10+ pending items (any time) → append: "⚠️ {N} improvements have accumulated. Consider `/fh:learnings` before starting new work."
-   - <5 pending OR <7 days since analysis → show items silently (current behavior)
 
 **PostToolUse hook** — add context monitor (only if not already present):
 
@@ -701,6 +695,44 @@ After applying, display:
   edit ~/.claude-mem/settings.json directly.
 ```
 
+### 6d: Ensure CLAUDE.md has Code Exploration section
+
+claude-mem tools save 8-19x tokens compared to Read/Grep/Glob and provide cross-session memory. The project's CLAUDE.md should direct Claude to use them by default.
+
+Check if `CLAUDE.md` exists in the project root:
+
+```bash
+[ -f CLAUDE.md ] && echo "EXISTS" || echo "MISSING"
+```
+
+If `MISSING`: skip this step (CLAUDE.md will be created by `/fh:new-project`).
+
+If `EXISTS`: read `CLAUDE.md` and check whether it contains a `## Code Exploration` section that references claude-mem MCP tools (`smart_outline`, `smart_unfold`, `smart_search`).
+
+If the section is **missing**, insert the following block as the **first `##` section** in the file (immediately after the project title/description):
+
+```markdown
+## Code Exploration
+
+When claude-mem MCP tools are available (`mcp__plugin_claude-mem_*` in tool list), use them as the primary tools for understanding code. They save 8-19x tokens compared to Read/Grep and provide cross-session memory that prevents re-discovering what was already learned:
+- `smart_outline` over `Read` — see file structure without loading the full file (~1,500 tokens vs ~12,000)
+- `smart_unfold` over `Read` with offset/limit — read a specific function by name
+- `smart_search` over `Grep` and `Glob` — AST-aware symbol search across the codebase
+- `search` / `get_observations` — recall decisions, gotchas, and patterns from prior sessions
+- `timeline` — understand recent work in a specific area before starting new tasks
+
+Fall back to `Read` only when you need the full file for editing. Fall back to `Grep`/`Glob` only when claude-mem is unavailable or returns no results.
+```
+
+If the section **already exists**, leave it unchanged.
+
+Display:
+
+```
+✓ CLAUDE.md Code Exploration section present
+  Claude will use claude-mem tools by default for code navigation
+```
+
 ---
 
 ## Step 6b: Disable Native Claude Memory
@@ -710,7 +742,7 @@ claude-mem handles cross-session context more efficiently than the built-in memo
 Add to the project's `.claude/settings.json`:
 ```json
 {
-  "memory": { "enabled": false }
+  "autoMemoryEnabled": false
 }
 ```
 
@@ -968,6 +1000,7 @@ Then present the status table and next steps as regular markdown text:
 | CLI Tools                  | ✓ linked                 |
 | Hooks                      | ✓ statusline + update check + context monitor |
 | claude-mem                 | ✓ installed / ○ skipped (optional)       |
+| CLAUDE.md Code Exploration | ✓ present / ✗ missing                    |
 | Native task tracking       | ✓ disabled / ⚠ still enabled             |
 | SKIP_TOOLS                 | ✓ correct / ⚠ Read/Glob/Grep being skipped |
 | Fallow                     | ✓ installed / ⚠ manual install needed    |
