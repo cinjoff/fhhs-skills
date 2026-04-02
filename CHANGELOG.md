@@ -10,8 +10,14 @@ Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliat
 
 ## [Unreleased]
 
+## [1.62.1] - 2026-04-02
+
 ### Removed
 - **context-mode** plugin dependency — replaced by native context tools
+
+### Fixed
+- **gsd-tools manifest path resolution** — fixed incorrect path handling in manifest module
+- **Release tag fix** — re-release of v1.62.0 content with bugfixes; previous tag pointed to wrong commit
 
 ## [1.62.0] - 2026-04-02
 
