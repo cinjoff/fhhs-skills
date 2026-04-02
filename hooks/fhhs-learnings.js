@@ -28,7 +28,8 @@ function run() {
   try {
     if (fs.existsSync(tsPath)) {
       const lastRun = new Date(fs.readFileSync(tsPath, 'utf8').trim());
-      daysSince = Math.floor((Date.now() - lastRun.getTime()) / (1000 * 60 * 60 * 24));
+      const ms = Date.now() - lastRun.getTime();
+      daysSince = isNaN(ms) ? null : Math.floor(ms / (1000 * 60 * 60 * 24));
     }
   } catch (e) {}
 
