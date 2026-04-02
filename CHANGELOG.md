@@ -10,6 +10,12 @@ Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliat
 
 ## [Unreleased]
 
+## [1.62.3] - 2026-04-02
+
+### Fixed
+- **Eval checks** — adds additional regex patterns to eval entries for better validation coverage
+- **Learnings hook** — guards against NaN in timestamp parsing when file contains invalid dates
+
 ## [1.62.2] - 2026-04-02
 
 ### Changed

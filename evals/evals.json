@@ -13445,6 +13445,10 @@
         {
           "type": "regex",
           "pattern": "\\[build-learning\\]"
+        },
+        {
+          "type": "regex",
+          "pattern": "persist|store|save|record|claude-mem|mcp"
         }
       ]
     },
@@ -13643,6 +13647,10 @@
         {
           "type": "regex",
           "pattern": "improvement|suggest|learnings"
+        },
+        {
+          "type": "regex",
+          "pattern": "run|invoke|consider|recommend"
         }
       ]
     },
