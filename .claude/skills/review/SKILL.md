@@ -76,16 +76,7 @@ Budget: less than 2% context. Don't deep-dive errors — just surface file match
 
 ### Past Learnings Check
 
-If claude-mem is available, check for recurring review patterns:
-1. Derive project name from `.planning/PROJECT.md` name field (fall back to basename of cwd). Use this as the `project` parameter for all claude-mem calls.
-2. Call `mcp__plugin_claude-mem_mcp-search__search` with query=keywords from the diff scope (primary module/feature name, file paths), project=<project-name>, limit=10
-3. Scan the returned index for relevant observation IDs — prioritize types: gotcha, decision, trade-off. Filter for keywords: review, gap, anti-pattern, regression, quality, "missed in review"
-4. For the top 2-3 relevant IDs, call `mcp__plugin_claude-mem_mcp-search__get_observations` with ids=[ID1, ID2, ID3] to fetch full details
-5. If temporal context would help (e.g., understanding whether a pattern is recurring across sessions), call `mcp__plugin_claude-mem_mcp-search__timeline` with query=module/feature name, depth_before=3
-6. Also call `mcp__plugin_claude-mem_mcp-search__smart_search` with query=the primary module/function under review, limit=3 — provides AST-aware codebase search for structural context on the module under review (function signatures, related symbols, coupling)
-7. Present: "**Recurring patterns from prior reviews:** - {full observation detail}" — max 3 items
-8. Use these to bias agent dispatch queries toward known weak spots
-9. Skip silently if unavailable
+Follow **Pattern A** (Past Learnings Check) from `shared/claude-mem-rules.md`. Keywords: primary module name, file paths from diff scope, "review gap anti-pattern regression". Use findings to bias agent dispatch toward known weak spots.
 
 ---
 
@@ -135,21 +126,7 @@ Results feed into Step 5 aggregation as "Spec verification" findings. A BLOCKING
 
 If no PLAN.md is in scope: skip this step silently.
 
-### Context-Mode Acceleration
-
-When reading PLAN.md for must_haves verification or checking goal criteria:
-- If claude-mem is available (check tool list for `mcp__plugin_claude-mem_*`): use `mcp__plugin_claude-mem_mcp-search__smart_search` with query="must_haves for plan {plan}" or "done criteria for {phase}". Returns relevant entries without loading full plan files.
-- If not available, fall back to Read/Grep/Glob directly.
-
----
-
-### Token-Efficient Review Context
-
-If claude-mem smart_explore tools are available:
-- Call `mcp__plugin_claude-mem_mcp-search__smart_outline` on changed files to see structural context around the diff
-- Call `mcp__plugin_claude-mem_mcp-search__smart_unfold` on specific functions referenced in the diff for full implementation context
-- These are 8-19x cheaper than Read for targeted review analysis
-- Fall back to Read/Grep if smart_explore is not available
+Use **Pattern B** (Code Structure Exploration) from `shared/claude-mem-rules.md` for reading PLAN.md criteria and reviewing changed file context. Prefer smart_outline/smart_unfold over full Read.
 
 ---
 
@@ -225,18 +202,9 @@ The subagent:
 - If Next.js project detected (Step 1) AND performance-related findings: reference `.claude/skills/nextjs-perf/PROMPT.md` criteria
 - If frontend changes AND significant bundle/render concerns: suggest `/fh:ui-test` for visual verification
 
-### d. Cross-session pattern detection (graceful degradation)
+### d. Cross-session pattern detection
 
-Before dispatching the quality-refine subagent, check if the same quality issues have been flagged in prior reviews. Skip silently if claude-mem is unavailable or any call fails.
-
-1. Derive project name from `.planning/PROJECT.md` name field (fall back to basename of cwd). Use this as the `project` parameter.
-2. For each triggered sub-skill category (DRY, error handling, etc.), call `mcp__plugin_claude-mem_mcp-search__smart_search` with query="{category} {primary module/feature name}", project=<project-name>, limit=5
-3. From the returned index, call `mcp__plugin_claude-mem_mcp-search__get_observations` with ids=[top 2-3 relevant IDs] to fetch full details
-4. Count how many sessions each pattern appears in (use `times_seen` field or count distinct session IDs in observations)
-5. **If a pattern recurs 3+ times across sessions:** escalate its priority to the next severity level in the report (Minor → Important, Important → Critical) and annotate it with "⚠ Recurring pattern (seen N times)"
-6. Pass recurring-pattern context to the quality-refine subagent so it knows which issues are chronic vs. one-off
-
-If claude-mem is not installed or any call fails: skip this check and proceed with the standard trigger table evaluation.
+Use **Pattern A** from `shared/claude-mem-rules.md` to check if the same quality issues were flagged in prior reviews. Keywords: each triggered sub-skill category + primary module name. If a pattern recurs 3+ times: escalate severity (Minor → Important, Important → Critical) and annotate "⚠ Recurring pattern (seen N times)". Pass recurring-pattern context to the quality-refine subagent. Skip silently if claude-mem unavailable.
 
 ### e. Failure handling
 
@@ -365,7 +333,7 @@ Generate a structured report. For each finding above Minor, include a **Next act
 ### Recurring Findings (if any)
 <!-- Only include if cross-session pattern detection found patterns seen 3+ times -->
 - ⚠ {pattern} — seen N times across sessions → escalated to {severity}
-- Suggestion: run `/fh:learnings --update-claude-md` to persist these patterns to CLAUDE.md so future sessions are aware from the start
+- Suggestion: run `/fh:learnings` to persist these patterns to CLAUDE.md so future sessions are aware from the start
 ```
 
 ---
@@ -390,19 +358,6 @@ Generate a structured report. For each finding above Minor, include a **Next act
 
 ---
 
-### Learnings Digest
-
-If claude-mem is available, update the learnings digest at `~/.claude/cache/learnings-digest.json`:
-1. Derive project name from `.planning/PROJECT.md` name field (fall back to basename of cwd). Use this as the `project` parameter for all claude-mem calls.
-2. Call `mcp__plugin_claude-mem_mcp-search__search` with query=key review findings (Critical/Important items), project=<project-name>, limit=10
-3. From the returned index, identify relevant observation IDs. Call `mcp__plugin_claude-mem_mcp-search__get_observations` with ids=[...] for the top 3-5 to fetch full details.
-4. Call `mcp__plugin_claude-mem_mcp-search__timeline` with query=key review findings, depth_before=3, project=<project-name>
-5. Merge into existing digest using the algorithm defined in `/fh:build` (Step 4, "Learnings Digest"). Use `generated_by: "review"`.
-6. Recurring review findings (same pattern flagged across multiple reviews) are high-value — prioritize these when filtering for improvement themes.
-7. Skip silently if claude-mem not installed, review found no issues, or any MCP call fails.
-
-Budget: <2% context.
-
 ---
 
 ## Step 8: Promote
@@ -425,13 +380,7 @@ Derive the type and scope from the diff analysis. Present options:
 
 ### Persist Findings
 
-After generating the review report, output a structured summary of recurring patterns:
-1. If claude-mem is available (check tool list for `mcp__plugin_claude-mem_*`), use `mcp__plugin_claude-mem_mcp-search__smart_search` to query for the most significant findings from this session's context. If not available, fall back to Read/Grep/Glob directly.
-2. Skip one-off issues — only persist patterns likely to recur
-3. Output each finding as:
-   **[review-learning]** {module/area}: {pattern found} — {recommendation}
-4. Max 3 findings per review
-5. Skip silently if no recurring patterns found
+Follow **Pattern D** (Persist Findings) from `shared/claude-mem-rules.md`. Use tag `[review-learning]`.
 
 ---
 

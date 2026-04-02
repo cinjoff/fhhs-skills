@@ -4,18 +4,18 @@ description: Analyze claude-mem observations to surface project improvement insi
 user-invocable: true
 ---
 
-Analyze recent claude-mem observations for workflow patterns, surface insights, and file GitHub issues for skill improvements.
+Analyze recent claude-mem observations, surface insights, update CLAUDE.md, and file GitHub issues.
 
 $ARGUMENTS
 
 Parse `$ARGUMENTS` for flags:
 - `--days N` — override the default 14-day window with N days
 - `--dry-run` — show what would be filed without creating any GitHub issues
-- `--update-claude-md` — run only Section 4.5 (CLAUDE.md maintenance); skip GitHub issues / plan-from-insights
+- `--plan` — after analysis, create a `/fh:plan-work` from accumulated GitHub issues
 
 ---
 
-## Section 1: Prerequisites Check
+## Step 1: Prerequisites
 
 ### 1a. Check claude-mem availability
 
@@ -26,9 +26,7 @@ Call `mcp__plugin_claude-mem_mcp-search__search` with query `"test"` and limit 1
 
   > claude-mem is not installed. Install it from the Claude Code marketplace to use /fh:learnings.
 
-### 1b. Check GitHub CLI (conditional)
-
-Detect project identity first:
+### 1b. Detect project identity
 
 ```bash
 REMOTE_URL=$(git remote get-url origin 2>/dev/null || echo "")
@@ -39,7 +37,7 @@ else
 fi
 ```
 
-Set `IS_FHHS_SKILLS=true` if REMOTE_URL contains `cinjoff/fhhs-skills`, else `IS_FHHS_SKILLS=false`. Hold this value for use in Sections 4 and beyond.
+Hold `IS_FHHS_SKILLS` for Step 4.
 
 **Only if IS_FHHS_SKILLS is true**, check GitHub CLI authentication:
 
@@ -47,81 +45,57 @@ Set `IS_FHHS_SKILLS=true` if REMOTE_URL contains `cinjoff/fhhs-skills`, else `IS
 gh auth status
 ```
 
-- If the command fails or returns an unauthenticated state: stop and report:
-
-  > GitHub CLI not authenticated. Run `gh auth login` first.
-
-If IS_FHHS_SKILLS is false, skip this check — GitHub CLI is not needed for the insights + plan-work flow.
-
-### 1c. Project identity confirmed
-
-Hold `IS_FHHS_SKILLS` for later sections. Proceed to Section 2.
+- If the command fails: stop and report: "GitHub CLI not authenticated. Run `gh auth login` first."
 
 ---
 
-## Section 2: Collect Observations
+## Step 2: Collect Observations
 
-Determine the date range. Default is 14 days ago. If `--days N` was passed, use N days ago instead. Compute `dateStart` as an ISO 8601 date string (e.g. `2026-03-13T00:00:00Z` for 14 days before today).
+Determine the date range. Default is 14 days ago. If `--days N` was passed, use N days ago instead.
+
+Derive project name from `.planning/PROJECT.md` name field (fall back to basename of cwd).
 
 ### 2a. Broad time-window fetch
 
-Derive project name from `.planning/PROJECT.md` name field (fall back to basename of cwd). Use this as the `project` parameter for all claude-mem calls.
-
 Call `mcp__plugin_claude-mem_mcp-search__search` with:
-- No query text (empty string — retrieves all observations in the window)
-- `dateStart` = computed date above
+- No query text (empty string)
+- `dateStart` = computed date
 - `limit` = 100
 - `project` = <project-name>
 
 ### 2b. Targeted semantic queries
 
-Call `mcp__plugin_claude-mem_mcp-search__search` three times in parallel:
-1. query = `"error fail bug wrong broken"`, project = <project-name>, limit = 20
-2. query = `"slow inefficient tokens expensive retry"`, project = <project-name>, limit = 20
-3. query = `"workaround hack missing should"`, project = <project-name>, limit = 20
+Call these three in parallel:
+1. query = `"error fail bug wrong broken"`, project, limit = 20
+2. query = `"slow inefficient tokens expensive retry"`, project, limit = 20
+3. query = `"workaround hack missing should"`, project, limit = 20
 
-### 2c. Drill down for full details
+### 2c. Drill down for details
 
-From 2a and 2b results, collect all unique observation IDs. Deduplicate by observation ID — keep each observation once.
+Collect unique observation IDs from 2a and 2b. For the most relevant ones (prioritize types: gotcha, decision, trade-off), call `get_observations` in batches of 20.
 
-For observations that appear most relevant (prioritize types: gotcha, decision, trade-off), call `mcp__plugin_claude-mem_mcp-search__get_observations` with ids=[...] in batches of up to 20 IDs to fetch full observation details. This replaces the lightweight index with rich detail needed for accurate classification in Sections 3 and 3.5.
-
-If temporal context would help understand patterns (e.g., a cluster of errors around a specific date), call `mcp__plugin_claude-mem_mcp-search__timeline` with query=the relevant topic, depth_before=3.
+If temporal context helps, call `timeline` with the relevant topic.
 
 The fully-resolved observations are your **working set**.
 
 ---
 
-## Section 3: Insights Dashboard
+## Step 3: Analysis Dashboard
 
-### 3a. What's working well (present first)
+### 3a. What's working well
 
-Call `mcp__plugin_claude-mem_mcp-search__search` with:
-- query = `"completed succeeded solved improved efficient"`
-- project = <project-name>
-- limit = 20
+Call `search` with query = `"completed succeeded solved improved efficient"`, project, limit = 20.
 
-From the returned index, identify the top 5 relevant observation IDs and call `mcp__plugin_claude-mem_mcp-search__get_observations` with ids=[...] to fetch full details. Review for productive patterns: skills that worked cleanly, efficient multi-step workflows, successful approaches, good tool choices.
-
-Present as:
+Fetch top 5 relevant IDs via `get_observations`. Surface productive patterns:
 
 **What's working well:**
-- [3–5 bullet points describing productive patterns observed]
+- [3-5 bullet points]
 
-Examples of the kind of insight to surface:
-- "plan-work → build pipeline completed 3 phases cleanly across 2 sessions"
-- "TDD workflow caught 2 bugs before they shipped"
-- "/fh:review caught an architecture issue during planning"
+Skip if no positive signal found.
 
-If no positive signal is found, skip this section.
+### 3b. Usage stats
 
-### 3b. Usage stats summary
-
-From the working set:
-- Count observations by type: `decision`, `bugfix`, `feature`, `refactor`, `discovery`, `change`
-- List the distinct projects that had activity in this window
-
-Present as a compact summary table:
+From the working set, count observations by type and list active projects:
 
 | Type | Count |
 |------|-------|
@@ -129,41 +103,22 @@ Present as a compact summary table:
 | bugfix | N |
 | ... | ... |
 
-**Active projects:** [list]
-
-Then add this note:
-
-> For full session history and deep exploration, open the **claude-mem dashboard**: run `claude-mem dashboard` or visit the claude-mem web UI.
-
 ### 3c. Issues & improvements
 
-Classify each observation (or cluster of related observations) into one of:
-- `skill-bug` — A skill produced wrong output or failed
-- `workflow-gap` — Missing capability or a painful workflow step
-- `feature-idea` — Suggestion for improvement based on usage patterns
-- `common-mistake` — Users repeatedly hit the same issue; a skill could prevent it
+Classify observations into: `skill-bug`, `workflow-gap`, `feature-idea`, `common-mistake`.
 
-**Clustering rule:** Group observations that share the same root cause into one issue. A cluster requires at minimum 2 similar observations to constitute a pattern. Single isolated observations may still be filed if they are `skill-bug` severity.
+**Clustering rule:** Group observations sharing the same root cause. A cluster needs 2+ similar observations. Single `skill-bug` severity items may stand alone.
 
-Rank by:
-1. Frequency (more observations = higher priority)
-2. Severity: `skill-bug` > `workflow-gap` > `common-mistake` > `feature-idea`
-
-Present a summary table:
+Rank by frequency then severity (`skill-bug` > `workflow-gap` > `common-mistake` > `feature-idea`).
 
 | # | Type | Summary | Observations | Severity |
 |---|------|---------|-------------|----------|
-| 1 | skill-bug | [one-line description] | N | high |
-| 2 | workflow-gap | ... | N | medium |
+| 1 | skill-bug | [description] | N | high |
 | ... | | | | |
 
----
+### 3d. Project insights
 
-## Section 3.5: Project Insights
-
-Classify observations from the **working set** (Section 2c) by keyword matching. Do NOT make any new claude-mem API calls — use only observations already collected.
-
-For each observation in the working set, check its text against these keyword categories:
+From the working set (no new API calls), check observation text against:
 
 | Category | Keywords |
 |----------|----------|
@@ -173,138 +128,48 @@ For each observation in the working set, check its text against these keyword ca
 | tech-debt | debt, cleanup, refactor, duplication, hack, temporary, todo, fixme |
 | scope | scope, creep, large, split, took long, estimate, phase, overran |
 
-An observation matches a category if any of its keywords appear in the observation text (case-insensitive). An observation may match multiple categories.
-
-**For each category with 2 or more matching observations**, produce an insight:
-
-Present a summary table first:
-
-| Category | Observations | Date Range | Pattern |
-|----------|-------------|------------|---------|
-| [category] | N | [earliest] – [latest] | [one-line summary of the pattern] |
-
-Then for each qualifying category, provide a detailed recommendation block:
+For each category with 2+ matching observations:
 
 **[Category] (N observations)**
-
-- **What we observed:** [Describe the recurring pattern in 1–2 sentences]
-- **Why this matters:** [Impact on productivity, quality, or reliability]
-- **Suggested action:** [Specific, concrete action — not vague. E.g. "Add a pre-flight check in /fh:build that detects X before running Y" rather than "Improve the build skill"]
+- **What we observed:** [1-2 sentences]
+- **Suggested action:** [Specific, concrete]
 - **Priority:** high / medium / low
 
-If fewer than 2 observations match any category, output:
-
-> No strong patterns detected in the last {N} days.
-
-### Codebase Mapping Drift Check
-
-If `.planning/codebase/` exists:
-1. Count observations from the working set matching architecture/convention drift keywords: `architecture`, `convention`, `structure`, `pattern`, `boundary`, `coupling`, `design`, `changed`, `refactor`, `moved`, `renamed`.
-2. If 3+ drift signals detected:
-   Add to insights dashboard:
-   "📐 Codebase mapping drift detected — {N} convention/architecture changes since last mapping. Recommend `/fh:map-codebase --refresh-stale`"
+If no category qualifies: "No strong patterns detected in the last {N} days."
 
 ---
 
-## Section 3.6: User Workflow Coaching
+## Step 4: Actions
 
-Analyze observations for patterns that suggest workflow improvements the user could make.
+### If IS_FHHS_SKILLS is true: File GitHub Issues
 
-Do NOT make any new claude-mem API calls — use only observations already collected in the working set.
+For each issue from 3c:
 
-**Pattern categories to detect:**
-
-1. **Repeated context loss**: User re-explains the same thing across sessions → suggest saving to CLAUDE.md or claude-mem
-2. **Manual steps that could be automated**: User runs the same sequence of commands repeatedly → suggest creating a skill or alias
-3. **Suboptimal tool usage**: Using Read when smart_outline would suffice, reading full files when smart_unfold targets one function → suggest tool efficiency improvements
-4. **Planning gaps**: Jumping to implementation without planning, or plans that miss edge cases → suggest using /fh:plan-work or /fh:plan-review
-5. **Testing anti-patterns**: Skipping tests, writing tests after implementation, mocking too much → suggest TDD workflow
-6. **Context window waste**: Loading unnecessary files, not using progressive disclosure → suggest context-mode or claude-mem patterns
-
-For each pattern category, scan the working set for keyword signals:
-
-| Pattern | Keywords |
-|---------|----------|
-| Repeated context loss | re-explained, forgot, context, repeated, same issue, again |
-| Manual steps | manual, sequence, same commands, repeat, every time |
-| Suboptimal tool usage | read full file, loaded, unnecessary, token, expensive |
-| Planning gaps | jumped to, skipped planning, missed, edge case, no plan |
-| Testing anti-patterns | skip test, wrote tests after, no tests, mocked, brittle |
-| Context window waste | loaded unnecessary, full file, context full, window |
-
-A pattern qualifies if **2 or more** observations match. Show **at most 3** workflow insights per run, prioritized by frequency (most repeated first).
-
-If qualifying patterns are found, present:
-
-```
-## 🎓 Workflow Insights
-
-Based on your recent sessions, here are opportunities to work more effectively:
-
-### [Category]
-**What I noticed:** [specific observation from claude-mem data]
-**Suggestion:** [actionable improvement]
-**Why it helps:** [brief benefit explanation]
-```
-
-Frame these as opportunities, not mistakes — helpful mentor tone, not critic.
-
-If no patterns qualify (fewer than 2 matching observations per category), skip this section silently.
-
----
-
-## Section 4: File GitHub Issues (or Plan from Insights)
-
-### If IS_FHHS_SKILLS is true
-
-For each identified issue in the ranked list from Section 3c:
-
-#### 4a. Check for existing open issues
+#### 4a. Check for duplicates
 
 ```bash
 gh issue list --repo cinjoff/fhhs-skills --state open --search "{summary keywords}" --limit 5
 ```
 
-- If a matching open issue exists: skip this issue. Note: "Already tracked in #N"
-- If no match: proceed to confirmation.
+If a matching issue exists: skip. Note: "Already tracked in #N"
 
 #### 4b. Prepare issue body
 
-Read the issue template from `.claude/skills/learnings/references/issue-template.md`.
-
-Fill in the placeholders:
-- `{{TITLE}}` — concise issue title
-- `{{TYPE}}` — one of: `skill-bug`, `workflow-gap`, `feature-idea`, `common-mistake`
-- `{{SUMMARY}}` — 1–2 sentence description of the issue
-- `{{OBSERVATIONS}}` — bullet list of the raw observation snippets that evidence this issue (quote key phrases)
-- `{{IMPACT}}` — brief statement of user impact
-- `{{SUGGESTION}}` — what the skill could do differently to address this
+Read `skills/learnings/references/issue-template.md`. Fill in: `{{TITLE}}`, `{{TYPE}}`, `{{SUMMARY}}`, `{{OBSERVATIONS}}`, `{{IMPACT}}`, `{{SUGGESTION}}`.
 
 #### 4c. Confirm before filing
 
-**Never auto-file issues.** Present all identified issues (not yet skipped as duplicates) together in a single confirmation block, then wait for user input before filing any:
+**Never auto-file issues.** Present all issues together:
 
 > **Skill Issues to File** (N identified, M already tracked)
 >
-> For each issue, show:
-> - **Issue title**: [concise summary]
-> - **Affected skill**: which /fh: skill
-> - **Evidence**: [N observations — key phrases quoted]
-> - **Proposed fix**: [what the issue would suggest]
+> For each: title, affected skill, evidence (N observations, key phrases quoted), proposed fix.
 >
-> Reply with a space-separated list of numbers to approve (e.g. `1 3`), `all` to file everything, or `none` to skip all.
-> Add `edit N` to modify issue N's title/description before filing (e.g. `1 3 edit 2`).
+> Reply with numbers to approve (e.g. `1 3`), `all`, or `none`. Add `edit N` to modify before filing.
 
-Wait for the user's reply before proceeding.
-
-- **`all`**: file all issues as shown
-- **`none`**: skip all issues; proceed to next section
-- **Numbered list** (e.g. `1 3`): file only the listed issues
-- **`edit N`** (in combination with approvals): prompt the user to modify issue N's title and body before filing
+Wait for user reply.
 
 #### 4d. Create approved issues
-
-For each approved issue (and after any `edit` modifications are applied):
 
 ```bash
 gh issue create \
@@ -314,168 +179,106 @@ gh issue create \
   --label "learnings,{type}"
 ```
 
-Replace `{type}` with the issue classification (e.g. `skill-bug`, `workflow-gap`, `feature-idea`, `common-mistake`).
+Report: "Created N issues, skipped M (already tracked), skipped K (user declined)."
 
-#### 4e. Report results
+If `--dry-run`: skip filing, just show what would be created.
 
-After processing all issues:
+### If IS_FHHS_SKILLS is false: Suggest Plan
 
-> Created N issues, skipped M (already tracked), skipped K (user declined).
+Check for GSD: `[ -f .planning/PROJECT.md ] && echo "GSD" || echo "NO_GSD"`
 
-List each created issue with its URL and each skipped issue with its reason (already tracked or user declined).
-
-If `--dry-run` was passed: do NOT call `gh issue create` and do NOT ask for confirmation. Instead, print each issue that would be created with its title, type, and evidence count. Report: "Dry run complete — N issues would be filed, M already tracked."
-
----
-
-### If IS_FHHS_SKILLS is false
-
-#### Section 4: Plan from Insights
-
-Check whether GSD planning is active in this project:
-
-```bash
-[ -f .planning/PROJECT.md ] && echo "GSD" || echo "NO_GSD"
-```
-
-**If GSD exists:**
-
-Present the top 3 insights from Section 3.5 (highest observation count, then highest priority). Then offer:
+**If GSD:** Present top 3 insights from 3d, then:
 
 > Reply `plan` to create a /fh:plan-work from the top findings, or `skip` to finish.
 
-If the user replies `plan`:
-1. Collect the top 3 insights from Section 3.5 (by observation count).
-2. Format a plan-work prompt grouped by category. For each insight include: the category, the observed pattern, and the suggested action as a concrete work item.
-3. Confirm with the user: "Ready to invoke /fh:plan-work with these findings. Confirm?"
-4. On confirmation, invoke `/fh:plan-work` with the formatted prompt.
+On `plan`: format insights as plan-work input and invoke `/fh:plan-work`.
 
-If the user replies `skip`: proceed to Section 5.
-
-**If NO GSD:**
-
-Present a structured improvement brief:
-
-> **Project Improvement Brief**
->
-> Top 3 insights from the last {N} days:
->
-> 1. **[Category]** — [Pattern summary] → [Suggested action]
-> 2. **[Category]** — [Pattern summary] → [Suggested action]
-> 3. **[Category]** — [Pattern summary] → [Suggested action]
->
-> To turn these into a tracked plan, run `/fh:new-project` first to initialize GSD planning, then re-run `/fh:learnings`.
+**If NO GSD:** Present a structured improvement brief and suggest `/fh:new-project`.
 
 ---
 
-## Section 4.5: CLAUDE.md Maintenance
+## Step 5: CLAUDE.md Maintenance
 
-> **Skip condition:** If claude-mem is unavailable (Section 1a check failed), skip this section silently and proceed to Section 5.
-> **Standalone mode:** If `--update-claude-md` was passed, run Sections 1a, 2, 3.5, and this section only — then stop (skip Sections 4 and 5).
+### 5a. Check for CLAUDE.md
 
-### 4.5a. Check for CLAUDE.md
+If missing: "No CLAUDE.md found — skipping." Proceed to Step 6.
 
-```bash
-[ -f CLAUDE.md ] && echo "EXISTS" || echo "MISSING"
-```
+### 5b. Read CLAUDE.md
 
-If `MISSING`: output a single line — "No CLAUDE.md found in project root — skipping CLAUDE.md maintenance." — then proceed to Section 5.
+Focus on: `## Gotchas`, `## Key Constraints`, `## Code Style`.
 
-### 4.5b. Read relevant CLAUDE.md sections
+### 5c. Identify CLAUDE.md-worthy patterns
 
-Read `CLAUDE.md`. Focus on these sections (they are the canonical targets for new entries):
-- `## Gotchas` (or similar heading)
-- `## Key Constraints`
-- `## Code Style`
-
-Hold the current content of these sections as `CURRENT_CLAUDE_MD`.
-
-### 4.5c. Identify CLAUDE.md-worthy patterns
-
-From the observations already classified in Section 3.5, apply the following filter — do NOT make any new claude-mem API calls:
-
-A pattern qualifies for CLAUDE.md if it meets **at least one** of these criteria:
+From observations already classified in 3d (no new API calls):
 
 | Criterion | Threshold | Target section |
 |-----------|-----------|----------------|
-| Recurring gotcha | 3+ observations matching the same mistake pattern | `## Gotchas` |
-| Convention violation | Any pattern showing a convention was missed or misapplied | `## Code Style` |
-| Constraint discovery | A thing that broke with a repeatable, preventable lesson | `## Key Constraints` |
+| Recurring gotcha | 3+ observations matching same mistake | `## Gotchas` |
+| Convention violation | Any convention missed or misapplied | `## Code Style` |
+| Constraint discovery | Broke with a repeatable, preventable lesson | `## Key Constraints` |
 
-**Lean rule (from claude-mem-rules.md):** Only surface conventions, gotchas, and hard constraints. Exclude:
-- Session-specific details (dates, PR numbers, one-off fixes)
-- Implementation specifics (exact function names, internal IDs)
-- Items that are obvious from the code itself
+**Lean rule:** Only conventions, gotchas, and hard constraints. Exclude session-specific details, implementation specifics, and things obvious from the code.
 
-### 4.5d. Deduplicate against existing CLAUDE.md
+### 5d. Deduplicate
 
-For each candidate, perform a fuzzy keyword match against `CURRENT_CLAUDE_MD`:
-- Extract 2–3 key terms from the candidate (e.g. `str.replace`, `$&`, `dynamic content`)
-- If all key terms appear within the same paragraph of `CURRENT_CLAUDE_MD`: mark candidate as **duplicate** and skip it
-- If at least one key term is absent: mark as **new**
+For each candidate, extract 2-3 key terms. If all key terms appear in the same CLAUDE.md paragraph: duplicate, skip. Otherwise: new.
 
-### 4.5e. Present proposed additions
-
-If one or more new candidates remain after deduplication, present:
+### 5e. Present and confirm
 
 > **Suggested CLAUDE.md updates:**
-> - **[Gotchas | Key Constraints | Code Style]:** [one-sentence description of the gotcha/constraint/convention]
-> - ...
+> - **[Section]:** [description] *(high/medium/low confidence)*
 
-Include a confidence indicator for each:
-- `(high)` — 3+ observations, clear pattern
-- `(medium)` — 2 observations, inferred pattern
-- `(low)` — 1 strong observation, worth noting
+> Approve? `yes` / `skip` / or list numbers (e.g. `1 3`).
 
-Then ask:
+### 5f. Write approved additions
 
-> Approve additions? Reply `yes` to write all, `skip` to discard, or list the numbers to approve selectively (e.g. `1 3`).
-
-If no new candidates remain after deduplication:
-
-> CLAUDE.md is up to date — no new patterns detected.
-
-Proceed to Section 5 (or stop if `--update-claude-md` was passed).
-
-### 4.5f. Write approved additions
-
-Wait for user reply before writing anything.
-
-On `yes` (all approved): append each addition to the appropriate section in CLAUDE.md. If the target section does not exist, create it at the end of the file.
-
-On selective approval (e.g. `1 3`): write only the numbered candidates.
-
-On `skip`: discard all candidates without editing CLAUDE.md.
-
-Format for each appended entry:
+Append to appropriate section:
 ```
-- [one-sentence description] *(learnings: YYYY-MM-DD)*
+- [description] *(learnings: YYYY-MM-DD)*
 ```
-
-Use today's date for the `YYYY-MM-DD` suffix so entries are traceable.
 
 ---
 
-## Section 5: Offer Extended Scope
+## Step 6: Record Timestamp & Offer More
 
-After completing Section 4, present:
+### 6a. Write timestamp
 
-> Analyzed last {N} days. Want to look further back? Reply with `30`, `60`, or `90` to extend the window. You can also run `/fh:learnings` after your next phase to track how patterns evolve over time.
+```bash
+mkdir -p .planning
+date -u +"%Y-%m-%dT%H:%M:%SZ" > .planning/.learnings-last-run
+```
 
-If the user responds with a number:
-- Set `dateStart` to that many days ago
-- Collect observations from Section 2 again, but **exclude observation IDs already processed** in the current session
-- Run Sections 3, 3.5, and 4 on the new observations only
-- Report: "Extended to {N} days. Found X additional observations."
+This timestamp is read by the `fhhs-learnings.js` SessionStart hook to nudge users when it's been too long since the last run.
 
-### Record analysis timestamp
+### 6b. Accumulated issues check (IS_FHHS_SKILLS only)
 
-After completing the full analysis (whether or not the user extends the window), update `~/.claude/cache/learnings-digest.json`:
-- Set `last_full_analysis` to the current ISO timestamp (e.g. `2026-03-31T14:00:00Z`)
-- If the file does not exist yet, create it with `{ "last_full_analysis": "<timestamp>", "pending": [] }`
-- This field is read by the `fhhs-learnings.js` SessionStart hook to prevent over-recommending full analyses
+```bash
+gh issue list --repo cinjoff/fhhs-skills --label learnings --state open --json number --jq length
+```
 
-The digest schema supports these fields:
-- `last_full_analysis` — ISO timestamp of the most recent `/fh:learnings` run
-- `last_digest_update` — ISO timestamp of the most recent digest cache refresh
-- `pending` — array of unaddressed improvement items surfaced by past analyses
+If 5+ open learnings issues:
+
+> You have {N} accumulated learnings issues. Run `/fh:learnings --plan` to create a plan that addresses them, or review them at: `gh issue list --repo cinjoff/fhhs-skills --label learnings --state open`
+
+### 6c. Offer extended window
+
+> Analyzed last {N} days. Reply with `30`, `60`, or `90` to extend the window.
+
+If the user extends: re-run Steps 2-4 with new date range, excluding already-processed observation IDs.
+
+### 6d. --plan flag handling
+
+If `--plan` was passed (or user replied `plan`):
+
+```bash
+gh issue list --repo cinjoff/fhhs-skills --label learnings --state open --json title,body,number --limit 20
+```
+
+Collect issue titles and bodies. Group by label (skill-bug, workflow-gap, feature-idea, common-mistake). Format as a plan-work prompt:
+
+> Address {N} accumulated learnings issues:
+> 1. [skill-bug] #{number}: {title} — {one-line summary}
+> 2. [workflow-gap] #{number}: {title} — {one-line summary}
+> ...
+
+Invoke `/fh:plan-work` with this prompt.

@@ -314,33 +314,9 @@ If claude-mem is available and `.planning/codebase/` exists:
    - Log: "⚠️ Codebase mapping may be stale — {N} convention changes detected since last map. Consider `/fh:map-codebase --refresh-stale`"
 3. Never auto-run mapping — just advise. User decides when to spend the tokens.
 
-### Learnings Digest (after SUMMARY.md)
+### Persist Findings (after SUMMARY.md)
 
-If claude-mem is available, generate a learnings digest:
-1. Derive project name from `.planning/PROJECT.md` name field (fall back to basename of cwd). Use this as the `project` parameter for all claude-mem calls.
-2. Call `mcp__plugin_claude-mem_mcp-search__timeline` with query=current phase name, depth_before=5, project=<project-name>
-3. Call `mcp__plugin_claude-mem_mcp-search__search` with query=current phase name, project=<project-name>, limit=10
-4. From the search results, identify observation IDs matching improvement themes. For the top 3-5 relevant IDs, call `mcp__plugin_claude-mem_mcp-search__get_observations` with ids=[ID1, ID2, ...] to fetch full details before merging into the digest.
-5. Read existing `~/.claude/cache/learnings-digest.json` if present
-6. Merge observations into digest using this deterministic algorithm:
-   a. Load existing digest items (empty array if no file or corrupt)
-   b. For each new observation, check if it matches improvement themes (keywords: mistake, pitfall, learning, retro, regression, "should have", "next time", bug, broke, failed):
-      - If no theme match → skip
-      - If an existing item's summary shares 2+ significant words (excluding stopwords) → bump that item's times_seen
-      - Else → create new item with id="imp-{timestamp}", times_seen=1, priority="low", first_seen=today
-   c. Priority escalation: times_seen >= 3 → "medium", times_seen >= 5 → "high" (never downgrade)
-   d. Items addressed by this build session (if the build's work matches an item's suggested_action) → mark addressed=true, addressed_at=ISO timestamp
-   e. Compute stats: scanned = total observations checked, pending = items where addressed is falsy, addressed_since_last = items addressed in this merge
-7. Write updated digest to `~/.claude/cache/learnings-digest.json`. Include `"last_digest_update": ISO_TIMESTAMP` at the top level of the JSON object.
-8. After updating digest, count total unaddressed items (items where addressed is falsy).
-   If unaddressed >= 5 AND this is a phase completion (not just a plan):
-     Upgrade the suggestion from passive to active:
-     "📊 {N} improvement patterns detected across recent sessions. Run `/fh:learnings` to review workflow improvements and skill issues."
-9. Skip silently if claude-mem not installed or any MCP call fails
-
-Digest schema: `{ last_digest_update: ISO string, generated: ISO string, generated_by: "build"|"context-critical", project: cwd path, phase: current phase name, items: [{ id: string, priority: "low"|"medium"|"high", category: "retro"|"pattern"|"theme", summary: string, detail: string, suggested_action: string, times_seen: number, first_seen: ISO string, addressed: boolean, addressed_at?: ISO string }], stats: { scanned: number, pending: number, addressed_since_last: number } }`
-
-Budget: <2% context for this substep.
+Follow **Pattern D** (Persist Findings) from `shared/claude-mem-rules.md`. Use tag `[build-learning]`. Focus on: architectural decisions made during implementation, trade-offs chosen, patterns that worked or didn't.
 
 ---
 
@@ -436,12 +412,12 @@ Route based on phase status:
 | Condition | Action |
 |-----------|--------|
 | More plans in phase | "Plan X of Y complete." Suggest `/fh:build` for next plan. |
-| Phase complete, more phases | "Phase complete." Suggest `/fh:plan-work {next}` or `/fh:review`. Also suggest `/fh:learnings --update-claude-md`. |
-| Last phase in milestone | "Milestone complete." Run `gsd-tools.cjs milestone complete`. Suggest `/fh:learnings --update-claude-md`. |
+| Phase complete, more phases | "Phase complete." Suggest `/fh:plan-work {next}` or `/fh:review`. Also suggest `/fh:learnings`. |
+| Last phase in milestone | "Milestone complete." Run `gsd-tools.cjs milestone complete`. Suggest `/fh:learnings`. |
 
 Run `/fh:review` for quality refinement — it handles design quality, security, performance, and code simplification as needed.
 
-If claude-mem is installed (check: the Learnings Digest substep in Step 4 ran successfully), add to the phase-complete and milestone-complete routes:
+If claude-mem is installed, add to the phase-complete and milestone-complete routes:
 
 > Run `/fh:learnings` to surface patterns from your recent work and find improvement opportunities.
 

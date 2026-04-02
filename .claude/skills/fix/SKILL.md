@@ -34,16 +34,7 @@ Advisory only — never block.
 
 ### Past Learnings Check
 
-If claude-mem is available, search for prior bugs in the same area:
-1. Derive project name from `.planning/PROJECT.md` name field (fall back to basename of cwd). Use this as the `project` parameter for all claude-mem calls.
-2. Call `mcp__plugin_claude-mem_mcp-search__search` with query=2-3 keywords from the error/bug description (e.g., file name, error message fragment, subsystem), project=<project-name>, limit=10
-3. Scan the returned index for relevant observation IDs — prioritize types: gotcha, decision, trade-off. Filter for keywords: bug, fix, root cause, regression, "caused by", workaround, pitfall
-4. For the top 2-3 relevant IDs, call `mcp__plugin_claude-mem_mcp-search__get_observations` with ids=[ID1, ID2, ID3] to fetch full details
-5. If temporal context would help (e.g., understanding what changes preceded a regression), call `mcp__plugin_claude-mem_mcp-search__timeline` with query=subsystem/file name, depth_before=3
-6. Present: "**Prior fixes in this area:** - {full observation detail} (from {date})" — max 3 items
-7. Also call `mcp__plugin_claude-mem_mcp-search__smart_search` with query=the suspected buggy function/module name, limit=3 — this provides AST-aware codebase search for structural context on the suspect module (finds function signatures, call sites, and related symbols)
-8. Feed into triage context so past root causes inform the current investigation
-9. Skip silently if claude-mem not installed or no relevant results
+Follow **Pattern A** (Past Learnings Check) from `shared/claude-mem-rules.md`. Keywords: error message fragment, file name, subsystem name, "bug fix root cause regression". Feed findings into triage context so past root causes inform the current investigation.
 
 ---
 
@@ -76,10 +67,7 @@ This step should consume <2% context. Don't deep-dive the errors yet — just su
 
 Quickly assess bug depth before choosing strategy. Spend <5% context.
 
-**Token-efficient code navigation:** If claude-mem smart_explore tools are available:
-- Use `mcp__plugin_claude-mem_mcp-search__smart_outline` to get file structure before reading full files (~1,500 tokens vs ~12,000 for full Read)
-- Use `mcp__plugin_claude-mem_mcp-search__smart_unfold` to read specific functions instead of full file Read (8-19x cheaper)
-- Fall back to Read/Grep if smart_explore is not available
+**Token-efficient code navigation:** Use **Pattern B** (Code Structure Exploration) from `shared/claude-mem-rules.md` — smart_outline/smart_unfold before full Read.
 
 1. **Search** for error message or symptom in codebase. **Use LSP first:**
    - `findReferences` on the error site to see all callers
@@ -139,12 +127,7 @@ If the fix touches `.tsx`, `.css`, components, or styles:
 - Read `.planning/DESIGN.md` for design context
 - Quick check: does the fix maintain visual consistency?
 
-### Context-Mode Acceleration
-
-When checking DECISIONS.md for related entries or reading DESIGN.md for frontend context:
-- If claude-mem is available (check tool list for `mcp__plugin_claude-mem_*`): use `mcp__plugin_claude-mem_mcp-search__smart_search` with query="decisions affecting {file}" or "design context for {component}". Faster and more compact than reading full files.
-- If not available, fall back to Read/Grep/Glob directly.
-- Check against `skills/frontend-design/PROMPT.md` anti-patterns — no generic cards, cyan-on-dark, purple gradients, or other AI slop introduced by the fix
+Use **Pattern B** from `shared/claude-mem-rules.md` for reading DECISIONS.md and DESIGN.md context. Check against `skills/frontend-design/PROMPT.md` anti-patterns — no generic cards, cyan-on-dark, purple gradients, or other AI slop introduced by the fix.
 - If significant UI change, suggest `/fh:ui-test`
 
 ---
@@ -210,29 +193,9 @@ For bug investigation context: use `.planning/codebase/ARCHITECTURE.md` to under
 
 If `.planning/DECISIONS.md` exists, scan active decisions for entries whose Affects field references any file modified by this fix. If the root cause of the bug relates to an active decision (the decision's Selected option caused or contributed to the bug), log a `[CORRECTED]` entry to DECISIONS.md using the correction format from `.claude/skills/build/references/decisions-template.md`. Use `step='fix Step 4'` and `corrected_by='agent'`. If no decisions relate to the fix, skip silently.
 
-### Learnings Digest
-
-If claude-mem is available, update the learnings digest at `~/.claude/cache/learnings-digest.json`:
-1. Call `mcp__plugin_claude-mem_mcp-search__search` with query=the root cause description, project=<project-name>, limit=10
-2. From the returned index, identify relevant observation IDs. Call `mcp__plugin_claude-mem_mcp-search__get_observations` with ids=[...] for the top 3-5 to fetch full details.
-3. Call `mcp__plugin_claude-mem_mcp-search__timeline` with query=the root cause description, depth_before=3, project=<project-name>
-4. Merge into existing digest using the algorithm defined in `/fh:build` (Step 4, "Learnings Digest"). Use `generated_by: "fix"`.
-5. The root cause and any "should have caught this earlier" observations are high-value learning items — prioritize these when filtering for improvement themes.
-6. Skip silently if claude-mem not installed or any MCP call fails.
-
-Budget: <2% context.
-
----
-
 ### Persist Findings
 
-After the fix is verified, output a structured summary so claude-mem captures it for future sessions:
-1. If claude-mem is available (check tool list for `mcp__plugin_claude-mem_*`), use `mcp__plugin_claude-mem_mcp-search__smart_search` to query for root cause analysis from this session's context. If not available, fall back to Read/Grep/Glob directly.
-2. Skip if the fix was trivial (single typo, missing import, config change)
-3. Output each significant finding as:
-   **[fix-learning]** {subsystem/file}: {root cause pattern} → {fix approach that worked}
-4. Max 3 findings. Focus on patterns that could recur, not one-off mistakes
-5. Skip silently if no significant findings
+Follow **Pattern D** (Persist Findings) from `shared/claude-mem-rules.md`. Use tag `[fix-learning]`. Skip trivial fixes (typo, missing import, config change).
 
 ---
 

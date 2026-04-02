@@ -102,7 +102,7 @@ Bug fix:      /fh:fix
 Refactoring:  /fh:refactor (includes /fh:simplify automatically)
 Code cleanup: /fh:simplify (standalone, on any recent changes)
 Resuming:     /fh:resume → (routes to next action)
-CLAUDE.md:    /fh:learnings --update-claude-md (after sessions to capture and apply learnings)
+CLAUDE.md:    /fh:learnings (after sessions to capture and apply learnings)
 ```
 
 ## Files & Structure
