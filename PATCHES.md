@@ -220,6 +220,9 @@ No changes. (Template variables adopted from upstream v1.2.0.)
 | 14 | Added lean orchestrator pattern (stay under 20% context) | Interactive skill needs headroom for back-and-forth |
 
 ### ui-test (from qa)
+
+> **Note: This is a MAJOR deviation from upstream.** The v2.0 absorption integrates the full QA fix loop, health scoring system, severity tier gating, and regression test generation from gstack b3cd3fd6 — it is a feature absorption, not a patch. Original patches (1-19) adapted the surface API; v2.0 patches (20+) absorbed the deep execution model.
+
 | # | Change | Rationale |
 |---|--------|-----------|
 | 1 | Replaced all `$B` browse commands with `agent-browser` CLI equivalents | agent-browser (Vercel) is the browser backend for fhhs — no compiled Bun binary needed |
@@ -241,6 +244,14 @@ No changes. (Template variables adopted from upstream v1.2.0.)
 | 17 | Report template forked to `references/report-template.md` (was `templates/`) (now at `ui-test/references/report-template.md`) | Consistent with plugin shipping boundary — all runtime files in skills/{skill}/ |
 | 18 | Issue taxonomy forked to `references/issue-taxonomy.md` (now at `ui-test/references/issue-taxonomy.md`) | Verbatim fork, co-located in references/ for runtime access |
 | 19 | Skill renamed `qa` -> `ui-test`; both Visual Verification Mode and QA Mode (`--qa` flag) merged into one skill | Visual verification and functional QA unified — `--qa` flag selects thorough mode; frontmatter name is `fh:ui-test` |
+| 20 | **[v2.0 — QA absorption]** Fix loop (Phases 7-9): Phase 7 TRIAGE → Phase 8 FIX-LOOP → Phase 9 CLOSE with atomic commits per fix and verify-before-close gate | Absorbed from gstack b3cd3fd6 qa/ — systematic triage + fix + regression verification cycle replaces ad-hoc fix notes |
+| 21 | **[v2.0]** Severity tier gating: Quick tier (critical only) / Standard tier (critical + high) / Exhaustive tier (all severities) | Gating prevents scope creep — tier selected at Phase 1 controls which issues enter the fix loop |
+| 22 | **[v2.0]** Dual health scoring: UI health (browser-based, per-category 0-100) + Codebase health (structural, via `qa-health.sh` if present) | Two orthogonal lenses on app quality; UI health from Phase 6, Codebase health from static analysis — both reported in qa-report-template.md |
+| 23 | **[v2.0]** WTF-likelihood self-regulation: pause and reassess if >20% of fixes trigger follow-on issues; hard cap at 50 fixes per session | Prevents fix-loop runaway — high WTF rate signals deeper architectural issue requiring human judgment |
+| 24 | **[v2.0]** Test framework bootstrap: Phase 8f.5 detects available test framework (Playwright, Vitest, Jest, none) and scaffolds regression test accordingly | Runtime detection — no hardcoded framework assumptions; graceful degradation when no test framework is present |
+| 25 | **[v2.0]** Regression test generation (Phase 8f.5): for each verified fix, generate a regression test and commit alongside the fix | Each verified fix gets a matching test — ensures regressions surface in CI rather than re-emerging silently |
+| 26 | **[v2.0]** Enhanced qa-report-template.md: before/after health score table, Fix Log (status + commit SHA + files), before/after screenshot evidence, Regression Tests table, Deferred Tests section, Ship Readiness with health delta | Richer report structure from gstack b3cd3fd6 — covers the full QA lifecycle in one document |
+| 27 | **[v2.0]** Renamed `report-template.md` → `qa-report-template.md` | Naming clarity — distinguishes from other report templates; SKILL.md references updated accordingly |
 
 ### Cross-cutting pattern integration
 | # | Change | Rationale |

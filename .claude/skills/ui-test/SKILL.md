@@ -150,7 +150,7 @@ If GSD project is active and verifying a phase, update STATE.md with verificatio
 
 # QA Mode (--qa flag)
 
-<!-- Forked from gstack qa (v0.3.3). Browser backend: agent-browser (Vercel) -->
+<!-- Forked from gstack qa (v0.3.3 → v0.4.0). Browser backend: agent-browser (Vercel) -->
 
 You are a QA engineer. Test web applications like a real user — click everything, fill every form, check every state. Produce a structured report with evidence.
 
@@ -171,6 +171,7 @@ This skill requires **agent-browser** CLI to be installed globally. If `agent-br
 | Output dir | `.planning/qa-reports/` | `Output to /tmp/qa` |
 | Scope | Full app (or diff-scoped) | `Focus on the billing page` |
 | Auth | None | `Sign in to user@example.com` |
+| Tier | standard | `--qa quick`, `--qa exhaustive` |
 
 **If no URL is given and you're on a feature branch:** Automatically enter **diff-aware mode** (see Modes below). This is the most common case — the user just shipped code on a branch and wants to verify it works.
 
@@ -253,11 +254,50 @@ Run full mode, then load `baseline.json` from a previous run. Diff: which issues
 
 ## Workflow
 
+---
+
+### Test Framework Bootstrap (Pre-QA)
+
+Runs once at the start of a QA session. Only triggers if no test framework is detected.
+
+Detection:
+```bash
+# Detect runtime
+[ -f Gemfile ] && RUNTIME="ruby"
+[ -f package.json ] && RUNTIME="node"
+[ -f requirements.txt ] || [ -f pyproject.toml ] && RUNTIME="python"
+[ -f go.mod ] && RUNTIME="go"
+[ -f Cargo.toml ] && RUNTIME="rust"
+
+# Check for existing test framework
+[ -f vitest.config.* ] || [ -f jest.config.* ] || [ -d __tests__ ] || [ -d tests ] && TESTS_EXIST=true
+```
+
+If no test framework found and `.planning/qa-reports/.no-test-bootstrap` doesn't exist:
+- Offer to bootstrap the recommended framework for the runtime
+- Built-in recommendations table:
+  | Runtime | Primary | Alternative |
+  |---------|---------|-------------|
+  | Node.js | vitest + @testing-library | jest + @testing-library |
+  | Next.js | vitest + @testing-library/react + playwright | jest + cypress |
+  | Python | pytest + pytest-cov | unittest |
+  | Ruby/Rails | minitest + fixtures + capybara | rspec + factory_bot |
+  | Go | stdlib testing + testify | — |
+  | Rust | cargo test + mockall | — |
+- Install packages, create config, directory structure, one example test
+- Generate 3-5 real tests for recently changed files
+- Run test suite to verify
+- Commit bootstrap files separately: `chore(qa): bootstrap test framework`
+
+Opt-out: create `.planning/qa-reports/.no-test-bootstrap`
+
+---
+
 ### Phase 1: Initialize
 
 1. Check agent-browser availability (see Setup above)
 2. Create output directories
-3. Copy report template from `ui-test/references/report-template.md` to output dir
+3. Copy report template from `ui-test/references/qa-report-template.md` to output dir
 4. Start timer for duration tracking
 5. Initialize isolated browser session: `agent-browser --session "qa-${BRANCH}"`
 
@@ -289,6 +329,24 @@ agent-browser --session "qa-${BRANCH}" state load ".planning/qa-reports/auth-sta
 **If 2FA/OTP is required:** Ask the user for the code and wait.
 
 **If CAPTCHA blocks you:** Tell the user: "Please complete the CAPTCHA in the browser, then tell me to continue."
+
+### Phase 2.5: Codebase Health Baseline
+
+Before QA begins, capture a codebase health baseline:
+
+```bash
+bash .claude/skills/ui-test/bin/qa-health.sh > /tmp/qa-health-baseline.json
+cat /tmp/qa-health-baseline.json
+```
+
+Store the `score` field as `CODEBASE_HEALTH_BASELINE`. This will be compared after the fix loop.
+
+> **Note on health metrics:** There are two distinct health scores in this workflow:
+> - **Codebase Health Score** — tool-based (tsc, lint, unit tests, e2e). Computed by `qa-health.sh`. Tracks whether the code passes its own checks.
+> - **UI Health Score** — browser-based, computed during Phase 6 and Phase 9 using the rubric below. Tracks how well the deployed UI works from a user perspective.
+> These are independent metrics. A codebase can have clean types + passing tests but a broken UI, or vice versa.
+
+---
 
 ### Phase 3: Orient
 
@@ -387,7 +445,7 @@ agent-browser --session "qa-${BRANCH}" snapshot -i
 agent-browser --session "qa-${BRANCH}" screenshot "$REPORT_DIR/screenshots/issue-002.png"
 ```
 
-**Write each issue to the report immediately** using the template format from `ui-test/references/report-template.md`.
+**Write each issue to the report immediately** using the template format from `ui-test/references/qa-report-template.md`.
 
 ### Phase 6: Wrap Up
 
@@ -415,7 +473,230 @@ agent-browser --session "qa-${BRANCH}" screenshot "$REPORT_DIR/screenshots/issue
 
 ---
 
+## Tier System
+
+The tier controls which severity levels are in scope for the fix loop (Phase 8). Issues outside scope are documented but not fixed.
+
+| Tier | Flag | In Scope |
+|------|------|----------|
+| quick | `--qa quick` | Critical + High only |
+| standard | `--qa` or `--qa standard` | Critical + High + Medium (default) |
+| exhaustive | `--qa exhaustive` | Critical + High + Medium + Low + Cosmetic |
+
+**Deferred issues:** Any issue outside the current tier's scope is marked `status: deferred` — it appears in the report with full documentation but is not entered into the fix loop.
+
+---
+
+### Phase 7: TRIAGE
+
+After Phase 6 (Wrap Up), classify every found issue by severity before starting the fix loop.
+
+1. **Assign severity** to each issue (if not already assigned during Phase 5):
+   - **Critical** — app broken, data loss, security hole, crash on main flow
+   - **High** — major feature broken, blocking user goal
+   - **Medium** — degraded UX, non-blocking functional issue, form edge case fails
+   - **Low** — minor cosmetic, inconsistency, rare edge case
+   - **Cosmetic** — pixel-level polish, copy nits, aesthetic preferences
+
+2. **Sort issues** by severity: Critical → High → Medium → Low → Cosmetic
+
+3. **Apply tier gating:** Based on the `--qa` tier flag (default: standard):
+   - Mark any issue outside scope as `status: deferred`
+   - Only in-scope issues proceed to Phase 8
+
+4. **Output triage table** to the report:
+   ```
+   | ID | Title | Severity | Tier Status |
+   |----|-------|----------|-------------|
+   | ISSUE-001 | Login fails on Safari | Critical | in-scope |
+   | ISSUE-002 | Tooltip misaligned | Low | deferred (quick tier) |
+   ```
+
+5. **Announce** the fix plan: "N issues in scope for this tier. Starting fix loop."
+
+---
+
+### Phase 8: FIX LOOP
+
+**Operational rules (enforced before starting):**
+- Require a clean working tree: `git status --porcelain`. If dirty → commit, stash, or abort. Never start with uncommitted changes.
+- One commit per fix. Never bundle multiple fixes in one commit.
+- Only create new test files — never modify existing test files.
+- Revert on regression immediately (`git revert HEAD`).
+- Show screenshots to user inline (Read tool on output files) after each fix verification.
+- Never refuse to use the browser — even backend/config changes need browser verification.
+
+**Loop:** Repeat steps 8a–8i until all in-scope issues are fixed or the tier threshold is satisfied.
+
+#### 8a. Pick the highest-severity unfixed in-scope issue
+Select the next unresolved issue from the triage table (Critical first, then High, Medium, etc.).
+
+#### 8b. Locate the source
+```bash
+# Search for error messages, component names, route definitions
+grep -r "error text or component name" src/ --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" -l
+grep -r "route path" src/ --include="*.ts" --include="*.tsx" -n
+```
+Read only the files directly implicated. Do not explore broadly.
+
+#### 8c. Fix in source code
+- Make the minimal change to resolve the issue.
+- Do not refactor unrelated code.
+- Do not change formatting, imports, or style outside the fix scope.
+
+#### 8d. Commit atomically
+```bash
+git add <only the changed files>
+git commit -m "fix(qa): ISSUE-NNN — short description"
+```
+Message format: `fix(qa): ISSUE-NNN — {what was broken and how it was fixed}`
+
+#### 8e. Re-verify the fix
+```bash
+# Navigate back to the affected page
+agent-browser --session "qa-${BRANCH}" open <affected-url>
+agent-browser --session "qa-${BRANCH}" screenshot "$REPORT_DIR/screenshots/issue-NNN-before-fix.png"
+# Perform the action that previously failed
+agent-browser --session "qa-${BRANCH}" screenshot "$REPORT_DIR/screenshots/issue-NNN-after-fix.png"
+agent-browser --session "qa-${BRANCH}" console
+agent-browser --session "qa-${BRANCH}" snapshot -D
+```
+Read both screenshots inline and show them to the user.
+
+#### 8f. Classify outcome
+Mark the issue with one of:
+- `verified` — fix works, no regressions seen
+- `best-effort` — partially resolved, residual issue remains
+- `reverted` — fix made things worse, reverted (see 8h)
+
+#### 8f.5. Generate regression test (for `verified` fixes only)
+
+1. **Read project conventions:** Find 2–3 existing test files near the fixed code and read them to learn naming, structure, and assertion style.
+   ```bash
+   find src/ -name "*.test.*" -o -name "*.spec.*" | head -20
+   ```
+
+2. **Trace the bug's codepath:** Identify input → codepath → failure point → edge cases that triggered the bug.
+
+3. **Write the test:**
+   - Exact precondition that reproduces the bug
+   - The action that triggered it
+   - A meaningful assertion that would have caught it
+   - Attribution comment: `// Regression: ISSUE-NNN — {what broke}`
+   - Test type selection:
+     - Console/logic error → unit test
+     - Broken form/API interaction → integration test
+     - Broken UI component → component test
+     - Pure CSS/layout issue → skip (visual regression outside scope)
+
+4. **Run the new test file only:**
+   ```bash
+   # Run only the new file, not the full suite
+   npx jest path/to/new.test.ts --no-coverage
+   # or
+   npx vitest run path/to/new.test.ts
+   ```
+   - Pass → keep it.
+   - Fail once → fix the test (not the source code).
+   - Still failing → delete the test file silently and continue.
+
+5. **Never modify existing test files.** If the regression test requires changes to shared fixtures, skip it instead.
+
+#### 8g. Check WTF-likelihood
+See **WTF-Likelihood Self-Regulation** section below. Compute every 5 fixes (or after any revert). Stop if WTF > 20% and ask the user.
+
+#### 8h. Revert on regression
+If the fix makes things worse (new errors, broken pages, failing tests):
+```bash
+git revert HEAD --no-edit
+```
+Mark the issue as `reverted` and `status: deferred`. Do not attempt a second fix in this session.
+
+#### 8i. Loop
+Return to 8a with the next highest-severity unfixed in-scope issue.
+
+**Exit conditions:**
+- All in-scope issues are `verified`, `best-effort`, or `reverted`
+- Tier threshold reached (all Critical+High fixed → `--qa quick` is satisfied)
+
+---
+
+### Phase 9: FINAL QA
+
+After the fix loop completes:
+
+1. **Re-run full QA** on all pages that had at least one verified fix:
+   - Re-navigate each affected page
+   - Take fresh screenshots
+   - Check console for new errors
+   - Verify adjacent pages for regressions
+
+2. **Compute final health score** using the rubric below (same formula as Phase 6).
+
+3. **Compare against baseline:**
+   - Load the `baseline.json` saved in Phase 6
+   - Compute delta: `final_score - baseline_score`
+   - Report: "Health score: {final} (baseline: {baseline}, delta: {+/-N})"
+
+4. **Regression warning:** If `final_score < baseline_score`:
+   ```
+   ⚠️  REGRESSION: Final health score ({final}) is WORSE than baseline ({baseline}).
+   Delta: {delta}. Review reverted issues and any side effects from applied fixes.
+   ```
+
+5. **Update the report** with:
+   - Final health score
+   - Score delta
+   - Fix summary table:
+     ```
+     | ID | Title | Severity | Outcome | Regression Test |
+     |----|-------|----------|---------|-----------------|
+     | ISSUE-001 | Login fails on Safari | Critical | verified | yes |
+     | ISSUE-003 | Tooltip misaligned | Medium | reverted | no |
+     ```
+   - Deferred issues list (documented but not fixed this session)
+
+6. **Save updated baseline.json** with the final state.
+
+7. **Codebase health delta:**
+   ```bash
+   bash .claude/skills/ui-test/bin/qa-health.sh > /tmp/qa-health-final.json
+   ```
+   Compare against `/tmp/qa-health-baseline.json`:
+   - Extract `score` from both files
+   - Report: `Codebase Health: {baseline} → {final} ({delta:+.1f})`
+   - Example: `Codebase Health: 6.2 → 7.8 (+1.6)`
+   - If final < baseline, surface a warning alongside any regression warnings.
+
+---
+
+### WTF-Likelihood Self-Regulation
+
+Computed every 5 fixes (or after any revert):
+
+```
+WTF-LIKELIHOOD:
+  Start at 0%
+  Each revert:                +15%
+  Each fix touching >3 files: +5%
+  After fix 15:               +1% per additional fix
+  All remaining Low severity: +10%
+  Touching unrelated files:   +20%
+```
+
+**If WTF > 20%:** STOP immediately. Show user what's been done. Ask whether to continue.
+**Hard cap:** 50 fixes total. After 50 fixes, stop regardless of remaining issues.
+**Regression test commits don't count** toward the WTF-likelihood heuristic.
+
+Display: `WTF-likelihood: 18% (3 reverts, 2 multi-file) — continuing`
+
+---
+
 ## Health Score Rubric
+
+> **UI Health Score** (this rubric) — browser-based. Measures how well the deployed UI works from a user perspective. Computed during Phase 6 and Phase 9 using screenshots, console errors, and browser interactions.
+>
+> **Codebase Health Score** (`qa-health.sh`) — tool-based. Measures whether the code passes tsc, lint, unit tests, and e2e. Computed by `bash .claude/skills/ui-test/bin/qa-health.sh`. These are independent metrics.
 
 Compute each category score (0-100), then take the weighted average.
 

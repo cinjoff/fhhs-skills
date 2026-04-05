@@ -13700,6 +13700,170 @@
           "pattern": "[Pp]attern D|Persist Findings"
         }
       ]
+    },
+    {
+      "id": 387,
+      "command": "ui-test",
+      "prompt": "Run QA on a React app with a broken button handler",
+      "expected_output": "Should detect the broken button handler, enter a fix loop: triage the issue, apply a fix, re-verify, and commit atomically. Should not stop after first failure but continue until verified fixed.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Enters fix loop on failure",
+          "type": "behavioral"
+        },
+        {
+          "text": "Makes atomic commit after each fix",
+          "type": "behavioral"
+        },
+        {
+          "text": "Re-verifies after fix",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "full",
+      "tags": [
+        "qa-v2"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "[Tt]riage|diagnos"
+        },
+        {
+          "type": "regex",
+          "pattern": "[Ff]ix|repair|correct"
+        },
+        {
+          "type": "regex",
+          "pattern": "[Vv]erif|re-test|retest"
+        },
+        {
+          "type": "regex",
+          "pattern": "[Cc]ommit|atomic"
+        }
+      ]
+    },
+    {
+      "id": 388,
+      "command": "ui-test",
+      "prompt": "Run quick QA on a landing page",
+      "expected_output": "Should run in quick tier mode, fixing only critical and high severity issues. Should skip or defer medium and low severity issues without attempting to fix them.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Operates in quick tier mode",
+          "type": "behavioral"
+        },
+        {
+          "text": "Fixes critical and high issues",
+          "type": "behavioral"
+        },
+        {
+          "text": "Skips or defers medium and low issues",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "full",
+      "tags": [
+        "qa-v2"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "[Qq]uick|quick.*tier|tier.*quick"
+        },
+        {
+          "type": "regex",
+          "pattern": "[Cc]ritical|[Hh]igh"
+        },
+        {
+          "type": "regex",
+          "pattern": "[Ss]kip|[Dd]efer|medium|low"
+        }
+      ]
+    },
+    {
+      "id": 389,
+      "command": "ui-test",
+      "prompt": "Run QA on an app with 30+ issues",
+      "expected_output": "Should detect that the issue count exceeds the WTF threshold, report the likelihood, and stop to ask the user whether to continue before proceeding with fixes.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects WTF threshold exceeded",
+          "type": "behavioral"
+        },
+        {
+          "text": "Asks user before continuing",
+          "type": "guard"
+        },
+        {
+          "text": "Does NOT auto-proceed past threshold",
+          "type": "guard"
+        }
+      ],
+      "tier": "full",
+      "tags": [
+        "qa-v2"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "WTF|wtf"
+        },
+        {
+          "type": "regex",
+          "pattern": "[Tt]hreshold|[Ll]ikelihood"
+        },
+        {
+          "type": "regex",
+          "pattern": "[Ss]top|[Aa]sk|[Pp]ause"
+        },
+        {
+          "type": "regex",
+          "pattern": "[Cc]ontinue|[Pp]roceed"
+        }
+      ]
+    },
+    {
+      "id": 390,
+      "command": "ui-test",
+      "prompt": "Run QA and show health score",
+      "expected_output": "Should compute a baseline health score before fixing, run QA fixes, then compute a final health score. Should display the delta between before and after scores.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Reports baseline health score",
+          "type": "output"
+        },
+        {
+          "text": "Reports final health score",
+          "type": "output"
+        },
+        {
+          "text": "Shows delta between before and after",
+          "type": "output"
+        }
+      ],
+      "tier": "full",
+      "tags": [
+        "qa-v2"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "[Hh]ealth.*score|score.*health"
+        },
+        {
+          "type": "regex",
+          "pattern": "[Bb]aseline|[Bb]efore"
+        },
+        {
+          "type": "regex",
+          "pattern": "[Dd]elta|[Aa]fter|improvement"
+        }
+      ]
     }
   ]
 }
