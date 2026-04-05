@@ -151,7 +151,7 @@ else
 fi
 
 # Check each tool
-for cmd in node npm git gh vercel typescript-language-server docker supabase; do
+for cmd in node npm git gh vercel typescript-language-server bun docker supabase; do
   if command -v "$cmd" >/dev/null 2>&1; then
     VERSION=$("$cmd" --version 2>/dev/null | head -1)
     echo "OK $cmd $VERSION"
@@ -221,13 +221,24 @@ If gstack browse is MISSING, check if the gstack plugin is installed:
 [ -d "$HOME/.claude/skills/gstack" ] && echo "GSTACK_INSTALLED" || echo "GSTACK_NOT_INSTALLED"
 ```
 
-If `GSTACK_INSTALLED`: build the browse binary:
+If `GSTACK_INSTALLED`: check for `bun` (required to build the browse binary):
+
+```bash
+command -v bun >/dev/null 2>&1 && echo "BUN_OK" || echo "BUN_MISSING"
+```
+
+If `BUN_MISSING`: install bun first:
+```bash
+curl -fsSL https://bun.sh/install | bash
+```
+
+Then build the browse binary:
 ```bash
 cd ~/.claude/skills/gstack && ./setup
 ```
 
 If `GSTACK_NOT_INSTALLED`: tell the user:
-> "gstack browse is needed for `/fh:ui-test` visual testing. Install the gstack plugin (`claude plugin add garrytan/gstack`), then run `cd ~/.claude/skills/gstack && ./setup`."
+> "gstack browse is needed for `/fh:ui-test` visual testing. Install the gstack plugin (`claude plugin add garrytan/gstack`), ensure `bun` is installed (`curl -fsSL https://bun.sh/install | bash`), then run `cd ~/.claude/skills/gstack && ./setup`."
 
 **Windows:**
 
@@ -260,7 +271,7 @@ for cmd in node npm git; do
 done
 ```
 
-`node` and `npm` are required. `gh`, `vercel`, and `gstack browse` are optional — the plugin works without them.
+`node` and `npm` are required. `gh`, `vercel`, `bun`, and `gstack browse` are optional — the plugin works without them.
 
 If `node` is still missing, show error and stop:
 
