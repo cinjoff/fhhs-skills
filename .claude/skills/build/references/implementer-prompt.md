@@ -54,6 +54,18 @@ If empty: try `smart_search({query: "locked decisions for {PHASE_NAME}"})`, then
 
 Respect locked decisions. Stay within discretion bounds. Do not implement deferred ideas.
 
+### Architecture Context
+
+{SPEC_ARCHITECTURE}
+
+If empty, skip this section.
+
+### Data Flow
+
+{SPEC_DATA_FLOW}
+
+If empty, skip this section.
+
 ### Hard Constraints
 
 {PROJECT_CONSTRAINTS}
@@ -118,6 +130,26 @@ Before reporting, scan all files you created or modified for stub patterns:
 - Components with no data source wired (props always receiving empty/mock data)
 
 If any stubs exist, include them in your report under **Stubs** with file, line, and reason. Do NOT claim a task complete if stubs prevent the task's goal from being achieved — either wire the data or explain which future task will resolve it.
+
+## Spec Quality Targets
+
+{SPEC_QUALITY_RUBRICS}
+
+If empty, skip this section. If present: treat these rubrics as acceptance criteria — functional correctness, resilience, quality, and testability requirements specified for this task.
+
+{SPEC_FAILURE_MODES}
+
+If empty, skip this section. If present: these are predicted failure modes for this task's codepaths — ensure your implementation handles each listed mode explicitly.
+
+## Past Context
+
+{PAST_LEARNINGS}
+
+If empty, skip this section. If present: avoid repeating these past mistakes.
+
+{DECISION_RATIONALE}
+
+If empty, skip this section. If present: these are the reasons behind key design decisions — do not reverse them without flagging as a deviation.
 
 ## Self-Check (before reporting)
 

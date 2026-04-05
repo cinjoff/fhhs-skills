@@ -99,6 +99,14 @@ For each wave, dispatch **one subagent per task** using the Agent tool with **`s
 
 Use the structured template at `references/implementer-prompt.md`. Fill placeholders per @references/wave-execution.md (Subagent Prompt Placeholders section).
 
+**SPEC.md enrichment (before dispatching each task):**
+
+1. Check if the plan frontmatter has a `spec:` field pointing to a SPEC.md path.
+2. If SPEC.md exists: use `smart_unfold` (if claude-mem available) to extract sections relevant to the task domain — Architecture, Failure Modes, Quality Rubrics, Data Flow. Map to placeholders: `{SPEC_ARCHITECTURE}`, `{SPEC_FAILURE_MODES}`, `{SPEC_QUALITY_RUBRICS}`, `{SPEC_DATA_FLOW}`.
+3. Query claude-mem for past mistakes in the task domain: `smart_search({query: "past mistakes {task_domain} build-learning"})`. Populate `{PAST_LEARNINGS}`.
+4. If `.planning/DECISIONS.md` exists, extract entries affecting this task's files. Populate `{DECISION_RATIONALE}`.
+5. If no SPEC.md exists or claude-mem is unavailable: leave these placeholders empty — the implementer-prompt guards ("If empty, skip this section") ensure graceful degradation.
+
 ### Checkpoint protocol
 
 If a task has `type="checkpoint:*"`, handle inline:
