@@ -12,8 +12,7 @@
 | **Pages visited** | {COUNT} |
 | **Screenshots** | {COUNT} |
 | **Framework** | {DETECTED or "Unknown"} |
-| **Browser backend** | agent-browser |
-| **Session** | qa-{BRANCH} |
+| **Browser backend** | gstack browse (`$B`) |
 
 ## Health Score: {SCORE}/100
 

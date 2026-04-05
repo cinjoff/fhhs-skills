@@ -761,7 +761,7 @@
       "id": 18,
       "command": "ui-test",
       "prompt": "check the UI on the settings page at localhost:3000/settings",
-      "expected_output": "Should check for dev server on common ports. Should check agent-browser availability. If agent-browser not installed, should stop and tell user to install it. If available, should capture screenshots at 3 viewports (desktop 1440x900, tablet 768x1024, mobile 375x812), run console health check, read .planning/DESIGN.md for design context, perform design critique with severity ratings, and produce a Visual Verification Report.",
+      "expected_output": "Should check for dev server on common ports. Should check gstack browse binary ($B) availability. If browse binary not found, should stop and tell user to build it with 'cd ~/.claude/skills/gstack && ./setup'. If available, should capture screenshots at 3 viewports (desktop 1440x900, tablet 768x1024, mobile 375x812), run console health check, read .planning/DESIGN.md for design context, perform design critique with severity ratings, and produce a Visual Verification Report.",
       "files": [],
       "assertions": [
         {
@@ -769,7 +769,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Checks agent-browser availability",
+          "text": "Checks gstack browse binary availability",
           "type": "guard"
         },
         {
@@ -795,20 +795,20 @@
     {
       "id": 19,
       "command": "ui-test",
-      "prompt": "verify the dashboard looks right. agent-browser is not installed on this machine",
-      "expected_output": "Should detect that agent-browser is not available (via which check), stop, and tell the user to install it with 'npm install -g agent-browser'. Should NOT attempt to proceed without it or use alternative tools.",
+      "prompt": "verify the dashboard looks right. gstack browse binary is not built on this machine",
+      "expected_output": "Should detect that the gstack browse binary ($B) is not available at ~/.claude/skills/gstack/browse/dist/browse, stop, and tell the user to build it with 'cd ~/.claude/skills/gstack && ./setup'. Should NOT attempt to proceed without it or use alternative tools.",
       "files": [],
       "assertions": [
         {
-          "text": "Detects agent-browser not installed",
+          "text": "Detects gstack browse binary not available",
           "type": "guard"
         },
         {
-          "text": "Provides install command",
+          "text": "Provides setup command for building browse",
           "type": "output"
         },
         {
-          "text": "Does NOT proceed without agent-browser",
+          "text": "Does NOT proceed without gstack browse",
           "type": "guard"
         }
       ],
@@ -13698,6 +13698,170 @@
         {
           "type": "regex",
           "pattern": "[Pp]attern D|Persist Findings"
+        }
+      ]
+    },
+    {
+      "id": 387,
+      "command": "ui-test",
+      "prompt": "Run QA on a React app with a broken button handler",
+      "expected_output": "Should detect the broken button handler, enter a fix loop: triage the issue, apply a fix, re-verify, and commit atomically. Should not stop after first failure but continue until verified fixed.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Enters fix loop on failure",
+          "type": "behavioral"
+        },
+        {
+          "text": "Makes atomic commit after each fix",
+          "type": "behavioral"
+        },
+        {
+          "text": "Re-verifies after fix",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "full",
+      "tags": [
+        "qa-v2"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "[Tt]riage|diagnos"
+        },
+        {
+          "type": "regex",
+          "pattern": "[Ff]ix|repair|correct"
+        },
+        {
+          "type": "regex",
+          "pattern": "[Vv]erif|re-test|retest"
+        },
+        {
+          "type": "regex",
+          "pattern": "[Cc]ommit|atomic"
+        }
+      ]
+    },
+    {
+      "id": 388,
+      "command": "ui-test",
+      "prompt": "Run quick QA on a landing page",
+      "expected_output": "Should run in quick tier mode, fixing only critical and high severity issues. Should skip or defer medium and low severity issues without attempting to fix them.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Operates in quick tier mode",
+          "type": "behavioral"
+        },
+        {
+          "text": "Fixes critical and high issues",
+          "type": "behavioral"
+        },
+        {
+          "text": "Skips or defers medium and low issues",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "full",
+      "tags": [
+        "qa-v2"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "[Qq]uick|quick.*tier|tier.*quick"
+        },
+        {
+          "type": "regex",
+          "pattern": "[Cc]ritical|[Hh]igh"
+        },
+        {
+          "type": "regex",
+          "pattern": "[Ss]kip|[Dd]efer|medium|low"
+        }
+      ]
+    },
+    {
+      "id": 389,
+      "command": "ui-test",
+      "prompt": "Run QA on an app with 30+ issues",
+      "expected_output": "Should detect that the issue count exceeds the WTF threshold, report the likelihood, and stop to ask the user whether to continue before proceeding with fixes.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects WTF threshold exceeded",
+          "type": "behavioral"
+        },
+        {
+          "text": "Asks user before continuing",
+          "type": "guard"
+        },
+        {
+          "text": "Does NOT auto-proceed past threshold",
+          "type": "guard"
+        }
+      ],
+      "tier": "full",
+      "tags": [
+        "qa-v2"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "WTF|wtf"
+        },
+        {
+          "type": "regex",
+          "pattern": "[Tt]hreshold|[Ll]ikelihood"
+        },
+        {
+          "type": "regex",
+          "pattern": "[Ss]top|[Aa]sk|[Pp]ause"
+        },
+        {
+          "type": "regex",
+          "pattern": "[Cc]ontinue|[Pp]roceed"
+        }
+      ]
+    },
+    {
+      "id": 390,
+      "command": "ui-test",
+      "prompt": "Run QA and show health score",
+      "expected_output": "Should compute a baseline health score before fixing, run QA fixes, then compute a final health score. Should display the delta between before and after scores.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Reports baseline health score",
+          "type": "output"
+        },
+        {
+          "text": "Reports final health score",
+          "type": "output"
+        },
+        {
+          "text": "Shows delta between before and after",
+          "type": "output"
+        }
+      ],
+      "tier": "full",
+      "tags": [
+        "qa-v2"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "[Hh]ealth.*score|score.*health"
+        },
+        {
+          "type": "regex",
+          "pattern": "[Bb]aseline|[Bb]efore"
+        },
+        {
+          "type": "regex",
+          "pattern": "[Dd]elta|[Aa]fter|improvement"
         }
       ]
     }

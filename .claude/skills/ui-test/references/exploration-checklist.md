@@ -5,7 +5,7 @@ Use this checklist at every page visited during a QA session. Work through each 
 ## 1. Visual Scan
 
 - Take a screenshot of the page
-- Use `agent-browser snapshot -i` for an interactive element map
+- Use `$B snapshot -i` for an interactive element map
 - Look for: layout breaks, overlapping elements, clipped text, horizontal scrollbar
 - Look for: broken or missing images, incorrect z-index
 - Look for: font/color inconsistencies, alignment issues
@@ -48,7 +48,7 @@ Use this checklist at every page visited during a QA session. Work through each 
 
 Run after every interaction:
 ```bash
-agent-browser console
+$B console --errors
 ```
 
 - Any new JavaScript errors?
@@ -62,15 +62,15 @@ agent-browser console
 Test at least mobile and desktop viewports:
 ```bash
 # Mobile
-agent-browser set device "iPhone 14"
-agent-browser screenshot "$REPORT_DIR/screenshots/page-mobile.png"
+$B viewport 375x812
+$B screenshot "$REPORT_DIR/screenshots/page-mobile.png"
 
 # Tablet
-agent-browser set device "iPad"
-agent-browser screenshot "$REPORT_DIR/screenshots/page-tablet.png"
+$B viewport 768x1024
+$B screenshot "$REPORT_DIR/screenshots/page-tablet.png"
 
 # Back to desktop
-agent-browser set device "desktop"
+$B viewport 1280x720
 ```
 
 - Does layout adapt correctly?
@@ -81,11 +81,9 @@ agent-browser set device "desktop"
 
 ## 8. Dark Mode
 
-If the app supports dark mode:
+If the app supports dark mode, toggle it via the app's own dark mode setting or system preference, then:
 ```bash
-agent-browser set media dark
-agent-browser screenshot "$REPORT_DIR/screenshots/page-dark.png"
-agent-browser set media light
+$B screenshot "$REPORT_DIR/screenshots/page-dark.png"
 ```
 
 - Are all elements visible in dark mode?
@@ -102,7 +100,7 @@ agent-browser set media light
 
 Verify backend communication:
 ```bash
-agent-browser network requests --filter "status>=400"
+$B network
 ```
 
 - Are API calls succeeding?

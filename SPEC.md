@@ -71,7 +71,7 @@ fhhs-skills/
 │   ├── map-codebase/            # Parallel codebase analysis
 │   ├── add-todo/                # Task capture
 │   ├── check-todos/             # Task review
-│   ├── verify-ui/               # agent-browser screenshots + visual check
+│   ├── verify-ui/               # gstack browse ($B) screenshots + visual check
 │   ├── critique/                # Design evaluation
 │   ├── polish/                  # Alignment and spacing pass
 │   ├── normalize/               # Design system consistency

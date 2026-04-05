@@ -55,47 +55,60 @@ DEV_URL="http://localhost:${DEV_PORT}"
 
 ## Step 2: Capture Screenshots
 
-Requires `agent-browser` CLI.
+## SETUP (run this check BEFORE any browse command)
 
-Check availability:
 ```bash
-which agent-browser && echo "available" || echo "not-found"
+_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
+B=""
+[ -n "$_ROOT" ] && [ -x "$_ROOT/.claude/skills/gstack/browse/dist/browse" ] && B="$_ROOT/.claude/skills/gstack/browse/dist/browse"
+[ -z "$B" ] && B=~/.claude/skills/gstack/browse/dist/browse
+if [ -x "$B" ]; then
+  echo "READY: $B"
+else
+  echo "NEEDS_SETUP"
+fi
 ```
 
-If not installed, **stop and tell the user**: "agent-browser is required for visual verification. Install it with: `npm install -g agent-browser`" — do not proceed without it.
+If `NEEDS_SETUP`:
+1. Tell the user: "gstack browse needs a one-time build (~10 seconds). OK to proceed?"
+2. Run: `cd ~/.claude/skills/gstack && ./setup`
 
 Capture desktop, tablet, and mobile viewports:
 
 ```bash
 # Desktop (1440x900)
-agent-browser open "$DEV_URL" --viewport 1440x900 --wait 3000
-agent-browser screenshot /tmp/ui-test-desktop.png
+$B viewport 1440x900
+$B goto "$DEV_URL"
+$B screenshot /tmp/ui-test-desktop.png
 
 # Tablet (768x1024)
-agent-browser open "$DEV_URL" --viewport 768x1024 --wait 2000
-agent-browser screenshot /tmp/ui-test-tablet.png
+$B viewport 768x1024
+$B goto "$DEV_URL"
+$B screenshot /tmp/ui-test-tablet.png
 
 # Mobile (375x812)
-agent-browser open "$DEV_URL" --viewport 375x812 --wait 2000
-agent-browser screenshot /tmp/ui-test-mobile.png
+$B viewport 375x812
+$B goto "$DEV_URL"
+$B screenshot /tmp/ui-test-mobile.png
 
 # Accessibility snapshot
-agent-browser snapshot -c > /tmp/ui-test-a11y.txt
+$B snapshot -c > /tmp/ui-test-a11y.txt
 ```
 
 For authenticated pages, log in first:
 ```bash
-agent-browser open "$DEV_URL/login" --viewport 1440x900
-agent-browser fill 'input[type="email"]' "$TEST_USER_EMAIL"
-agent-browser fill 'input[type="password"]' "$TEST_USER_PASSWORD"
-agent-browser click 'button[type="submit"]'
-agent-browser open "$DEV_URL/protected" --wait 5000
-agent-browser screenshot /tmp/ui-test-desktop.png
+$B viewport 1440x900
+$B goto "$DEV_URL/login"
+$B fill 'input[type="email"]' "$TEST_USER_EMAIL"
+$B fill 'input[type="password"]' "$TEST_USER_PASSWORD"
+$B click 'button[type="submit"]'
+$B goto "$DEV_URL/protected"
+$B screenshot /tmp/ui-test-desktop.png
 ```
 
 Read each screenshot image to visually inspect the UI.
 
-**Video evidence for critical bugs:** If a CRITICAL visual bug is found, record a video: `agent-browser record start ./evidence.webm`, reproduce the bug, `agent-browser record stop`. Attach the recording path to the report.
+**Screenshot evidence for critical bugs:** If a CRITICAL visual bug is found, capture before/after screenshots to document the issue.
 
 ---
 
@@ -103,7 +116,7 @@ Read each screenshot image to visually inspect the UI.
 
 Check for runtime errors:
 ```bash
-agent-browser eval "JSON.stringify(window.__consoleErrors || [])"
+$B eval "JSON.stringify(window.__consoleErrors || [])"
 ```
 
 Evaluate:
@@ -150,15 +163,13 @@ If GSD project is active and verifying a phase, update STATE.md with verificatio
 
 # QA Mode (--qa flag)
 
-<!-- Forked from gstack qa (v0.3.3). Browser backend: agent-browser (Vercel) -->
+<!-- Forked from gstack qa (v0.3.3 → v0.4.0). Browser backend: gstack browse -->
 
 You are a QA engineer. Test web applications like a real user — click everything, fill every form, check every state. Produce a structured report with evidence.
 
 ## Prerequisites
 
-This skill requires **agent-browser** CLI to be installed globally. If `agent-browser` is not available, stop and tell the user:
-
-> "agent-browser is required for QA testing. Install it with: `npm install -g agent-browser`"
+This skill requires **gstack browse** binary (`$B`). Check availability before proceeding.
 
 ## Setup
 
@@ -171,24 +182,34 @@ This skill requires **agent-browser** CLI to be installed globally. If `agent-br
 | Output dir | `.planning/qa-reports/` | `Output to /tmp/qa` |
 | Scope | Full app (or diff-scoped) | `Focus on the billing page` |
 | Auth | None | `Sign in to user@example.com` |
+| Tier | standard | `--qa quick`, `--qa exhaustive` |
 
 **If no URL is given and you're on a feature branch:** Automatically enter **diff-aware mode** (see Modes below). This is the most common case — the user just shipped code on a branch and wants to verify it works.
 
-**Check agent-browser availability:**
+## SETUP (run this check BEFORE any browse command)
 
 ```bash
-which agent-browser && echo "READY" || echo "NEEDS_INSTALL"
+_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
+B=""
+[ -n "$_ROOT" ] && [ -x "$_ROOT/.claude/skills/gstack/browse/dist/browse" ] && B="$_ROOT/.claude/skills/gstack/browse/dist/browse"
+[ -z "$B" ] && B=~/.claude/skills/gstack/browse/dist/browse
+if [ -x "$B" ]; then
+  echo "READY: $B"
+else
+  echo "NEEDS_SETUP"
+fi
 ```
 
-If `NEEDS_INSTALL`, stop and ask the user to install agent-browser.
+If `NEEDS_SETUP`:
+1. Tell the user: "gstack browse needs a one-time build (~10 seconds). OK to proceed?"
+2. Run: `cd ~/.claude/skills/gstack && ./setup`
 
-**Create output directories and initialize session:**
+**Create output directories:**
 
 ```bash
 REPORT_DIR=".planning/qa-reports"
 mkdir -p "$REPORT_DIR/screenshots"
 BRANCH=$(git branch --show-current 2>/dev/null | tr '/' '-')
-agent-browser --session "qa-${BRANCH:-default}" open about:blank
 ```
 
 ---
@@ -210,7 +231,7 @@ This is the **primary mode** for developers verifying their work. When the user 
    - View/template/component files -> which pages render them
    - Model/service files -> which pages use those models (check controllers that reference them)
    - CSS/style files -> which pages include those stylesheets
-   - API endpoints -> test them directly with `agent-browser eval "await fetch('/api/...')"`
+   - API endpoints -> test them directly with `$B eval "await fetch('/api/...')"`
    - Static pages (markdown, HTML) -> navigate to them directly
 
 3. **Detect the running app** — resolve the dev server URL using the same priority as Visual Verification mode:
@@ -229,7 +250,7 @@ This is the **primary mode** for developers verifying their work. When the user 
    - Take a screenshot
    - Check console for errors
    - If the change was interactive (forms, buttons, flows), test the interaction end-to-end
-   - Use `agent-browser snapshot -i` before and after actions to verify the change had the expected effect
+   - Use `$B snapshot -i` before and after actions to verify the change had the expected effect
 
 5. **Cross-reference with commit messages and PR description** to understand *intent* — what should the change do? Verify it actually does that.
 
@@ -253,52 +274,98 @@ Run full mode, then load `baseline.json` from a previous run. Diff: which issues
 
 ## Workflow
 
+---
+
+### Test Framework Bootstrap (Pre-QA)
+
+Runs once at the start of a QA session. Only triggers if no test framework is detected.
+
+Detection:
+```bash
+# Detect runtime
+[ -f Gemfile ] && RUNTIME="ruby"
+[ -f package.json ] && RUNTIME="node"
+[ -f requirements.txt ] || [ -f pyproject.toml ] && RUNTIME="python"
+[ -f go.mod ] && RUNTIME="go"
+[ -f Cargo.toml ] && RUNTIME="rust"
+
+# Check for existing test framework
+[ -f vitest.config.* ] || [ -f jest.config.* ] || [ -d __tests__ ] || [ -d tests ] && TESTS_EXIST=true
+```
+
+If no test framework found and `.planning/qa-reports/.no-test-bootstrap` doesn't exist:
+- Offer to bootstrap the recommended framework for the runtime
+- Built-in recommendations table:
+  | Runtime | Primary | Alternative |
+  |---------|---------|-------------|
+  | Node.js | vitest + @testing-library | jest + @testing-library |
+  | Next.js | vitest + @testing-library/react + playwright | jest + cypress |
+  | Python | pytest + pytest-cov | unittest |
+  | Ruby/Rails | minitest + fixtures + capybara | rspec + factory_bot |
+  | Go | stdlib testing + testify | — |
+  | Rust | cargo test + mockall | — |
+- Install packages, create config, directory structure, one example test
+- Generate 3-5 real tests for recently changed files
+- Run test suite to verify
+- Commit bootstrap files separately: `chore(qa): bootstrap test framework`
+
+Opt-out: create `.planning/qa-reports/.no-test-bootstrap`
+
+---
+
 ### Phase 1: Initialize
 
-1. Check agent-browser availability (see Setup above)
+1. Check gstack browse availability (see Setup above)
 2. Create output directories
-3. Copy report template from `ui-test/references/report-template.md` to output dir
+3. Copy report template from `ui-test/references/qa-report-template.md` to output dir
 4. Start timer for duration tracking
-5. Initialize isolated browser session: `agent-browser --session "qa-${BRANCH}"`
 
 ### Phase 2: Authenticate (if needed)
 
 **If the user specified auth credentials:**
 
 ```bash
-agent-browser --session "qa-${BRANCH}" open <login-url>
-agent-browser --session "qa-${BRANCH}" snapshot -i       # find the login form
-agent-browser --session "qa-${BRANCH}" fill @e3 "user@example.com"
-agent-browser --session "qa-${BRANCH}" fill @e4 "[REDACTED]"   # NEVER include real passwords in report
-agent-browser --session "qa-${BRANCH}" click @e5                # submit
-agent-browser --session "qa-${BRANCH}" snapshot -i              # verify login succeeded
+$B goto <login-url>
+$B snapshot -i       # find the login form
+$B fill @e3 "user@example.com"
+$B fill @e4 "[REDACTED]"   # NEVER include real passwords in report
+$B click @e5                # submit
+$B snapshot -i              # verify login succeeded
 ```
 
-**Save authenticated state for reuse:**
-
-```bash
-agent-browser --session "qa-${BRANCH}" state save ".planning/qa-reports/auth-state.json"
-```
-
-**Restore auth state in a new session:**
-
-```bash
-agent-browser --session "qa-${BRANCH}" state load ".planning/qa-reports/auth-state.json"
-```
+Browse maintains authentication state automatically across calls — no need to save or load state files.
 
 **If 2FA/OTP is required:** Ask the user for the code and wait.
 
 **If CAPTCHA blocks you:** Tell the user: "Please complete the CAPTCHA in the browser, then tell me to continue."
+
+### Phase 2.5: Codebase Health Baseline
+
+Before QA begins, capture a codebase health baseline:
+
+```bash
+bash .claude/skills/ui-test/bin/qa-health.sh > /tmp/qa-health-baseline.json
+cat /tmp/qa-health-baseline.json
+```
+
+Store the `score` field as `CODEBASE_HEALTH_BASELINE`. This will be compared after the fix loop.
+
+> **Note on health metrics:** There are two distinct health scores in this workflow:
+> - **Codebase Health Score** — tool-based (tsc, lint, unit tests, e2e). Computed by `qa-health.sh`. Tracks whether the code passes its own checks.
+> - **UI Health Score** — browser-based, computed during Phase 6 and Phase 9 using the rubric below. Tracks how well the deployed UI works from a user perspective.
+> These are independent metrics. A codebase can have clean types + passing tests but a broken UI, or vice versa.
+
+---
 
 ### Phase 3: Orient
 
 Get a map of the application:
 
 ```bash
-agent-browser --session "qa-${BRANCH}" open <target-url>
-agent-browser --session "qa-${BRANCH}" snapshot -i
-agent-browser --session "qa-${BRANCH}" screenshot "$REPORT_DIR/screenshots/initial.png"
-agent-browser --session "qa-${BRANCH}" console                # any errors on landing?
+$B goto <target-url>
+$B snapshot -i -a -o "$REPORT_DIR/screenshots/initial-annotated.png"
+$B screenshot "$REPORT_DIR/screenshots/initial.png"
+$B console --errors                # any errors on landing?
 ```
 
 **Detect framework** (note in report metadata):
@@ -307,17 +374,17 @@ agent-browser --session "qa-${BRANCH}" console                # any errors on la
 - `wp-content` in URLs -> WordPress
 - Client-side routing with no page reloads -> SPA
 
-**For SPAs:** Navigation is client-side. Use `agent-browser snapshot -i` to find nav elements (buttons, menu items) instead of relying on link extraction.
+**For SPAs:** Navigation is client-side. Use `$B snapshot -i` to find nav elements (buttons, menu items) instead of relying on link extraction.
 
 ### Phase 4: Explore
 
 Visit pages systematically. At each page:
 
 ```bash
-agent-browser --session "qa-${BRANCH}" open <page-url>
-agent-browser --session "qa-${BRANCH}" snapshot -i
-agent-browser --session "qa-${BRANCH}" screenshot "$REPORT_DIR/screenshots/page-name.png"
-agent-browser --session "qa-${BRANCH}" console
+$B goto <page-url>
+$B snapshot -i
+$B screenshot "$REPORT_DIR/screenshots/page-name.png"
+$B console --errors
 ```
 
 Then follow the **per-page exploration checklist** (see `ui-test/references/exploration-checklist.md`):
@@ -330,19 +397,14 @@ Then follow the **per-page exploration checklist** (see `ui-test/references/expl
 6. **Console** — Any new JS errors after interactions?
 7. **Responsiveness** — Check mobile viewport:
    ```bash
-   agent-browser --session "qa-${BRANCH}" set device "iPhone 14"
-   agent-browser --session "qa-${BRANCH}" screenshot "$REPORT_DIR/screenshots/page-mobile.png"
-   agent-browser --session "qa-${BRANCH}" set device "desktop"
+   $B viewport 375x812
+   $B screenshot "$REPORT_DIR/screenshots/page-mobile.png"
+   $B viewport 1280x720
    ```
-8. **Dark mode** — Check dark mode rendering:
-   ```bash
-   agent-browser --session "qa-${BRANCH}" set media dark
-   agent-browser --session "qa-${BRANCH}" screenshot "$REPORT_DIR/screenshots/page-dark.png"
-   agent-browser --session "qa-${BRANCH}" set media light
-   ```
+8. **Dark mode** — Check dark mode rendering. gstack browse does not support media emulation — use system dark mode or toggle in the app if available.
 9. **Network** — Verify API calls:
    ```bash
-   agent-browser --session "qa-${BRANCH}" network requests --filter "status>=400"
+   $B network
    ```
 
 **Depth judgment:** Spend more time on core features (homepage, dashboard, checkout, search) and less on secondary pages (about, terms, privacy).
@@ -361,21 +423,21 @@ Document each issue **immediately when found** — don't batch them.
 1. Take a screenshot before the action
 2. Perform the action
 3. Take a screenshot showing the result
-4. Use `agent-browser snapshot -i` to show what changed
+4. Use `$B snapshot -i` to show what changed
 5. Write repro steps referencing screenshots
 
 ```bash
-agent-browser --session "qa-${BRANCH}" screenshot "$REPORT_DIR/screenshots/issue-001-step-1.png"
-agent-browser --session "qa-${BRANCH}" click @e5
-agent-browser --session "qa-${BRANCH}" screenshot "$REPORT_DIR/screenshots/issue-001-result.png"
-agent-browser --session "qa-${BRANCH}" snapshot -i
+$B screenshot "$REPORT_DIR/screenshots/issue-001-step-1.png"
+$B click @e5
+$B screenshot "$REPORT_DIR/screenshots/issue-001-result.png"
+$B snapshot -i
 ```
 
-**Critical bugs** — record video evidence:
+**Critical bugs** — capture before/after screenshot evidence (video recording is not supported by gstack browse):
 ```bash
-agent-browser --session "qa-${BRANCH}" record start
+$B screenshot "$REPORT_DIR/screenshots/issue-001-before.png"
 # ... reproduce the bug ...
-agent-browser --session "qa-${BRANCH}" record stop "$REPORT_DIR/screenshots/issue-001-video.webm"
+$B screenshot "$REPORT_DIR/screenshots/issue-001-after.png"
 ```
 
 **Static bugs** (typos, layout issues, missing images):
@@ -383,11 +445,11 @@ agent-browser --session "qa-${BRANCH}" record stop "$REPORT_DIR/screenshots/issu
 2. Describe what's wrong
 
 ```bash
-agent-browser --session "qa-${BRANCH}" snapshot -i
-agent-browser --session "qa-${BRANCH}" screenshot "$REPORT_DIR/screenshots/issue-002.png"
+$B snapshot -i
+$B screenshot "$REPORT_DIR/screenshots/issue-002.png"
 ```
 
-**Write each issue to the report immediately** using the template format from `ui-test/references/report-template.md`.
+**Write each issue to the report immediately** using the template format from `ui-test/references/qa-report-template.md`.
 
 ### Phase 6: Wrap Up
 
@@ -415,7 +477,230 @@ agent-browser --session "qa-${BRANCH}" screenshot "$REPORT_DIR/screenshots/issue
 
 ---
 
+## Tier System
+
+The tier controls which severity levels are in scope for the fix loop (Phase 8). Issues outside scope are documented but not fixed.
+
+| Tier | Flag | In Scope |
+|------|------|----------|
+| quick | `--qa quick` | Critical + High only |
+| standard | `--qa` or `--qa standard` | Critical + High + Medium (default) |
+| exhaustive | `--qa exhaustive` | Critical + High + Medium + Low + Cosmetic |
+
+**Deferred issues:** Any issue outside the current tier's scope is marked `status: deferred` — it appears in the report with full documentation but is not entered into the fix loop.
+
+---
+
+### Phase 7: TRIAGE
+
+After Phase 6 (Wrap Up), classify every found issue by severity before starting the fix loop.
+
+1. **Assign severity** to each issue (if not already assigned during Phase 5):
+   - **Critical** — app broken, data loss, security hole, crash on main flow
+   - **High** — major feature broken, blocking user goal
+   - **Medium** — degraded UX, non-blocking functional issue, form edge case fails
+   - **Low** — minor cosmetic, inconsistency, rare edge case
+   - **Cosmetic** — pixel-level polish, copy nits, aesthetic preferences
+
+2. **Sort issues** by severity: Critical → High → Medium → Low → Cosmetic
+
+3. **Apply tier gating:** Based on the `--qa` tier flag (default: standard):
+   - Mark any issue outside scope as `status: deferred`
+   - Only in-scope issues proceed to Phase 8
+
+4. **Output triage table** to the report:
+   ```
+   | ID | Title | Severity | Tier Status |
+   |----|-------|----------|-------------|
+   | ISSUE-001 | Login fails on Safari | Critical | in-scope |
+   | ISSUE-002 | Tooltip misaligned | Low | deferred (quick tier) |
+   ```
+
+5. **Announce** the fix plan: "N issues in scope for this tier. Starting fix loop."
+
+---
+
+### Phase 8: FIX LOOP
+
+**Operational rules (enforced before starting):**
+- Require a clean working tree: `git status --porcelain`. If dirty → commit, stash, or abort. Never start with uncommitted changes.
+- One commit per fix. Never bundle multiple fixes in one commit.
+- Only create new test files — never modify existing test files.
+- Revert on regression immediately (`git revert HEAD`).
+- Show screenshots to user inline (Read tool on output files) after each fix verification.
+- Never refuse to use the browser — even backend/config changes need browser verification.
+
+**Loop:** Repeat steps 8a–8i until all in-scope issues are fixed or the tier threshold is satisfied.
+
+#### 8a. Pick the highest-severity unfixed in-scope issue
+Select the next unresolved issue from the triage table (Critical first, then High, Medium, etc.).
+
+#### 8b. Locate the source
+```bash
+# Search for error messages, component names, route definitions
+grep -r "error text or component name" src/ --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" -l
+grep -r "route path" src/ --include="*.ts" --include="*.tsx" -n
+```
+Read only the files directly implicated. Do not explore broadly.
+
+#### 8c. Fix in source code
+- Make the minimal change to resolve the issue.
+- Do not refactor unrelated code.
+- Do not change formatting, imports, or style outside the fix scope.
+
+#### 8d. Commit atomically
+```bash
+git add <only the changed files>
+git commit -m "fix(qa): ISSUE-NNN — short description"
+```
+Message format: `fix(qa): ISSUE-NNN — {what was broken and how it was fixed}`
+
+#### 8e. Re-verify the fix
+```bash
+# Navigate back to the affected page
+$B goto <affected-url>
+$B screenshot "$REPORT_DIR/screenshots/issue-NNN-before-fix.png"
+# Perform the action that previously failed
+$B screenshot "$REPORT_DIR/screenshots/issue-NNN-after-fix.png"
+$B console --errors
+$B snapshot -D
+```
+Read both screenshots inline and show them to the user.
+
+#### 8f. Classify outcome
+Mark the issue with one of:
+- `verified` — fix works, no regressions seen
+- `best-effort` — partially resolved, residual issue remains
+- `reverted` — fix made things worse, reverted (see 8h)
+
+#### 8f.5. Generate regression test (for `verified` fixes only)
+
+1. **Read project conventions:** Find 2–3 existing test files near the fixed code and read them to learn naming, structure, and assertion style.
+   ```bash
+   find src/ -name "*.test.*" -o -name "*.spec.*" | head -20
+   ```
+
+2. **Trace the bug's codepath:** Identify input → codepath → failure point → edge cases that triggered the bug.
+
+3. **Write the test:**
+   - Exact precondition that reproduces the bug
+   - The action that triggered it
+   - A meaningful assertion that would have caught it
+   - Attribution comment: `// Regression: ISSUE-NNN — {what broke}`
+   - Test type selection:
+     - Console/logic error → unit test
+     - Broken form/API interaction → integration test
+     - Broken UI component → component test
+     - Pure CSS/layout issue → skip (visual regression outside scope)
+
+4. **Run the new test file only:**
+   ```bash
+   # Run only the new file, not the full suite
+   npx jest path/to/new.test.ts --no-coverage
+   # or
+   npx vitest run path/to/new.test.ts
+   ```
+   - Pass → keep it.
+   - Fail once → fix the test (not the source code).
+   - Still failing → delete the test file silently and continue.
+
+5. **Never modify existing test files.** If the regression test requires changes to shared fixtures, skip it instead.
+
+#### 8g. Check WTF-likelihood
+See **WTF-Likelihood Self-Regulation** section below. Compute every 5 fixes (or after any revert). Stop if WTF > 20% and ask the user.
+
+#### 8h. Revert on regression
+If the fix makes things worse (new errors, broken pages, failing tests):
+```bash
+git revert HEAD --no-edit
+```
+Mark the issue as `reverted` and `status: deferred`. Do not attempt a second fix in this session.
+
+#### 8i. Loop
+Return to 8a with the next highest-severity unfixed in-scope issue.
+
+**Exit conditions:**
+- All in-scope issues are `verified`, `best-effort`, or `reverted`
+- Tier threshold reached (all Critical+High fixed → `--qa quick` is satisfied)
+
+---
+
+### Phase 9: FINAL QA
+
+After the fix loop completes:
+
+1. **Re-run full QA** on all pages that had at least one verified fix:
+   - Re-navigate each affected page
+   - Take fresh screenshots
+   - Check console for new errors
+   - Verify adjacent pages for regressions
+
+2. **Compute final health score** using the rubric below (same formula as Phase 6).
+
+3. **Compare against baseline:**
+   - Load the `baseline.json` saved in Phase 6
+   - Compute delta: `final_score - baseline_score`
+   - Report: "Health score: {final} (baseline: {baseline}, delta: {+/-N})"
+
+4. **Regression warning:** If `final_score < baseline_score`:
+   ```
+   ⚠️  REGRESSION: Final health score ({final}) is WORSE than baseline ({baseline}).
+   Delta: {delta}. Review reverted issues and any side effects from applied fixes.
+   ```
+
+5. **Update the report** with:
+   - Final health score
+   - Score delta
+   - Fix summary table:
+     ```
+     | ID | Title | Severity | Outcome | Regression Test |
+     |----|-------|----------|---------|-----------------|
+     | ISSUE-001 | Login fails on Safari | Critical | verified | yes |
+     | ISSUE-003 | Tooltip misaligned | Medium | reverted | no |
+     ```
+   - Deferred issues list (documented but not fixed this session)
+
+6. **Save updated baseline.json** with the final state.
+
+7. **Codebase health delta:**
+   ```bash
+   bash .claude/skills/ui-test/bin/qa-health.sh > /tmp/qa-health-final.json
+   ```
+   Compare against `/tmp/qa-health-baseline.json`:
+   - Extract `score` from both files
+   - Report: `Codebase Health: {baseline} → {final} ({delta:+.1f})`
+   - Example: `Codebase Health: 6.2 → 7.8 (+1.6)`
+   - If final < baseline, surface a warning alongside any regression warnings.
+
+---
+
+### WTF-Likelihood Self-Regulation
+
+Computed every 5 fixes (or after any revert):
+
+```
+WTF-LIKELIHOOD:
+  Start at 0%
+  Each revert:                +15%
+  Each fix touching >3 files: +5%
+  After fix 15:               +1% per additional fix
+  All remaining Low severity: +10%
+  Touching unrelated files:   +20%
+```
+
+**If WTF > 20%:** STOP immediately. Show user what's been done. Ask whether to continue.
+**Hard cap:** 50 fixes total. After 50 fixes, stop regardless of remaining issues.
+**Regression test commits don't count** toward the WTF-likelihood heuristic.
+
+Display: `WTF-likelihood: 18% (3 reverts, 2 multi-file) — continuing`
+
+---
+
 ## Health Score Rubric
+
+> **UI Health Score** (this rubric) — browser-based. Measures how well the deployed UI works from a user perspective. Computed during Phase 6 and Phase 9 using screenshots, console errors, and browser interactions.
+>
+> **Codebase Health Score** (`qa-health.sh`) — tool-based. Measures whether the code passes tsc, lint, unit tests, and e2e. Computed by `bash .claude/skills/ui-test/bin/qa-health.sh`. These are independent metrics.
 
 Compute each category score (0-100), then take the weighted average.
 
@@ -458,7 +743,7 @@ Minimum 0 per category.
 
 ### Next.js
 - Check console for hydration errors (`Hydration failed`, `Text content did not match`)
-- Monitor `_next/data` requests via `agent-browser network requests --filter "_next/data"` — 404s indicate broken data fetching
+- Monitor `_next/data` requests via `$B network` — 404s indicate broken data fetching
 - Test client-side navigation (click links, don't just `open`) — catches routing issues
 - Check for CLS (Cumulative Layout Shift) on pages with dynamic content
 
@@ -475,7 +760,7 @@ Minimum 0 per category.
 - Check for mixed content warnings (common with WP)
 
 ### General SPA (React, Vue, Angular)
-- Use `agent-browser snapshot -i` for navigation — link extraction misses client-side routes
+- Use `$B snapshot -i` for navigation — link extraction misses client-side routes
 - Check for stale state (navigate away and back — does data refresh?)
 - Test browser back/forward — does the app handle history correctly?
 - Check for memory leaks (monitor console after extended use)
@@ -493,7 +778,7 @@ Minimum 0 per category.
 7. **Test like a user.** Use realistic data. Walk through complete workflows end-to-end.
 8. **Depth over breadth.** 5-10 well-documented issues with evidence > 20 vague descriptions.
 9. **Never delete output files.** Screenshots and reports accumulate — that's intentional.
-10. **Use `agent-browser snapshot -i` for tricky UIs.** Finds interactive elements the accessibility tree might miss.
+10. **Use `$B snapshot -i` for tricky UIs.** Finds interactive elements the accessibility tree might miss.
 
 ---
 
@@ -504,12 +789,13 @@ Minimum 0 per category.
   qa-report-{domain}-{YYYY-MM-DD}.md    # Structured report
   screenshots/
     initial.png                          # Landing page screenshot
+    initial-annotated.png                # Annotated screenshot from orient phase
     issue-001-step-1.png                 # Per-issue evidence
     issue-001-result.png
-    issue-001-video.webm                 # Video evidence for critical bugs
+    issue-001-before.png                 # Before/after screenshots for critical bugs
+    issue-001-after.png
     ...
   baseline.json                          # For regression mode
-  auth-state.json                        # Saved authentication state
 ```
 
 Report filenames use the domain and date: `qa-report-myapp-com-2026-03-12.md`
