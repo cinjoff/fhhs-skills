@@ -30,7 +30,7 @@ Append a `## Reflection` section to SUMMARY.md with the answers above and the ob
 
 ### Complex (8+ tasks, OR architectural changes, OR cross-phase impact)
 
-**Full adversarial reflection.** Dispatch the `reflector` agent (see `@references/reflector-agent.md`).
+**Full adversarial reflection.** Dispatch the `reflector` agent (`subagent_type: "fh:reflector"`).
 
 Provide the agent:
 - Path to SUMMARY.md

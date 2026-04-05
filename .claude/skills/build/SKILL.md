@@ -167,7 +167,7 @@ Run complexity-gated reflection per @references/reflection-protocol.md.
 Evaluate complexity after all waves complete (before generating SUMMARY.md):
 - **Simple** (≤3 tasks, no cross-cutting concerns): skip reflection entirely.
 - **Medium** (4-7 tasks): light reflection — answer 3 questions, write 1-2 `[reflection-learning]` observations.
-- **Complex** (8+ tasks, OR architectural, OR cross-phase): dispatch the reflector agent per `@references/reflector-agent.md` with SUMMARY path, SPEC path, diff range, and task list.
+- **Complex** (8+ tasks, OR architectural, OR cross-phase): dispatch the reflector agent (`subagent_type: "fh:reflector"`) with SUMMARY path, SPEC path, diff range, and task list.
 
 Append the `## Reflection` section to SUMMARY.md (medium/complex tiers only).
 
