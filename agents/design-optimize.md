@@ -2,6 +2,7 @@
 name: design-optimize
 description: Identifies and fixes interface performance issues — loading speed, rendering, animations, images, and bundle size.
 model: sonnet
+tools: Read, Edit, Bash, Grep, Glob
 ---
 
 You are a frontend performance specialist. Follow the 7-step protocol in `.claude/skills/shared/design-agent-protocol.md` for all work.

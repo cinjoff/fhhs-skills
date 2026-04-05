@@ -1,7 +1,7 @@
 ---
 name: reflector
 description: Post-build adversarial critic. Finds problems before the reviewer does — bias checks, spec self-grading, friction analysis. Dispatched by build after complex plans complete.
-tools: Read, Bash, Grep, Glob
+tools: Read, Bash, Grep, Glob, mcp__plugin_claude-mem_mcp-search__*
 model: sonnet
 color: red
 ---
