@@ -479,6 +479,37 @@ function summaryExists(planPath) {
   return fs.existsSync(path.join(dir, summaryBase));
 }
 
+/**
+ * Extract reflection findings from completed phase SUMMARY.md files.
+ * Returns a summary string of key findings (max 500 chars).
+ */
+function extractReflectionFindings(projectDir, completedPhaseIds) {
+  if (!completedPhaseIds || completedPhaseIds.length === 0) return '';
+  const findings = [];
+  for (const phaseId of completedPhaseIds) {
+    try {
+      const plan = findLatestPlan(projectDir, phaseId);
+      if (!plan) continue;
+      const dir = path.dirname(plan);
+      const base = path.basename(plan);
+      const summaryBase = base.includes('-PLAN.md')
+        ? base.replace('-PLAN.md', '-SUMMARY.md')
+        : base.replace('PLAN.md', 'SUMMARY.md');
+      const summaryPath = path.join(dir, summaryBase);
+      if (!fs.existsSync(summaryPath)) continue;
+      const summaryContent = fs.readFileSync(summaryPath, 'utf-8');
+      const reflectionMatch = summaryContent.match(/^##\s+Reflection\s*\n([\s\S]*?)(?=^##\s|$)/m);
+      if (!reflectionMatch) continue;
+      const reflectionText = reflectionMatch[1].trim();
+      if (reflectionText) {
+        findings.push(`Phase ${phaseId}: ${reflectionText.slice(0, 120)}`);
+      }
+    } catch { /* ignore */ }
+  }
+  if (findings.length === 0) return '';
+  return findings.join(' | ').slice(0, 500);
+}
+
 // ─── Auto-State (Crash Recovery) ──────────────────────────────────────────────
 
 function autoStatePath(projectDir) {
@@ -1234,6 +1265,35 @@ async function executeStep(projectDir, phaseId, step, planPath) {
           }
         } catch { /* ignore */ }
       }
+
+      // Cross-phase reflection: find completed phases by scanning for SUMMARY.md files
+      let reflectionHint = '';
+      try {
+        const phasesDir = path.join(projectDir, '.planning', 'phases');
+        if (fs.existsSync(phasesDir)) {
+          const phaseDirs = fs.readdirSync(phasesDir, { withFileTypes: true })
+            .filter(e => e.isDirectory())
+            .map(e => e.name);
+          const completedPhaseIds = [];
+          for (const pd of phaseDirs) {
+            const pdPath = path.join(phasesDir, pd);
+            const hasAnyPlan = fs.readdirSync(pdPath).some(f => f.endsWith('-PLAN.md') || f === 'PLAN.md');
+            const hasAnySummary = fs.readdirSync(pdPath).some(f => f.endsWith('-SUMMARY.md') || f === 'SUMMARY.md');
+            if (hasAnyPlan && hasAnySummary) {
+              // Extract phase ID from directory name (e.g. "01-foo" → "01")
+              const idMatch = pd.match(/^(\d+)/);
+              if (idMatch) completedPhaseIds.push(idMatch[1]);
+            }
+          }
+          if (completedPhaseIds.length > 0) {
+            const findings = extractReflectionFindings(projectDir, completedPhaseIds);
+            if (findings) {
+              reflectionHint = ` Prior phase reflection: ${findings}. Avoid repeating these patterns.`;
+            }
+          }
+        }
+      } catch { /* ignore */ }
+
       return await runClaudeSession(
         `You are in auto mode (workflow.auto_advance=true). Read .planning/STATE.md and .planning/ROADMAP.md for context. ` +
         `Plan phase ${phaseId}. Phase goal: "${phaseGoal}". ` +
@@ -1244,7 +1304,7 @@ async function executeStep(projectDir, phaseId, step, planPath) {
         `(3) Task actions must be specific enough that a different Claude instance could execute without clarifying questions. ` +
         `(4) Check claude-mem for past learnings about this domain before making architectural decisions. ` +
         `Write the plan to .planning/phases/ directory. Do not ask questions — make decisions autonomously.` +
-        researchHint,
+        researchHint + reflectionHint,
         { cwd: projectDir, sessionId, stepName: 'plan-work' }
       );
     }
@@ -1269,9 +1329,68 @@ async function executeStep(projectDir, phaseId, step, planPath) {
         throw new Error(`No PLAN.md found for phase ${phaseId}`);
       }
       const relPlan = path.relative(projectDir, latestPlan);
+
+      // SPEC.md awareness: check for a sibling spec file and frontmatter spec: field
+      let specHint = '';
+      let taskStateHint = '';
+      try {
+        const planBase = path.basename(latestPlan);
+        const planDir = path.dirname(latestPlan);
+        // Derive spec path: XX-NN-PLAN.md → XX-NN-SPEC.md
+        const specBase = planBase.replace(/-PLAN\.md$/, '-SPEC.md').replace(/^PLAN\.md$/, 'SPEC.md');
+        const specPath = path.join(planDir, specBase);
+        const relSpecPath = path.relative(projectDir, specPath);
+
+        if (fs.existsSync(specPath)) {
+          specHint = ` SPEC.md exists at ${relSpecPath}. Build skill will inject relevant sections per task.`;
+        } else {
+          // Check if PLAN.md frontmatter has a spec: field referencing a missing file
+          try {
+            const planContent = fs.readFileSync(latestPlan, 'utf-8');
+            const specFieldMatch = planContent.match(/^spec:\s*(.+)/m);
+            if (specFieldMatch) {
+              const referencedSpec = specFieldMatch[1].trim();
+              const referencedSpecPath = path.isAbsolute(referencedSpec)
+                ? referencedSpec
+                : path.join(planDir, referencedSpec);
+              if (!fs.existsSync(referencedSpecPath)) {
+                log(`  Warning: PLAN.md references spec: ${referencedSpec} but file not found at ${referencedSpecPath}`);
+              }
+            }
+          } catch { /* ignore */ }
+        }
+      } catch { /* ignore */ }
+
+      // Task state resume awareness
+      try {
+        const buildStateDir = path.join(projectDir, '.planning', 'build');
+        if (fs.existsSync(buildStateDir)) {
+          const stateFiles = fs.readdirSync(buildStateDir).filter(f => f.startsWith('task-') && f.endsWith('-state.md'));
+          if (stateFiles.length > 0) {
+            let completedCount = 0;
+            let pendingCount = 0;
+            for (const sf of stateFiles) {
+              try {
+                const sfContent = fs.readFileSync(path.join(buildStateDir, sf), 'utf-8');
+                if (/status:\s*(completed|done)/i.test(sfContent)) {
+                  completedCount++;
+                } else if (/status:\s*(in-progress|pending)/i.test(sfContent)) {
+                  pendingCount++;
+                }
+              } catch { /* ignore */ }
+            }
+            if (pendingCount > 0 || completedCount > 0) {
+              log(`  Partial build detected for phase ${phaseId} — ${completedCount} tasks completed, ${pendingCount} remaining. Build will resume from exact task.`);
+              taskStateHint = ` Resume detected. Task state files at .planning/build/. Resume from incomplete tasks.`;
+            }
+          }
+        }
+      } catch { /* ignore */ }
+
       return await runClaudeSession(
         `You are in auto mode. Execute the plan at ${relPlan} using /fh:build. ` +
-        `Phase goal: "${phaseGoal}". Build all tasks, run tests, commit changes. Do not ask questions.`,
+        `Phase goal: "${phaseGoal}". Build all tasks, run tests, commit changes. Do not ask questions.` +
+        specHint + taskStateHint,
         { cwd: projectDir, sessionId, stepName: 'build' }
       );
     }
@@ -2029,6 +2148,31 @@ async function main() {
       }
     }
 
+    // Scan for task state files to detect partial builds
+    try {
+      const buildStateDir = path.join(projectDir, '.planning', 'build');
+      if (fs.existsSync(buildStateDir)) {
+        const taskStateFiles = fs.readdirSync(buildStateDir).filter(f => f.startsWith('task-') && f.endsWith('-state.md'));
+        if (taskStateFiles.length > 0) {
+          let completedCount = 0;
+          let remainingCount = 0;
+          for (const sf of taskStateFiles) {
+            try {
+              const sfContent = fs.readFileSync(path.join(buildStateDir, sf), 'utf-8');
+              if (/status:\s*(completed|done)/i.test(sfContent)) {
+                completedCount++;
+              } else if (/status:\s*(in-progress|pending)/i.test(sfContent)) {
+                remainingCount++;
+              }
+            } catch { /* ignore */ }
+          }
+          if (completedCount > 0 || remainingCount > 0) {
+            log(`Partial build detected for phase ${resumeState.phase} — ${completedCount} tasks completed, ${remainingCount} remaining. Build will resume from exact task.`);
+          }
+        }
+      }
+    } catch { /* ignore */ }
+
     log(`Resuming from phase ${resumeState.phase}, step ${resumeState.step}`);
   }
 
@@ -2638,6 +2782,18 @@ async function main() {
         } catch { /* ignore */ }
       }
 
+      // Cross-phase reflection: extract findings from completed phases
+      let reflectionHint = '';
+      const completedPhaseIds = Object.entries(phase_states)
+        .filter(([, s]) => s === 'built')
+        .map(([id]) => id);
+      if (completedPhaseIds.length > 0) {
+        const reflectionFindings = extractReflectionFindings(projectDir, completedPhaseIds);
+        if (reflectionFindings) {
+          reflectionHint = ` Prior phase reflection: ${reflectionFindings}. Avoid repeating these patterns.`;
+        }
+      }
+
       let phaseGoal = '';
       try {
         const roadmap = fs.readFileSync(path.join(projectDir, '.planning/ROADMAP.md'), 'utf-8');
@@ -2660,7 +2816,7 @@ async function main() {
           `(3) Task actions must be specific enough that a different Claude instance could execute without clarifying questions. ` +
           `(4) Check claude-mem for past learnings about this domain before making architectural decisions. ` +
           `Write the plan to .planning/phases/ directory. Do not ask questions — make decisions autonomously.` +
-          researchHint + assumeEarlier + decisionsRedirect,
+          researchHint + reflectionHint + assumeEarlier + decisionsRedirect,
           { cwd: projectDir, sessionId, stepName: 'plan-work' }
         );
       } catch (err) {

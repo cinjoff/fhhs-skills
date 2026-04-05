@@ -52,6 +52,39 @@
         {"text": "Plans plan-check validation before presenting to user", "type": "contains_concept"},
         {"text": "Mentions discuss implementation step to lock decisions in CONTEXT.md", "type": "contains_concept"}
       ]
+    },
+    {
+      "id": 5,
+      "prompt": "Read .claude/skills/auto/auto-orchestrator.cjs and explain how the auto-orchestrator handles SPEC.md files during build sessions. Specifically: (1) how does it discover a SPEC.md alongside a PLAN.md, (2) what happens if a PLAN.md frontmatter references a spec via the 'spec:' field but the spec file is missing, (3) how is spec awareness passed to the build session? Dry run — describe the code flow, don't execute.",
+      "expected_output": "Should describe SPEC.md discovery via sibling path derivation (XX-NN-PLAN.md → XX-NN-SPEC.md), missing spec warning via log(), and specHint appended to build session prompt",
+      "assertions": [
+        {"text": "Describes spec path derivation from plan path (replacing -PLAN.md with -SPEC.md)", "type": "contains_concept"},
+        {"text": "Mentions warning/log when spec: frontmatter field references a missing file", "type": "contains_concept"},
+        {"text": "Describes specHint being appended to the build session prompt", "type": "contains_concept"},
+        {"text": "Notes this happens in the executeStep function's build case", "type": "contains_concept"}
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "Read .claude/skills/auto/auto-orchestrator.cjs and explain how the auto-orchestrator creates a cross-phase reflection feedback loop. Specifically: (1) how are reflection findings extracted from completed phase SUMMARYs, (2) how are they passed to subsequent planning sessions in both the 3-wave pipeline and sequential fallback modes, (3) what happens when there is no ## Reflection section in a SUMMARY? Dry run — describe the code flow.",
+      "expected_output": "Should describe extractReflectionFindings helper, phase_states-based completed phase detection in 3-wave mode, directory scan in sequential mode, and graceful handling of missing Reflection sections",
+      "assertions": [
+        {"text": "Describes extractReflectionFindings function that reads ## Reflection sections from SUMMARY.md files", "type": "contains_concept"},
+        {"text": "Explains 3-wave pipeline uses phase_states to find completed ('built') phases for reflection", "type": "contains_concept"},
+        {"text": "Explains sequential fallback scans phase directories for plans+summaries to find completed phases", "type": "contains_concept"},
+        {"text": "Notes graceful handling when ## Reflection section is missing (returns empty, does not error)", "type": "contains_concept"}
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "Read .claude/skills/auto/auto-orchestrator.cjs and explain how --resume detects and reports task-level state files for partial build recovery. Also explain how the build session is informed about existing task state. Describe: (1) where task state files are scanned, (2) the file path convention used, (3) how completed vs remaining tasks are counted, (4) how build sessions receive task state awareness. Dry run — describe the code flow.",
+      "expected_output": "Should describe .planning/build/task-*-state.md scanning during --resume, status regex matching for completed/pending counts, log message about partial build detection, and taskStateHint appended to build prompt",
+      "assertions": [
+        {"text": "Describes scanning .planning/build/ for task-*-state.md files during --resume", "type": "contains_concept"},
+        {"text": "Mentions regex matching for status: completed/done vs in-progress/pending in state file content", "type": "contains_concept"},
+        {"text": "Describes the partial build detection log message with completed/remaining counts", "type": "contains_concept"},
+        {"text": "Explains taskStateHint appended to build session prompt for resume awareness", "type": "contains_concept"}
+      ]
     }
   ]
 }

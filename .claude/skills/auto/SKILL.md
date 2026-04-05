@@ -179,6 +179,8 @@ This step NEVER blocks execution. It only warns. The user already said "go" — 
 
 Do research BEFORE engaging the user. Informed questions beat open questions.
 
+For domain assessment, follow the FPF-lite research protocol at `.claude/skills/plan-work/references/research-protocol.md` when available. For high-complexity projects, present hypothesis diversity: conservative vs ambitious approaches. Tag findings with epistemic markers (CONFIRMED/LIKELY/SPECULATIVE) for downstream planning.
+
 Use firecrawl for web research (see `@.claude/skills/shared/firecrawl-guide.md` for content-type patterns). Fallback: WebSearch, then WebFetch.
 
 **Content-type routing:**
