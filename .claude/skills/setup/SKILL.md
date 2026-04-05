@@ -151,7 +151,7 @@ else
 fi
 
 # Check each tool
-for cmd in node npm git gh vercel typescript-language-server agent-browser docker supabase; do
+for cmd in node npm git gh vercel typescript-language-server bun docker supabase; do
   if command -v "$cmd" >/dev/null 2>&1; then
     VERSION=$("$cmd" --version 2>/dev/null | head -1)
     echo "OK $cmd $VERSION"
@@ -159,6 +159,13 @@ for cmd in node npm git gh vercel typescript-language-server agent-browser docke
     echo "MISSING $cmd"
   fi
 done
+
+# Check gstack browse binary (used by /fh:ui-test)
+B=""
+_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
+[ -n "$_ROOT" ] && [ -x "$_ROOT/.claude/skills/gstack/browse/dist/browse" ] && B="$_ROOT/.claude/skills/gstack/browse/dist/browse"
+[ -z "$B" ] && [ -x "$HOME/.claude/skills/gstack/browse/dist/browse" ] && B="$HOME/.claude/skills/gstack/browse/dist/browse"
+[ -n "$B" ] && echo "OK gstack-browse $($B --version 2>/dev/null || echo 'installed')" || echo "MISSING gstack-browse"
 ```
 
 Present results using status symbols. Mark tools as `(optional)` or `(required)` based on the manifest:
@@ -172,7 +179,7 @@ Present results using status symbols. Mark tools as `(optional)` or `(required)`
 | gh                         | ✗ MISSING (optional) |
 | vercel                     | ✗ MISSING (optional) |
 | typescript-language-server  | ✗ MISSING            |
-| agent-browser              | ✗ MISSING (optional — needed by /fh:ui-test) |
+| gstack browse              | ✗ MISSING (required — needed by /fh:ui-test) |
 | docker                     | ✓ v27.1.0 (OrbStack) |
 | supabase                   | ✓ v2.1.0             |
 ```
@@ -206,6 +213,33 @@ brew install gh         # GitHub CLI
 brew install vercel-cli # Vercel CLI (or: npm i -g vercel)
 ```
 
+**gstack browse** (required — for `/fh:ui-test` visual testing):
+
+If gstack browse is MISSING, check if the gstack plugin is installed:
+
+```bash
+[ -d "$HOME/.claude/skills/gstack" ] && echo "GSTACK_INSTALLED" || echo "GSTACK_NOT_INSTALLED"
+```
+
+If `GSTACK_INSTALLED`: check for `bun` (required to build the browse binary):
+
+```bash
+command -v bun >/dev/null 2>&1 && echo "BUN_OK" || echo "BUN_MISSING"
+```
+
+If `BUN_MISSING`: install bun first:
+```bash
+curl -fsSL https://bun.sh/install | bash
+```
+
+Then build the browse binary:
+```bash
+cd ~/.claude/skills/gstack && ./setup
+```
+
+If `GSTACK_NOT_INSTALLED`: tell the user:
+> "gstack browse is needed for `/fh:ui-test` visual testing. Install the gstack plugin (`claude plugin add garrytan/gstack`), ensure `bun` is installed (`curl -fsSL https://bun.sh/install | bash`), then run `cd ~/.claude/skills/gstack && ./setup`."
+
 **Windows:**
 
 If the platform is `windows`, do NOT run the Homebrew steps above. Instead, present:
@@ -237,7 +271,7 @@ for cmd in node npm git; do
 done
 ```
 
-`node` and `npm` are required. `gh`, `vercel`, and `agent-browser` are optional — the plugin works without them.
+`node`, `npm`, `bun`, and `gstack browse` are required. `gh` and `vercel` are optional — the plugin works without them.
 
 If `node` is still missing, show error and stop:
 

@@ -98,7 +98,7 @@ Forked skill and command:
 
 Upstream snapshot preserved at `upstream/claude-md-management-1.0.0/`.
 
-## gstack — v0.3.3 — [repo](https://github.com/garrytan/gstack)
+## gstack — b3cd3fd6 (was v0.3.3) — [repo](https://github.com/garrytan/gstack)
 
 Forked skills:
 
@@ -108,13 +108,15 @@ Forked skills:
 | plan-eng-review | /fh:plan-work (enhance) | Absorbed |
 | review/checklist.md | /fh:review (enhance) | Absorbed |
 | ship | /release (enhance) | Absorbed |
-| qa | /fh:qa (new) | Forked |
-| browse | SKIP (using agent-browser) | — |
+| qa | /fh:ui-test (QA v2.0 full absorption) | Absorbed (major) |
+| browse | Absorbed (using gstack browse `$B`) | Absorbed |
 | retro | SKIP (user decision) | — |
-| setup-browser-cookies | Absorbed into /fh:qa | Absorbed |
+| setup-browser-cookies | Absorbed into /fh:ui-test | Absorbed |
 | gstack-upgrade | SKIP (plugin marketplace) | — |
 
-Upstream snapshot: `upstream/gstack-0.3.3/`
+**QA v2.0 absorption status (b3cd3fd6):** The full gstack QA fix-loop architecture has been absorbed into `/fh:ui-test` — fix loop (phases 7-9), severity tier gating (Quick/Standard/Exhaustive), dual health scoring (UI + Codebase), WTF-likelihood self-regulation, test framework bootstrap, and regression test generation. All `.gstack/` paths replaced with `.planning/qa-reports/`. No gstack binary dependencies.
+
+Upstream snapshot: `upstream/gstack-b3cd3fd6/`
 
 ## GSD (Get Shit Done) — v1.30.0 — [repo](https://github.com/gsd-build/get-shit-done)
 

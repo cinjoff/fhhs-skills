@@ -1,6 +1,7 @@
 # QA Issue Taxonomy
 
-<!-- Forked from gstack qa (v0.3.3) issue-taxonomy.md -->
+<!-- Forked from gstack qa (b3cd3fd6) issue-taxonomy.md -->
+<!-- Adapted for fhhs-skills: .gstack/ paths → .planning/qa-reports/, no gstack binary references -->
 
 ## Severity Levels
 
