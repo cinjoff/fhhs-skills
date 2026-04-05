@@ -96,6 +96,20 @@ The `[{skill}-learning]` tag makes findings searchable in future Past Learnings 
 
 ---
 
+### Pattern E: Research Caching
+
+Before dispatching a new researcher agent, check if prior research exists:
+
+```
+1. search({query: "research findings {domain}", project, limit: 5})
+2. If relevant research found from recent session (within 7 days): present findings, ask "Prior research found — reuse or re-research?"
+3. If reused: skip researcher dispatch, feed existing findings into brainstorm/spec
+4. New research findings are auto-indexed by PostToolUse hook — tagged with [research-finding]
+Budget: <1% context for the check. Skip silently if no results.
+```
+
+---
+
 ## Anti-Patterns
 
 - **Dumping observations at session start** — query on-demand, never auto-inject

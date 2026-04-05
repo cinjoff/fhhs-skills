@@ -110,6 +110,12 @@ Follow **Pattern A** (Past Learnings Check) from `@.claude/skills/shared/claude-
 
 See @references/research-paths.md for research path details (deep, codebase exploration, inline, skip).
 
+### Research Protocol per Complexity Tier
+
+- **Simple:** Skip or minimal inline research (unchanged).
+- **Medium:** Produce hypothesis comparison per @references/research-protocol.md medium tier. Tag findings with epistemic markers per @shared/epistemic-tags.md.
+- **Complex:** Follow @references/research-protocol.md complex tier. Produce bounded context, hypothesis comparison, CL-annotated findings.
+
 ---
 
 ## Step 2: Brainstorm
