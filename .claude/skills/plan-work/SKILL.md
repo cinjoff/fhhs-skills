@@ -194,9 +194,23 @@ Hold these must_haves — they feed directly into the PLAN.md frontmatter and th
 
 ---
 
+## Step 4.5: Spec Creation
+
+| Complexity | Action |
+|------------|--------|
+| **Simple** | Skip. No SPEC.md. |
+| **Medium** | Create SPEC.md per @references/spec-creation-process.md (streamlined path) |
+| **Complex** | Create SPEC.md per @references/spec-creation-process.md (full 5-step path, dispatches spec-architect agent) |
+
+Output: `.planning/phases/XX-name/XX-NN-SPEC.md`
+
+---
+
 ## Step 5: Create Plan
 
 Write the plan following the format and rules in @references/plan-format.md
+
+If a SPEC.md was created in Step 4.5, add `spec: XX-NN-SPEC.md` to the PLAN.md frontmatter.
 
 ---
 
