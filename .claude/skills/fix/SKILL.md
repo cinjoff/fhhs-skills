@@ -78,7 +78,7 @@ Quickly assess bug depth before choosing strategy. Spend <5% context.
 
 **Token-efficient code navigation:** Use **Pattern B** (Code Structure Exploration) from `shared/claude-mem-rules.md` — smart_outline/smart_unfold before full Read.
 
-**SPEC.md failure mode check (if applicable):** Before deep investigation, check if the active phase has a SPEC.md (`spec:` field in the relevant PLAN.md frontmatter). If found and claude-mem is available, use `smart_unfold` to extract the Failure Modes section. Cross-reference the reported bug against listed failure modes:
+**SPEC.md failure mode check (if applicable):** Resolve artifacts per @.claude/skills/shared/artifact-resolution.md. Check for SPEC.md via the resolution chain. If found, use **Pattern G** (`smart_unfold` Failure Modes section) from `shared/claude-mem-rules.md`. Cross-reference the reported bug against listed failure modes:
 - If the bug matches a listed failure mode: annotate triage as **"Predicted failure"** — the spec anticipated this. This often reveals the intended fix strategy.
 - If no match: annotate as **"Unpredicted failure"** — may indicate a spec gap or an unanticipated edge case.
 - If no SPEC.md or claude-mem unavailable: skip silently, proceed with standard triage.

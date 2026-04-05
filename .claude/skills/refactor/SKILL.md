@@ -55,6 +55,10 @@ Report: "This refactoring touches N files across M subsystems. Blast radius: [de
 
 If large (10+ files or 3+ subsystems), suggest writing a PLAN.md via `/fh:plan-work` first.
 
+### Artifact + Context Resolution
+
+Resolve CONTEXT.md and PLAN.md per @.claude/skills/shared/artifact-resolution.md — use **Pattern F** (query by intent) before reading files.
+
 ### claude-mem Acceleration
 
 If claude-mem is available (check tool list for mcp__plugin_claude-mem_* tools), use `smart_search` to find relevant patterns for coupling, dependency, and abstraction analysis in the target module. If not available, fall back to Read/Grep/Glob directly.

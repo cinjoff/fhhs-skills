@@ -110,6 +110,75 @@ Budget: <1% context for the check. Skip silently if no results.
 
 ---
 
+### Pattern F: Context Query by Intent
+
+Query by **intent** (what you need), not by file path (where it lives). Resolves planning artifacts without reading files first.
+
+```
+1. Formulate an intent phrase — describe what you need, not which file contains it:
+   ✓ "current plan active tasks wave 2"
+   ✓ "spec architecture data flow authentication"
+   ✓ "context decisions locked scope reduction"
+   ✗ "PLAN.md"  ← too literal, file-path thinking
+
+2. search({query: "<intent phrase>", project, limit: 5})
+
+3. Scan results by type priority:
+   - decision, trade-off, gotcha  → fetch immediately with get_observations
+   - plan-artifact, spec-section  → fetch if task-relevant
+   - note, log                    → fetch only if nothing higher-priority found
+
+4. If relevant observations found (within 7 days): use as primary input
+   If observations are stale or absent: fall back to artifact-resolution.md chain
+
+5. Budget: <2% context. Skip silently if no results.
+```
+
+**Tag priority hierarchy** (highest → lowest value per token):
+1. `decision` — locked choices that constrain implementation
+2. `trade-off` — known compromises that affect design
+3. `gotcha` — pitfalls that cost time when re-discovered
+4. `plan-artifact` — PLAN.md / SPEC.md section snapshots
+5. `spec-section` — SPEC.md architecture, failure modes, quality rubrics
+6. `build-learning`, `review-learning`, `fix-learning` — post-run findings
+7. `note`, `log` — general observations
+
+When multiple types are found, fetch in priority order. Stop when you have enough context for the task.
+
+---
+
+### Pattern G: Spec Section Loading
+
+Load SPEC.md sections on demand via `smart_unfold` instead of reading the full file.
+
+```
+1. When a task needs SPEC.md context, identify which sections are relevant:
+   - Architecture    → system design, component boundaries
+   - Failure Modes   → what can go wrong, error handling expectations
+   - Quality Rubrics → acceptance criteria, performance targets
+   - Data Flow       → how data moves through the system
+
+2. Check if SPEC.md observations are already in claude-mem (Pattern F first):
+   search({query: "spec {section-name} {task-domain}", project, limit: 3})
+
+3. If not in claude-mem (or observations stale):
+   smart_unfold({path: "<spec-path>", symbol: "<Section Name>"})
+   → Loads only that heading's content (~200-400 tokens vs full file ~2000+)
+
+4. Map loaded content to implementer-prompt placeholders:
+   Architecture    → {SPEC_ARCHITECTURE}
+   Failure Modes   → {SPEC_FAILURE_MODES}
+   Quality Rubrics → {SPEC_QUALITY_RUBRICS}
+   Data Flow       → {SPEC_DATA_FLOW}
+
+5. If section is absent or SPEC.md doesn't exist: leave placeholder empty.
+   Never fail — the implementer-prompt guards empty placeholders.
+```
+
+Budget: 1-3 sections per task dispatch. Never load the whole SPEC.md at once unless the task explicitly requires full spec review.
+
+---
+
 ## Anti-Patterns
 
 - **Dumping observations at session start** — query on-demand, never auto-inject

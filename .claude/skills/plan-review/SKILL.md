@@ -68,6 +68,12 @@ Never skip Step 0, the system audit, the error/rescue map, or the failure modes 
 
 ---
 
+## Plan + Context Loading
+
+Resolve the plan to review per @.claude/skills/shared/artifact-resolution.md — use the resolution chain to find PLAN.md and CONTEXT.md before proceeding.
+
+---
+
 ## Codebase Freshness Check
 
 See @.claude/skills/shared/freshness-check.md

@@ -131,10 +131,7 @@ Budget: less than 1% context. Fallow runs in <1 second.
 
 Only runs if a `.planning/` directory exists with PLAN.md files in scope.
 
-**SPEC.md enrichment (if available):** Before dispatching the agent, check if the active plan has a `spec:` frontmatter field pointing to a SPEC.md. If found and claude-mem is available, use `smart_unfold` to extract:
-- Quality Rubrics section → pass as `SPEC_QUALITY_RUBRICS`
-- Failure Modes section → pass as `SPEC_FAILURE_MODES`
-- Architecture section → pass as `SPEC_ARCHITECTURE`
+**SPEC.md enrichment (if available):** Resolve per @.claude/skills/shared/artifact-resolution.md (Pattern F query first, then check `spec:` frontmatter field). Load Quality Rubrics, Failure Modes, Architecture via Pattern G (`smart_unfold` per section). Pass as `SPEC_QUALITY_RUBRICS`, `SPEC_FAILURE_MODES`, `SPEC_ARCHITECTURE`.
 
 Include these in the agent prompt under `## Spec Context`. If no SPEC.md exists or claude-mem is unavailable: skip this enrichment silently — the agent proceeds with task specs only.
 

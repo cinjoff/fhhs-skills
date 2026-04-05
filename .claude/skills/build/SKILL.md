@@ -35,15 +35,17 @@ See @.claude/skills/shared/freshness-check.md
 
 ## Step 1: Find the Plan
 
-Locate the plan to execute:
-- If the user specified a plan path, use that
-- If a GSD project is active, check `.planning/phases/` for incomplete plans (PLAN without matching SUMMARY)
-- If plans exist in `.planning/plans/`, use the most recent
+Resolve artifacts per @.claude/skills/shared/artifact-resolution.md
+
+- If the user specified a plan path, use that directly
+- Otherwise follow the resolution chain (claude-mem → STATE.md → phase dir → plans/)
 - If no plan exists, tell the user to run `/fh:plan-work` first
 
 Read only the plan frontmatter and task list — don't load all context files yet.
 
 **Resume detection:** If multiple plans exist with partial SUMMARY.md coverage, report: "Found N plans, M already completed. Continuing from plan X." Skip completed plans.
+
+**Task-level resume:** After identifying the plan, check `.planning/build/` for `task-{plan}-*-state.md` files per @references/task-state-protocol.md (Resume Protocol). `completed` tasks are skipped; `in-progress` tasks revert to `pending`; `failed` tasks with 2+ attempts surface to user before proceeding.
 
 **Previous phase check (GSD only):** If a previous SUMMARY exists, scan for unresolved "Issues Encountered". If found, ask user: "Previous plan had unresolved issues — proceed anyway, address first, or review?"
 
@@ -93,6 +95,8 @@ Use `$EXEC_MODEL` resolved in Step 2.5 (or resolve here if Step 2.5 was skipped)
 [ -z "$EXEC_MODEL" ] && EXEC_MODEL=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" resolve-model gsd-executor --raw)
 ```
 
+**Before dispatching each task:** Create a state file `.planning/build/task-{plan}-{task-id}-state.md` with `status: pending` per @references/task-state-protocol.md. Update to `in-progress` on dispatch, `completed` or `failed` on result.
+
 For each wave, dispatch **one subagent per task** using the Agent tool with **`subagent_type: "general-purpose"`** and **`model: "$EXEC_MODEL"`** (use the resolved value, e.g. `"sonnet"` or `"opus"`).
 
 ### Subagent prompt
@@ -118,6 +122,11 @@ If a task has `type="checkpoint:*"`, handle inline:
 When auto-approving checkpoints, log as a decision in `.planning/DECISIONS.md` with `confidence=MEDIUM`, `step='build checkpoint'`. Follow format from `references/decisions-template.md`.
 
 ### After each wave completes
+
+**Quality gate:** Run structural checks per @references/quality-gate.md.
+- PASS → proceed to next wave
+- WARN → proceed, note in SUMMARY.md "Quality Warnings"
+- FAIL → adaptive response per quality-gate.md (retry single task, stop for architectural or multiple failures)
 
 Follow post-wave triage and pre-wave dependency check from @references/wave-execution.md
 
@@ -154,6 +163,11 @@ If any fail: flag in SUMMARY under "Issues Encountered". Do NOT claim success if
 
 Read `references/summary-template.md` for the template. Write SUMMARY.md. Commit: `docs({phase}-{plan}): complete {description}`
 
+**Archive task state files** (after SUMMARY.md commit) per @references/task-state-protocol.md (Cleanup):
+```bash
+mkdir -p .planning/build/archive && mv .planning/build/task-{plan}-*-state.md .planning/build/archive/ 2>/dev/null || true
+```
+
 ### Concerns Review (after SUMMARY.md)
 
 If `.planning/codebase/CONCERNS.md` exists, do a quick scan:
@@ -185,9 +199,7 @@ Follow **Pattern D** (Persist Findings) from `shared/claude-mem-rules.md`. Use t
 
 Read `references/gsd-state-updates.md` and run the batch state update command. This covers: advance-plan, update-progress, record-metric, add-decision, record-session, and roadmap update.
 
-These run once at plan completion. No state writes during wave execution.
-
-Resolve via `node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" resolve-model gsd-codebase-mapper --raw` — mechanical state updates don't require deep reasoning.
+These run once at plan completion. No state writes during wave execution. Use `gsd-codebase-mapper` model for mechanical state updates.
 
 ---
 
@@ -217,15 +229,7 @@ Route based on phase status:
 | Phase complete, more phases | "Phase complete." Suggest `/fh:plan-work {next}` or `/fh:review`. Also suggest `/fh:learnings`. |
 | Last phase in milestone | "Milestone complete." Run `gsd-tools.cjs milestone complete`. Suggest `/fh:learnings`. |
 
-Run `/fh:review` for quality refinement — it handles design quality, security, performance, and code simplification as needed.
-
-If claude-mem is installed, add to the phase-complete and milestone-complete routes:
-
-> Run `/fh:learnings` to surface patterns from your recent work and find improvement opportunities.
-
-This nudge only appears when:
-1. A phase or milestone just completed (not per-plan completions)
-2. claude-mem is available
+Run `/fh:review` for quality refinement. If claude-mem available and phase/milestone just completed, suggest `/fh:learnings`.
 
 ---
 
@@ -239,8 +243,4 @@ This nudge only appears when:
 
 ## Context Pressure Priority
 
-If context is running low, prioritize in this order:
-
-Step 3 (execute waves) > Step 4 (commit + verify + SUMMARY) > Step 6 (phase completion) > Step 5 (GSD state).
-
-Never skip Step 3 or Step 4.
+If context is running low: Step 3 > Step 4 > Step 6 > Step 5. Never skip Step 3 or Step 4.
