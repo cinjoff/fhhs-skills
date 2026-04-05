@@ -1,6 +1,6 @@
 ---
 name: startup-competitors
-description: "Deep competitive analysis for startups. Produces battle cards, pricing landscape, feature matrix, and strategic recommendations. Use when the user wants to analyze competitors, compare products, research the competitive landscape, understand market positioning, or says 'who are my competitors', 'competitive analysis', 'battle cards'. Works standalone but leverages /fh:startup-design output if available. Does NOT handle code planning, code review, or development — those are /fh:plan-work and /fh:build territory."
+description: "Use when the user wants to analyze competitors or research the competitive landscape. Produces battle cards, pricing landscape, feature matrix, and strategic recommendations. Triggers: who are my competitors, competitive analysis, battle cards, market positioning. Works standalone; uses /fh:startup-design output if available. Does NOT handle code planning or development."
 user-invocable: true
 ---
 

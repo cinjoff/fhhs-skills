@@ -14,18 +14,9 @@ Read all files referenced by the invoking prompt's execution_context before star
 <step name="ensure_and_load_config">
 Ensure config exists and load current state:
 
-```bash
-# Ensure GSD CLI symlink exists (self-heals if /fh:setup wasn't run)
-if [ ! -f "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" ]; then
-  _FHHS="$(ls -d "$HOME/.claude/plugins/cache/fhhs-skills/fh"/*/ 2>/dev/null | sort | tail -1)"
-  _FHHS="${_FHHS%/}"
-  if [ -n "$_FHHS" ] && [ -d "$_FHHS/bin" ]; then
-    mkdir -p "$HOME/.claude/get-shit-done"
-    ln -sfn "$_FHHS/bin" "$HOME/.claude/get-shit-done/bin"
-    [ -d "$_FHHS/hooks" ] && ln -sfn "$_FHHS/hooks" "$HOME/.claude/get-shit-done/hooks"
-  fi
-fi
+Ensure GSD CLI symlink per @.claude/skills/shared/gsd-symlink-heal.md, then:
 
+```bash
 node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" config-ensure-section
 INIT=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" state load)
 if [[ "$INIT" == @file:* ]]; then INIT=$(cat "${INIT#@file:}"); fi

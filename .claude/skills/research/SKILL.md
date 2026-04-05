@@ -28,15 +28,7 @@ Based on the topic, identify:
 
 ### 1b. Past Learnings Check
 
-If claude-mem is available, check for prior research on the same or related topics:
-1. Derive project name from `.planning/PROJECT.md` name field (fall back to basename of cwd). Use this as the `project` parameter for all claude-mem calls.
-2. Call `mcp__plugin_claude-mem_mcp-search__search` with query=2-3 keywords from the research topic, project=<project-name>, limit=10
-3. Scan the returned index for relevant observation IDs — prioritize types: gotcha, decision, trade-off. Filter for keywords: research, investigated, evaluated, compared, "decided on", recommendation, pitfall
-4. For the top 2-3 relevant IDs, call `mcp__plugin_claude-mem_mcp-search__get_observations` with ids=[ID1, ID2, ID3] to fetch full details
-5. If temporal context would help (e.g., understanding how a previous decision evolved), call `mcp__plugin_claude-mem_mcp-search__timeline` with query=research topic, depth_before=3
-6. Present: "**Prior research on this topic:** - {full observation detail}" — max 3 items
-7. If prior research covers the exact topic, present it and ask: "Prior research exists — want to build on it or start fresh?"
-8. Skip silently if unavailable
+Follow **Pattern A** (Past Learnings Check) from `@.claude/skills/shared/claude-mem-rules.md`. Keywords: 2-3 keywords from the research topic, filter for: research, investigated, evaluated, compared, "decided on", recommendation, pitfall. Present as "**Prior research on this topic:**". If prior research covers the exact topic, ask: "Prior research exists — want to build on it or start fresh?"
 
 ### 2. Dispatch Research Subagent
 

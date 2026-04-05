@@ -1,6 +1,6 @@
 ---
 name: startup-positioning
-description: "Define market positioning using April Dunford's framework, Moore's positioning statement, and Neumeier's Onliness Test. Produces positioning doc, category analysis, and messaging hierarchy. Use when the user wants to position their product, define market category, craft positioning statement, differentiate from competitors, or says 'how should I position', 'positioning strategy', 'market category'. Works standalone but leverages /fh:startup-design and /fh:startup-competitors output if available. Does NOT handle code planning, code review, or development."
+description: "Use when the user wants to position their product or define market category. Applies April Dunford's framework, Moore's positioning statement, and Neumeier's Onliness Test. Produces positioning doc, category analysis, and messaging hierarchy. Triggers: positioning strategy, market category, differentiate from competitors. Works standalone; uses /fh:startup-design output if available. Does NOT handle code planning or development."
 user-invocable: true
 ---
 

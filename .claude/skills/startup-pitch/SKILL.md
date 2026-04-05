@@ -1,6 +1,6 @@
 ---
 name: startup-pitch
-description: "Build investor-ready pitch scripts in multiple formats (10-min, 5-min, 2-min, 1-min elevator, investor email). Produces pitch narratives, Q&A preparation, pitch scoring rubric, and optional investor roleplay practice. Use when the user wants to create a pitch, prepare for investor meetings, craft a startup pitch, write a fundraising narrative, or practice their pitch. Triggers for 'pitch deck', 'investor pitch', 'pitch my startup', 'fundraising deck', 'demo day', 'prepare pitch', 'pitch practice', 'investor roleplay'. Works standalone but leverages /fh:startup-design, /fh:startup-competitors, and /fh:startup-positioning output if available. Does NOT handle code planning, code review, or development."
+description: "Use when the user wants to create an investor pitch, prepare for fundraising meetings, or practice their pitch. Produces pitch scripts in multiple formats (10-min, 5-min, 2-min, elevator, email), Q&A prep, and optional roleplay. Triggers: pitch deck, investor pitch, fundraising deck, demo day, pitch practice. Works standalone; uses /fh:startup-design and /fh:startup-positioning output if available. Does NOT handle code planning or development."
 user-invocable: true
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: startup-design
-description: "Design, validate, and plan a startup from scratch. Covers market research, competitive analysis, business model, brand identity, product definition, financial projections, and validation experiments. Use when the user has a startup idea to explore, wants to validate a business concept, needs a business plan or lean canvas, asks for market sizing or competitive landscape, wants brand positioning or go-to-market strategy, or says 'I have an idea for...' or 'is this idea worth pursuing'. Also handles resuming from a previous checkpoint. Supports --refresh to update existing artifacts and --fast-track for quick validation. Does NOT handle code planning, development workflow, code review, or deployment — those are /fh:plan-work and /fh:build territory."
+description: "Use when the user has a startup idea to explore or validate. Takes a raw concept through market research, competitive analysis, business model, brand identity, product definition, financial projections, and validation experiments. Triggers: 'I have an idea for...', 'is this idea worth pursuing', business plan, lean canvas, market sizing, go-to-market. Supports --refresh to update existing artifacts and --fast-track for quick validation. Does NOT handle code planning, development, or deployment."
 user-invocable: true
 ---
 
