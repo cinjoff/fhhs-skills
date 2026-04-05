@@ -36,6 +36,7 @@ as a single status table:
 | Native task tracking       | ✓ disabled / ✗ enabled        |
 | SKIP_TOOLS (Read/Glob/Grep)| ✓ not skipped / ✗ skipped    |
 | Fallow                     | ✓ installed / ○ not installed |
+| ast-grep                   | ✓ installed / ○ not installed |
 | shadcn skills              | ✓ installed / ○ not installed |
 ```
 
@@ -502,6 +503,7 @@ fhhs-skills includes four hooks:
 | `fhhs-check-update.js` | SessionStart | Checks GitHub for new fhhs-skills versions (background, throttled to 6h) |
 | `fhhs-learnings.js` | SessionStart | Nudges the user to run `/fh:learnings` when it hasn't been run recently (checks a lightweight timestamp file) |
 | `fhhs-context-monitor.js` | PostToolUse | Warns the agent when context window is running low |
+| `fhhs-precompact.js` | PreCompact | Snapshots `.planning/STATE.md` position before compaction so the next session can resume from the exact plan/phase |
 
 ### 5a: Read current settings
 
@@ -588,6 +590,7 @@ After writing settings.json:
 ✓ Update check hook configured (SessionStart)
 ✓ Learnings hook configured (SessionStart)
 ✓ Context monitor hook configured (PostToolUse)
+✓ PreCompact hook configured (PreCompact) — or: ○ skipped (hook not yet shipped)
 ```
 
 ---
@@ -929,6 +932,44 @@ If the install fails, show a warning but don't block setup:
 
 ---
 
+## Step 8b: ast-grep (Structural Search)
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ FHHS ► AST-GREP
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+[ast-grep](https://ast-grep.github.io/) provides AST-aware structural search across codebases. Used by claude-mem's `smart_search` under the hood for symbol and pattern queries.
+
+### Check
+
+```bash
+command -v ast-grep >/dev/null 2>&1 && echo "INSTALLED $(ast-grep --version 2>/dev/null)" || echo "NOT_INSTALLED"
+```
+
+If `INSTALLED`:
+
+```
+✓ ast-grep installed
+```
+
+If `NOT_INSTALLED`:
+
+```
+○ ast-grep not installed (optional — improves smart_search accuracy)
+
+  Install: brew install ast-grep    # macOS/Linux
+           cargo install ast-grep   # via Rust
+
+  Without ast-grep, smart_search still works but falls back to
+  regex-based search. Install only if you use claude-mem regularly.
+```
+
+Do NOT auto-install ast-grep. Always prompt the user — this is an optional enhancement.
+
+---
+
 ## Step 9: Conductor Configuration
 
 ```
@@ -1038,6 +1079,7 @@ Then present the status table and next steps as regular markdown text:
 | Native task tracking       | ✓ disabled / ⚠ still enabled             |
 | SKIP_TOOLS                 | ✓ correct / ⚠ Read/Glob/Grep being skipped |
 | Fallow                     | ✓ installed / ⚠ manual install needed    |
+| ast-grep                   | ✓ installed / ○ not installed (optional) |
 | shadcn skills              | ✓ installed / ⚠ manual install needed    |
 | Conductor                  | ✓ detected / ○ not installed (optional) |
 
