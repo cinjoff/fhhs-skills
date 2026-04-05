@@ -179,7 +179,7 @@ Present results using status symbols. Mark tools as `(optional)` or `(required)`
 | gh                         | ✗ MISSING (optional) |
 | vercel                     | ✗ MISSING (optional) |
 | typescript-language-server  | ✗ MISSING            |
-| gstack browse              | ✗ MISSING (optional — needed by /fh:ui-test) |
+| gstack browse              | ✗ MISSING (required — needed by /fh:ui-test) |
 | docker                     | ✓ v27.1.0 (OrbStack) |
 | supabase                   | ✓ v2.1.0             |
 ```
@@ -213,7 +213,7 @@ brew install gh         # GitHub CLI
 brew install vercel-cli # Vercel CLI (or: npm i -g vercel)
 ```
 
-**gstack browse** (optional — for `/fh:ui-test` visual testing):
+**gstack browse** (required — for `/fh:ui-test` visual testing):
 
 If gstack browse is MISSING, check if the gstack plugin is installed:
 
@@ -271,7 +271,7 @@ for cmd in node npm git; do
 done
 ```
 
-`node` and `npm` are required. `gh`, `vercel`, `bun`, and `gstack browse` are optional — the plugin works without them.
+`node`, `npm`, `bun`, and `gstack browse` are required. `gh` and `vercel` are optional — the plugin works without them.
 
 If `node` is still missing, show error and stop:
 
