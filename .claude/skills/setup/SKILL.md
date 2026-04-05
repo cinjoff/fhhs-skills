@@ -560,7 +560,7 @@ After writing settings.json:
 
 ## Security Scanning
 
-`/fh:secure` is available as a standalone skill for on-demand security scanning of changed files. Run it directly when you want to check for vulnerabilities before a PR.
+The `fh:design-secure` agent is available for on-demand security scanning of changed files. Dispatch it when you want to check for vulnerabilities before a PR.
 
 ---
 

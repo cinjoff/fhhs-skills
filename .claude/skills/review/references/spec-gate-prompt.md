@@ -147,7 +147,7 @@ Warnings appear after the PASS or BLOCKING verdict. They do not change the verdi
 - Additional features that could be nice
 - Test quality beyond "tests exist and pass"
 - Design/UI quality (design gates handle this)
-- Security vulnerabilities (run `/fh:secure` for a dedicated security scan)
+- Security vulnerabilities (dispatch the `fh:design-secure` agent for a dedicated security scan)
 
 Be focused. Only flag what blocks the spec from being met.
 ```

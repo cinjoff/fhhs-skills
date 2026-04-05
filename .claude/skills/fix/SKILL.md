@@ -181,7 +181,7 @@ After the fix is verified, search the codebase for similar vulnerable patterns:
 
 This step prevents the same class of bug from recurring elsewhere. Skip only if the root cause is truly unique to this one location.
 
-**For MODERATE+ fixes:** Read `skills/simplify/PROMPT.md` and follow it on the fix diff. Then suggest `/fh:review` for comprehensive analysis.
+**For MODERATE+ fixes:** Dispatch the `fh:design-simplify` agent on the fix diff. Then suggest `/fh:review` for comprehensive analysis.
 
 **For SIMPLE fixes:** Suggest `/fh:review --quick` for a fast quality check.
 

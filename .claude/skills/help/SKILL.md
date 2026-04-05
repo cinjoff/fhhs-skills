@@ -42,7 +42,6 @@ about a specific command.
 |---------|-------------|
 | `/fh:fix` | Auto-triage and fix bugs with systematic debugging |
 | `/fh:refactor` | Restructure code safely, tests green at every step |
-| `/fh:simplify` | Review code for reuse, quality, and efficiency |
 | `/fh:research` | Investigate a topic before planning |
 
 ## Navigation
@@ -57,22 +56,29 @@ about a specific command.
 | Command | What it does |
 |---------|-------------|
 | `/fh:critique` | Evaluate visual hierarchy, information architecture, and design quality |
-| `/fh:polish` | Fix alignment, spacing, consistency, and detail issues |
-| `/fh:normalize` | Match your design system and ensure consistency |
-| `/fh:harden` | Error handling, i18n, text overflow, edge cases |
-| `/fh:animate` | Purposeful motion and micro-interactions |
-| `/fh:audit` | Full accessibility, performance, theming, and responsive audit |
+| `/fh:ui-animate` | Purposeful motion and micro-interactions |
 | `/fh:ui-branding` | One-time setup for your project's design language |
-| `/fh:adapt` | Make designs work across screen sizes and platforms |
-| `/fh:bolder` | Amplify safe designs to be more visually interesting |
-| `/fh:quieter` | Tone down overly aggressive designs |
-| `/fh:distill` | Strip away unnecessary complexity |
-| `/fh:clarify` | Improve confusing labels, errors, and microcopy |
-| `/fh:colorize` | Add strategic color to monochromatic interfaces |
-| `/fh:delight` | Add personality and moments of joy |
-| `/fh:extract` | Pull reusable components into your design system |
-| `/fh:onboard` | Design first-time user experiences and empty states |
-| `/fh:optimize` | Improve loading speed, rendering, and bundle size |
+
+Design agents (dispatched automatically by `/fh:review`, `/fh:refactor`, `/fh:fix`, and `/fh:build`):
+
+| Agent | What it does |
+|-------|-------------|
+| `fh:design-polish` | Fix alignment, spacing, consistency, and detail issues |
+| `fh:design-normalize` | Match your design system and ensure consistency |
+| `fh:design-harden` | Error handling, i18n, text overflow, edge cases |
+| `fh:design-audit` | Full accessibility, performance, theming, and responsive audit |
+| `fh:design-adapt` | Make designs work across screen sizes and platforms |
+| `fh:design-bolder` | Amplify safe designs to be more visually interesting |
+| `fh:design-quieter` | Tone down overly aggressive designs |
+| `fh:design-distill` | Strip away unnecessary complexity |
+| `fh:design-clarify` | Improve confusing labels, errors, and microcopy |
+| `fh:design-colorize` | Add strategic color to monochromatic interfaces |
+| `fh:design-delight` | Add personality and moments of joy |
+| `fh:design-extract` | Pull reusable components into your design system |
+| `fh:design-onboard` | Design first-time user experiences and empty states |
+| `fh:design-optimize` | Improve loading speed, rendering, and bundle size |
+| `fh:design-secure` | Security scanning of changed files |
+| `fh:design-simplify` | Review code for reuse, quality, and efficiency |
 
 ## Task Management
 
@@ -99,8 +105,7 @@ Phase management, milestone lifecycle, and test generation are handled automatic
 First time:   See "Getting Started" above
 Feature:      /fh:plan → /fh:build → /fh:verify → /fh:verify-ui
 Bug fix:      /fh:fix
-Refactoring:  /fh:refactor (includes /fh:simplify automatically)
-Code cleanup: /fh:simplify (standalone, on any recent changes)
+Refactoring:  /fh:refactor (dispatches fh:design-simplify agent automatically)
 Resuming:     /fh:resume → (routes to next action)
 CLAUDE.md:    /fh:learnings (after sessions to capture and apply learnings)
 ```

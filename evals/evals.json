@@ -4,7 +4,7 @@
     {
       "id": 1,
       "command": "build",
-      "prompt": "ok i just finished planning phase 13 for my saas app. there's a PLAN.md at .planning/phases/13-auth/13-01-PLAN.md with 3 tasks \u2014 two backend (JWT auth + refresh tokens) and one frontend (login form). the backend tasks are independent but the frontend depends on both. execute it",
+      "prompt": "ok i just finished planning phase 13 for my saas app. there's a PLAN.md at .planning/phases/13-auth/13-01-PLAN.md with 3 tasks — two backend (JWT auth + refresh tokens) and one frontend (login form). the backend tasks are independent but the frontend depends on both. execute it",
       "expected_output": "Should detect GSD mode, find the plan, identify 2 waves (wave 1: 2 parallel backend tasks, wave 2: 1 frontend task), dispatch general-purpose subagents (not gsd-executor) with model: sonnet, include TDD directives (from internal skills/test-driven-development/PROMPT.md) for backend tasks and frontend-design directives (from internal skills/frontend-design/PROMPT.md) for the login form, generate SUMMARY.md, update GSD state, run phase completion gates (goal verification, design quality gates for frontend, verification-before-completion), and suggest /fh:review for post-build quality checks. Should run verification gate (tests, build check, lint) before writing SUMMARY.md.",
       "files": [],
       "assertions": [
@@ -527,7 +527,7 @@
     {
       "id": 12,
       "command": "fix",
-      "prompt": "users are reporting intermittent 502 errors on our API but I can't reproduce it locally. it happens maybe once every 50 requests and the logs show different errors each time \u2014 sometimes connection reset, sometimes timeout, sometimes a memory warning. no clear pattern",
+      "prompt": "users are reporting intermittent 502 errors on our API but I can't reproduce it locally. it happens maybe once every 50 requests and the logs show different errors each time — sometimes connection reset, sometimes timeout, sometimes a memory warning. no clear pattern",
       "expected_output": "Should triage as COMPLEX (unclear cause, needs hypotheses, intermittent, no clear pattern), write triage findings to .planning/debug/YYYY-MM-DD-intermittent-502-errors.md with initial hypotheses, and dispatch a gsd-debugger agent for sustained scientific investigation. Should NOT attempt a quick fix or triage as SIMPLE/MODERATE.",
       "files": [],
       "assertions": [
@@ -933,7 +933,7 @@
       "id": 23,
       "command": "build",
       "prompt": "build the plan (plan has only frontend tasks - React component refactor, new page layout, CSS updates)",
-      "expected_output": "Should execute the frontend tasks via waves. Should dispatch subagents (model: sonnet) and run verification (tests, build check, lint) before writing SUMMARY.md. Build does NOT run design quality gates (ui-critique/polish/normalize) \u2014 those are review's responsibility. Should suggest /fh:review for quality gatekeeping after execution.",
+      "expected_output": "Should execute the frontend tasks via waves. Should dispatch subagents (model: sonnet) and run verification (tests, build check, lint) before writing SUMMARY.md. Build does NOT run design quality gates (ui-critique/polish/normalize) — those are review's responsibility. Should suggest /fh:review for quality gatekeeping after execution.",
       "files": [],
       "assertions": [
         {
@@ -945,7 +945,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Does NOT run design quality gates (ui-critique/polish/normalize) \u2014 those belong to review",
+          "text": "Does NOT run design quality gates (ui-critique/polish/normalize) — those belong to review",
           "type": "guard"
         },
         {
@@ -1149,8 +1149,8 @@
     {
       "id": 28,
       "command": "build",
-      "prompt": "Build the auth plan at .planning/phases/01-auth/01-01-PLAN.md. It has 3 tasks \u2014 JWT auth middleware, refresh token rotation (both backend, independent), and a login form that depends on both.",
-      "expected_output": "Should detect GSD mode, find the plan, identify 2 waves (wave 1: 2 parallel backend tasks, wave 2: 1 frontend task). Dispatch general-purpose subagents (model: sonnet) \u2014 subagents self-discover Next.js perf rules and do NOT commit (orchestrator commits once per plan). After all waves: single commit, run verification (tests, build, lint), generate SUMMARY.md. Phase completion gates (when all phase plans done): goal verification, design quality gates (critique+harden, polish+adapt, normalize), final verification. User runs /review and /simplify on demand.",
+      "prompt": "Build the auth plan at .planning/phases/01-auth/01-01-PLAN.md. It has 3 tasks — JWT auth middleware, refresh token rotation (both backend, independent), and a login form that depends on both.",
+      "expected_output": "Should detect GSD mode, find the plan, identify 2 waves (wave 1: 2 parallel backend tasks, wave 2: 1 frontend task). Dispatch general-purpose subagents (model: sonnet) — subagents self-discover Next.js perf rules and do NOT commit (orchestrator commits once per plan). After all waves: single commit, run verification (tests, build, lint), generate SUMMARY.md. Phase completion gates (when all phase plans done): goal verification, design quality gates (critique+harden, polish+adapt, normalize), final verification. User runs /review and /simplify on demand.",
       "files": [
         "evals/fixtures/nextjs-app-deep/next.config.ts",
         "evals/fixtures/nextjs-app-deep/tsconfig.json",
@@ -1243,7 +1243,7 @@
       "id": 29,
       "command": "build",
       "prompt": "Execute the API refactor plan at .planning/phases/02-api/02-01-PLAN.md",
-      "expected_output": "Should build the API refactor plan. Dispatches subagents with model: sonnet. /review runs quality and gap analysis agents. Security vulnerabilities (SQL injection, hardcoded secrets) would be caught by /fh:secure (not part of /review pipeline). Should run verification gate (tests, build check, lint) before writing SUMMARY.md.",
+      "expected_output": "Should build the API refactor plan. Dispatches subagents with model: sonnet. /review runs quality and gap analysis agents. Security vulnerabilities (SQL injection, hardcoded secrets) would be caught by the `fh:design-secure` agent (not part of /review pipeline). Should run verification gate (tests, build check, lint) before writing SUMMARY.md.",
       "files": [
         "evals/fixtures/nextjs-app-deep/next.config.ts",
         "evals/fixtures/nextjs-app-deep/tsconfig.json",
@@ -1263,7 +1263,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Security vulnerabilities are NOT part of /review pipeline (use /fh:secure for that)",
+          "text": "Security vulnerabilities are NOT part of /review pipeline (use `fh:design-secure` agent for that)",
           "type": "guard"
         },
         {
@@ -1381,7 +1381,7 @@
     {
       "id": 31,
       "command": "fix",
-      "prompt": "The user profile page crashes when the user has no avatar \u2014 TypeError: Cannot read properties of null (reading 'url'). It's in src/components/profile.tsx",
+      "prompt": "The user profile page crashes when the user has no avatar — TypeError: Cannot read properties of null (reading 'url'). It's in src/components/profile.tsx",
       "expected_output": "Should triage as MODERATE (single component, one subsystem). Invokes systematic debugging to locate null reference in profile.tsx (accessing avatar.url when avatar is null). TDD approach: writes failing test first reproducing the null avatar case, then fixes with optional chaining or null check, confirms test passes. Frontend check reads DESIGN.md for fallback avatar styling. Simplify runs before /review. /review runs quality review and gap analysis on the fix diff. Fix commit uses fix(profile): prefix. Does NOT fix unrelated pre-existing issues. Should run verification gate before generating fix summary.",
       "files": [
         "evals/fixtures/nextjs-app-deep/next.config.ts",
@@ -1416,7 +1416,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Does NOT run security scan in /review (use /fh:secure for that)",
+          "text": "Does NOT run security scan in /review (use `fh:design-secure` agent for that)",
           "type": "guard"
         },
         {
@@ -1470,8 +1470,8 @@
     {
       "id": 32,
       "command": "refactor",
-      "prompt": "Refactor the auth module to extract token management into a separate service. src/lib/auth.ts currently handles JWT signing, verification, session management, and refresh token rotation \u2014 split token concerns out into src/lib/token-service.ts",
-      "expected_output": "Should scope with LSP findReferences to map blast radius (all files importing from auth.ts). Captures baseline test suite (must be GREEN). Plans atomic steps ordered safest-first (create new file, move functions, update imports, remove old code). Executes with tests green at every step \u2014 reverts immediately if tests go red. Simplify pass after completion. /review runs quality review (behavior preservation focus) and gap analysis. If Next.js files touched, includes perf patterns. Atomic commits with refactor(auth): prefix.",
+      "prompt": "Refactor the auth module to extract token management into a separate service. src/lib/auth.ts currently handles JWT signing, verification, session management, and refresh token rotation — split token concerns out into src/lib/token-service.ts",
+      "expected_output": "Should scope with LSP findReferences to map blast radius (all files importing from auth.ts). Captures baseline test suite (must be GREEN). Plans atomic steps ordered safest-first (create new file, move functions, update imports, remove old code). Executes with tests green at every step — reverts immediately if tests go red. Simplify pass after completion. /review runs quality review (behavior preservation focus) and gap analysis. If Next.js files touched, includes perf patterns. Atomic commits with refactor(auth): prefix.",
       "files": [
         "evals/fixtures/nextjs-app-deep/next.config.ts",
         "evals/fixtures/nextjs-app-deep/tsconfig.json",
@@ -1555,7 +1555,7 @@
     },
     {
       "id": 33,
-      "command": "secure",
+      "command": "design-secure",
       "prompt": "Scan the whole codebase for security issues",
       "expected_output": "Should scope the full codebase and dispatch exactly 4 parallel scanning agents. Agent findings: SQL injection via string concatenation in api/users/route.ts (CRITICAL), XSS via dangerouslySetInnerHTML in comment.tsx (CRITICAL), hardcoded JWT secret in auth.ts (CRITICAL), session stored in localStorage (HIGH), .env.example with real-looking API keys (CRITICAL), missing CORS on data route (MEDIUM), no auth check on data route (HIGH). Report has file:line references, findings grouped by severity then category. Overlapping findings from different agents are deduplicated.",
       "files": [
@@ -1622,7 +1622,7 @@
       "id": 34,
       "command": "review",
       "prompt": "Review my changes before creating a PR",
-      "expected_output": "Should run the full /review pipeline: spec verification (Step 1.8, GSD projects), then 2 parallel agents \u2014 Agent 1 (code quality + architecture) and Agent 2 (gap analysis). Gate decision aggregates all findings. If Next.js project detected, includes perf patterns in review. Review report includes quality score, spec verification results, and gap analysis. Presents promotion options (PR/merge/keep/discard from finishing-a-development-branch). PR title enforces conventional commit format. Security scanning is handled by /fh:secure, not /review.",
+      "expected_output": "Should run the full /review pipeline: spec verification (Step 1.8, GSD projects), then 2 parallel agents — Agent 1 (code quality + architecture) and Agent 2 (gap analysis). Gate decision aggregates all findings. If Next.js project detected, includes perf patterns in review. Review report includes quality score, spec verification results, and gap analysis. Presents promotion options (PR/merge/keep/discard from finishing-a-development-branch). PR title enforces conventional commit format. Security scanning is handled by the `fh:design-secure` agent, not /review.",
       "files": [
         "evals/fixtures/nextjs-app-deep/next.config.ts",
         "evals/fixtures/nextjs-app-deep/tsconfig.json",
@@ -1647,7 +1647,7 @@
           "type": "ordering"
         },
         {
-          "text": "Does NOT run security scan (security is /fh:secure, not /review)",
+          "text": "Does NOT run security scan (security is `fh:design-secure` agent, not /review)",
           "type": "guard"
         },
         {
@@ -1704,7 +1704,7 @@
       "id": 35,
       "command": "build",
       "prompt": "Build the plan at plan.md in the project root",
-      "expected_output": "Should detect that .planning/PROJECT.md is missing (no GSD project initialized). Stops immediately and tells the user to run /fh:new-project first. Does NOT proceed with any execution \u2014 no subagent dispatch, no plan parsing, no wave analysis.",
+      "expected_output": "Should detect that .planning/PROJECT.md is missing (no GSD project initialized). Stops immediately and tells the user to run /fh:new-project first. Does NOT proceed with any execution — no subagent dispatch, no plan parsing, no wave analysis.",
       "files": [],
       "assertions": [
         {
@@ -1748,7 +1748,7 @@
       "id": 36,
       "command": "plan-work",
       "prompt": "Plan and build adding user settings page with a dark mode toggle. The project already has a ThemeProvider and uses Tailwind dark: prefix.",
-      "expected_output": "Should run /plan-work first: skips research (dark mode toggle is well-known pattern), brainstorms design options (toggle placement, persistence strategy, system preference detection), discusses with user, derives must_haves with user-facing truths, creates PLAN.md with proper frontmatter. Then /build: dispatches subagents (model: sonnet) that self-discover Next.js perf rules and do NOT commit. Orchestrator makes single commit per plan. Verification (tests, build, lint) runs before SUMMARY.md. Build does NOT run design quality gates \u2014 those run in /review. User runs /review (quality + gap + spec verification, including ui-critique for frontend) and /simplify on demand. Should perform complexity assessment before deciding research path.",
+      "expected_output": "Should run /plan-work first: skips research (dark mode toggle is well-known pattern), brainstorms design options (toggle placement, persistence strategy, system preference detection), discusses with user, derives must_haves with user-facing truths, creates PLAN.md with proper frontmatter. Then /build: dispatches subagents (model: sonnet) that self-discover Next.js perf rules and do NOT commit. Orchestrator makes single commit per plan. Verification (tests, build, lint) runs before SUMMARY.md. Build does NOT run design quality gates — those run in /review. User runs /review (quality + gap + spec verification, including ui-critique for frontend) and /simplify on demand. Should perform complexity assessment before deciding research path.",
       "files": [
         "evals/fixtures/nextjs-app-deep/next.config.ts",
         "evals/fixtures/nextjs-app-deep/tsconfig.json",
@@ -1784,7 +1784,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Design quality gates (critique/polish/normalize) are NOT run by build \u2014 they run in /review",
+          "text": "Design quality gates (critique/polish/normalize) are NOT run by build — they run in /review",
           "type": "guard"
         },
         {
@@ -1800,7 +1800,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Does NOT run security scan in /review pipeline (use /fh:secure for security)",
+          "text": "Does NOT run security scan in /review pipeline (use `fh:design-secure` agent for security)",
           "type": "guard"
         },
         {
@@ -1880,7 +1880,7 @@
       "id": 37,
       "command": "fix",
       "prompt": "API returns 500 on /api/users and /api/billing simultaneously, and the dashboard shows stale data. Three independent failures.",
-      "expected_output": "Should triage as PARALLEL (3+ independent failures across different subsystems). Dispatches parallel gsd-debugger agents \u2014 one per failing subsystem (users API, billing API, dashboard staleness). Each debugger uses scientific method (hypothesis \u2192 test \u2192 conclude). TDD fix per root cause. Simplify after all fixes. /review runs quality and gap analysis on the fix diff. Security vulnerabilities in /api/users would be caught by /fh:secure (not /review). SUMMARY.md notes all three subsystem fixes. Should run verification gate before generating fix summary.",
+      "expected_output": "Should triage as PARALLEL (3+ independent failures across different subsystems). Dispatches parallel gsd-debugger agents — one per failing subsystem (users API, billing API, dashboard staleness). Each debugger uses scientific method (hypothesis → test → conclude). TDD fix per root cause. Simplify after all fixes. /review runs quality and gap analysis on the fix diff. Security vulnerabilities in /api/users would be caught by the `fh:design-secure` agent (not /review). SUMMARY.md notes all three subsystem fixes. Should run verification gate before generating fix summary.",
       "files": [
         "evals/fixtures/nextjs-app-deep/next.config.ts",
         "evals/fixtures/nextjs-app-deep/tsconfig.json",
@@ -1903,7 +1903,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Each debugger uses scientific method (hypothesis \u2192 test \u2192 conclude)",
+          "text": "Each debugger uses scientific method (hypothesis → test → conclude)",
           "type": "behavioral"
         },
         {
@@ -1919,7 +1919,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Does NOT run security scan in /review (use /fh:secure for that)",
+          "text": "Does NOT run security scan in /review (use `fh:design-secure` agent for that)",
           "type": "guard"
         },
         {
@@ -1969,7 +1969,7 @@
     {
       "id": 38,
       "command": "refactor",
-      "prompt": "refactor this codebase \u2014 there's a 180-line component and a kitchen sink utility file that need breaking up",
+      "prompt": "refactor this codebase — there's a 180-line component and a kitchen sink utility file that need breaking up",
       "expected_output": "Should identify data-table.tsx as a god component (180+ lines mixing search, sort, pagination, rendering) and recommend splitting. Should identify utils.ts as kitchen-sink (cn() plus 5 unrelated functions) and recommend extracting. Should identify duplicated fetch pattern in api.ts and recommend shared wrapper.",
       "files": [
         "evals/fixtures/nextjs-app-deep/src/components/data-table.tsx",
@@ -2028,7 +2028,7 @@
       ],
       "assertions": [
         {
-          "text": "Diagnoses columns\u2192fields prop rename as root cause",
+          "text": "Diagnoses columns→fields prop rename as root cause",
           "type": "behavioral"
         },
         {
@@ -2099,7 +2099,7 @@
           "type": "output"
         },
         {
-          "text": "Does not auto-apply fixes \u2014 critique is read-only analysis",
+          "text": "Does not auto-apply fixes — critique is read-only analysis",
           "type": "guard"
         }
       ],
@@ -2113,7 +2113,7 @@
     },
     {
       "id": 41,
-      "command": "secure",
+      "command": "design-secure",
       "prompt": "scan just the changed files for security issues (default scope, not --full)",
       "expected_output": "Should use default scoping (git diff from merge-base, not full codebase). Should compute merge-base, collect changed + staged + unstaged file list, filter to source files, deduplicate. Should still dispatch 4 parallel agents on the scoped file set. Report should note 'Scanning N files' with the scoped count, not the full codebase count.",
       "files": [],
@@ -2150,7 +2150,7 @@
     },
     {
       "id": 42,
-      "command": "secure",
+      "command": "design-secure",
       "prompt": "security scan --full on just the auth module: src/lib/auth.ts and the login route",
       "expected_output": "Should detect hardcoded JWT secret 'acme-dashboard-secret-2024' (CRITICAL), localStorage for token storage (HIGH), 'as TokenPayload' type assertion bypassing type safety, error details leaked in login route catch (String(error) exposes internals), and hardcoded role 'viewer' in login. Gate output should be BLOCK due to CRITICAL (hardcoded secret).",
       "files": [
@@ -2192,9 +2192,9 @@
     },
     {
       "id": 43,
-      "command": "secure",
+      "command": "design-secure",
       "prompt": "run a security scan on the data route at src/app/api/data/route.ts",
-      "expected_output": "Should detect user-controlled table name passed directly to supabase.from(table) \u2014 allows querying arbitrary tables (CRITICAL IDOR/injection). Should detect missing authentication check (HIGH). Should detect no CORS configuration (MEDIUM). Gate output should be BLOCK.",
+      "expected_output": "Should detect user-controlled table name passed directly to supabase.from(table) — allows querying arbitrary tables (CRITICAL IDOR/injection). Should detect missing authentication check (HIGH). Should detect no CORS configuration (MEDIUM). Gate output should be BLOCK.",
       "files": [
         "evals/fixtures/nextjs-app-deep/src/app/api/data/route.ts"
       ],
@@ -2229,7 +2229,7 @@
     },
     {
       "id": 44,
-      "command": "secure",
+      "command": "design-secure",
       "prompt": "check the comment-card and comments API for XSS vulnerabilities",
       "expected_output": "Should detect dangerouslySetInnerHTML with user-provided content (comment.content) in comment-card.tsx as CRITICAL stored XSS. Should detect that comments POST route accepts raw body.content without sanitization. Gate output should be BLOCK. Fix should recommend sanitizing HTML (DOMPurify) or using text rendering instead of dangerouslySetInnerHTML.",
       "files": [
@@ -2266,9 +2266,9 @@
     },
     {
       "id": 45,
-      "command": "secure",
+      "command": "design-secure",
       "prompt": "scan the users API route for security issues",
-      "expected_output": "Should detect POST accepting arbitrary body fields (mass assignment \u2014 user controls what gets inserted). Should detect DELETE exposed without authentication. Should detect no rate limiting on operations. Should note that error.message from Supabase is returned verbatim (information disclosure). Report should include file:line references.",
+      "expected_output": "Should detect POST accepting arbitrary body fields (mass assignment — user controls what gets inserted). Should detect DELETE exposed without authentication. Should detect no rate limiting on operations. Should note that error.message from Supabase is returned verbatim (information disclosure). Report should include file:line references.",
       "files": [
         "evals/fixtures/nextjs-app-deep/src/app/api/users/route.ts"
       ],
@@ -2304,7 +2304,7 @@
     {
       "id": 46,
       "command": "review",
-      "prompt": "review my changes \u2014 I only touched CSS files (globals.css and a few component styles)",
+      "prompt": "review my changes — I only touched CSS files (globals.css and a few component styles)",
       "expected_output": "Should run full review pipeline: quality review (code-reviewer), gap analysis, evidence verification (tests, build, lint). Spec verification (Step 1.8) skips silently since no PLAN.md in scope. Should detect frontend work and suggest /fh:ui-test for visual verification. Should NOT include Next.js perf patterns for CSS-only changes unless components were touched. Security scan is not part of /review pipeline.",
       "files": [],
       "assertions": [
@@ -2313,7 +2313,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Does NOT run security scan (security is /fh:secure, not /review)",
+          "text": "Does NOT run security scan (security is `fh:design-secure` agent, not /review)",
           "type": "guard"
         },
         {
@@ -2354,7 +2354,7 @@
     {
       "id": 47,
       "command": "review",
-      "prompt": "review \u2014 the diff has several uses of 'any' type in the new service files",
+      "prompt": "review — the diff has several uses of 'any' type in the new service files",
       "expected_output": "Should run spec verification (Step 1.8) for GSD projects, which checks TypeScript strictness including 'any' usage in added lines. Should flag each instance with file and line. Should BLOCK promotion because 'any' in new code is a blocking finding. For non-GSD projects, spec verification skips but quality agent (Agent 1) may also flag 'any' usage as a code quality concern. Should recommend replacing with proper types (unknown + type guards or concrete interfaces).",
       "files": [],
       "assertions": [
@@ -2416,7 +2416,7 @@
     {
       "id": 48,
       "command": "review",
-      "prompt": "review my changes (tests are failing \u2014 3 out of 20 tests red)",
+      "prompt": "review my changes (tests are failing — 3 out of 20 tests red)",
       "expected_output": "Should run evidence verification (Step 3) and detect failing tests from fresh test run output. Should report: '20 tests total, 17 passed, 3 failed' with exit code. Should BLOCK promotion because verification failures are blocking per gate table. Should diagnose which tests are failing. Should NOT proceed to promotion. Should suggest fixing tests before re-reviewing.",
       "files": [],
       "assertions": [
@@ -2477,7 +2477,7 @@
     {
       "id": 49,
       "command": "review",
-      "prompt": "review \u2014 I think everything is clean, ready to create a PR",
+      "prompt": "review — I think everything is clean, ready to create a PR",
       "expected_output": "Should run full pipeline: spec verification (Step 1.8, GSD projects), quality + gap analysis agents (Step 2), evidence verification (Step 3). If all pass: generate review report (quality score, spec verification results, gap analysis, verification evidence). Gate decision PASS. Invoke finishing-a-development-branch with promotion options (PR/merge/keep/discard). PR title should follow conventional commit format type(scope): summary. Should present the 4 options to user.",
       "files": [],
       "assertions": [
@@ -2525,7 +2525,7 @@
       "id": 50,
       "command": "review",
       "prompt": "review the changes (gap analysis finds several untested code paths and one TODO left in the diff)",
-      "expected_output": "Should run full pipeline. Gap analysis agent (Agent 2) returns WARN findings: untested code paths and a TODO/FIXME left in the diff. Code quality review passes. Evidence verification passes. Gate decision should be WARN \u2014 log gap findings in report, recommend fixing, but proceed to promotion unless user wants to fix first. Should present gap findings with file:line references. Should still allow promotion.",
+      "expected_output": "Should run full pipeline. Gap analysis agent (Agent 2) returns WARN findings: untested code paths and a TODO/FIXME left in the diff. Code quality review passes. Evidence verification passes. Gate decision should be WARN — log gap findings in report, recommend fixing, but proceed to promotion unless user wants to fix first. Should present gap findings with file:line references. Should still allow promotion.",
       "files": [],
       "assertions": [
         {
@@ -2575,7 +2575,7 @@
     {
       "id": 51,
       "command": "review",
-      "prompt": "review \u2014 this is a Next.js project and I changed several API routes and a page component",
+      "prompt": "review — this is a Next.js project and I changed several API routes and a page component",
       "expected_output": "Should detect Next.js project (checks for next.config.*). Should include nextjs-perf skill patterns in the code quality review criteria (client-side waterfalls, caching patterns, unnecessary client components, barrel import bundle bloat). Gap analysis agent covers API route completeness. Evidence verification should include build check. Review report should mention Next.js-specific findings if any. Security scan is not part of /review pipeline.",
       "files": [
         "evals/fixtures/nextjs-app-deep/next.config.ts",
@@ -2600,7 +2600,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Does NOT run security scan (use /fh:secure for that)",
+          "text": "Does NOT run security scan (use `fh:design-secure` agent for that)",
           "type": "guard"
         },
         {
@@ -2696,7 +2696,7 @@
     {
       "id": 53,
       "command": "review",
-      "prompt": "review (no changes on current branch \u2014 clean diff)",
+      "prompt": "review (no changes on current branch — clean diff)",
       "expected_output": "Should detect empty diff (no changes from merge-base to HEAD). Should report there's nothing to review. Should NOT dispatch code-reviewer, gap analysis agents, or run verification. Should NOT offer promotion options.",
       "files": [],
       "assertions": [
@@ -2743,8 +2743,8 @@
     {
       "id": 54,
       "command": "review",
-      "prompt": "review \u2014 this is NOT a GSD project (no .planning/ directory)",
-      "expected_output": "Should run the full review pipeline regardless of GSD status. /review is a pure quality gate \u2014 it does NOT require .planning/PROJECT.md. Should run quality review and gap analysis agents (Step 2), evidence verification (Step 3). Spec verification (Step 1.8) skips silently since no .planning/ directory. Should proceed to promotion options normally. Should NOT suggest /new-project or refuse to run.",
+      "prompt": "review — this is NOT a GSD project (no .planning/ directory)",
+      "expected_output": "Should run the full review pipeline regardless of GSD status. /review is a pure quality gate — it does NOT require .planning/PROJECT.md. Should run quality review and gap analysis agents (Step 2), evidence verification (Step 3). Spec verification (Step 1.8) skips silently since no .planning/ directory. Should proceed to promotion options normally. Should NOT suggest /new-project or refuse to run.",
       "files": [],
       "assertions": [
         {
@@ -2787,7 +2787,7 @@
     },
     {
       "id": 55,
-      "command": "secure",
+      "command": "design-secure",
       "prompt": "security scan on a project with no vulnerabilities found",
       "expected_output": "Should dispatch 4 parallel agents, collect results, find no findings. Should report 'Scanning N files for OWASP Top 10 vulnerabilities.' followed by clean report. Gate output should be 'PASS (clean)'. Should NOT fabricate findings.",
       "files": [],
@@ -2823,7 +2823,7 @@
       "id": 56,
       "command": "fix",
       "prompt": "add a new button to the header for notifications",
-      "expected_output": "Should recognize this is NOT a bug \u2014 it's a feature request. Should NOT proceed with TDD triage (no failing test to write, no bug to reproduce). Should redirect the user to /plan-work for a planned feature. Should explain why /fix is the wrong tool for this task.",
+      "expected_output": "Should recognize this is NOT a bug — it's a feature request. Should NOT proceed with TDD triage (no failing test to write, no bug to reproduce). Should redirect the user to /plan-work for a planned feature. Should explain why /fix is the wrong tool for this task.",
       "files": [],
       "assertions": [
         {
@@ -2907,7 +2907,7 @@
     {
       "id": 58,
       "command": "build",
-      "prompt": "build the plan \u2014 it has 2 waves. wave 1 has 2 tasks and wave 2 has 1 task that depends on wave 1",
+      "prompt": "build the plan — it has 2 waves. wave 1 has 2 tasks and wave 2 has 1 task that depends on wave 1",
       "expected_output": "Should execute wave 1 (2 parallel tasks). After all waves complete, /review --quick runs spec verification (Step 1.8). If spec verification finds BLOCKING issues in the diff, /review reports them and blocks promotion. User must fix before proceeding to review completion. Should run verification gate (tests, build check, lint) before writing SUMMARY.md.",
       "files": [],
       "assertions": [
@@ -2962,7 +2962,7 @@
     {
       "id": 59,
       "command": "build",
-      "prompt": "build the plan \u2014 all waves completed, running /review now",
+      "prompt": "build the plan — all waves completed, running /review now",
       "expected_output": "Should complete all waves and suggest /fh:review. When /review gate decision is BLOCK (e.g., test failures or spec verification failures), should NOT mark the phase as complete in STATE.md. Should report the block reason clearly. Should offer a fix-and-retry path (fix the issues, then re-run /review). Should NOT update STATE.md to mark phase done while review is blocked. Should run verification gate (tests, build check, lint) before writing SUMMARY.md.",
       "files": [],
       "assertions": [
@@ -3022,7 +3022,7 @@
     {
       "id": 60,
       "command": "build",
-      "prompt": "build phase 3 \u2014 the plan is at .planning/phases/03-dashboard/03-01-PLAN.md",
+      "prompt": "build phase 3 — the plan is at .planning/phases/03-dashboard/03-01-PLAN.md",
       "expected_output": "Should detect that STATE.md doesn't match actual progress and report the discrepancy. Should not silently overwrite or proceed.",
       "files": [],
       "assertions": [
@@ -3059,8 +3059,8 @@
     {
       "id": 61,
       "command": "review",
-      "prompt": "review these changed files \u2014 auth, API routes, and the comment card. check for security issues especially",
-      "expected_output": "Should redirect user to /fh:secure for security scanning \u2014 /review does not run security scan. /review should run quality review (Agent 1) and gap analysis (Agent 2). Gap analysis may surface incomplete error handling or unguarded inputs as code quality concerns. The user should be informed that /fh:secure is the right tool for security vulnerability detection.",
+      "prompt": "review these changed files — auth, API routes, and the comment card. check for security issues especially",
+      "expected_output": "Should redirect user to the `fh:design-secure` agent for security scanning — /review does not run security scan. /review should run quality review (Agent 1) and gap analysis (Agent 2). Gap analysis may surface incomplete error handling or unguarded inputs as code quality concerns. The user should be informed that the `fh:design-secure` agent is the right tool for security vulnerability detection.",
       "files": [
         "evals/fixtures/nextjs-app-deep/src/lib/auth.ts",
         "evals/fixtures/nextjs-app-deep/src/app/api/users/route.ts",
@@ -3081,7 +3081,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Informs user that /fh:secure is the tool for security vulnerability detection",
+          "text": "Informs user that `fh:design-secure` agent is the tool for security vulnerability detection",
           "type": "output"
         },
         {
@@ -3121,8 +3121,8 @@
     {
       "id": 62,
       "command": "review",
-      "prompt": "review these frontend component changes \u2014 sidebar, metric card, and user form",
-      "expected_output": "Should run quality review and gap analysis. Quality review should catch design anti-patterns: sidebar uses hardcoded colors instead of CSS variables, user-form uses raw HTML inputs instead of shadcn components, metric-card may lack responsive handling. Should suggest /fh:ui-test for visual verification of component changes. Should reference DESIGN.md conventions. Does not run security scan (/fh:secure handles that).",
+      "prompt": "review these frontend component changes — sidebar, metric card, and user form",
+      "expected_output": "Should run quality review and gap analysis. Quality review should catch design anti-patterns: sidebar uses hardcoded colors instead of CSS variables, user-form uses raw HTML inputs instead of shadcn components, metric-card may lack responsive handling. Should suggest /fh:ui-test for visual verification of component changes. Should reference DESIGN.md conventions. Does not run security scan (the `fh:design-secure` agent handles that).",
       "files": [
         "evals/fixtures/nextjs-app-deep/src/components/sidebar.tsx",
         "evals/fixtures/nextjs-app-deep/src/components/metric-card.tsx",
@@ -3132,7 +3132,7 @@
       ],
       "assertions": [
         {
-          "text": "Does NOT run security scan (use /fh:secure for that)",
+          "text": "Does NOT run security scan (use `fh:design-secure` agent for that)",
           "type": "guard"
         },
         {
@@ -3272,8 +3272,8 @@
     {
       "id": 64,
       "command": "plan-review",
-      "prompt": "Review this plan \u2014 I just finished /plan-work and have a PLAN.md at .planning/phases/03-billing/03-01-PLAN.md for adding Stripe subscription billing. It has 4 tasks across backend and frontend.",
-      "expected_output": "Should run pre-review system audit (git log, git diff main, stash list), then enter Step 0 Nuclear Scope Challenge \u2014 challenge whether this is the right problem, check must_haves truths, map existing code leverage, produce dream state mapping. Must present three mode options: SCOPE EXPANSION, HOLD SCOPE, SCOPE REDUCTION with context-dependent default. Must AskUserQuestion for mode selection before proceeding to review sections. Should include engineering review sections (Architecture, Code Quality, Test Coverage with diagram, Performance).",
+      "prompt": "Review this plan — I just finished /plan-work and have a PLAN.md at .planning/phases/03-billing/03-01-PLAN.md for adding Stripe subscription billing. It has 4 tasks across backend and frontend.",
+      "expected_output": "Should run pre-review system audit (git log, git diff main, stash list), then enter Step 0 Nuclear Scope Challenge — challenge whether this is the right problem, check must_haves truths, map existing code leverage, produce dream state mapping. Must present three mode options: SCOPE EXPANSION, HOLD SCOPE, SCOPE REDUCTION with context-dependent default. Must AskUserQuestion for mode selection before proceeding to review sections. Should include engineering review sections (Architecture, Code Quality, Test Coverage with diagram, Performance).",
       "files": [],
       "assertions": [
         {
@@ -3328,7 +3328,7 @@
       "id": 65,
       "command": "plan-review",
       "prompt": "I chose HOLD SCOPE for the billing plan review. Proceed with the review sections.",
-      "expected_output": "Should commit to HOLD SCOPE mode and proceed through review sections in order: Architecture Review (Section 1), then Error & Rescue Map (Section 2) with a complete table naming specific error types (TimeoutError, RateLimitError, ParseError, etc.), rescue status, rescue action, and user-visible impact for every method/codepath that can fail. Must produce the Error/Rescue Map table with named exceptions \u2014 not generic 'handle errors'. Must AskUserQuestion after each section before proceeding. Should include engineering review sections (Architecture, Code Quality, Test Coverage with diagram, Performance).",
+      "expected_output": "Should commit to HOLD SCOPE mode and proceed through review sections in order: Architecture Review (Section 1), then Error & Rescue Map (Section 2) with a complete table naming specific error types (TimeoutError, RateLimitError, ParseError, etc.), rescue status, rescue action, and user-visible impact for every method/codepath that can fail. Must produce the Error/Rescue Map table with named exceptions — not generic 'handle errors'. Must AskUserQuestion after each section before proceeding. Should include engineering review sections (Architecture, Code Quality, Test Coverage with diagram, Performance).",
       "files": [],
       "assertions": [
         {
@@ -3381,12 +3381,12 @@
     {
       "id": 66,
       "command": "plan-review",
-      "prompt": "Review the auth plan at .planning/phases/04-auth/04-01-PLAN.md \u2014 it adds JWT auth, refresh tokens, and a login form. Three architectural issues and a security concern need to be raised.",
-      "expected_output": "Should raise each issue as a separate AskUserQuestion call \u2014 one issue per question, never batched. Each question must present 2-3 concrete lettered options (A, B, C), state the recommended option FIRST with a directive ('Do B. Here's why:'), and explain why that option over others. Must use numbered issues with lettered options (e.g., '1A', '1B'). No yes/no questions. No batching multiple issues into one question. Should include engineering review sections (Architecture, Code Quality, Test Coverage with diagram, Performance).",
+      "prompt": "Review the auth plan at .planning/phases/04-auth/04-01-PLAN.md — it adds JWT auth, refresh tokens, and a login form. Three architectural issues and a security concern need to be raised.",
+      "expected_output": "Should raise each issue as a separate AskUserQuestion call — one issue per question, never batched. Each question must present 2-3 concrete lettered options (A, B, C), state the recommended option FIRST with a directive ('Do B. Here's why:'), and explain why that option over others. Must use numbered issues with lettered options (e.g., '1A', '1B'). No yes/no questions. No batching multiple issues into one question. Should include engineering review sections (Architecture, Code Quality, Test Coverage with diagram, Performance).",
       "files": [],
       "assertions": [
         {
-          "text": "One issue per AskUserQuestion call \u2014 never batches multiple issues into one question",
+          "text": "One issue per AskUserQuestion call — never batches multiple issues into one question",
           "type": "behavioral"
         },
         {
@@ -3398,7 +3398,7 @@
           "type": "output"
         },
         {
-          "text": "Does NOT ask yes/no questions \u2014 always provides lettered alternatives",
+          "text": "Does NOT ask yes/no questions — always provides lettered alternatives",
           "type": "guard"
         },
         {
@@ -3436,7 +3436,7 @@
     {
       "id": 67,
       "command": "review",
-      "prompt": "review my changes \u2014 I touched auth middleware, two API routes, and the user settings page",
+      "prompt": "review my changes — I touched auth middleware, two API routes, and the user settings page",
       "expected_output": "Should run the full /review pipeline including the production safety checklist. Code quality agent (Agent 1) must reference skills/review/references/production-safety-checklist.md for the two-pass safety review. The agent must honor the checklist's explicit suppressions section to reduce noise on known-safe patterns. Gap analysis (Agent 2) runs separately. Gate decision aggregates all findings including production safety results.",
       "files": [],
       "assertions": [
@@ -3605,7 +3605,7 @@
     {
       "id": 70,
       "command": "build",
-      "prompt": "execute the plan at .planning/phases/05-api/05-01-PLAN.md. it has 3 tasks in 2 waves \u2014 task 1 and 2 are wave 1, task 3 is wave 2",
+      "prompt": "execute the plan at .planning/phases/05-api/05-01-PLAN.md. it has 3 tasks in 2 waves — task 1 and 2 are wave 1, task 3 is wave 2",
       "expected_output": "Should dispatch one subagent per task using the Agent tool. Tasks within a wave dispatch in parallel; waves run sequentially. Task tracking via TaskCreate is optional (try, skip silently if unavailable). Should run phase completion gates (fallow, goal verification, design quality, verification-before-completion) before writing SUMMARY.md.",
       "files": [],
       "assertions": [
@@ -3660,7 +3660,7 @@
       "id": 71,
       "command": "plan-work",
       "prompt": "plan adding role-based access control to the API routes. this touches auth middleware, 3 route handlers, and a new permissions table",
-      "expected_output": "After plan creation and plan-check, Step 7 handoff should recommend /fh:plan-review as the default for ALL plans. Should present three options: (1) /fh:plan-review as default, (2) /fh:build only for trivially obvious work (single-file rename, typo fix, config-only), (3) continue planning. Review is the default \u2014 only skip for trivially obvious work where risk of missed edge case is near zero. Should perform complexity assessment before deciding research path.",
+      "expected_output": "After plan creation and plan-check, Step 7 handoff should recommend /fh:plan-review as the default for ALL plans. Should present three options: (1) /fh:plan-review as default, (2) /fh:build only for trivially obvious work (single-file rename, typo fix, config-only), (3) continue planning. Review is the default — only skip for trivially obvious work where risk of missed edge case is near zero. Should perform complexity assessment before deciding research path.",
       "files": [],
       "assertions": [
         {
@@ -3720,7 +3720,7 @@
       "id": 72,
       "command": "plan-work",
       "prompt": "plan adding a discount calculation engine and a coupon validation service. pure business logic, no frontend",
-      "expected_output": "During plan-check (Step 6), should detect that business-logic tasks (discount calculation, coupon validation) involve state/logic and WARN if they lack tdd=true. Should ask the planner to confirm or add tdd=true. Should NOT block \u2014 only warn. Should perform complexity assessment before deciding research path.",
+      "expected_output": "During plan-check (Step 6), should detect that business-logic tasks (discount calculation, coupon validation) involve state/logic and WARN if they lack tdd=true. Should ask the planner to confirm or add tdd=true. Should NOT block — only warn. Should perform complexity assessment before deciding research path.",
       "files": [],
       "assertions": [
         {
@@ -3831,8 +3831,8 @@
     {
       "id": 74,
       "command": "build",
-      "prompt": "execute the plan. task 1 is marked tdd=true for implementing a rate limiter. after the subagent finishes, the git log shows: 'feat(01-01): implement rate limiter' then 'test(01-01): add rate limiter tests' \u2014 feat before test",
-      "expected_output": "During spec gate (Step 3b), should detect that the tdd=true task has feat commit before test commit. Should emit a WARN (not blocking) about TDD discipline violation \u2014 expected test commit before feat commit (RED before GREEN). Should NOT change the PASS/BLOCKING verdict based on this warning alone. Should run verification gate (tests, build check, lint) before writing SUMMARY.md.",
+      "prompt": "execute the plan. task 1 is marked tdd=true for implementing a rate limiter. after the subagent finishes, the git log shows: 'feat(01-01): implement rate limiter' then 'test(01-01): add rate limiter tests' — feat before test",
+      "expected_output": "During spec gate (Step 3b), should detect that the tdd=true task has feat commit before test commit. Should emit a WARN (not blocking) about TDD discipline violation — expected test commit before feat commit (RED before GREEN). Should NOT change the PASS/BLOCKING verdict based on this warning alone. Should run verification gate (tests, build check, lint) before writing SUMMARY.md.",
       "files": [],
       "assertions": [
         {
@@ -3931,7 +3931,7 @@
           "type": "output"
         },
         {
-          "text": "Does NOT attempt to fix errors automatically \u2014 only reports them",
+          "text": "Does NOT attempt to fix errors automatically — only reports them",
           "type": "guard"
         }
       ],
@@ -3963,7 +3963,7 @@
           "type": "output"
         },
         {
-          "text": "Does NOT attempt to fix errors \u2014 only reports and correlates",
+          "text": "Does NOT attempt to fix errors — only reports and correlates",
           "type": "guard"
         },
         {
@@ -4070,7 +4070,7 @@
           "type": "ordering"
         },
         {
-          "text": "Does NOT let tests go red at any intermediate step \u2014 iron law of refactoring",
+          "text": "Does NOT let tests go red at any intermediate step — iron law of refactoring",
           "type": "guard"
         }
       ],
@@ -4211,12 +4211,12 @@
     {
       "id": 83,
       "command": "plan-review",
-      "prompt": "Stress test this plan but don't expand scope \u2014 hold scope mode",
+      "prompt": "Stress test this plan but don't expand scope — hold scope mode",
       "expected_output": "Should operate in HOLD SCOPE mode without suggesting new features, focus on rigor within existing plan scope, map error paths and failure modes, NOT suggest expanding scope, and produce failure modes registry with CRITICAL GAP identification. Should include engineering review sections (Architecture, Code Quality, Test Coverage with diagram, Performance).",
       "files": [],
       "assertions": [
         {
-          "text": "Operates in HOLD SCOPE mode \u2014 does not suggest adding features",
+          "text": "Operates in HOLD SCOPE mode — does not suggest adding features",
           "type": "behavioral"
         },
         {
@@ -4568,7 +4568,7 @@
     {
       "id": 93,
       "command": "setup",
-      "prompt": "setup \u2014 I don't have node installed",
+      "prompt": "setup — I don't have node installed",
       "expected_output": "Should detect missing Node.js, provide platform-appropriate install instructions (Homebrew on macOS), halt further setup steps that depend on Node.js.",
       "files": [],
       "assertions": [
@@ -4599,7 +4599,7 @@
     {
       "id": 94,
       "command": "setup",
-      "prompt": "setup \u2014 I already ran this before, everything should be configured",
+      "prompt": "setup — I already ran this before, everything should be configured",
       "expected_output": "Should detect existing configuration (symlinks, settings.json hooks, TypeScript LSP), report current status, offer to re-run specific steps rather than repeating full setup.",
       "files": [],
       "assertions": [
@@ -4657,7 +4657,7 @@
     {
       "id": 96,
       "command": "plan-review",
-      "prompt": "review the plan but keep it minimal \u2014 we're on a tight deadline",
+      "prompt": "review the plan but keep it minimal — we're on a tight deadline",
       "expected_output": "Should detect tight deadline signal and select SCOPE REDUCTION mode, identify cuttable scope, find minimum viable version, not add new features or expand scope. Should include engineering review sections (Architecture, Code Quality, Test Coverage with diagram, Performance).",
       "files": [],
       "assertions": [
@@ -4955,7 +4955,7 @@
           "type": "behavioral"
         },
         {
-          "text": "No separate spec-gate agent \u2014 fallow is an inline check",
+          "text": "No separate spec-gate agent — fallow is an inline check",
           "type": "behavioral"
         },
         {
@@ -5147,7 +5147,7 @@
       "files": [],
       "assertions": [
         {
-          "text": "Treats as simple task \u2014 no complexity assessment triggered",
+          "text": "Treats as simple task — no complexity assessment triggered",
           "type": "behavioral"
         },
         {
@@ -5198,15 +5198,15 @@
       "files": [],
       "assertions": [
         {
-          "text": "Mentions locked decisions \u2014 firm architectural commitments",
+          "text": "Mentions locked decisions — firm architectural commitments",
           "type": "output"
         },
         {
-          "text": "Mentions discretion \u2014 implementation details left to builder",
+          "text": "Mentions discretion — implementation details left to builder",
           "type": "output"
         },
         {
-          "text": "Mentions deferred decisions \u2014 items needing more information",
+          "text": "Mentions deferred decisions — items needing more information",
           "type": "output"
         },
         {
@@ -5293,15 +5293,15 @@
       "id": 110,
       "command": "plan-review",
       "prompt": "Review the plan at .planning/phases/06-search/06-01-PLAN.md for adding full-text search with Elasticsearch integration, query parsing, and result ranking. The plan has 5 tasks across indexing, querying, and UI.",
-      "expected_output": "Should cover BOTH business alignment (scope challenge, strategic fit, whether search is the right investment) AND engineering rigor (architecture review, code quality assessment, test coverage analysis, performance considerations). Must not limit review to only business/scope questions \u2014 engineering sections must appear with concrete technical analysis.",
+      "expected_output": "Should cover BOTH business alignment (scope challenge, strategic fit, whether search is the right investment) AND engineering rigor (architecture review, code quality assessment, test coverage analysis, performance considerations). Must not limit review to only business/scope questions — engineering sections must appear with concrete technical analysis.",
       "files": [],
       "assertions": [
         {
-          "text": "Covers business alignment \u2014 scope challenge and strategic fit",
+          "text": "Covers business alignment — scope challenge and strategic fit",
           "type": "behavioral"
         },
         {
-          "text": "Covers engineering rigor \u2014 architecture review with technical analysis",
+          "text": "Covers engineering rigor — architecture review with technical analysis",
           "type": "behavioral"
         },
         {
@@ -5550,7 +5550,7 @@
       "id": 115,
       "command": "build",
       "prompt": "Build the production checkout flow. It has 5 tasks: payment form, order confirmation page, error handling with retry logic, production error boundaries, and deployment configuration. Execute the plan at .planning/phases/12-checkout/12-01-PLAN.md",
-      "expected_output": "Should execute the 5 production checkout tasks. After completion, should suggest /fh:review for deeper scrutiny. Production safety is handled by Gate 1 (goal verification) and Gate 3 (tests/build/lint), not by a separate /fh:harden suggestion.",
+      "expected_output": "Should execute the 5 production checkout tasks. After completion, should suggest /fh:review for deeper scrutiny. Production safety is handled by Gate 1 (goal verification) and Gate 3 (tests/build/lint), not by a separate the `fh:design-harden` agent suggestion.",
       "files": [],
       "assertions": [
         {
@@ -6120,7 +6120,7 @@
       "id": 131,
       "command": "build",
       "prompt": "During /fh:build spec gate for wave 2, the DECISIONS_CONTEXT includes a decision D-012 with 'Affects: src/lib/date-utils.ts' and 'Selected: a) Use date-fns library'. The wave 2 diff shows src/lib/date-utils.ts was modified but contains hand-rolled date parsing instead of date-fns. What should the spec gate report?",
-      "expected_output": "Should flag decision inconsistency \u2014 the implementation differs from the selected alternative in decision D-012. Decision checks use confidence levels (HIGH/MEDIUM/LOW), not WARNING/BLOCKING severity. A contradiction would be flagged with confidence: LOW and NEEDS REVIEW status.",
+      "expected_output": "Should flag decision inconsistency — the implementation differs from the selected alternative in decision D-012. Decision checks use confidence levels (HIGH/MEDIUM/LOW), not WARNING/BLOCKING severity. A contradiction would be flagged with confidence: LOW and NEEDS REVIEW status.",
       "files": [],
       "assertions": [
         {
@@ -6190,7 +6190,7 @@
       "id": 133,
       "command": "build",
       "prompt": "Running /fh:build for phase 05-dashboard with AUTO_MODE=true. Phase 02-auth has decision D-003 with 'Affects: src/middleware/auth.ts, src/lib/session.ts'. Phase 05's plan modifies src/middleware/auth.ts. How should build Step 2 handle this cross-phase decision?",
-      "expected_output": "Build reads decisions from the current phase's CONTEXT.md and from .planning/DECISIONS.md (in auto-mode). It does NOT independently discover cross-phase decisions via an Affects field \u2014 decisions must be pre-captured in CONTEXT.md or DECISIONS.md. Subagents receive decisions via the {DESIGN_DECISIONS} placeholder.",
+      "expected_output": "Build reads decisions from the current phase's CONTEXT.md and from .planning/DECISIONS.md (in auto-mode). It does NOT independently discover cross-phase decisions via an Affects field — decisions must be pre-captured in CONTEXT.md or DECISIONS.md. Subagents receive decisions via the {DESIGN_DECISIONS} placeholder.",
       "files": [],
       "assertions": [
         {
@@ -6230,7 +6230,7 @@
       "id": 134,
       "command": "auto",
       "prompt": "A claude -p session dispatched by auto-orchestrator.cjs for phase 03 task 2 has been running for 18 minutes with no output. The soft timeout is 15 minutes and hard timeout is 20 minutes. How should the auto orchestrator handle this stuck session?",
-      "expected_output": "Auto-orchestrator detects stuck sessions via STUCK_SILENCE_MS (3 min no output \u2192 warn) and STUCK_KILL_MS (8 min no output \u2192 kill). Kill sequence sends SIGTERM first, waits 5 seconds, then SIGKILL. Logs decision with confidence: LOW and status: ACTIVE - NEEDS REVIEW.",
+      "expected_output": "Auto-orchestrator detects stuck sessions via STUCK_SILENCE_MS (3 min no output → warn) and STUCK_KILL_MS (8 min no output → kill). Kill sequence sends SIGTERM first, waits 5 seconds, then SIGKILL. Logs decision with confidence: LOW and status: ACTIVE - NEEDS REVIEW.",
       "files": [],
       "assertions": [
         {
@@ -6300,7 +6300,7 @@
       "id": 136,
       "command": "build",
       "prompt": "A decision D-015 was just CORRECTED from 'use Redux for state management' to 'use Zustand for state management'. The Affects field lists: src/store/index.ts, src/components/Dashboard.tsx, src/hooks/useAuth.ts. How should the decision correction cascade handle downstream impact?",
-      "expected_output": "Decision corrections are handled by updating the decision in CONTEXT.md or DECISIONS.md. The build skill reads decisions from these files and injects them into subagent prompts. Downstream impact analysis is guided by the Affects field if present, but the build skill does not perform automated cascade analysis \u2014 it relies on the decision context being available to subagents.",
+      "expected_output": "Decision corrections are handled by updating the decision in CONTEXT.md or DECISIONS.md. The build skill reads decisions from these files and injects them into subagent prompts. Downstream impact analysis is guided by the Affects field if present, but the build skill does not perform automated cascade analysis — it relies on the decision context being available to subagents.",
       "files": [],
       "assertions": [
         {
@@ -6379,7 +6379,7 @@
       "id": 138,
       "command": "new-project",
       "prompt": "After /fh:new-project --auto completes all setup steps (PROJECT.md, ROADMAP.md, STATE.md created), what should happen next to continue the auto workflow?",
-      "expected_output": "Should chain to auto-orchestrator.cjs after setup completes. Set workflow.auto_advance=true so the orchestrator knows to proceed without user confirmation. The transition should be seamless \u2014 new-project finishes setup then hands off to auto mode for plan-and-build execution.",
+      "expected_output": "Should chain to auto-orchestrator.cjs after setup completes. Set workflow.auto_advance=true so the orchestrator knows to proceed without user confirmation. The transition should be seamless — new-project finishes setup then hands off to auto mode for plan-and-build execution.",
       "files": [],
       "assertions": [
         {
@@ -6414,7 +6414,7 @@
       "id": 139,
       "command": "build",
       "prompt": "execute the plan at .planning/phases/03-billing/03-01-PLAN.md",
-      "expected_output": "Should dispatch general-purpose subagents with model: sonnet for all task execution. Haiku model is used only for GSD state updates (Step 5). Subagents should not be dispatched with haiku or opus \u2014 sonnet is the implementer model.",
+      "expected_output": "Should dispatch general-purpose subagents with model: sonnet for all task execution. Haiku model is used only for GSD state updates (Step 5). Subagents should not be dispatched with haiku or opus — sonnet is the implementer model.",
       "files": [],
       "assertions": [
         {
@@ -6494,7 +6494,7 @@
           "type": "guard"
         },
         {
-          "text": "Does NOT run security scan (security is /fh:secure)",
+          "text": "Does NOT run security scan (security is `fh:design-secure` agent)",
           "type": "guard"
         }
       ],
@@ -6534,7 +6534,7 @@
       "id": 141,
       "command": "build",
       "prompt": "all plans in phase 05 are complete. check phase completion",
-      "expected_output": "Phase completion detection (Step 6): Gate 0 (fallow integration check) runs first. Then Gates 1 (goal verification) and Gate 2 (design quality) run in parallel. Gate 3 (Verification-Before-Completion) runs tests/build/lint conditionally \u2014 only if Gate 2 made changes, otherwise uses existing results. All gates must pass before gsd-tools.cjs phase complete.",
+      "expected_output": "Phase completion detection (Step 6): Gate 0 (fallow integration check) runs first. Then Gates 1 (goal verification) and Gate 2 (design quality) run in parallel. Gate 3 (Verification-Before-Completion) runs tests/build/lint conditionally — only if Gate 2 made changes, otherwise uses existing results. All gates must pass before gsd-tools.cjs phase complete.",
       "files": [],
       "assertions": [
         {
@@ -6585,7 +6585,7 @@
       "id": 142,
       "command": "plan-work",
       "prompt": "plan fixing the button label typo on the settings page from 'Subbmit' to 'Submit'",
-      "expected_output": "Should assess complexity as Simple (1 task, single file, trivial pattern). Should skip brainstorm (Step 2) entirely \u2014 Simple complexity skips brainstorming. Should jump directly to Step 3 (Discuss Implementation) with abbreviated scope: identify 1-2 gray areas only. Handoff should still recommend /fh:plan-review, but note this is trivially obvious work where /fh:build directly is acceptable.",
+      "expected_output": "Should assess complexity as Simple (1 task, single file, trivial pattern). Should skip brainstorm (Step 2) entirely — Simple complexity skips brainstorming. Should jump directly to Step 3 (Discuss Implementation) with abbreviated scope: identify 1-2 gray areas only. Handoff should still recommend /fh:plan-review, but note this is trivially obvious work where /fh:build directly is acceptable.",
       "files": [],
       "assertions": [
         {
@@ -7084,7 +7084,7 @@
       "id": 155,
       "command": "auto",
       "prompt": "User runs /fh:auto --no-speculative on a project.",
-      "expected_output": "Orchestrator runs phases sequentially (plan \u2192 review \u2192 build per phase).",
+      "expected_output": "Orchestrator runs phases sequentially (plan → review → build per phase).",
       "files": [],
       "assertions": [
         {
@@ -7167,7 +7167,7 @@
           "type": "behavioral"
         },
         {
-          "text": "The dependency graph shows a chain \u2014 each phase depends on the previous",
+          "text": "The dependency graph shows a chain — each phase depends on the previous",
           "type": "behavioral"
         },
         {
@@ -7390,7 +7390,7 @@
       "files": [],
       "assertions": [
         {
-          "text": "Check 7 fails \u2014 outputs 'FAIL' or 'rejected' for missing test coverage",
+          "text": "Check 7 fails — outputs 'FAIL' or 'rejected' for missing test coverage",
           "type": "output"
         },
         {
@@ -7398,7 +7398,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Does not silently warn \u2014 hard fails and blocks plan acceptance",
+          "text": "Does not silently warn — hard fails and blocks plan acceptance",
           "type": "guard"
         }
       ],
@@ -7517,7 +7517,7 @@
       "id": 166,
       "command": "plan-work",
       "prompt": "I want to add E2E tests for the checkout flow using Playwright. Reference the Playwright skill for best practices.",
-      "expected_output": "Should resolve the Playwright skill reference from the plugin cache path (e.g., ~/.claude/plugins/fh/.claude/skills/playwright-best-practices/ or equivalent). Should not fail with 'File does not exist' \u2014 the skill path should resolve correctly from the plugin cache.",
+      "expected_output": "Should resolve the Playwright skill reference from the plugin cache path (e.g., ~/.claude/plugins/fh/.claude/skills/playwright-best-practices/ or equivalent). Should not fail with 'File does not exist' — the skill path should resolve correctly from the plugin cache.",
       "files": [],
       "assertions": [
         {
@@ -7602,7 +7602,7 @@
       "id": 168,
       "command": "build",
       "prompt": "A build subagent needs to understand the project conventions, locked decisions, and existing test patterns before implementing a task. Context-mode is available and the orchestrator pre-indexed files. What should the agent do?",
-      "expected_output": "Agent uses ctx_search first for conventions, decisions, source file patterns, and existing tests. Read tool reserved for files being actively edited. When pre-indexing succeeded, {CLAUDE_MD_SECTIONS} and {DESIGN_DECISIONS} are empty \u2014 agent fetches via ctx_search. Falls back to Read if ctx_search unavailable.",
+      "expected_output": "Agent uses ctx_search first for conventions, decisions, source file patterns, and existing tests. Read tool reserved for files being actively edited. When pre-indexing succeeded, {CLAUDE_MD_SECTIONS} and {DESIGN_DECISIONS} are empty — agent fetches via ctx_search. Falls back to Read if ctx_search unavailable.",
       "files": [],
       "assertions": [
         {
@@ -7944,7 +7944,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Plan-review checks if the index exists before bootstrapping \u2014 skips if plan-work already indexed",
+          "text": "Plan-review checks if the index exists before bootstrapping — skips if plan-work already indexed",
           "type": "behavioral"
         },
         {
@@ -8161,7 +8161,7 @@
       "id": 244,
       "command": "startup-design",
       "prompt": "plan the implementation of the auth module for my Next.js app",
-      "expected_output": "Should NOT trigger \u2014 this is /fh:plan-work territory, not startup validation",
+      "expected_output": "Should NOT trigger — this is /fh:plan-work territory, not startup validation",
       "files": [],
       "assertions": [
         {
@@ -8223,7 +8223,7 @@
       "id": 247,
       "command": "startup-competitors",
       "prompt": "review the code quality of my React components",
-      "expected_output": "Should NOT trigger \u2014 this is /fh:review territory",
+      "expected_output": "Should NOT trigger — this is /fh:review territory",
       "files": [],
       "assertions": [
         {
@@ -8511,7 +8511,7 @@
       "id": 259,
       "command": "startup-positioning",
       "prompt": "position this div element in the center of the page using CSS flexbox",
-      "expected_output": "Should NOT trigger \u2014 this is CSS layout positioning, not market positioning",
+      "expected_output": "Should NOT trigger — this is CSS layout positioning, not market positioning",
       "files": [],
       "assertions": [
         {
@@ -8528,7 +8528,7 @@
       "id": 260,
       "command": "startup-pitch",
       "prompt": "pitch this PR to my team lead so they approve the refactor",
-      "expected_output": "Should NOT trigger \u2014 this is about explaining code changes, not investor pitching",
+      "expected_output": "Should NOT trigger — this is about explaining code changes, not investor pitching",
       "files": [],
       "assertions": [
         {
@@ -8651,7 +8651,7 @@
     {
       "id": 263,
       "command": "new-project",
-      "prompt": "Build me a Next.js app with auth and a database, but I only want cloud Supabase \u2014 no Docker needed",
+      "prompt": "Build me a Next.js app with auth and a database, but I only want cloud Supabase — no Docker needed",
       "expected_output": "Should offer local/cloud/both options at Step 8e. When user chooses cloud-only, should skip the entire 8e-local section (no OrbStack detection, no Docker, no supabase start). Should proceed with 8e-cloud: supabase login, project creation, API key retrieval, .env.local generation with cloud credentials, Vercel env sync.",
       "files": [],
       "assertions": [
@@ -8745,8 +8745,8 @@
     {
       "id": 265,
       "command": "update",
-      "prompt": "update my fhhs-skills plugin \u2014 I have a local Supabase project with OrbStack",
-      "expected_output": "Should run standard update flow. During Step 5b\u00bd environment reconciliation, should detect supabase/ directory exists, check Docker/OrbStack is running, verify DOCKER_HOST is set for OrbStack, check if Supabase containers are running. Should report status in reconciliation table. Should NOT auto-start stopped Supabase containers.",
+      "prompt": "update my fhhs-skills plugin — I have a local Supabase project with OrbStack",
+      "expected_output": "Should run standard update flow. During Step 5b½ environment reconciliation, should detect supabase/ directory exists, check Docker/OrbStack is running, verify DOCKER_HOST is set for OrbStack, check if Supabase containers are running. Should report status in reconciliation table. Should NOT auto-start stopped Supabase containers.",
       "files": [],
       "assertions": [
         {
@@ -8953,7 +8953,7 @@
       "id": 270,
       "command": "auto",
       "prompt": "What happens when claude-mem is not installed and /fh:auto runs headless sessions?",
-      "expected_output": "Should detect claude-mem is missing at session startup and log a clear warning. Should still proceed with execution (claude-mem is optional). Should NOT silently skip \u2014 the warning should be visible in orchestrator logs so the user knows observations are not being captured.",
+      "expected_output": "Should detect claude-mem is missing at session startup and log a clear warning. Should still proceed with execution (claude-mem is optional). Should NOT silently skip — the warning should be visible in orchestrator logs so the user knows observations are not being captured.",
       "files": [],
       "assertions": [
         {
@@ -9148,8 +9148,8 @@
     {
       "id": 275,
       "command": "update",
-      "prompt": "update my plugin \u2014 I have 5 migrations on disk in supabase/migrations/ but only 3 have been applied to my local database",
-      "expected_output": "Should detect migration drift during Step 5b\u00bd reconciliation. Should report that 2 unapplied migrations exist. Should warn the user and suggest supabase db reset. Should NOT auto-apply migrations since db reset is destructive. Should include migration drift in the reconciliation table.",
+      "prompt": "update my plugin — I have 5 migrations on disk in supabase/migrations/ but only 3 have been applied to my local database",
+      "expected_output": "Should detect migration drift during Step 5b½ reconciliation. Should report that 2 unapplied migrations exist. Should warn the user and suggest supabase db reset. Should NOT auto-apply migrations since db reset is destructive. Should include migration drift in the reconciliation table.",
       "files": [],
       "assertions": [
         {
@@ -9318,7 +9318,7 @@
     {
       "id": 279,
       "command": "update",
-      "prompt": "Update my plugin \u2014 I'm on a 16GB MacBook Pro using OrbStack but memory_mib is only 4096 and my package.json has a basic db:studio that just echoes the URL. Should detect these as drift and fix both.",
+      "prompt": "Update my plugin — I'm on a 16GB MacBook Pro using OrbStack but memory_mib is only 4096 and my package.json has a basic db:studio that just echoes the URL. Should detect these as drift and fix both.",
       "expected_output": "Should detect 16GB RAM, compute recommended 8192 MiB, find current 4096 is below recommended, and raise it. Should detect db:studio is basic (no open-studio.sh) and update it. Should detect db:clean is missing and add it. Should show all fixes in reconciliation table.",
       "files": [],
       "assertions": [
@@ -9432,7 +9432,7 @@
       "id": 282,
       "command": "update",
       "prompt": "Run /fh:update in a Conductor worktree at /workspaces/fh-starter-project/havana. The git worktree's --show-toplevel returns /workspaces/fh-starter-project/havana (wrong), but --git-common-dir returns ../../.git/worktrees/havana which resolves to the real repo root fh-starter-project. How should CLAUDE_MEM_PROJECT be set?",
-      "expected_output": "Step 5a\u00be uses git rev-parse --git-common-dir (not --show-toplevel) to derive the project name. The common dir path is resolved and stripped of /.git/worktrees/xxx to find the real repo root. CLAUDE_MEM_PROJECT is set to fh-starter-project, not havana.",
+      "expected_output": "Step 5a¾ uses git rev-parse --git-common-dir (not --show-toplevel) to derive the project name. The common dir path is resolved and stripped of /.git/worktrees/xxx to find the real repo root. CLAUDE_MEM_PROJECT is set to fh-starter-project, not havana.",
       "assertions": [
         {
           "text": "Uses git rev-parse --git-common-dir instead of --show-toplevel for worktree-safe resolution",
@@ -9877,7 +9877,7 @@
     {
       "id": 293,
       "command": "update",
-      "prompt": "update --global \u2014 I have 5 projects across 3 Conductor workspaces, but 2 of the projects were deleted from disk last week. What happens to those stale entries?",
+      "prompt": "update --global — I have 5 projects across 3 Conductor workspaces, but 2 of the projects were deleted from disk last week. What happens to those stale entries?",
       "expected_output": "Should discover all 5 registered projects, detect that 2 paths no longer exist on disk (fs.existsSync returns false), skip reconciliation for those 2, auto-remove the stale entries from ~/.claude/tracker/projects.json, and report the cleanup in the summary. Should NOT error out or stop processing because of missing paths.",
       "files": [],
       "assertions": [
@@ -9921,8 +9921,8 @@
     {
       "id": 294,
       "command": "update",
-      "prompt": "update --global \u2014 some of my projects don't have a .planning/ directory yet (they're just regular repos with .claude/settings.json). How does global update handle those?",
-      "expected_output": "Projects without .planning/ should still receive environment reconciliation (post-update-reconcile.sh for claude-mem patch and env vars, changelog reconcile for tool/hook/env gap checks). Health --repair should be skipped since there's no .planning/ to validate. The results table should show health as 'skipped' or '\u2014' for those projects.",
+      "prompt": "update --global — some of my projects don't have a .planning/ directory yet (they're just regular repos with .claude/settings.json). How does global update handle those?",
+      "expected_output": "Projects without .planning/ should still receive environment reconciliation (post-update-reconcile.sh for claude-mem patch and env vars, changelog reconcile for tool/hook/env gap checks). Health --repair should be skipped since there's no .planning/ to validate. The results table should show health as 'skipped' or '—' for those projects.",
       "files": [],
       "assertions": [
         {
@@ -9961,8 +9961,8 @@
     {
       "id": 295,
       "command": "update",
-      "prompt": "update --global \u2014 I use Conductor with worktrees. I have 3 worktrees for the same repo (fh-starter-project/havana, fh-starter-project/kyoto, fh-starter-project/tokyo). Will each worktree get its own reconciliation pass?",
-      "expected_output": "Yes \u2014 each Conductor worktree is treated as a separate project because each has its own .claude/settings.json and potentially different .planning/ state. The global reconcile discovers them individually (from tracker registry or Conductor scan) and runs reconciliation on each. The CLAUDE_MEM_PROJECT env var is set correctly per-worktree using git rev-parse --git-common-dir to resolve the actual repo name. Results table should show each worktree with its Conductor workspace group.",
+      "prompt": "update --global — I use Conductor with worktrees. I have 3 worktrees for the same repo (fh-starter-project/havana, fh-starter-project/kyoto, fh-starter-project/tokyo). Will each worktree get its own reconciliation pass?",
+      "expected_output": "Yes — each Conductor worktree is treated as a separate project because each has its own .claude/settings.json and potentially different .planning/ state. The global reconcile discovers them individually (from tracker registry or Conductor scan) and runs reconciliation on each. The CLAUDE_MEM_PROJECT env var is set correctly per-worktree using git rev-parse --git-common-dir to resolve the actual repo name. Results table should show each worktree with its Conductor workspace group.",
       "files": [],
       "assertions": [
         {
@@ -10002,7 +10002,7 @@
     {
       "id": 296,
       "command": "update",
-      "prompt": "update --global \u2014 what if a project has env gaps that the global reconcile detects but can't auto-fix (like missing tool installs or hooks)? How does it report that?",
+      "prompt": "update --global — what if a project has env gaps that the global reconcile detects but can't auto-fix (like missing tool installs or hooks)? How does it report that?",
       "expected_output": "The global reconcile script runs changelog reconcile which detects env gaps but does NOT auto-remediate them (tool installs, hook additions require the full SKILL.md remediation logic). It reports the gap count per project in the results table. For projects with remaining gaps, suggests running /fh:update individually in each project to apply the full remediation. The summary shows total env gaps across all projects.",
       "files": [],
       "assertions": [
@@ -10042,7 +10042,7 @@
     {
       "id": 297,
       "command": "update",
-      "prompt": "update --global \u2014 what if the tracker registry doesn't exist yet (fresh install, no projects tracked)?",
+      "prompt": "update --global — what if the tracker registry doesn't exist yet (fresh install, no projects tracked)?",
       "expected_output": "Should fall back to Conductor workspace scan as the secondary discovery source. If ~/conductor/workspaces/ exists, scan all subdirectories for .planning/ or .claude/settings.json. If neither source finds any projects, report 'No projects found' and suggest running /fh:new-project. Should NOT error out or crash when projects.json is missing.",
       "files": [],
       "assertions": [
@@ -10193,7 +10193,7 @@
       "id": 301,
       "command": "setup",
       "prompt": "/fh:setup --check",
-      "expected_output": "When invoked with --check, /fh:setup should validate the current environment and display a status table showing each component (node, npm, gh, TypeScript LSP, GSD symlink, etc.) with pass/fail indicators. It must NOT run any installation steps \u2014 no brew install, no npm install -g, no plugin install, no symlink creation. The output must include a SETUP STATUS section or equivalent component table. The check-only mode is purely diagnostic.",
+      "expected_output": "When invoked with --check, /fh:setup should validate the current environment and display a status table showing each component (node, npm, gh, TypeScript LSP, GSD symlink, etc.) with pass/fail indicators. It must NOT run any installation steps — no brew install, no npm install -g, no plugin install, no symlink creation. The output must include a SETUP STATUS section or equivalent component table. The check-only mode is purely diagnostic.",
       "files": [],
       "assertions": [
         {
@@ -10650,7 +10650,7 @@
     {
       "id": 313,
       "command": "auto",
-      "prompt": "Resume my auto run. Note: the .auto-state.json file exists but contains `{invalid json garbage` \u2014 it is malformed.",
+      "prompt": "Resume my auto run. Note: the .auto-state.json file exists but contains `{invalid json garbage` — it is malformed.",
       "expected_output": "Should detect the corrupt/malformed .auto-state.json, rename it to .auto-state.json.corrupt, log a warning about the corruption, and start a fresh run instead of crashing. The orchestrator's validateAutoState function handles this gracefully.",
       "files": [],
       "assertions": [
@@ -10692,7 +10692,7 @@
       "id": 314,
       "command": "auto",
       "prompt": "All 5 phases have completed successfully during the /fh:auto run. The orchestrator is printing its final summary. Verify it includes milestone completion awareness.",
-      "expected_output": "The final summary should include a milestone completion message like 'Milestone: COMPLETE \u2014 all 5 phases shipped', display a banner suggesting 'gsd-tools milestone complete <version>', and set milestone_complete: true in the final auto-state. Should NOT auto-run gsd-tools milestone complete.",
+      "expected_output": "The final summary should include a milestone completion message like 'Milestone: COMPLETE — all 5 phases shipped', display a banner suggesting 'gsd-tools milestone complete <version>', and set milestone_complete: true in the final auto-state. Should NOT auto-run gsd-tools milestone complete.",
       "files": [],
       "assertions": [
         {
@@ -10774,7 +10774,7 @@
       "id": 316,
       "command": "auto",
       "prompt": "Resume my auto run. The .auto-state.json shows phase 03 as 'built' in phase_states, but the SUMMARY.md file for that phase doesn't exist on disk.",
-      "expected_output": "The orchestrator should detect the inconsistency during resume validation \u2014 phase 03 is marked 'built' but has no SUMMARY.md. It should downgrade phase 03 from 'built' to 'planned' and re-execute the build step for that phase, since the build was incomplete despite state claiming success.",
+      "expected_output": "The orchestrator should detect the inconsistency during resume validation — phase 03 is marked 'built' but has no SUMMARY.md. It should downgrade phase 03 from 'built' to 'planned' and re-execute the build step for that phase, since the build was incomplete despite state claiming success.",
       "files": [],
       "assertions": [
         {
@@ -11081,7 +11081,7 @@
       "command": "auto",
       "fixture": "nextjs-app-deep",
       "prompt": "I have a project description but no planning artifacts. Can I just say 'auto' and walk away?",
-      "expected_output": "Should explain the new-project --auto workflow: run /fh:new-project --auto with a project description, the skill runs a strategic workshop to produce planning artifacts, then kicks off the plan\u2192review\u2192build loop automatically. DECISIONS.md provides an audit trail of all decisions made during the autonomous run.",
+      "expected_output": "Should explain the new-project --auto workflow: run /fh:new-project --auto with a project description, the skill runs a strategic workshop to produce planning artifacts, then kicks off the plan→review→build loop automatically. DECISIONS.md provides an audit trail of all decisions made during the autonomous run.",
       "files": [],
       "assertions": [
         {
@@ -11093,7 +11093,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Explains the plan\u2192review\u2192build loop that runs autonomously",
+          "text": "Explains the plan→review→build loop that runs autonomously",
           "type": "behavioral"
         },
         {
@@ -11227,8 +11227,8 @@
     {
       "id": 328,
       "command": "fix",
-      "prompt": "/fh:fix, /fh:refactor, and /fh:extract should reference Serena MCP tools (find_symbol, find_referencing_symbols, rename_symbol) as enhanced alternatives but explicitly fall back to built-in LSP when Serena is not connected",
-      "expected_output": "Skills /fh:fix, /fh:refactor, and /fh:extract should mention Serena MCP tools (find_symbol, find_referencing_symbols, rename_symbol) as enhanced alternatives for symbol navigation and renaming. Each skill must also include an explicit fallback pattern that uses built-in LSP tools when Serena is not connected, ensuring the skill works correctly without Serena.",
+      "prompt": "/fh:fix, /fh:refactor, and the `fh:design-extract` agent should reference Serena MCP tools (find_symbol, find_referencing_symbols, rename_symbol) as enhanced alternatives but explicitly fall back to built-in LSP when Serena is not connected",
+      "expected_output": "Skills /fh:fix, /fh:refactor, and the `fh:design-extract` agent should mention Serena MCP tools (find_symbol, find_referencing_symbols, rename_symbol) as enhanced alternatives for symbol navigation and renaming. Each skill must also include an explicit fallback pattern that uses built-in LSP tools when Serena is not connected, ensuring the skill works correctly without Serena.",
       "files": [],
       "assertions": [
         {
@@ -11567,7 +11567,7 @@
     {
       "id": 336,
       "command": "review",
-      "prompt": "review the latest changes to the API rate limiter in src/middleware/rate-limit.ts \u2014 we had a regression in this module last sprint",
+      "prompt": "review the latest changes to the API rate limiter in src/middleware/rate-limit.ts — we had a regression in this module last sprint",
       "expected_output": "Should check claude-mem for recurring review patterns AND call smart_search for AST-aware structural context of the rate limiter from previous sessions. Smart_search helps catch regressions by recalling how the code looked before.",
       "files": [],
       "assertions": [
@@ -11608,7 +11608,7 @@
       "id": 337,
       "command": "fix",
       "prompt": "the order processing pipeline is dropping events intermittently. we investigated a similar issue 3 weeks ago in the same module",
-      "expected_output": "Should call search for prior bugs, then drill down on specific observation IDs using get_observations to get full details. Should follow the 3-layer progressive disclosure pattern: search (index) \u2192 scan IDs \u2192 get_observations (details).",
+      "expected_output": "Should call search for prior bugs, then drill down on specific observation IDs using get_observations to get full details. Should follow the 3-layer progressive disclosure pattern: search (index) → scan IDs → get_observations (details).",
       "files": [],
       "assertions": [
         {
@@ -11647,7 +11647,7 @@
     {
       "id": 338,
       "command": "fix",
-      "prompt": "there's a performance regression in the data processing service \u2014 src/services/processor.ts is taking 10x longer than before",
+      "prompt": "there's a performance regression in the data processing service — src/services/processor.ts is taking 10x longer than before",
       "expected_output": "Should use smart_outline to get structural overview of processor.ts before reading the full file. Smart_outline provides 8x cheaper file understanding than Read.",
       "files": [],
       "assertions": [
@@ -11683,7 +11683,7 @@
     {
       "id": 339,
       "command": "review",
-      "prompt": "review the auth middleware refactoring \u2014 we changed the session validation logic and there were issues with this module in a previous sprint",
+      "prompt": "review the auth middleware refactoring — we changed the session validation logic and there were issues with this module in a previous sprint",
       "expected_output": "Should follow 3-layer progressive disclosure for past context AND use smart_outline to understand the structural context of changed files.",
       "files": [],
       "assertions": [
@@ -11720,7 +11720,7 @@
     {
       "id": 340,
       "command": "refactor",
-      "prompt": "extract the notification sending logic from NotificationService \u2014 it handles email, SMS, push, and webhook channels all in one 800-line class",
+      "prompt": "extract the notification sending logic from NotificationService — it handles email, SMS, push, and webhook channels all in one 800-line class",
       "expected_output": "Should use smart_outline on NotificationService to understand the full structure (all methods, interfaces, classes) before planning extraction boundaries. 8x cheaper than reading the full 800-line file.",
       "files": [],
       "assertions": [
@@ -11756,7 +11756,7 @@
     {
       "id": 341,
       "command": "plan-work",
-      "prompt": "Plan a new auth feature for my Next.js app. I don't have claude-mem installed \u2014 no mcp__plugin_claude-mem tools are available.",
+      "prompt": "Plan a new auth feature for my Next.js app. I don't have claude-mem installed — no mcp__plugin_claude-mem tools are available.",
       "expected_output": "Should proceed with planning using Read/Grep/Glob fallbacks, never call mcp__plugin_claude-mem tools",
       "files": [],
       "assertions": [],
@@ -11840,7 +11840,7 @@
     {
       "id": 344,
       "command": "setup",
-      "prompt": "Run setup on my new project. I don't want claude-mem \u2014 when you ask me, I'll decline.",
+      "prompt": "Run setup on my new project. I don't want claude-mem — when you ask me, I'll decline.",
       "expected_output": "Should offer claude-mem as optional, accept decline gracefully, note skills work without it",
       "files": [],
       "assertions": [],
@@ -11937,7 +11937,7 @@
       "id": 347,
       "command": "ui-branding",
       "prompt": "update my design direction",
-      "expected_output": "Should handle existing DESIGN.md gracefully \u2014 offer to update/extend rather than overwriting. Should capture updated design direction and persist to DESIGN.md.",
+      "expected_output": "Should handle existing DESIGN.md gracefully — offer to update/extend rather than overwriting. Should capture updated design direction and persist to DESIGN.md.",
       "files": [],
       "assertions": [
         {
@@ -12059,7 +12059,7 @@
       "id": 350,
       "command": "build",
       "prompt": "build the current plan",
-      "expected_output": "Should execute the plan tasks in waves, verify with tests and build checks, and write SUMMARY.md. Should NOT run design quality gates (ui-critique/polish/normalize) \u2014 those are review's responsibility. Build stays lean: execute, verify, summarize.",
+      "expected_output": "Should execute the plan tasks in waves, verify with tests and build checks, and write SUMMARY.md. Should NOT run design quality gates (ui-critique/polish/normalize) — those are review's responsibility. Build stays lean: execute, verify, summarize.",
       "files": [],
       "assertions": [
         {
@@ -12145,7 +12145,7 @@
       "id": 352,
       "command": "auto",
       "prompt": "run autonomous execution on this project",
-      "expected_output": "Should run full autonomous loop: plan, build, then a complete final review using quality-refine sub-skills. The final review phase should be thorough \u2014 not skipped or abbreviated \u2014 covering quality, architecture, and goal verification.",
+      "expected_output": "Should run full autonomous loop: plan, build, then a complete final review using quality-refine sub-skills. The final review phase should be thorough — not skipped or abbreviated — covering quality, architecture, and goal verification.",
       "files": [],
       "assertions": [
         {
@@ -12153,7 +12153,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Final review is complete \u2014 not abbreviated or skipped",
+          "text": "Final review is complete — not abbreviated or skipped",
           "type": "behavioral"
         },
         {
@@ -12241,7 +12241,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Uses progressive disclosure \u2014 loads context on-demand",
+          "text": "Uses progressive disclosure — loads context on-demand",
           "type": "behavioral"
         }
       ],
@@ -12622,7 +12622,7 @@
     {
       "id": 364,
       "command": "review",
-      "prompt": "Review bin/lib/schemas.cjs \u2014 check that validateAutoState validates all required auto-state fields and returns a warnings-based result",
+      "prompt": "Review bin/lib/schemas.cjs — check that validateAutoState validates all required auto-state fields and returns a warnings-based result",
       "expected_output": "Should confirm validateAutoState exists in bin/lib/schemas.cjs, validates required fields (active, phase, started_at, phases_total, phases_completed, phase_states, activity_events, session_activity, log_buffer), and returns { warnings: string[] }.",
       "files": [],
       "assertions": [
@@ -12668,7 +12668,7 @@
     {
       "id": 365,
       "command": "review",
-      "prompt": "Review auto-orchestrator.cjs for schema compliance \u2014 verify validateAutoState is called at write boundaries and uses the warnings-based return type",
+      "prompt": "Review auto-orchestrator.cjs for schema compliance — verify validateAutoState is called at write boundaries and uses the warnings-based return type",
       "expected_output": "Should confirm validateAutoState is called within writeAutoStatus, that the function returns or uses a warnings array, and that schema validation is enforced at write boundaries.",
       "files": [],
       "assertions": [
@@ -12714,7 +12714,7 @@
     {
       "id": 366,
       "command": "review",
-      "prompt": "Review how path construction is handled in bin/lib/ \u2014 check that verify.cjs and core.cjs use path.join for building .planning/ paths and that the autoStatePath helper exists in auto-orchestrator.cjs",
+      "prompt": "Review how path construction is handled in bin/lib/ — check that verify.cjs and core.cjs use path.join for building .planning/ paths and that the autoStatePath helper exists in auto-orchestrator.cjs",
       "expected_output": "Should confirm path.join is used for .planning/ paths in verify.cjs and core.cjs, and that autoStatePath helper centralizes the .auto-state.json path in auto-orchestrator.cjs.",
       "files": [],
       "assertions": [
@@ -13113,7 +13113,7 @@
       "id": 374,
       "command": "update",
       "prompt": "Run /fh:update. After updating, verify the manifest check ran and report the environment status table showing Component, Status, and Details columns with a 'What changed in your setup' header.",
-      "expected_output": "Should run manifest check, format JSON output as a status table with Component/Status/Details columns under a 'What changed in your setup' header. Table should use box-drawing characters (\u250c\u2502\u2514 or similar). Summary line should show N fixed / N removed / N errors.",
+      "expected_output": "Should run manifest check, format JSON output as a status table with Component/Status/Details columns under a 'What changed in your setup' header. Table should use box-drawing characters (┌│└ or similar). Summary line should show N fixed / N removed / N errors.",
       "files": [],
       "assertions": [
         {
@@ -13267,7 +13267,7 @@
       "id": 377,
       "command": "update",
       "prompt": "Run /fh:update when an update is available. Verify the output includes both a 'What's new for you' changelog section with user-facing entries AND the environment status table from manifest check.",
-      "expected_output": "Should show 'What's new for you' header with bullet points for user-facing changelog entries (feat:/fix: lines). Should also show the manifest check table with box-drawing characters. Both sections should be present. Summary line shows N fixed \u00b7 N removed \u00b7 N errors.",
+      "expected_output": "Should show 'What's new for you' header with bullet points for user-facing changelog entries (feat:/fix: lines). Should also show the manifest check table with box-drawing characters. Both sections should be present. Summary line shows N fixed · N removed · N errors.",
       "files": [],
       "assertions": [
         {
@@ -13539,7 +13539,7 @@
     {
       "id": 383,
       "command": "fix",
-      "prompt": "The login form is broken \u2014 users get a blank page. claude-mem is NOT available (no mcp__plugin_claude-mem tools in tool list). How would you navigate the code to triage this bug?",
+      "prompt": "The login form is broken — users get a blank page. claude-mem is NOT available (no mcp__plugin_claude-mem tools in tool list). How would you navigate the code to triage this bug?",
       "expected_output": "Should fall back to Read/Grep/Glob for code navigation since claude-mem is unavailable. Should NOT mention smart_outline or smart_unfold as tools to use. Should mention graceful degradation or fallback. The skill should work identically without claude-mem.",
       "files": [],
       "assertions": [

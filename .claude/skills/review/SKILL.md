@@ -151,7 +151,7 @@ Based on mode, dispatch parallel subagents. Each agent receives ONLY the diff + 
 - If Fallow data is available from Step 1.7, include the `FALLOW_CHECK` unused-exports findings in the agent prompt
 - Covers: untested code paths, unhandled error states, incomplete features (TODO/FIXME/PLACEHOLDER), missing edge cases, API contract gaps
 
-For security vulnerability detection, run `/fh:secure` or configure a pre-PR hook (see `/fh:setup`).
+For security vulnerability detection, dispatch the `fh:design-secure` agent or configure a pre-PR hook (see `/fh:setup`).
 
 ### --quick mode — dispatch 1 agent:
 
@@ -171,20 +171,20 @@ This step runs only in full mode (not `--quick`). Skip entirely in `--quick` mod
 
 After Agent 1 (Code Quality) and Agent 2 (Gap Analysis) return, evaluate each finding category:
 
-| Finding pattern | Sub-skill | Trigger condition |
+| Finding pattern | Agent | Trigger condition |
 |---|---|---|
-| DRY violations, code duplication, redundant patterns | `/fh:simplify` | 2+ DRY/duplication findings |
-| Unhandled error paths, missing edge cases, brittle patterns | `/fh:harden` | Any unhandled error path in changed code |
-| Cross-device/responsive issues, accessibility gaps | `/fh:adapt` | Frontend files changed + accessibility/responsive findings |
-| Design system drift, inconsistent tokens/spacing | `/fh:normalize` | Frontend files + design system defined in DESIGN.md |
+| DRY violations, code duplication, redundant patterns | `fh:design-simplify` | 2+ DRY/duplication findings |
+| Unhandled error paths, missing edge cases, brittle patterns | `fh:design-harden` | Any unhandled error path in changed code |
+| Cross-device/responsive issues, accessibility gaps | `fh:design-adapt` | Frontend files changed + accessibility/responsive findings |
+| Design system drift, inconsistent tokens/spacing | `fh:design-normalize` | Frontend files + design system defined in DESIGN.md |
 | Visual quality issues, layout problems, AI slop | `/fh:ui-critique` | Visual file ratio > 30% OR explicit UI concerns in findings |
-| Final polish pass | `/fh:polish` | Only after other sub-skills ran AND findings remain |
+| Final polish pass | `fh:design-polish` | Only after other agents ran AND findings remain |
 
 If **no findings trigger any sub-skill**: skip to Step 3 entirely. Most reviews won't need this step.
 
 ### b. Dispatch a single "quality-refine" subagent
 
-If any trigger condition is met, dispatch **one** `quality-refine` subagent (general-purpose). Do NOT dispatch N sequential inline skill calls.
+If any trigger condition is met, dispatch **one** `quality-refine` subagent (general-purpose). Do NOT dispatch N sequential inline agent calls.
 
 The subagent receives:
 - Findings from Agent 1 and Agent 2 (verbatim)
@@ -193,9 +193,9 @@ The subagent receives:
 - Project name (so subagent can call `mcp__plugin_claude-mem_mcp-search__smart_search` for cross-session pattern detection)
 
 The subagent:
-1. Decides which sub-skills to apply based on findings and the trigger table
-2. Runs triggered sub-skills **in sequence**, scoped to changed files only — not the whole codebase
-3. Reports back with: which sub-skills ran, what was changed, any remaining issues
+1. Decides which agents to apply based on findings and the trigger table
+2. Dispatches triggered agents (`subagent_type: "fh:design-{name}"`) **in sequence**, scoped to changed files only — not the whole codebase
+3. Reports back with: which agents ran, what was changed, any remaining issues
 
 ### c. Performance checks (conditional)
 
