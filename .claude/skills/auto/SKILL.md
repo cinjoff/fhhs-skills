@@ -179,7 +179,14 @@ This step NEVER blocks execution. It only warns. The user already said "go" — 
 
 Do research BEFORE engaging the user. Informed questions beat open questions.
 
-Use firecrawl (preferred), WebSearch (fallback), or WebFetch (fallback) to research:
+Use firecrawl for web research (see `@.claude/skills/shared/firecrawl-guide.md` for content-type patterns). Fallback: WebSearch, then WebFetch.
+
+**Content-type routing:**
+- Competitor websites/products → `firecrawl_scrape` with `only_main_content: true`
+- Industry news/trends → `firecrawl_search` with `sourceType: "news"`
+- GitHub repos/discussions → `firecrawl_search` with `category: "github"`
+- Video content → `firecrawl_scrape` with `formats: ["markdown"]` for transcripts
+- General research → `firecrawl_search` for discovery, `firecrawl_scrape` for deep reads
 
 - **Competitor analysis**: Search for similar tools/products. What do they do well? Where do users complain? What's missing from the market?
 - **Community pain points**: Search forums, GitHub issues, Reddit, HN for discussions about problems in this domain. What do people struggle with? What do they wish existed?

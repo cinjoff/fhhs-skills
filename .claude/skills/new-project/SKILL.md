@@ -300,7 +300,7 @@ If `AUTO_PROJECT` is true, skip brand extraction. Use defaults (no preset custom
 
 #### Brand Extraction
 
-**Tool fallbacks:** Use the Firecrawl skill to fetch URLs. If Firecrawl is unavailable, fall back to WebFetch. If neither is available, ask the user to describe their brand colors, fonts, and visual style directly — or to paste relevant CSS snippets.
+**Tool fallbacks:** Use firecrawl to fetch URLs (see `@.claude/skills/shared/firecrawl-guide.md` — use `firecrawl_scrape` with `only_main_content: true` for brand pages). If firecrawl is unavailable, fall back to WebFetch. If neither is available, ask the user to describe their brand colors, fonts, and visual style directly — or to paste relevant CSS snippets.
 
 **Error handling:** If a URL is unreachable (404, timeout, blocked), inform the user and ask for an alternative reference or a text description instead. If an image doesn't appear to be a brand asset (e.g., a photograph rather than a logo, color palette, or screenshot), ask the user to confirm which aspects represent their brand.
 

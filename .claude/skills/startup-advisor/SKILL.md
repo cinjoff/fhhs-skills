@@ -39,9 +39,10 @@ Read ONLY the relevant framework(s) for the current question. Don't load all of 
 
 ### Tier 2: Web Research (When Available)
 
-If firecrawl tools are available, use them for current market data:
-- `firecrawl_scrape` for specific URLs the user provides or well-known resources (YC blog, Paul Graham essays, First Round Review)
-- `firecrawl_search` for market-specific data ("SaaS pricing benchmarks 2026", "Series A terms current market")
+Follow `@.claude/skills/shared/firecrawl-guide.md` content-type patterns:
+- `firecrawl_search` for market data, industry trends (`sourceType: "news"` for recent data)
+- `firecrawl_scrape` for specific URLs (YC blog, Paul Graham essays, First Round Review) with `only_main_content: true`
+- `firecrawl_search` with `category: "research"` for academic/industry research papers
 
 If firecrawl is not available, use WebSearch as fallback.
 

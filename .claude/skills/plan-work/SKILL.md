@@ -144,7 +144,8 @@ Task(
   .planning/phases/XX-name/XX-CONTEXT.md (if exists)
   </files_to_read>
   Phase requirements: [list from ROADMAP.md]
-  Write to: .planning/phases/XX-name/XX-RESEARCH.md",
+  Write to: .planning/phases/XX-name/XX-RESEARCH.md
+  Web research: follow `@.claude/skills/shared/firecrawl-guide.md` content-type patterns",
   subagent_type="fh:gsd-phase-researcher",
   description="Phase research"
 )
@@ -173,12 +174,12 @@ Announce "This needs technical research before design — researching first." De
 
 Spawn a Task agent with:
 - The specific research questions implied by the user's request
-- Instruction to use Firecrawl for web search and Context7 for library documentation
+- Instruction to follow `@.claude/skills/shared/firecrawl-guide.md` for content-type-specific web research patterns, and Context7 for library documentation
 - Instruction to write findings to `.planning/phases/XX-name/XX-RESEARCH.md` with prescriptive recommendations, stack decisions, pitfalls, and code examples
 
 ### Tool Selection
 
-See @.claude/skills/plan-work/references/workflow-matrix.md for the full tool selection guide. Default to Smart Explore. Escalate to Explore Agent only when synthesis is needed.
+See @.claude/skills/plan-work/references/workflow-matrix.md for the full tool selection guide. Default to Smart Explore. Escalate to Explore Agent only when synthesis is needed. For web research content-type routing, see `@.claude/skills/shared/firecrawl-guide.md`.
 
 ### Skip research (simple tasks)
 

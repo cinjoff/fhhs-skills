@@ -10,7 +10,7 @@ Research topic: $ARGUMENTS
 
 You are a **lean orchestrator**. Delegate the actual research to a subagent to keep your context clean.
 
-> **Dependency check:** GSD project required (`.planning/PROJECT.md` must exist). Firecrawl skill is needed for web search — if unavailable, the subagent falls back to WebSearch/WebFetch.
+> **Dependency check:** GSD project required (`.planning/PROJECT.md` must exist). Firecrawl MCP tools (`mcp__firecrawl__*`) preferred for web operations — see `@.claude/skills/shared/firecrawl-guide.md` for content-type patterns. Falls back to WebSearch/WebFetch if unavailable.
 
 ---
 
@@ -42,7 +42,15 @@ If claude-mem is available, check for prior research on the same or related topi
 
 Spawn a Task agent with:
 - The topic and research mode
-- Instruction to use Firecrawl for web search/scraping and Context7 for library documentation
+- Instruction to follow `@.claude/skills/shared/firecrawl-guide.md` for content-type-specific patterns:
+  - Documentation: firecrawl_scrape with only_main_content, or Context7 for library docs
+  - YouTube: firecrawl_scrape with markdown format for transcript extraction
+  - GitHub: firecrawl_search with category "github" for discovery
+  - News: firecrawl_search with sourceType "news" and time filtering
+  - Research papers: firecrawl_search with category "research"
+  - General: firecrawl_scrape for specific URLs, firecrawl_search for discovery
+- For deep research (3+ sources, synthesis): use agent approach — dispatch subagent with firecrawl tools
+- For quick lookups (1-2 sources): inline firecrawl calls
 - Instruction to be prescriptive ("Use X because Y"), not exploratory ("Consider X or Y")
 - Instruction to tag each finding with confidence and source: HIGH [Context7/official docs], MEDIUM [web sources], LOW [inference — needs validation]
 - Instruction to say "Couldn't find X" rather than guessing — negative results are valuable
