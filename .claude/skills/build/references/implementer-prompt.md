@@ -93,6 +93,26 @@ Out-of-scope discoveries go to `{PHASE_DIR}/deferred-items.md`:
 - [{TASK_NAME}] {description} (found in {file}:{line})
 ```
 
+## Stub Check (before reporting)
+
+Before reporting, scan all files you created or modified for stub patterns:
+- Hardcoded empty values: `=[]`, `={}`, `=null`, `=""` that flow to UI rendering
+- Placeholder text: "not available", "coming soon", "placeholder", "TODO", "FIXME"
+- Components with no data source wired (props always receiving empty/mock data)
+
+If any stubs exist, include them in your report under **Stubs** with file, line, and reason. Do NOT claim a task complete if stubs prevent the task's goal from being achieved — either wire the data or explain which future task will resolve it.
+
+## Self-Check (before reporting)
+
+Verify your key claims before reporting:
+
+```bash
+# Check created files exist:
+[ -f "path/to/created/file" ] && echo "FOUND" || echo "MISSING: path/to/created/file"
+```
+
+If any expected file is missing: fix it before reporting, or explain why it's absent.
+
 ## Report
 
 Before reporting: self-review for completeness, quality, no overbuilding, and test coverage.
@@ -101,6 +121,7 @@ Before reporting: self-review for completeness, quality, no overbuilding, and te
 **Tests:** `{pass_count}/{total_count} passing` | New test files: `{list}` | If skipped: `UNTESTED: {file} — {reason}`
 **Files Changed:** Created/modified files
 **Deviations:** Rule 1-3 fixes applied
+**Stubs:** Stub patterns found (if any) with file:line — or "None"
 **Concerns:** Issues for downstream tasks
 **Deferred:** Items logged (if any)
 ```

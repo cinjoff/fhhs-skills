@@ -63,11 +63,32 @@ This step should consume <2% context. Don't deep-dive the errors yet — just su
 
 ---
 
+## Step 0.5: Static Analysis (if available)
+
+If `fallow` is installed, run a targeted static analysis pass before deep debugging.
+
+```bash
+if command -v fallow &>/dev/null; then
+  FALLOW_CHECK=$(fallow check --format json --quiet 2>/dev/null) || FALLOW_CHECK=""
+  FALLOW_HEALTH=$(fallow health --format json --quiet 2>/dev/null) || FALLOW_HEALTH=""
+fi
+```
+
+If Fallow ran and produced non-empty output, scan results for entries related to the reported symptom (matching filename, module, or error type). Surface any matching findings as starting evidence for triage — dead code, circular deps, or complexity spikes near the bug site often reveal the root cause faster than reading source.
+
+If fallow is NOT installed: skip this step silently. Do not mention Fallow.
+
+Budget: less than 1% context.
+
+---
+
 ## Step 1: Triage
 
 Quickly assess bug depth before choosing strategy. Spend <5% context.
 
 **Token-efficient code navigation:** Use **Pattern B** (Code Structure Exploration) from `shared/claude-mem-rules.md` — smart_outline/smart_unfold before full Read.
+
+If Fallow findings were collected in Step 0.5, cross-reference them here first — matching entries may immediately classify depth and point to root cause.
 
 1. **Search** for error message or symptom in codebase. **Use LSP first:**
    - `findReferences` on the error site to see all callers

@@ -414,15 +414,18 @@ requirements: []        # GSD only — requirement IDs from ROADMAP
 <task type="auto|tdd|checkpoint:human-verify|checkpoint:decision">
   <name>Task N: descriptive name</name>
   <files>paths to create/modify</files>
-  <action>Step-by-step instructions with specific paths</action>
+  <read_first>Files the executor MUST read before touching anything. Always include the file being modified plus any source-of-truth references (schemas, existing patterns, config files).</read_first>
+  <action>Step-by-step instructions with CONCRETE values — exact config keys, function signatures, SQL, class names, import paths, env vars. Never say "align X with Y" without specifying the exact target state. Executor must be able to complete the task from this text alone.</action>
   <verify>Testable checkpoints</verify>
-  <done>Acceptance criteria — must trace back to a must_haves truth</done>
+  <done>Acceptance criteria — grep-verifiable conditions that prove the task was done correctly. Must trace back to a must_haves truth. NEVER use subjective language ("looks correct"). ALWAYS use exact strings, patterns, values, or command outputs.</done>
 </task>
 </tasks>
 <verification>Commands that prove success</verification>
 <success_criteria>Observable truths (echo must_haves.truths)</success_criteria>
 <output>Path to SUMMARY.md</output>
 ```
+
+> **Anti-shallow execution (mandatory):** Every task MUST have `<read_first>` (files to read before starting) and `<acceptance_criteria>` equivalent in `<done>` (grep-verifiable, not subjective). The `<action>` must contain concrete values — not "align X with Y" without specifying the exact target. Vague instructions produce shallow one-line changes; concrete instructions produce complete work.
 
 ### Planning rules
 
@@ -474,7 +477,11 @@ These catch schema issues (missing frontmatter fields, malformed tasks) automati
 
 **Checks:**
 
-1. **Requirement coverage** (GSD only): every requirement ID from ROADMAP referenced in `requirements` has at least one task covering it.
+1. **Requirement coverage** (GSD only): every requirement ID from ROADMAP referenced in `requirements` has at least one task covering it. After all plans pass, also run an explicit coverage gate:
+   ```bash
+   PLAN_REQS=$(grep -h "requirements:" ${PHASE_DIR}/*-PLAN.md 2>/dev/null | tr -d '[]' | tr ',' '\n' | sed 's/^[[:space:]]*//' | sort -u)
+   ```
+   For each phase req ID not found in `PLAN_REQS`: report as uncovered gap. If gaps found, offer: 1) Revise plans to include missing requirements, 2) Move uncovered requirements to next phase, 3) Proceed anyway.
 2. **Task completeness**: every `<task>` has non-empty `<files>`, `<action>`, `<verify>`, and `<done>`.
 3. **Dependency correctness**: no circular dependencies in `depends_on`; wave numbers are consistent (a task cannot depend on a higher or equal wave).
 4. **Scope sanity**: task count within `tasks_per_plan` range, file count within `files_per_plan` range in `files_modified`, plan body under `words_per_plan` words (read limits from `.planning/config.json` `plan_limits` section; defaults: 4-6 tasks, 8-15 files, 2500 words, 60% context).
@@ -501,6 +508,7 @@ After plan approval:
 1. **`/fh:plan-review`** (default) — Review before building. Covers business alignment, architecture, code quality, tests, and performance. Three modes: SCOPE EXPANSION (dream big), HOLD SCOPE (maximum rigor), SCOPE REDUCTION (strip to essentials). **Feedback loop:** plan-review feeds findings back into PLAN.md (`must_haves.truths` with `[review]` prefix) and CONTEXT.md (review decisions + deferred scope). After plan-review completes, `/fh:build` automatically picks up the strengthened plan — no manual merging needed.
 2. **`/fh:build`** — Skip review — only if this is trivially obvious (single-file rename, typo fix, config-only change with no behavioral impact).
 3. **Continue planning** — Plan more phases before building.
+4. **`/fh:plan-work {N} --reviews`** — Re-plan this phase incorporating cross-AI review feedback (requires a REVIEWS.md to exist in the phase directory from `/fh:review --phase {N}`). The `--reviews` flag cannot be combined with `--gaps`.
 
 **Review is the default for ALL plans.** Only skip review for trivially obvious work where the risk of a missed edge case is near zero. When in doubt, review.
 

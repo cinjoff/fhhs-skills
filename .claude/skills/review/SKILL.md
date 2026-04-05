@@ -218,15 +218,38 @@ If the quality-refine subagent times out or fails: log a warning ("Quality refin
 
 For each relevant PLAN.md:
 
-1. **Extract must_haves** — parse the must_have checklist from the plan
-2. **Truth table** — for each must_have, check against the codebase:
-   - File reads: does the artifact exist?
-   - Content markers: does it contain the expected implementation?
-   - Grep checks: are key patterns present?
-   - Test coverage: is there a test for this requirement?
-3. **Artifact verification** — run `gsd-tools.cjs verify artifacts` if available
-4. **Key link verification** — run `gsd-tools.cjs verify key-links` if available
-5. **Truth table output:**
+1. **Extract must_haves** — parse the must_have checklist from the plan. If frontmatter has `must_haves.truths`, use those. If not, check ROADMAP.md success_criteria for the phase. If neither exists, derive truths from the phase goal.
+
+2. **Three-level artifact check** — for each artifact in the diff:
+
+| Exists | Substantive | Wired | Status |
+|--------|-------------|-------|--------|
+| ✓ | ✓ | ✓ | PASS |
+| ✓ | ✓ | ✗ | ORPHANED (blocking — exists but not imported/used) |
+| ✓ | ✗ | — | STUB (placeholder, TODO, empty return, log-only) |
+| ✗ | — | — | MISSING |
+
+   - **Exists:** file is present
+   - **Substantive:** not a stub — no placeholder comments, hardcoded returns, or empty handlers
+   - **Wired:** imported and used (grep for import + usage outside the defining file)
+
+3. **Export-level spot check** — for artifacts that pass Level 3 (wired), extract key exported symbols (functions, constants, classes — skip types/interfaces) and grep for call sites outside the defining file. Flag exports with zero external call sites as "exported but unused" (WARNING severity).
+
+4. **Anti-pattern scan** — scan changed files for:
+
+| Pattern | Severity |
+|---------|----------|
+| TODO/FIXME/XXX/HACK | Warning |
+| `placeholder`, `coming soon`, `will be here` | Blocking |
+| `return null` / `return {}` / `return []` / `=> {}` in non-trivial handlers | Warning |
+| Functions containing only `console.log` | Warning |
+| Hardcoded test/mock data in non-test files | Warning |
+
+5. **Tool-assisted checks** — run if available:
+   - `gsd-tools.cjs verify artifacts` — structured artifact check
+   - `gsd-tools.cjs verify key-links` — wiring verification
+
+6. **Truth table output:**
 
 ```
 | must_have | evidence | status |
@@ -235,7 +258,7 @@ For each relevant PLAN.md:
 | Error boundary on /dashboard | No ErrorBoundary component found | FAIL |
 ```
 
-Mark each as PASS / FAIL / PARTIAL. Any FAIL is a blocking finding.
+Mark each as PASS / FAIL / PARTIAL. Any FAIL or STUB or ORPHANED is a blocking finding.
 
 ---
 
@@ -269,7 +292,7 @@ Collect all findings from Steps 1.8, 2, 3, and 4. Deduplicate (same file:line ac
 | Code quality / architecture | Critical / Important / Minor / Nitpick |
 | Gap analysis | Critical / Important / Minor |
 | Spec verification | BLOCKING / WARN / PASS |
-| Goal verification | PASS / FAIL / PARTIAL |
+| Goal verification | PASS / FAIL / PARTIAL / ORPHANED / STUB |
 | Evidence (tests/build/lint) | PASS / FAIL |
 | Runtime errors | CRITICAL (in changed files) / INFO (unrelated) |
 

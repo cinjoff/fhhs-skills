@@ -88,6 +88,10 @@ if [[ "$INIT" == @file:* ]]; then INIT=$(cat "${INIT#@file:}"); fi
 
 Extract from init JSON: `project_exists`, `roadmap_exists`, `state_exists`, `phases`, `current_phase`, `next_phase`, `milestone_version`, `completed_count`, `phase_count`, `paused_at`, `state_path`, `roadmap_path`, `project_path`, `config_path`.
 
+```bash
+DISCUSS_MODE=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" config-get workflow.discuss_mode 2>/dev/null || echo "discuss")
+```
+
 If `project_exists` is false (no `.planning/` directory):
 - Set `gsd_available = false`
 - Skip to the **report** step (git state and claude-mem context are still shown)
@@ -194,6 +198,7 @@ PROGRESS_BAR=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" progress bar
 
 **Progress:** {PROGRESS_BAR}
 **Profile:** [quality/balanced/budget]
+**Discuss mode:** {DISCUSS_MODE}
 
 ## Recent Work
 - [Phase X, Plan Y]: [what was accomplished - 1 line from summary-extract]
@@ -304,17 +309,45 @@ State: "This phase has {X} plans, {Y} summaries."
 Check for UAT.md files with status "diagnosed" (has gaps needing fixes).
 
 ```bash
-# Check for diagnosed UAT with gaps
-grep -l "status: diagnosed" .planning/phases/[current-phase-dir]/*-UAT.md 2>/dev/null
+# Check for diagnosed UAT with gaps or partial (incomplete) testing
+grep -l "status: diagnosed\|status: partial" .planning/phases/[current-phase-dir]/*-UAT.md 2>/dev/null || true
 ```
 
 Track:
 - `uat_with_gaps`: UAT.md files with status "diagnosed" (gaps need fixing)
+- `uat_partial`: UAT.md files with status "partial" (incomplete testing)
+
+**Step 1.6: Cross-phase health check**
+
+Scan ALL phases in the current milestone for outstanding verification debt using the CLI:
+
+```bash
+DEBT=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" audit-uat --raw 2>/dev/null)
+```
+
+Parse JSON for `summary.total_items` and `summary.total_files`.
+
+Track: `outstanding_debt` — `summary.total_items` from the audit.
+
+**If outstanding_debt > 0:** Add a warning section to the progress report output (placed between "## What's Next" and the route suggestion):
+
+```markdown
+## Verification Debt ({N} files across prior phases)
+
+| Phase | File | Issue |
+|-------|------|-------|
+| {phase} | {filename} | {pending_count} pending, {skipped_count} skipped, {blocked_count} blocked |
+
+Review: `/fh:review` — full cross-phase audit
+```
+
+This is a WARNING, not a blocker — routing proceeds normally.
 
 **Step 2: Route based on counts**
 
 | Condition | Meaning | Action |
 |-----------|---------|--------|
+| uat_partial > 0 | UAT testing incomplete | Go to **Route E.2** |
 | uat_with_gaps > 0 | UAT gaps need fix plans | Go to **Route E** |
 | summaries < plans | Unexecuted plans exist | Go to **Route A** |
 | summaries = plans AND plans > 0 | Phase complete | Go to Step 3 |
@@ -347,6 +380,12 @@ Read its `<objective>` section.
 
 Check if `{phase_num}-CONTEXT.md` exists in phase directory.
 
+Check if current phase has UI indicators:
+
+```bash
+PHASE_HAS_UI=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" roadmap get-phase "${CURRENT_PHASE}" 2>/dev/null | grep -qi "UI hint.*yes" && echo "true" || echo "false")
+```
+
 **If CONTEXT.md exists:**
 
 ```
@@ -364,7 +403,29 @@ Check if `{phase_num}-CONTEXT.md` exists in phase directory.
 ---
 ```
 
-**If CONTEXT.md does NOT exist:**
+**If CONTEXT.md does NOT exist AND phase has UI (`PHASE_HAS_UI` is `true`):**
+
+```
+---
+
+## Next Up
+
+**Phase {N}: {Name}** -- {Goal from ROADMAP.md}
+
+`/fh:plan-work {phase}` -- gather context and clarify approach
+
+<sub>`/clear` first -- fresh context window</sub>
+
+---
+
+**Also available:**
+- `/fh:review {phase}` -- generate UI design contract (recommended for frontend phases)
+- `/fh:plan-work {phase}` -- skip discussion, plan directly
+
+---
+```
+
+**If CONTEXT.md does NOT exist AND phase has no UI:**
 
 ```
 ---
@@ -381,7 +442,6 @@ Check if `{phase_num}-CONTEXT.md` exists in phase directory.
 
 **Also available:**
 - `/fh:plan-work {phase}` -- plan directly
-- `/fh:plan-work {phase}` -- start planning (surfaces assumptions during brainstorm)
 
 ---
 ```
@@ -414,6 +474,31 @@ UAT.md exists with gaps (diagnosed issues). User needs to plan fixes.
 
 ---
 
+**Route E.2: UAT testing incomplete (partial)**
+
+UAT.md exists with `status: partial` — testing session ended before all items resolved.
+
+```
+---
+
+## Incomplete UAT Testing
+
+**{phase_num}-UAT.md** has {N} unresolved tests (pending, blocked, or skipped).
+
+`/fh:review` -- resume testing from where you left off
+
+<sub>`/clear` first -- fresh context window</sub>
+
+---
+
+**Also available:**
+- `/fh:build` -- execute phase plans
+
+---
+```
+
+---
+
 **Step 3: Check milestone status (only when phase complete)**
 
 Read ROADMAP.md and identify:
@@ -436,6 +521,39 @@ State: "Current phase is {X}. Milestone has {N} phases (highest: {Y})."
 **Route C: Phase complete, more phases remain**
 
 Read ROADMAP.md to get the next phase's name and goal.
+
+Check if next phase has UI indicators:
+
+```bash
+NEXT_HAS_UI=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" roadmap get-phase "$((Z+1))" 2>/dev/null | grep -qi "UI hint.*yes" && echo "true" || echo "false")
+```
+
+**If next phase has UI (`NEXT_HAS_UI` is `true`):**
+
+```
+---
+
+## Phase {Z} Complete
+
+## Next Up
+
+**Phase {Z+1}: {Name}** -- {Goal from ROADMAP.md}
+
+`/fh:plan-work {Z+1}` -- gather context and clarify approach
+
+<sub>`/clear` first -- fresh context window</sub>
+
+---
+
+**Also available:**
+- `/fh:review {Z+1}` -- generate UI design contract (recommended for frontend phases)
+- `/fh:plan-work {Z+1}` -- skip discussion, plan directly
+- `/fh:review {Z}` -- user acceptance test before continuing
+
+---
+```
+
+**If next phase has no UI:**
 
 ```
 ---
@@ -533,6 +651,7 @@ Ready to plan the next milestone.
 - [ ] Non-GSD projects still get useful output (git + claude-mem + routing)
 - [ ] Current position clear with visual progress
 - [ ] What's next clearly explained
+- [ ] UAT partial detection (Route E.2) and verification debt warning shown when applicable
 - [ ] Smart routing: /build if plans exist, /plan-work if not
 - [ ] User confirms before any action
 - [ ] Seamless handoff to appropriate gsd command

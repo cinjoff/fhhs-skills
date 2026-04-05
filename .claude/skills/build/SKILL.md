@@ -257,10 +257,37 @@ Do not proceed to the next wave until resolved or skipped.
 
 **Silent failure (no files changed):** Treat as BLOCKED.
 
+**`classifyHandoffIfNeeded` false failure:** If a subagent reports "failed" with error containing `classifyHandoffIfNeeded is not defined`, this is a Claude Code runtime bug — not a task failure. Spot-check instead: verify key files exist on disk and no `## Self-Check: FAILED` marker is present. If spot-checks pass, treat as successful.
+
 Once all tasks are accounted for:
-1. **Spot-check:** verify key files from subagent reports exist on disk (`[ -f path ]`)
+1. **Spot-check:** verify key files from subagent reports exist on disk (`[ -f path ]`). Also check for `## Self-Check: FAILED` marker in any subagent report.
 2. **Done criteria check:** compare each task's `done` criteria against subagent output — flag mismatches
 3. **Report** results to user
+
+### Pre-wave dependency check (wave 2+ only)
+
+Before dispatching each wave after wave 1, verify that artifacts from prior waves are actually present:
+
+```bash
+# For each plan in the upcoming wave, check key-links from prior waves:
+node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" verify key-links {phase_dir}/{plan}-PLAN.md 2>/dev/null
+```
+
+If any key-link from a prior wave's artifact fails verification:
+
+```
+## Cross-Plan Wiring Gap
+
+| Plan | Link | From | Expected Pattern | Status |
+|------|------|------|-----------------|--------|
+| {plan} | {via} | {from} | {pattern} | NOT FOUND |
+
+Wave N artifacts may not be properly wired. Options:
+1. Investigate and fix before continuing
+2. Continue (may cause cascading failures in next wave)
+```
+
+Key-links referencing files in the upcoming wave itself are skipped. If `gsd-tools verify key-links` is unavailable, skip silently.
 
 ---
 
@@ -342,6 +369,29 @@ node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" verify phase-completeness "
 
 **If ALL plans complete (phase done):** Run completion gates.
 
+### Regression Gate (before goal verification)
+
+Run prior phases' test suites to catch cross-phase regressions BEFORE verification.
+
+**Skip if:** This is the first phase (no prior phases), or no prior VERIFICATION.md files exist.
+
+```bash
+# Find all VERIFICATION.md files from prior phases
+PRIOR_VERIFICATIONS=$(find .planning/phases/ -name "*-VERIFICATION.md" ! -path "*${PHASE_NUM}*" 2>/dev/null)
+```
+
+For each VERIFICATION.md found, look for test file references (lines containing `test`, `spec`, or `__tests__` paths). Collect unique test file paths. If any found, run:
+
+```bash
+if [ -f "package.json" ]; then
+  npx jest ${REGRESSION_FILES} --passWithNoTests --no-coverage -q 2>&1 || npx vitest run ${REGRESSION_FILES} 2>&1
+fi
+```
+
+If all tests pass: `✓ Regression gate: N prior-phase test files passed — no regressions detected` → proceed.
+
+If any fail: present a table of failing tests with their origin phase. Offer: 1) Fix regressions before verification (recommended), 2) Continue to verification anyway, 3) Abort. Use AskUserQuestion if available, otherwise ask inline.
+
 ### Gate 0: Integration Check (runs before goal verification)
 
 Run fallow-based impact analysis on all files modified across the phase:
@@ -398,6 +448,21 @@ If any gate fails, stop and report to user.
 **Only after all gates pass:**
 
 `gsd-tools.cjs phase complete "${PHASE_NUM}"` — atomically updates STATE.md and ROADMAP.md.
+
+### PROJECT.md Evolution (after phase complete)
+
+PROJECT.md tracks validated requirements, decisions, and current state. Without this step, it falls behind silently across phases.
+
+1. Read `.planning/PROJECT.md`
+2. If it has a `## Validated Requirements` or `## Requirements` section: move requirements validated by this phase from Active → Validated, add note: `Validated in Phase {X}: {Name}`
+3. If it has a `## Current State` section: update to reflect this phase's completion
+4. Update the `Last updated:` footer to today's date
+5. Commit:
+```bash
+node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" commit "docs(phase-${PHASE_NUM}): evolve PROJECT.md after phase completion" --files .planning/PROJECT.md
+```
+
+**Skip if** `.planning/PROJECT.md` does not exist.
 
 ---
 
