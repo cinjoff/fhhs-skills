@@ -1,0 +1,170 @@
+@import "tailwindcss";
+
+@source "./components/**/*.jsx";
+@source "./app.jsx";
+
+@theme {
+  /* Surfaces — OKLCH cool blue-gray, never pure gray */
+  --color-bg-root: oklch(0.13 0.005 260);
+  --color-bg-raised: oklch(0.16 0.005 260);
+  --color-bg-overlay: oklch(0.19 0.005 260);
+  --color-bg-hover: oklch(0.13 0.005 260 / 0.5);
+
+  /* Text */
+  --color-text-primary: oklch(0.93 0.005 260);
+  --color-text-secondary: oklch(0.62 0.005 260);
+  --color-text-tertiary: oklch(0.42 0.005 260);
+
+  /* Status (desaturated, not neon) */
+  --color-status-done: oklch(0.70 0.17 155);
+  --color-status-active: oklch(0.68 0.14 250);
+  --color-status-warning: oklch(0.78 0.15 85);
+  --color-status-error: oklch(0.63 0.20 25);
+  --color-status-pending: oklch(0.42 0.005 260);
+
+  /* Borders */
+  --color-border-subtle: oklch(0.93 0.005 260 / 0.06);
+  --color-border-default: oklch(0.93 0.005 260 / 0.10);
+
+  /* Legacy aliases for compatibility */
+  --color-bg: oklch(0.13 0.005 260);
+  --color-surface: oklch(0.16 0.005 260);
+  --color-border: oklch(0.93 0.005 260 / 0.10);
+  --color-muted: oklch(0.62 0.005 260);
+  --color-text: oklch(0.93 0.005 260);
+  --color-bright: oklch(0.93 0.005 260);
+  --color-dim: oklch(0.42 0.005 260);
+  --color-subtle: oklch(0.62 0.005 260);
+  --color-green: oklch(0.70 0.17 155);
+  --color-amber: oklch(0.78 0.15 85);
+  --color-fire: oklch(0.63 0.20 25);
+
+  /* Fonts */
+  --font-family-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-family-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+}
+
+/* Base */
+html, body, #app {
+  height: 100vh;
+  margin: 0;
+  overflow: hidden;
+}
+
+html {
+  font-size: 13px;
+  scrollbar-color: oklch(0.42 0.005 260) transparent;
+}
+
+body {
+  font-family: var(--font-family-sans);
+  background: var(--color-bg-root);
+  color: var(--color-text-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Timing function variable */
+:root {
+  --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: oklch(0.42 0.005 260);
+  border-radius: 2px;
+}
+
+/* Tabular nums utility */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.font-mono {
+  font-family: var(--font-family-mono);
+}
+
+/* Details marker reset */
+details summary::-webkit-details-marker {
+  display: none;
+}
+details summary {
+  list-style: none;
+}
+
+/* Staggered slide-in entry */
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.stagger-item {
+  animation: slideIn 0.3s var(--ease-expo) both;
+  animation-delay: calc(var(--stagger-index, 0) * 50ms);
+}
+
+/* Value change flash */
+@keyframes valueFlash {
+  0% { background-color: oklch(0.68 0.14 250 / 0.15); }
+  100% { background-color: transparent; }
+}
+.value-updated {
+  animation: valueFlash 0.8s ease-out;
+}
+
+/* Subtle pulse for active indicators */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* Crossfade for content transitions */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Progress bar width animation */
+@keyframes progressGrow {
+  from { width: 0; }
+}
+
+/* Skeleton shimmer */
+@keyframes shimmer {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
+}
+.skeleton {
+  background: var(--color-bg-raised);
+  border-radius: 3px;
+  position: relative;
+  overflow: hidden;
+}
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, oklch(0.3 0.005 260 / 0.3) 50%, transparent 100%);
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Number counter animation (JS-driven via data attributes) */
+@keyframes countUp {
+  from { opacity: 0.5; }
+  to { opacity: 1; }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

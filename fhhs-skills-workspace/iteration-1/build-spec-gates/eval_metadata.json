@@ -1,0 +1,14 @@
+{
+  "eval_id": 1,
+  "eval_name": "build-spec-gates",
+  "prompt": "Execute /build on this project. The plan is at .planning/phases/01-auth/01-01-PLAN.md. Walk through exactly what you would do step by step — which agents you'd dispatch, what prompts they'd get, what you'd check between waves. This is a dry run — describe each action, don't actually execute.",
+  "assertions": [
+    {"text": "References implementer-prompt.md template for subagent prompts", "type": "contains_concept"},
+    {"text": "Dispatches per-wave spec gate using code-reviewer agent type", "type": "contains_concept"},
+    {"text": "Uses code-reviewer agent type for final quality review", "type": "contains_concept"},
+    {"text": "Mentions auto-mode check", "type": "contains_concept"},
+    {"text": "Correctly identifies 2 waves", "type": "contains_concept"},
+    {"text": "Mentions WAVE_START_SHA tracking", "type": "contains_concept"},
+    {"text": "References deferred items logging", "type": "contains_concept"}
+  ]
+}

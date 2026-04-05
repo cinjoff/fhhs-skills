@@ -1,0 +1,20 @@
+{
+  "env": {
+    "CLAUDE_MEM_PROJECT": "fhhs-skills",
+    "CLAUDE_CODE_ENABLE_TASKS": "0",
+    "CLAUDE_CODE_TASK_LIST_ID": "tehran"
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/post-push-release-check.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

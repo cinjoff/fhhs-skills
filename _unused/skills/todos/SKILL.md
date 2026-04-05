@@ -1,0 +1,354 @@
+---
+name: fh:todos
+description: Track things to do. Add a todo with arguments, or review pending ones without.
+user-invocable: true
+---
+
+## Routing
+
+If `$ARGUMENTS` is non-empty: **Add mode** — capture the todo.
+If `$ARGUMENTS` is empty: **Check mode** — review and act on pending todos.
+
+## Add Mode
+
+<required_reading>
+Read all files referenced by the invoking prompt's execution_context before starting.
+</required_reading>
+
+<process>
+
+<step name="init_context">
+Load todo context:
+
+```bash
+# Ensure GSD CLI symlink exists (self-heals if /fh:setup wasn't run)
+if [ ! -f "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" ]; then
+  _FHHS="$(ls -d "$HOME/.claude/plugins/cache/fhhs-skills/fh"/*/ 2>/dev/null | sort | tail -1)"
+  _FHHS="${_FHHS%/}"
+  if [ -n "$_FHHS" ] && [ -d "$_FHHS/bin" ]; then
+    mkdir -p "$HOME/.claude/get-shit-done"
+    ln -sfn "$_FHHS/bin" "$HOME/.claude/get-shit-done/bin"
+    [ -d "$_FHHS/hooks" ] && ln -sfn "$_FHHS/hooks" "$HOME/.claude/get-shit-done/hooks"
+  fi
+fi
+
+INIT=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" init todos)
+if [[ "$INIT" == @file:* ]]; then INIT=$(cat "${INIT#@file:}"); fi
+```
+
+Extract from init JSON: `commit_docs`, `date`, `timestamp`, `todo_count`, `todos`, `pending_dir`, `todos_dir_exists`.
+
+Ensure directories exist:
+```bash
+mkdir -p .planning/todos/pending .planning/todos/done
+```
+
+Note existing areas from the todos array for consistency in infer_area step.
+</step>
+
+<step name="extract_content">
+**With arguments:** Use as the title/focus.
+- `todos Add auth token refresh` → title = "Add auth token refresh"
+
+**Without arguments:** Analyze recent conversation to extract:
+- The specific problem, idea, or task discussed
+- Relevant file paths mentioned
+- Technical details (error messages, line numbers, constraints)
+
+Formulate:
+- `title`: 3-10 word descriptive title (action verb preferred)
+- `problem`: What's wrong or why this is needed
+- `solution`: Approach hints or "TBD" if just an idea
+- `files`: Relevant paths with line numbers from conversation
+</step>
+
+<step name="infer_area">
+Infer area from file paths:
+
+| Path pattern | Area |
+|--------------|------|
+| `src/api/*`, `api/*` | `api` |
+| `src/components/*`, `src/ui/*` | `ui` |
+| `src/auth/*`, `auth/*` | `auth` |
+| `src/db/*`, `database/*` | `database` |
+| `tests/*`, `__tests__/*` | `testing` |
+| `docs/*` | `docs` |
+| `.planning/*` | `planning` |
+| `scripts/*`, `bin/*` | `tooling` |
+| No files or unclear | `general` |
+
+Use existing area from step 2 if similar match exists.
+</step>
+
+<step name="check_duplicates">
+```bash
+# Search for key words from title in existing todos
+grep -l -i "[key words from title]" .planning/todos/pending/*.md 2>/dev/null
+```
+
+If potential duplicate found:
+1. Read the existing todo
+2. Compare scope
+
+If overlapping, use AskUserQuestion:
+- header: "Duplicate?"
+- question: "Similar todo exists: [title]. What would you like to do?"
+- options:
+  - "Skip" — keep existing todo
+  - "Replace" — update existing with new context
+  - "Add anyway" — create as separate todo
+</step>
+
+<step name="create_file">
+Use values from init context: `timestamp` and `date` are already available.
+
+Generate slug for the title:
+```bash
+slug=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" generate-slug "$title" --raw)
+```
+
+Write to `.planning/todos/pending/${date}-${slug}.md`:
+
+```markdown
+---
+created: [timestamp]
+title: [title]
+area: [area]
+files:
+  - [file:lines]
+---
+
+## Problem
+
+[problem description - enough context for future Claude to understand weeks later]
+
+## Solution
+
+[approach hints or "TBD"]
+```
+</step>
+
+<step name="update_state">
+If `.planning/STATE.md` exists:
+
+1. Use `todo_count` from init context (or re-run `init todos` if count changed)
+2. Update "### Pending Todos" under "## Accumulated Context"
+</step>
+
+<step name="git_commit">
+Commit the todo and any updated state:
+
+```bash
+node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" commit "docs: capture todo - [title]" --files .planning/todos/pending/[filename] .planning/STATE.md
+```
+
+Tool respects `commit_docs` config and gitignore automatically.
+
+Confirm: "Committed: docs: capture todo - [title]"
+</step>
+
+<step name="confirm">
+```
+Todo saved: .planning/todos/pending/[filename]
+
+  [title]
+  Area: [area]
+  Files: [count] referenced
+
+---
+
+Would you like to:
+
+1. Continue with current work
+2. Add another todo
+3. View all todos (/fh:todos)
+```
+</step>
+
+</process>
+
+<success_criteria>
+- [ ] Directory structure exists
+- [ ] Todo file created with valid frontmatter
+- [ ] Problem section has enough context for future Claude
+- [ ] No duplicates (checked and resolved)
+- [ ] Area consistent with existing todos
+- [ ] STATE.md updated if exists
+- [ ] Todo and state committed to git
+</success_criteria>
+
+## Check Mode
+
+<required_reading>
+Read all files referenced by the invoking prompt's execution_context before starting.
+</required_reading>
+
+<process>
+
+<step name="init_context">
+Load todo context:
+
+```bash
+INIT=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" init todos)
+if [[ "$INIT" == @file:* ]]; then INIT=$(cat "${INIT#@file:}"); fi
+```
+
+Extract from init JSON: `todo_count`, `todos`, `pending_dir`.
+
+If `todo_count` is 0:
+```
+No pending todos.
+
+Todos are captured during work sessions with /fh:todos.
+
+---
+
+Would you like to:
+
+1. Continue with current phase (progress)
+2. Add a todo now (/fh:todos <description>)
+```
+
+Exit.
+</step>
+
+<step name="parse_filter">
+Check for area filter in arguments:
+- `todos` → show all
+- `todos api` → filter to area:api only
+</step>
+
+<step name="list_todos">
+Use the `todos` array from init context (already filtered by area if specified).
+
+Parse and display as numbered list:
+
+```
+Pending Todos:
+
+1. Add auth token refresh (api, 2d ago)
+2. Fix modal z-index issue (ui, 1d ago)
+3. Refactor database connection pool (database, 5h ago)
+
+---
+
+Reply with a number to view details, or:
+- `/fh:todos [area]` to filter by area
+- `q` to exit
+```
+
+Format age as relative time from created timestamp.
+</step>
+
+<step name="handle_selection">
+Wait for user to reply with a number.
+
+If valid: load selected todo, proceed.
+If invalid: "Invalid selection. Reply with a number (1-[N]) or `q` to exit."
+</step>
+
+<step name="load_context">
+Read the todo file completely. Display:
+
+```
+## [title]
+
+**Area:** [area]
+**Created:** [date] ([relative time] ago)
+**Files:** [list or "None"]
+
+### Problem
+[problem section content]
+
+### Solution
+[solution section content]
+```
+
+If `files` field has entries, read and briefly summarize each.
+</step>
+
+<step name="check_roadmap">
+Check for roadmap (can use init progress or directly check file existence):
+
+If `.planning/ROADMAP.md` exists:
+1. Check if todo's area matches an upcoming phase
+2. Check if todo's files overlap with a phase's scope
+3. Note any match for action options
+</step>
+
+<step name="offer_actions">
+**If todo maps to a roadmap phase:**
+
+Use AskUserQuestion:
+- header: "Action"
+- question: "This todo relates to Phase [N]: [name]. What would you like to do?"
+- options:
+  - "Work on it now" — move to done, start working
+  - "Add to phase plan" — include when planning Phase [N]
+  - "Brainstorm approach" — think through before deciding
+  - "Put it back" — return to list
+
+**If no roadmap match:**
+
+Use AskUserQuestion:
+- header: "Action"
+- question: "What would you like to do with this todo?"
+- options:
+  - "Work on it now" — move to done, start working
+  - "Create a phase" — /fh:plan-work with this scope
+  - "Brainstorm approach" — think through before deciding
+  - "Put it back" — return to list
+</step>
+
+<step name="execute_action">
+**Work on it now:**
+```bash
+mv ".planning/todos/pending/[filename]" ".planning/todos/done/"
+```
+Update STATE.md todo count. Present problem/solution context. Begin work or ask how to proceed.
+
+**Add to phase plan:**
+Note todo reference in phase planning notes. Keep in pending. Return to list or exit.
+
+**Create a phase:**
+Display: `/fh:plan-work [description from todo]`
+Keep in pending. User runs command in fresh context.
+
+**Brainstorm approach:**
+Keep in pending. Start discussion about problem and approaches.
+
+**Put it back:**
+Return to list_todos step.
+</step>
+
+<step name="update_state">
+After any action that changes todo count:
+
+Re-run `init todos` to get updated count, then update STATE.md "### Pending Todos" section if exists.
+</step>
+
+<step name="git_commit">
+If todo was moved to done/, commit the change:
+
+```bash
+git rm --cached .planning/todos/pending/[filename] 2>/dev/null || true
+node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" commit "docs: start work on todo - [title]" --files .planning/todos/done/[filename] .planning/STATE.md
+```
+
+Tool respects `commit_docs` config and gitignore automatically.
+
+Confirm: "Committed: docs: start work on todo - [title]"
+</step>
+
+</process>
+
+<success_criteria>
+- [ ] All pending todos listed with title, area, age
+- [ ] Area filter applied if specified
+- [ ] Selected todo's full context loaded
+- [ ] Roadmap context checked for phase match
+- [ ] Appropriate actions offered
+- [ ] Selected action executed
+- [ ] STATE.md updated if todo count changed
+- [ ] Changes committed to git (if todo moved to done/)
+</success_criteria>

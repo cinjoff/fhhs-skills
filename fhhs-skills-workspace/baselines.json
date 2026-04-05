@@ -1,0 +1,31 @@
+{
+  "created": "2026-03-28T19:36:52.180421",
+  "grader": "keyword",
+  "thresholds": {
+    "pass_rate_drop": 0.05,
+    "token_increase": 0.2,
+    "duration_increase": 0.3
+  },
+  "commands": {
+    "auto": {
+      "pass_rate": 0.9882352941176471,
+      "avg_tokens": 43060,
+      "avg_duration_ms": 48962
+    },
+    "build": {
+      "pass_rate": 1.0,
+      "avg_tokens": 38412,
+      "avg_duration_ms": 51221
+    },
+    "fix": {
+      "pass_rate": 1.0,
+      "avg_tokens": 35520,
+      "avg_duration_ms": 36963
+    },
+    "review": {
+      "pass_rate": 0.9090909090909091,
+      "avg_tokens": 36180,
+      "avg_duration_ms": 73794
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "plan_limits": {
+    "max_tasks_per_wave": 5,
+    "max_waves": 4
+  },
+  "workflow": {
+    "auto_advance": true,
+    "require_review": true
+  },
+  "models": {
+    "gsd-executor": "sonnet",
+    "gsd-planner": "sonnet",
+    "gsd-codebase-mapper": "haiku"
+  }
+}

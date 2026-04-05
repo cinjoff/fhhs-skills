@@ -1,0 +1,4 @@
+tests/
+server/index.js
+*.test.js
+
