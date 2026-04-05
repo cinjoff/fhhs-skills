@@ -75,7 +75,7 @@
  *   frontmatter merge <file>           Merge JSON into frontmatter
  *     --data '{json}'
  *   frontmatter validate <file>        Validate required fields
- *     --schema plan|summary|verification
+ *     --schema plan|summary|verification|spec
  *
  * Verification Suite:
  *   verify plan-structure <file>       Check PLAN.md structure + tasks

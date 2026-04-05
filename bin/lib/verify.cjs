@@ -155,6 +155,19 @@ function cmdVerifyPlanStructure(cwd, filePath, raw) {
     errors.push('Has checkpoint tasks but autonomous is not false');
   }
 
+  // Spec reference check: if PLAN.md declares spec: field, verify the SPEC.md exists
+  const specRef = fm.spec;
+  let specCheck = null;
+  if (specRef) {
+    const planDir = path.dirname(fullPath);
+    const specFullPath = path.isAbsolute(specRef) ? specRef : path.join(planDir, specRef);
+    const specExists = fs.existsSync(specFullPath);
+    specCheck = { referenced: specRef, exists: specExists };
+    if (!specExists) {
+      warnings.push(`spec file referenced but not found: ${specRef} (expected at ${specFullPath})`);
+    }
+  }
+
   output({
     valid: errors.length === 0,
     errors,
@@ -162,6 +175,7 @@ function cmdVerifyPlanStructure(cwd, filePath, raw) {
     task_count: tasks.length,
     tasks,
     frontmatter_fields: Object.keys(fm),
+    ...(specCheck ? { spec: specCheck } : {}),
   }, raw, errors.length === 0 ? 'valid' : 'invalid');
 }
 
@@ -285,8 +299,20 @@ function cmdVerifyArtifacts(cwd, planFilePath, raw) {
   const content = safeReadFile(fullPath);
   if (!content) { output({ error: 'File not found', path: planFilePath }, raw); return; }
 
+  // Check spec: field — if present, verify the referenced SPEC.md exists
+  const fm = extractFrontmatter(content);
+  const specRef = fm.spec;
+  const specErrors = [];
+  if (specRef) {
+    const planDir = path.dirname(fullPath);
+    const specFullPath = path.isAbsolute(specRef) ? specRef : path.join(planDir, specRef);
+    if (!fs.existsSync(specFullPath)) {
+      specErrors.push(`spec file referenced in frontmatter but not found: ${specRef} (resolved to ${specFullPath})`);
+    }
+  }
+
   const artifacts = parseMustHavesBlock(content, 'artifacts');
-  if (artifacts.length === 0) {
+  if (artifacts.length === 0 && specErrors.length === 0) {
     output({ error: 'No must_haves.artifacts found in frontmatter', path: planFilePath }, raw);
     return;
   }
@@ -326,12 +352,14 @@ function cmdVerifyArtifacts(cwd, planFilePath, raw) {
   }
 
   const passed = results.filter(r => r.passed).length;
+  const allPassed = passed === results.length && specErrors.length === 0;
   output({
-    all_passed: passed === results.length,
+    all_passed: allPassed,
     passed,
     total: results.length,
     artifacts: results,
-  }, raw, passed === results.length ? 'valid' : 'invalid');
+    ...(specErrors.length > 0 ? { spec_errors: specErrors } : {}),
+  }, raw, allPassed ? 'valid' : 'invalid');
 }
 
 function cmdVerifyKeyLinks(cwd, planFilePath, raw) {

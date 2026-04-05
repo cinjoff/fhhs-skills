@@ -228,6 +228,7 @@ const FRONTMATTER_SCHEMAS = {
   plan: { required: ['phase', 'plan', 'type', 'wave', 'depends_on', 'files_modified', 'autonomous', 'must_haves'] },
   summary: { required: ['phase', 'plan', 'subsystem', 'tags', 'duration', 'completed'] },
   verification: { required: ['phase', 'verified', 'status', 'score'] },
+  spec: { required: ['phase', 'plan', 'complexity', 'research_confidence', 'weakest_link', 'created'] },
 };
 
 function cmdFrontmatterGet(cwd, filePath, field, raw) {
