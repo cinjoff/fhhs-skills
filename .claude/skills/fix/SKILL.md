@@ -166,8 +166,9 @@ or summary if the fix isn't verified.
 After the fix is verified, search the codebase for similar vulnerable patterns:
 
 1. Identify the root cause pattern (e.g., missing null check, unvalidated input, race condition)
-2. If claude-mem is available (check tool list for `mcp__plugin_claude-mem_*`), use `mcp__plugin_claude-mem_mcp-search__smart_search` to find similar patterns in other files. If not available, fall back to Read/Grep/Glob directly.
-3. If similar vulnerabilities found: fix them now if trivial (<5 lines each), or note them in the summary as "Related patterns found in: {files}" for follow-up
+2. **If ast-grep MCP tools are in the tool list** (see `@.claude/skills/shared/tool-availability.md`), use `find_code_by_rule` to structurally find all instances of the bug pattern across source files. This is more precise than text search for structural patterns. Do NOT use ast-grep on Markdown files.
+3. If ast-grep MCP is unavailable: use `mcp__plugin_claude-mem_mcp-search__smart_search` if claude-mem available (check tool list for `mcp__plugin_claude-mem_*`), then fall back to Grep/Glob directly.
+4. If similar vulnerabilities found: fix them now if trivial (<5 lines each), or note them in the summary as "Related patterns found in: {files}" for follow-up
 
 This step prevents the same class of bug from recurring elsewhere. Skip only if the root cause is truly unique to this one location.
 

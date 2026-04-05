@@ -15,6 +15,10 @@
 | **Read specific function** | claude-mem `smart_unfold` | `Read` | AST-exact extraction, never truncates |
 | **Project structure mapping** | `/fh:map-codebase` | — | Deterministic, structured output |
 | **Static analysis** | Fallow CLI (review, map-codebase) | — | Unused exports, circular deps, complexity — enhancement, not required |
+| **Structural code search** | ast-grep MCP `find_code_by_rule` | Grep | AST-precise pattern matching; not for Markdown |
+| **Bulk structural refactor** | ast-grep CLI (`sg`) | Edit per file | Conditional GO — verify after each transform |
+| **Dependency blast radius** | Codemap `codemap diff` | Grep estimates | Deterministic fan-out count; strip ANSI before LLM injection |
+| **Codebase hub analysis** | Codemap `codemap hubs` | — | High fan-in files; use in map-codebase for CONCERNS.md |
 | **Web research (general)** | Firecrawl `firecrawl_search` | WebSearch | LLM-optimized markdown, sourceType filtering |
 | **Scrape specific URL** | Firecrawl `firecrawl_scrape` | WebFetch | Handles JS rendering, anti-bot |
 | **YouTube transcripts** | Firecrawl `firecrawl_scrape` (markdown format) | — | Captions embedded in markdown output |
@@ -34,6 +38,10 @@ See `@.claude/skills/shared/firecrawl-guide.md` for detailed content-type patter
 **Avoid redundant reads:** If a file was already read earlier in the session (e.g., CONTEXT.md during Step 0), reference the in-memory content rather than re-reading.
 
 **Fallow replaces LLM guessing** for: dead code detection, circular deps, complexity metrics, duplication. Trust Fallow's deterministic output over LLM pattern matching on raw source. Fallow runs in `review` (quality agent ground truth) and `map-codebase` (deterministic metrics). It does NOT run in `build`, `fix`, `refactor`, `plan-review`, or `setup`. Access Fallow results in other skills via `/fh:review` dispatch.
+
+**Codemap replaces LLM blast-radius estimation** for: dependency fan-out, structural tree, hub file identification. Use `codemap diff` in `review` and `codemap tree/deps/hubs` in `map-codebase`. Strip ANSI output (`sed 's/\x1b\[[0-9;]*m//g'`) before injecting into LLM context. Conditional availability — check `which codemap` first.
+
+**ast-grep replaces text-grep for code patterns**: Use ast-grep MCP for structural queries in `review` (anti-pattern detection) and ast-grep CLI in `fix` (recurrence check) and `refactor` (bulk migration). Hard ceiling: no Markdown support — fall back to Grep for `.md` files always. Bulk replace is CONDITIONAL GO — always verify with test suite after transform.
 
 ## Fallow Scope
 

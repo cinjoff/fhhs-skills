@@ -80,6 +80,29 @@ Follow **Pattern A** (Past Learnings Check) from `shared/claude-mem-rules.md`. K
 
 ---
 
+## Step 1.6: Blast Radius (Codemap — if available)
+
+See `@.claude/skills/shared/tool-availability.md` for the Codemap guard pattern.
+
+```bash
+CODEMAP_AVAILABLE=false
+command -v codemap &>/dev/null && CODEMAP_AVAILABLE=true
+```
+
+If `CODEMAP_AVAILABLE=true`, use `codemap diff` for deterministic blast radius of the current branch:
+
+```bash
+CODEMAP_DIFF=$(codemap diff "$BASE_BRANCH..HEAD" 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g') || CODEMAP_DIFF=""
+```
+
+If non-empty, extract: affected modules, fan-out count, and any hub files in the diff. Pass this to Agent 1 (Code Quality + Architecture) as `## Codemap Blast Radius` — it provides deterministic dependency impact rather than LLM estimation.
+
+If Codemap is NOT installed or command fails: fall back to grep-based blast radius estimation in Step 1. Skip silently.
+
+Budget: less than 1% context.
+
+---
+
 ## Step 1.7: Static Analysis (if available)
 
 If `fallow` is installed, run static analysis to provide ground truth data for the review agents.
@@ -140,6 +163,8 @@ Based on mode, dispatch parallel subagents. Each agent receives ONLY the diff + 
 - Prompt: `skills/review/references/review-prompt.md`
 - Also include: `skills/review/references/production-safety-checklist.md` (two-pass safety review)
 - If Fallow data is available from Step 1.7, include it in the agent prompt under '## Static Analysis Findings'
+- If Codemap blast radius is available from Step 1.6, include it under '## Codemap Blast Radius'
+- If ast-grep MCP tools are in the tool list, instruct the agent to use `find_code_by_rule` / `sg_search` for structural anti-pattern detection (e.g., missing error handling patterns, unsafe type casts, forbidden API usage). See `@.claude/skills/shared/tool-availability.md` for the guard. Fall back to Grep for pattern matching if ast-grep MCP is unavailable. Note: do NOT use ast-grep on Markdown files — no language support.
 - Input: full diff (`git diff $BASE_BRANCH..HEAD with pathspec exclusions`)
 - Covers: naming, structure, error handling, DRY, complexity, test quality, cross-file consistency, dependency direction, separation of concerns, abstraction quality, API design, cross-cutting concerns
 - If Next.js: include `.claude/skills/nextjs-perf/PROMPT.md` criteria

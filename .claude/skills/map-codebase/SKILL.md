@@ -163,6 +163,33 @@ fi
 
 These metrics are passed to the Quality and Concerns agents.
 
+Continue to codemap_enrichment.
+</step>
+
+<step name="codemap_enrichment">
+Optionally enrich mapping context with Codemap structural data. See `@.claude/skills/shared/tool-availability.md` for the guard pattern.
+
+```bash
+CODEMAP_AVAILABLE=false
+command -v codemap &>/dev/null && CODEMAP_AVAILABLE=true
+```
+
+If `CODEMAP_AVAILABLE=true`:
+
+```bash
+# Strip ANSI before injecting into LLM context
+CODEMAP_TREE=$(timeout 20 codemap tree 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g') || CODEMAP_TREE=""
+CODEMAP_DEPS=$(timeout 20 codemap deps 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g') || CODEMAP_DEPS=""
+CODEMAP_HUBS=$(timeout 20 codemap hubs 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g') || CODEMAP_HUBS=""
+```
+
+**Post-filter (hard cap 50 lines each):**
+- `CODEMAP_TREE` → pass to Agent 2 (Arch) to enrich STRUCTURE.md with structural overview
+- `CODEMAP_DEPS` → pass to Agent 2 (Arch) to enrich ARCHITECTURE.md with dependency layer info
+- `CODEMAP_HUBS` → pass to Agent 4 (Concerns) to add hub warnings to CONCERNS.md (high-fan-in files are fragile areas)
+
+If Codemap is NOT installed or all commands fail: skip silently. Do not mention Codemap in output.
+
 Continue to spawn_agents.
 </step>
 
@@ -624,6 +651,18 @@ Document actual patterns used, not ideal patterns.
 )
 ```
 
+**Before spawning Agent 2:** If `CODEMAP_TREE` or `CODEMAP_DEPS` are non-empty, append to Agent 2's prompt:
+```
+## Codemap Structural Data (deterministic — use to validate/enrich your findings)
+
+### Directory Tree
+{CODEMAP_TREE}
+
+### Dependency Graph
+{CODEMAP_DEPS}
+```
+If both are empty, omit this block.
+
 **Before spawning Agent 3:** Replace `[COMPLEXITY_HOTSPOTS_PLACEHOLDER — if Fallow hotspot data is available, it was passed here. Use complexity hotspots to identify representative files worth examining for conventions.]` with the actual FALLOW_HEALTH top-10 complexity hotspots if available, or remove that block entirely if Fallow was not installed.
 
 ---
@@ -729,6 +768,15 @@ Suggest fix approaches, not just problems.
 ```
 
 **Before spawning Agent 4:** Replace `[FALLOW_METRICS_PLACEHOLDER — if Fallow metric data is available, it was passed here. Use dead code counts, duplication clusters, and circular deps as evidence for concerns.]` with the actual FALLOW_CHECK + FALLOW_DUPES + FALLOW_HEALTH data if available, or remove that block if Fallow was not installed.
+
+Additionally, if `CODEMAP_HUBS` is non-empty, append to Agent 4's prompt:
+```
+## Codemap Hub Files (high fan-in — fragile areas)
+{CODEMAP_HUBS}
+
+Files with many inbound dependencies are fragile: changes cascade widely. Include them in the Fragile Areas section of CONCERNS.md.
+```
+If empty, omit this block.
 
 ---
 

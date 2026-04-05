@@ -12,6 +12,23 @@ You are implementing a task from a plan.
 
 {TASK_TEXT}
 
+## Tool Decision Tree
+
+Choose the right tool for each change type. See `@.claude/skills/shared/tool-availability.md` for availability checks.
+
+| Change type | Primary tool | Fallback |
+|-------------|-------------|---------|
+| Structural transforms (rename pattern, extract across many files) | ast-grep CLI (`sg`) | Edit tool per file |
+| Single-file targeted change | Edit tool | — |
+| Non-code files (Markdown, JSON, YAML) | Edit tool | — |
+| Find all instances of a code pattern | ast-grep MCP `find_code_by_rule` | Grep |
+
+**ast-grep rules:**
+- Only use ast-grep on source code files with language support (TypeScript, JavaScript, Python, etc.)
+- Do NOT use ast-grep on Markdown files — no language support
+- For bulk replace: verify each transform output before proceeding (CONDITIONAL GO status)
+- Check availability before use: `command -v sg &>/dev/null || command -v ast-grep &>/dev/null`
+
 ## Code Navigation
 
 If claude-mem tools are available (`mcp__plugin_claude-mem_*` in tool list), prefer them for understanding code you haven't seen:

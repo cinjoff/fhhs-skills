@@ -102,8 +102,14 @@ Present the step sequence to the user. Wait for approval.
 
 ## Step 4: Execute
 
+**Tool selection for bulk structural migrations** (see `@.claude/skills/shared/tool-availability.md`):
+
+- **ast-grep as primary for bulk structural migration:** If ast-grep CLI (`sg`) is available (`command -v sg &>/dev/null || command -v ast-grep &>/dev/null`) and the refactoring involves a repeated structural pattern across many source files, use ast-grep for the transform. It handles AST-level pattern matching more reliably than find-and-replace for code. Do NOT use ast-grep on Markdown files.
+- **Verification required:** ast-grep replace has CONDITIONAL GO status — run `npm test` or equivalent after each bulk transform before proceeding to the next step.
+- **Edit tool for single changes:** For targeted single-file changes, use Edit directly.
+
 For each step:
-1. Make the structural change. Use LSP `findReferences` before each modification to verify you've found all usage sites. For symbol renames, prefer LSP `rename` over manual find-and-replace.
+1. Make the structural change. Use LSP `findReferences` before each modification to verify you've found all usage sites. For symbol renames, prefer LSP `rename` over manual find-and-replace. For bulk pattern transforms, use ast-grep if available.
 2. Run the full test suite
 3. **GREEN** → commit: `refactor(scope): <what changed and why>`
 4. **RED** → REVERT immediately (`git checkout -- .`), analyze why, try differently
