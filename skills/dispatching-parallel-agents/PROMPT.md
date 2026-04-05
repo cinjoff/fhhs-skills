@@ -8,6 +8,8 @@ user-invokable: false
 
 ## Overview
 
+You delegate tasks to specialized agents with isolated context. By precisely crafting their instructions and context, you ensure they stay focused and succeed at their task. They should never inherit your session's context or history — you construct exactly what they need. This also preserves your own context for coordination work.
+
 When you have multiple unrelated failures (different test files, different subsystems, different bugs), investigating them sequentially wastes time. Each investigation is independent and can happen in parallel.
 
 **Core principle:** Dispatch one agent per independent problem domain. Let them work concurrently.
@@ -110,17 +112,17 @@ Return: Summary of what you found and what you fixed.
 
 ## Common Mistakes
 
-**Too broad:** "Fix all the tests" - agent gets lost
-**Specific:** "Fix agent-tool-abort.test.ts" - focused scope
+**❌ Too broad:** "Fix all the tests" - agent gets lost
+**✅ Specific:** "Fix agent-tool-abort.test.ts" - focused scope
 
-**No context:** "Fix the race condition" - agent doesn't know where
-**Context:** Paste the error messages and test names
+**❌ No context:** "Fix the race condition" - agent doesn't know where
+**✅ Context:** Paste the error messages and test names
 
-**No constraints:** Agent might refactor everything
-**Constraints:** "Do NOT change production code" or "Fix tests only"
+**❌ No constraints:** Agent might refactor everything
+**✅ Constraints:** "Do NOT change production code" or "Fix tests only"
 
-**Vague output:** "Fix it" - you don't know what changed
-**Specific:** "Return summary of root cause and changes"
+**❌ Vague output:** "Fix it" - you don't know what changed
+**✅ Specific:** "Return summary of root cause and changes"
 
 ## When NOT to Use
 
@@ -142,9 +144,9 @@ Return: Summary of what you found and what you fixed.
 
 **Dispatch:**
 ```
-Agent 1 -> Fix agent-tool-abort.test.ts
-Agent 2 -> Fix batch-completion-behavior.test.ts
-Agent 3 -> Fix tool-approval-race-conditions.test.ts
+Agent 1 → Fix agent-tool-abort.test.ts
+Agent 2 → Fix batch-completion-behavior.test.ts
+Agent 3 → Fix tool-approval-race-conditions.test.ts
 ```
 
 **Results:**

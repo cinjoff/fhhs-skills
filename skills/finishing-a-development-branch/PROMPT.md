@@ -10,7 +10,7 @@ user-invokable: false
 
 Guide completion of development work by presenting clear options and handling chosen workflow.
 
-**Core principle:** Verify tests -> Present options -> Execute choice -> Clean up.
+**Core principle:** Verify tests → Present options → Execute choice → Clean up.
 
 **Announce at start:** "I'm using the finishing-a-development-branch skill to complete this work."
 
@@ -21,12 +21,8 @@ Guide completion of development work by presenting clear options and handling ch
 **Before presenting options, verify tests pass:**
 
 ```bash
-# Run project's test suite — always use non-watch (CI) mode
-CI=true npm test    # Jest
-pnpm test --run     # Vitest
-cargo test          # Rust
-pytest              # Python
-go test ./...       # Go
+# Run project's test suite
+npm test / cargo test / pytest / go test ./...
 ```
 
 **If tests fail:**
@@ -158,10 +154,10 @@ git worktree remove <worktree-path>
 
 | Option | Merge | Push | Keep Worktree | Cleanup Branch |
 |--------|-------|------|---------------|----------------|
-| 1. Merge locally | Y | - | - | Y |
-| 2. Create PR | - | Y | Y | - |
-| 3. Keep as-is | - | - | Y | - |
-| 4. Discard | - | - | - | Y (force) |
+| 1. Merge locally | ✓ | - | - | ✓ |
+| 2. Create PR | - | ✓ | ✓ | - |
+| 3. Keep as-is | - | - | ✓ | - |
+| 4. Discard | - | - | - | ✓ (force) |
 
 ## Common Mistakes
 
@@ -170,7 +166,7 @@ git worktree remove <worktree-path>
 - **Fix:** Always verify tests before offering options
 
 **Open-ended questions**
-- **Problem:** "What should I do next?" -> ambiguous
+- **Problem:** "What should I do next?" → ambiguous
 - **Fix:** Present exactly 4 structured options
 
 **Automatic worktree cleanup**
