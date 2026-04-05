@@ -51,7 +51,7 @@ If fallow JSON is malformed, skip with warning: "fallow output unparseable, skip
 - Run `gsd-tools verify artifacts` and `gsd-tools verify key-links` for each plan
 - Requirements coverage: every requirement ID from ROADMAP in any plan's `requirements` must appear in at least one SUMMARY
 
-## Gate 3: Final Verification
+## Gate 2: Final Verification
 
 Uses Step 4's verification results if from the same session.
 

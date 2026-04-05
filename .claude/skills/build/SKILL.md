@@ -24,6 +24,7 @@ You are a **lean orchestrator**. Stay under 15% context usage. Delegate all heav
 
 > **GSD project context:**
 > Read `STATE.md` and `ROADMAP.md` for current position. All state updates use `gsd-tools.cjs`.
+> For context ordering in subagent prompts, see @.claude/skills/shared/context-api-contract.md.
 
 ---
 
@@ -159,9 +160,20 @@ Run verification commands directly:
 
 If any fail: flag in SUMMARY under "Issues Encountered". Do NOT claim success if verification failed.
 
+### Post-Build Reflection
+
+Run complexity-gated reflection per @references/reflection-protocol.md.
+
+Evaluate complexity after all waves complete (before generating SUMMARY.md):
+- **Simple** (≤3 tasks, no cross-cutting concerns): skip reflection entirely.
+- **Medium** (4-7 tasks): light reflection — answer 3 questions, write 1-2 `[reflection-learning]` observations.
+- **Complex** (8+ tasks, OR architectural, OR cross-phase): dispatch the reflector agent per `@references/reflector-agent.md` with SUMMARY path, SPEC path, diff range, and task list.
+
+Append the `## Reflection` section to SUMMARY.md (medium/complex tiers only).
+
 ### Generate SUMMARY.md
 
-Read `references/summary-template.md` for the template. Write SUMMARY.md. Commit: `docs({phase}-{plan}): complete {description}`
+Read `references/summary-template.md` for the template. Write SUMMARY.md (include `## Reflection` if produced above). Commit: `docs({phase}-{plan}): complete {description}`
 
 **Archive task state files** (after SUMMARY.md commit) per @references/task-state-protocol.md (Cleanup):
 ```bash

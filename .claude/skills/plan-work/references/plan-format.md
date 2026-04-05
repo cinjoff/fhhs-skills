@@ -31,6 +31,7 @@ must_haves:
       to: "path/b"
       via: "how they connect"
 
+spec: XX-NN-SPEC.md     # optional — add if SPEC.md created in Step 4.5
 requirements: []        # GSD only — requirement IDs from ROADMAP
 ---
 ```

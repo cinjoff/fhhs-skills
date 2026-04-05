@@ -49,7 +49,7 @@ Output (draft into SPEC.md `## Requirements`):
 ### Step C: Architecture Synthesis
 _CEK equivalent: Architect_
 
-**Dispatch spec-architect agent** (see `@agents/spec-architect.md`) with:
+**Dispatch spec-architect agent** (see `@references/spec-architect-agent.md`) with:
 ```
 bounded_context: <Step A output>
 research_md: <path to RESEARCH.md or "none">

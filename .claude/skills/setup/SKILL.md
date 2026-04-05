@@ -461,7 +461,7 @@ Could not find fhhs-skills plugin root. Is fhhs-skills installed?
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-fhhs-skills includes five hooks:
+fhhs-skills includes four hooks:
 
 | Hook | Event | What it does |
 |------|-------|-------------|
@@ -544,29 +544,6 @@ Check if `settings.hooks.PostToolUse` already contains a hook with command inclu
   }
 }
 ```
-
-**PreCompact hook** — add STATE.md position snapshot (only if not already present):
-
-Check if `settings.hooks.PreCompact` already contains a hook with command including `fhhs-precompact`. If not, add:
-
-```json
-{
-  "hooks": {
-    "PreCompact": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"$HOME/.claude/get-shit-done/hooks/fhhs-precompact.js\""
-          }
-        ]
-      }
-    ]
-  }
-}
-```
-
-This hook snapshots `.planning/STATE.md` (current phase, active plan) before the context is compacted. If the hook file doesn't exist yet (`fhhs-precompact.js`), skip silently — the hook is not yet shipped. It will be installed in a future update.
 
 **Important:** Merge into existing settings — do NOT overwrite existing hooks arrays. Append to them.
 
