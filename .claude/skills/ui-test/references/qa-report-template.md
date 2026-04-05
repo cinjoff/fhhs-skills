@@ -16,8 +16,7 @@
 | **Pages visited** | {COUNT} |
 | **Screenshots** | {COUNT} |
 | **Framework** | {DETECTED or "Unknown"} |
-| **Browser backend** | agent-browser |
-| **Session** | qa-{BRANCH} |
+| **Browser backend** | gstack browse (`$B`) |
 | **Index** | [All QA runs](.planning/qa-reports/index.md) |
 
 ## Health Score: {SCORE}/100

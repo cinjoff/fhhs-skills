@@ -55,47 +55,60 @@ DEV_URL="http://localhost:${DEV_PORT}"
 
 ## Step 2: Capture Screenshots
 
-Requires `agent-browser` CLI.
+## SETUP (run this check BEFORE any browse command)
 
-Check availability:
 ```bash
-which agent-browser && echo "available" || echo "not-found"
+_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
+B=""
+[ -n "$_ROOT" ] && [ -x "$_ROOT/.claude/skills/gstack/browse/dist/browse" ] && B="$_ROOT/.claude/skills/gstack/browse/dist/browse"
+[ -z "$B" ] && B=~/.claude/skills/gstack/browse/dist/browse
+if [ -x "$B" ]; then
+  echo "READY: $B"
+else
+  echo "NEEDS_SETUP"
+fi
 ```
 
-If not installed, **stop and tell the user**: "agent-browser is required for visual verification. Install it with: `npm install -g agent-browser`" — do not proceed without it.
+If `NEEDS_SETUP`:
+1. Tell the user: "gstack browse needs a one-time build (~10 seconds). OK to proceed?"
+2. Run: `cd ~/.claude/skills/gstack && ./setup`
 
 Capture desktop, tablet, and mobile viewports:
 
 ```bash
 # Desktop (1440x900)
-agent-browser open "$DEV_URL" --viewport 1440x900 --wait 3000
-agent-browser screenshot /tmp/ui-test-desktop.png
+$B viewport 1440x900
+$B goto "$DEV_URL"
+$B screenshot /tmp/ui-test-desktop.png
 
 # Tablet (768x1024)
-agent-browser open "$DEV_URL" --viewport 768x1024 --wait 2000
-agent-browser screenshot /tmp/ui-test-tablet.png
+$B viewport 768x1024
+$B goto "$DEV_URL"
+$B screenshot /tmp/ui-test-tablet.png
 
 # Mobile (375x812)
-agent-browser open "$DEV_URL" --viewport 375x812 --wait 2000
-agent-browser screenshot /tmp/ui-test-mobile.png
+$B viewport 375x812
+$B goto "$DEV_URL"
+$B screenshot /tmp/ui-test-mobile.png
 
 # Accessibility snapshot
-agent-browser snapshot -c > /tmp/ui-test-a11y.txt
+$B snapshot -c > /tmp/ui-test-a11y.txt
 ```
 
 For authenticated pages, log in first:
 ```bash
-agent-browser open "$DEV_URL/login" --viewport 1440x900
-agent-browser fill 'input[type="email"]' "$TEST_USER_EMAIL"
-agent-browser fill 'input[type="password"]' "$TEST_USER_PASSWORD"
-agent-browser click 'button[type="submit"]'
-agent-browser open "$DEV_URL/protected" --wait 5000
-agent-browser screenshot /tmp/ui-test-desktop.png
+$B viewport 1440x900
+$B goto "$DEV_URL/login"
+$B fill 'input[type="email"]' "$TEST_USER_EMAIL"
+$B fill 'input[type="password"]' "$TEST_USER_PASSWORD"
+$B click 'button[type="submit"]'
+$B goto "$DEV_URL/protected"
+$B screenshot /tmp/ui-test-desktop.png
 ```
 
 Read each screenshot image to visually inspect the UI.
 
-**Video evidence for critical bugs:** If a CRITICAL visual bug is found, record a video: `agent-browser record start ./evidence.webm`, reproduce the bug, `agent-browser record stop`. Attach the recording path to the report.
+**Screenshot evidence for critical bugs:** If a CRITICAL visual bug is found, capture before/after screenshots to document the issue.
 
 ---
 
@@ -103,7 +116,7 @@ Read each screenshot image to visually inspect the UI.
 
 Check for runtime errors:
 ```bash
-agent-browser eval "JSON.stringify(window.__consoleErrors || [])"
+$B eval "JSON.stringify(window.__consoleErrors || [])"
 ```
 
 Evaluate:
@@ -150,15 +163,13 @@ If GSD project is active and verifying a phase, update STATE.md with verificatio
 
 # QA Mode (--qa flag)
 
-<!-- Forked from gstack qa (v0.3.3 → v0.4.0). Browser backend: agent-browser (Vercel) -->
+<!-- Forked from gstack qa (v0.3.3 → v0.4.0). Browser backend: gstack browse -->
 
 You are a QA engineer. Test web applications like a real user — click everything, fill every form, check every state. Produce a structured report with evidence.
 
 ## Prerequisites
 
-This skill requires **agent-browser** CLI to be installed globally. If `agent-browser` is not available, stop and tell the user:
-
-> "agent-browser is required for QA testing. Install it with: `npm install -g agent-browser`"
+This skill requires **gstack browse** binary (`$B`). Check availability before proceeding.
 
 ## Setup
 
@@ -175,21 +186,30 @@ This skill requires **agent-browser** CLI to be installed globally. If `agent-br
 
 **If no URL is given and you're on a feature branch:** Automatically enter **diff-aware mode** (see Modes below). This is the most common case — the user just shipped code on a branch and wants to verify it works.
 
-**Check agent-browser availability:**
+## SETUP (run this check BEFORE any browse command)
 
 ```bash
-which agent-browser && echo "READY" || echo "NEEDS_INSTALL"
+_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
+B=""
+[ -n "$_ROOT" ] && [ -x "$_ROOT/.claude/skills/gstack/browse/dist/browse" ] && B="$_ROOT/.claude/skills/gstack/browse/dist/browse"
+[ -z "$B" ] && B=~/.claude/skills/gstack/browse/dist/browse
+if [ -x "$B" ]; then
+  echo "READY: $B"
+else
+  echo "NEEDS_SETUP"
+fi
 ```
 
-If `NEEDS_INSTALL`, stop and ask the user to install agent-browser.
+If `NEEDS_SETUP`:
+1. Tell the user: "gstack browse needs a one-time build (~10 seconds). OK to proceed?"
+2. Run: `cd ~/.claude/skills/gstack && ./setup`
 
-**Create output directories and initialize session:**
+**Create output directories:**
 
 ```bash
 REPORT_DIR=".planning/qa-reports"
 mkdir -p "$REPORT_DIR/screenshots"
 BRANCH=$(git branch --show-current 2>/dev/null | tr '/' '-')
-agent-browser --session "qa-${BRANCH:-default}" open about:blank
 ```
 
 ---
@@ -211,7 +231,7 @@ This is the **primary mode** for developers verifying their work. When the user 
    - View/template/component files -> which pages render them
    - Model/service files -> which pages use those models (check controllers that reference them)
    - CSS/style files -> which pages include those stylesheets
-   - API endpoints -> test them directly with `agent-browser eval "await fetch('/api/...')"`
+   - API endpoints -> test them directly with `$B eval "await fetch('/api/...')"`
    - Static pages (markdown, HTML) -> navigate to them directly
 
 3. **Detect the running app** — resolve the dev server URL using the same priority as Visual Verification mode:
@@ -230,7 +250,7 @@ This is the **primary mode** for developers verifying their work. When the user 
    - Take a screenshot
    - Check console for errors
    - If the change was interactive (forms, buttons, flows), test the interaction end-to-end
-   - Use `agent-browser snapshot -i` before and after actions to verify the change had the expected effect
+   - Use `$B snapshot -i` before and after actions to verify the change had the expected effect
 
 5. **Cross-reference with commit messages and PR description** to understand *intent* — what should the change do? Verify it actually does that.
 
@@ -295,36 +315,25 @@ Opt-out: create `.planning/qa-reports/.no-test-bootstrap`
 
 ### Phase 1: Initialize
 
-1. Check agent-browser availability (see Setup above)
+1. Check gstack browse availability (see Setup above)
 2. Create output directories
 3. Copy report template from `ui-test/references/qa-report-template.md` to output dir
 4. Start timer for duration tracking
-5. Initialize isolated browser session: `agent-browser --session "qa-${BRANCH}"`
 
 ### Phase 2: Authenticate (if needed)
 
 **If the user specified auth credentials:**
 
 ```bash
-agent-browser --session "qa-${BRANCH}" open <login-url>
-agent-browser --session "qa-${BRANCH}" snapshot -i       # find the login form
-agent-browser --session "qa-${BRANCH}" fill @e3 "user@example.com"
-agent-browser --session "qa-${BRANCH}" fill @e4 "[REDACTED]"   # NEVER include real passwords in report
-agent-browser --session "qa-${BRANCH}" click @e5                # submit
-agent-browser --session "qa-${BRANCH}" snapshot -i              # verify login succeeded
+$B goto <login-url>
+$B snapshot -i       # find the login form
+$B fill @e3 "user@example.com"
+$B fill @e4 "[REDACTED]"   # NEVER include real passwords in report
+$B click @e5                # submit
+$B snapshot -i              # verify login succeeded
 ```
 
-**Save authenticated state for reuse:**
-
-```bash
-agent-browser --session "qa-${BRANCH}" state save ".planning/qa-reports/auth-state.json"
-```
-
-**Restore auth state in a new session:**
-
-```bash
-agent-browser --session "qa-${BRANCH}" state load ".planning/qa-reports/auth-state.json"
-```
+Browse maintains authentication state automatically across calls — no need to save or load state files.
 
 **If 2FA/OTP is required:** Ask the user for the code and wait.
 
@@ -353,10 +362,10 @@ Store the `score` field as `CODEBASE_HEALTH_BASELINE`. This will be compared aft
 Get a map of the application:
 
 ```bash
-agent-browser --session "qa-${BRANCH}" open <target-url>
-agent-browser --session "qa-${BRANCH}" snapshot -i
-agent-browser --session "qa-${BRANCH}" screenshot "$REPORT_DIR/screenshots/initial.png"
-agent-browser --session "qa-${BRANCH}" console                # any errors on landing?
+$B goto <target-url>
+$B snapshot -i -a -o "$REPORT_DIR/screenshots/initial-annotated.png"
+$B screenshot "$REPORT_DIR/screenshots/initial.png"
+$B console --errors                # any errors on landing?
 ```
 
 **Detect framework** (note in report metadata):
@@ -365,17 +374,17 @@ agent-browser --session "qa-${BRANCH}" console                # any errors on la
 - `wp-content` in URLs -> WordPress
 - Client-side routing with no page reloads -> SPA
 
-**For SPAs:** Navigation is client-side. Use `agent-browser snapshot -i` to find nav elements (buttons, menu items) instead of relying on link extraction.
+**For SPAs:** Navigation is client-side. Use `$B snapshot -i` to find nav elements (buttons, menu items) instead of relying on link extraction.
 
 ### Phase 4: Explore
 
 Visit pages systematically. At each page:
 
 ```bash
-agent-browser --session "qa-${BRANCH}" open <page-url>
-agent-browser --session "qa-${BRANCH}" snapshot -i
-agent-browser --session "qa-${BRANCH}" screenshot "$REPORT_DIR/screenshots/page-name.png"
-agent-browser --session "qa-${BRANCH}" console
+$B goto <page-url>
+$B snapshot -i
+$B screenshot "$REPORT_DIR/screenshots/page-name.png"
+$B console --errors
 ```
 
 Then follow the **per-page exploration checklist** (see `ui-test/references/exploration-checklist.md`):
@@ -388,19 +397,14 @@ Then follow the **per-page exploration checklist** (see `ui-test/references/expl
 6. **Console** — Any new JS errors after interactions?
 7. **Responsiveness** — Check mobile viewport:
    ```bash
-   agent-browser --session "qa-${BRANCH}" set device "iPhone 14"
-   agent-browser --session "qa-${BRANCH}" screenshot "$REPORT_DIR/screenshots/page-mobile.png"
-   agent-browser --session "qa-${BRANCH}" set device "desktop"
+   $B viewport 375x812
+   $B screenshot "$REPORT_DIR/screenshots/page-mobile.png"
+   $B viewport 1280x720
    ```
-8. **Dark mode** — Check dark mode rendering:
-   ```bash
-   agent-browser --session "qa-${BRANCH}" set media dark
-   agent-browser --session "qa-${BRANCH}" screenshot "$REPORT_DIR/screenshots/page-dark.png"
-   agent-browser --session "qa-${BRANCH}" set media light
-   ```
+8. **Dark mode** — Check dark mode rendering. gstack browse does not support media emulation — use system dark mode or toggle in the app if available.
 9. **Network** — Verify API calls:
    ```bash
-   agent-browser --session "qa-${BRANCH}" network requests --filter "status>=400"
+   $B network
    ```
 
 **Depth judgment:** Spend more time on core features (homepage, dashboard, checkout, search) and less on secondary pages (about, terms, privacy).
@@ -419,21 +423,21 @@ Document each issue **immediately when found** — don't batch them.
 1. Take a screenshot before the action
 2. Perform the action
 3. Take a screenshot showing the result
-4. Use `agent-browser snapshot -i` to show what changed
+4. Use `$B snapshot -i` to show what changed
 5. Write repro steps referencing screenshots
 
 ```bash
-agent-browser --session "qa-${BRANCH}" screenshot "$REPORT_DIR/screenshots/issue-001-step-1.png"
-agent-browser --session "qa-${BRANCH}" click @e5
-agent-browser --session "qa-${BRANCH}" screenshot "$REPORT_DIR/screenshots/issue-001-result.png"
-agent-browser --session "qa-${BRANCH}" snapshot -i
+$B screenshot "$REPORT_DIR/screenshots/issue-001-step-1.png"
+$B click @e5
+$B screenshot "$REPORT_DIR/screenshots/issue-001-result.png"
+$B snapshot -i
 ```
 
-**Critical bugs** — record video evidence:
+**Critical bugs** — capture before/after screenshot evidence (video recording is not supported by gstack browse):
 ```bash
-agent-browser --session "qa-${BRANCH}" record start
+$B screenshot "$REPORT_DIR/screenshots/issue-001-before.png"
 # ... reproduce the bug ...
-agent-browser --session "qa-${BRANCH}" record stop "$REPORT_DIR/screenshots/issue-001-video.webm"
+$B screenshot "$REPORT_DIR/screenshots/issue-001-after.png"
 ```
 
 **Static bugs** (typos, layout issues, missing images):
@@ -441,8 +445,8 @@ agent-browser --session "qa-${BRANCH}" record stop "$REPORT_DIR/screenshots/issu
 2. Describe what's wrong
 
 ```bash
-agent-browser --session "qa-${BRANCH}" snapshot -i
-agent-browser --session "qa-${BRANCH}" screenshot "$REPORT_DIR/screenshots/issue-002.png"
+$B snapshot -i
+$B screenshot "$REPORT_DIR/screenshots/issue-002.png"
 ```
 
 **Write each issue to the report immediately** using the template format from `ui-test/references/qa-report-template.md`.
@@ -554,12 +558,12 @@ Message format: `fix(qa): ISSUE-NNN — {what was broken and how it was fixed}`
 #### 8e. Re-verify the fix
 ```bash
 # Navigate back to the affected page
-agent-browser --session "qa-${BRANCH}" open <affected-url>
-agent-browser --session "qa-${BRANCH}" screenshot "$REPORT_DIR/screenshots/issue-NNN-before-fix.png"
+$B goto <affected-url>
+$B screenshot "$REPORT_DIR/screenshots/issue-NNN-before-fix.png"
 # Perform the action that previously failed
-agent-browser --session "qa-${BRANCH}" screenshot "$REPORT_DIR/screenshots/issue-NNN-after-fix.png"
-agent-browser --session "qa-${BRANCH}" console
-agent-browser --session "qa-${BRANCH}" snapshot -D
+$B screenshot "$REPORT_DIR/screenshots/issue-NNN-after-fix.png"
+$B console --errors
+$B snapshot -D
 ```
 Read both screenshots inline and show them to the user.
 
@@ -739,7 +743,7 @@ Minimum 0 per category.
 
 ### Next.js
 - Check console for hydration errors (`Hydration failed`, `Text content did not match`)
-- Monitor `_next/data` requests via `agent-browser network requests --filter "_next/data"` — 404s indicate broken data fetching
+- Monitor `_next/data` requests via `$B network` — 404s indicate broken data fetching
 - Test client-side navigation (click links, don't just `open`) — catches routing issues
 - Check for CLS (Cumulative Layout Shift) on pages with dynamic content
 
@@ -756,7 +760,7 @@ Minimum 0 per category.
 - Check for mixed content warnings (common with WP)
 
 ### General SPA (React, Vue, Angular)
-- Use `agent-browser snapshot -i` for navigation — link extraction misses client-side routes
+- Use `$B snapshot -i` for navigation — link extraction misses client-side routes
 - Check for stale state (navigate away and back — does data refresh?)
 - Test browser back/forward — does the app handle history correctly?
 - Check for memory leaks (monitor console after extended use)
@@ -774,7 +778,7 @@ Minimum 0 per category.
 7. **Test like a user.** Use realistic data. Walk through complete workflows end-to-end.
 8. **Depth over breadth.** 5-10 well-documented issues with evidence > 20 vague descriptions.
 9. **Never delete output files.** Screenshots and reports accumulate — that's intentional.
-10. **Use `agent-browser snapshot -i` for tricky UIs.** Finds interactive elements the accessibility tree might miss.
+10. **Use `$B snapshot -i` for tricky UIs.** Finds interactive elements the accessibility tree might miss.
 
 ---
 
@@ -785,12 +789,13 @@ Minimum 0 per category.
   qa-report-{domain}-{YYYY-MM-DD}.md    # Structured report
   screenshots/
     initial.png                          # Landing page screenshot
+    initial-annotated.png                # Annotated screenshot from orient phase
     issue-001-step-1.png                 # Per-issue evidence
     issue-001-result.png
-    issue-001-video.webm                 # Video evidence for critical bugs
+    issue-001-before.png                 # Before/after screenshots for critical bugs
+    issue-001-after.png
     ...
   baseline.json                          # For regression mode
-  auth-state.json                        # Saved authentication state
 ```
 
 Report filenames use the domain and date: `qa-report-myapp-com-2026-03-12.md`

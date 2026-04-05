@@ -1,9 +1,0 @@
-{"ts":"2026-03-25T12:00:00.000Z","type":"phase_start","phase_id":"01-setup","phase_name":"Phase 1 (Setup)","step":"plan"}
-{"ts":"2026-03-25T12:05:00.000Z","type":"step_start","phase_id":"01-setup","step":"plan","details":"Running /fh:plan-work"}
-{"ts":"2026-03-25T12:08:00.000Z","type":"step_complete","phase_id":"01-setup","step":"plan","cost":0.02,"tokens_in":4200,"tokens_out":1800}
-{"ts":"2026-03-25T12:10:00.000Z","type":"decision","phase_id":"01-setup","step":"plan-review","decision_id":"D-AUTO-001","summary":"Use SQLite over PostgreSQL","confidence":"HIGH"}
-{"ts":"2026-03-25T12:15:00.000Z","type":"step_start","phase_id":"01-setup","step":"build","details":"Running /fh:build"}
-{"ts":"2026-03-25T12:35:00.000Z","type":"metric","phase_id":"01-setup","step":"build","tokens_in":12000,"tokens_out":5500,"cost":0.08,"duration_ms":20000}
-{"ts":"2026-03-25T12:44:00.000Z","type":"phase_complete","phase_id":"01-setup","phase_name":"Phase 1 (Setup)","total_cost":0.12,"duration_ms":45000}
-{"ts":"2026-03-25T12:46:00.000Z","type":"phase_start","phase_id":"02-core","phase_name":"Phase 2 (Core API)","step":"plan"}
-{"ts":"2026-03-25T12:50:00.000Z","type":"step_start","phase_id":"02-core","step":"build","details":"Running /fh:build phase 2"}
