@@ -215,7 +215,7 @@ No changes. (Template variables adopted from upstream v1.2.0.)
 | 13 | `allowed-tools`: uses `mcp__conductor__AskUserQuestion` | fhhs convention for MCP tool references |
 | 14 | Added lean orchestrator pattern (stay under 20% context) | Interactive skill needs headroom for back-and-forth |
 
-### qa (from qa)
+### ui-test (from qa)
 | # | Change | Rationale |
 |---|--------|-----------|
 | 1 | Replaced all `$B` browse commands with `agent-browser` CLI equivalents | agent-browser (Vercel) is the browser backend for fhhs — no compiled Bun binary needed |
@@ -233,15 +233,16 @@ No changes. (Template variables adopted from upstream v1.2.0.)
 | 13 | Removed cookie-import from real browsers | agent-browser handles sessions via state save/load, not browser cookie import |
 | 14 | Removed `$B links` command (no direct equivalent) | Use `snapshot -i` to discover navigation elements instead |
 | 15 | Removed `$B viewport` command, replaced with `agent-browser set device` | Device presets are more ergonomic than raw viewport dimensions |
-| 16 | Moved per-page exploration checklist to dedicated `references/exploration-checklist.md` | Expanded with dark mode, network, and auth boundary checks — too large for inline |
-| 17 | Report template forked to `references/report-template.md` (was `templates/`) | Consistent with plugin shipping boundary — all runtime files in skills/{skill}/ |
-| 18 | Issue taxonomy forked to `references/issue-taxonomy.md` | Verbatim fork, co-located in references/ for runtime access |
+| 16 | Moved per-page exploration checklist to dedicated `references/exploration-checklist.md` (now at `ui-test/references/exploration-checklist.md`) | Expanded with dark mode, network, and auth boundary checks — too large for inline |
+| 17 | Report template forked to `references/report-template.md` (was `templates/`) (now at `ui-test/references/report-template.md`) | Consistent with plugin shipping boundary — all runtime files in skills/{skill}/ |
+| 18 | Issue taxonomy forked to `references/issue-taxonomy.md` (now at `ui-test/references/issue-taxonomy.md`) | Verbatim fork, co-located in references/ for runtime access |
+| 19 | Skill renamed `qa` -> `ui-test`; both Visual Verification Mode and QA Mode (`--qa` flag) merged into one skill | Visual verification and functional QA unified — `--qa` flag selects thorough mode; frontmatter name is `fh:ui-test` |
 
 ### Cross-cutting pattern integration
 | # | Change | Rationale |
 |---|--------|-----------|
 | 1 | Added anti-drift rule to `/fh:fix` Step 1 (Triage) | Prevents strategy escalation mid-fix — once SIMPLE/MODERATE/PARALLEL/COMPLEX is chosen, commit fully. Adjacent issues go to `.planning/todos/` |
-| 2 | Added QA delegation prompt to `/fh:verify-ui` Step 1 | On feature branches, suggests `/fh:qa` for diff-aware testing instead of manual visual verification |
+| 2 | Added QA delegation prompt to `/fh:verify-ui` Step 1 | On feature branches, suggests `/fh:ui-test --qa` for diff-aware testing instead of manual visual verification |
 | 3 | Added video recording for critical bugs in `/fh:verify-ui` Step 2 | Uses `agent-browser record start/stop` to capture reproducible evidence for critical visual bugs |
 
 ### review enhancements (from review/checklist.md)
@@ -311,6 +312,8 @@ No changes. (Template variables adopted from upstream v1.2.0.)
 |---|--------|-----------|
 | 1 | Agent definitions moved from ~/.claude/agents/ to skills/ | Self-contained plugin, no system-level files needed |
 
+Note: `gsd-executor.md` and `gsd-planner.md` intentionally not forked — both were removed in d47e70d2 cleanup. `gsd-executor` dispatch was replaced by the build skill's direct task orchestration; `gsd-planner` was replaced by the lean plan-work orchestrator.
+
 ## claude-md-management (forked from v1.0.0)
 
 ### claude-md-improver (skill)
@@ -347,7 +350,7 @@ No changes. (Template variables adopted from upstream v1.2.0.)
 | 2 | `init` mode reads co-located `templates.md` (was `skills/claude-md-improver/references/templates.md`) | Shipping boundary fix — references/ at repo root aren't shipped with plugin install |
 | 3 | Added GSD project context detection in session learnings mode | Ensures updates respect `.planning/` structure |
 
-Upstream reference: `upstream/claude-md-management-1.0.0/`
+Upstream reference: `upstream/claude-md-management-1.0.0/` (snapshot deleted in d47e70d2 — skill fully integrated into `skills/claude-md-improver/`)
 
 ## Build Pipeline Optimization (build-pipeline-optimization branch)
 
@@ -456,10 +459,12 @@ multiple skills and agents.
 |---|--------|-----------|
 | 4 | Added DIFF_EXCLUDE pattern to git diff commands | Excludes `.planning/`, lock files, `.next/`, source maps from review diffs |
 
-### gsd-planner (agent)
+### gsd-planner (agent) — REMOVED (moved to _unused/agents/, replaced by lean plan-work orchestrator)
 | # | Change | Rationale |
 |---|--------|-----------|
 | 2 | Plan limits read from `.planning/config.json` instead of hardcoded | Per-project tuning consistent with plan-work changes |
+
+Note: gsd-planner.md was moved to `_unused/agents/` in cleanup d47e70d2. The plan-work skill now orchestrates planning directly without a dedicated planner agent. Patch above is historical — no longer active.
 
 ### Cross-cutting: `disable-model-invocation: true`
 | # | Change | Rationale |
