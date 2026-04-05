@@ -15,8 +15,15 @@
 | **Read specific function** | claude-mem `smart_unfold` | `Read` | AST-exact extraction, never truncates |
 | **Project structure mapping** | `/fh:map-codebase` | — | Deterministic, structured output |
 | **Static analysis** | Fallow CLI (review, map-codebase) | — | Unused exports, circular deps, complexity — enhancement, not required |
-| **Web research** | Firecrawl | WebSearch | LLM-optimized markdown output |
-| **Library docs** | context7 `query-docs` | Firecrawl | Current, version-specific |
+| **Web research (general)** | Firecrawl `firecrawl_search` | WebSearch | LLM-optimized markdown, sourceType filtering |
+| **Scrape specific URL** | Firecrawl `firecrawl_scrape` | WebFetch | Handles JS rendering, anti-bot |
+| **YouTube transcripts** | Firecrawl `firecrawl_scrape` (markdown format) | — | Captions embedded in markdown output |
+| **Documentation sites** | context7 `query-docs` | Firecrawl `firecrawl_scrape` | Context7 for libs; firecrawl for non-lib docs |
+| **GitHub discovery** | Firecrawl `firecrawl_search` (category: github) | WebSearch | Filtered search for repos/issues |
+| **Research papers** | Firecrawl `firecrawl_search` (category: research) | WebSearch | arXiv, Nature, IEEE, PubMed |
+| **Site structure discovery** | Firecrawl `firecrawl_map` | — | Fast URL discovery via sitemaps |
+
+See `@.claude/skills/shared/firecrawl-guide.md` for detailed content-type patterns and options.
 
 ## Token Efficiency Guidelines
 

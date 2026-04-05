@@ -124,24 +124,15 @@ When researching "best library for X": find what the ecosystem actually uses, do
 
 ### 2. Firecrawl (preferred for web) — Web Search, Scraping, Research
 
-Preferred over WebSearch/WebFetch. Three tiers of access:
+See `@.claude/skills/shared/firecrawl-guide.md` for content-type-specific patterns (docs, YouTube, GitHub, news, research, general web).
 
-**Tier 1 — MCP tools** (best, if firecrawl plugin installed):
+**Quick reference:**
 - `mcp__firecrawl__firecrawl_search` for web search and discovery
 - `mcp__firecrawl__firecrawl_scrape` for scraping specific URLs
-Returns clean LLM-optimized markdown directly.
+- `mcp__firecrawl__firecrawl_map` for URL discovery from a root domain
+- Content-type routing: match your target to the guide's patterns for optimal results
 
-**Tier 2 — CLI via Bash** (good, if `firecrawl-cli` npm package installed):
-```bash
-firecrawl search "query" -o .firecrawl/result.json
-firecrawl scrape https://url -o .firecrawl/page.md
-```
-Check availability: `firecrawl --status 2>/dev/null`. Write to `.firecrawl/` directory, then Read results.
-
-**Tier 3 — Built-in fallback** (always available):
-Use WebFetch for specific URLs and WebSearch for discovery when firecrawl is unavailable.
-
-Priority: Context7 > Firecrawl MCP > Firecrawl CLI > WebFetch > WebSearch
+**Fallback chain:** Context7 > Firecrawl MCP > Firecrawl CLI > WebFetch > WebSearch
 
 ### 3. Official Docs via WebFetch
 
