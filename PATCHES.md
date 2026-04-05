@@ -3,17 +3,18 @@
 Modifications applied to forked upstream skills. When updating upstream,
 review each patch and reapply if still relevant.
 
-## Superpowers (forked from v4.3.1, obra/superpowers)
+## Superpowers (forked from v5.0.7, obra/superpowers)
 
 ### brainstorming
 | # | Change | Rationale |
 |---|--------|-----------|
-| 1 | Output path: `docs/plans/` → `.planning/designs/` | GSD convention — all planning artifacts live in .planning/ |
+| 1 | Output path: `docs/superpowers/specs/` → `.planning/designs/` | GSD convention — all planning artifacts live in .planning/ |
 | 2 | Removed terminal state (invoke writing-plans) | /plan owns the flow after brainstorming — it continues to Step 3 |
 | 3 | Removed design doc git commit | Composite handles commits to avoid double-commits |
 | 4 | Removed writing-plans references throughout | Not used in composite workflow |
 | 5 | Added deep codebase exploration with `code-explorer` agents | Inspired by feature-dev plugin — parallel explorer agents surface essential files before design |
 | 6 | Added parallel `code-architect` agents for complex features | Inspired by feature-dev plugin — independent architect agents with different lenses (minimal/clean/pragmatic) |
+| 7 | Omitted Visual Companion feature (v5.0.7 addition: browser-based mockup/diagram companion) | Requires an open local URL — incompatible with non-interactive subagent execution; browser-based brainstorming is out of scope for the composite flow |
 
 ### test-driven-development
 | # | Change | Rationale |
@@ -80,6 +81,9 @@ No changes.
 | # | Change | Rationale |
 |---|--------|-----------|
 | 1 | EnterPlanMode node: neutral → "DON'T" warning | Prevents plan mode trapping in Claude Code |
+| 2 | Omitted SUBAGENT-STOP block (v5.0.7 addition) | Subagent detection handled by composite skills directly — using-superpowers is `user-invokable: false` and not loaded for subagents |
+| 3 | Omitted Instruction Priority section (v5.0.7 addition) | Instruction priority is implicit in Claude Code plugin system; CLAUDE.md project instructions already take precedence |
+| 4 | Omitted Platform Adaptation section (v5.0.7 addition: Copilot CLI, Gemini CLI support) | fhhs-skills targets Claude Code only — multi-platform routing is out of scope |
 
 ### writing-skills
 No changes.
@@ -288,7 +292,7 @@ No changes. (Template variables adopted from upstream v1.2.0.)
 |---|--------|-----------|
 | 1 | Lazy require() — lib modules loaded per-command, not eagerly at startup | Reduces per-invocation overhead; only fs, path, and core.cjs are eager. Saves ~10-20ms per call across 15-50 invocations per session |
 
-## GSD (forked from v1.22.4)
+## GSD (forked from v1.30.0)
 
 ### resume-work → progress (merge)
 | # | Change | Rationale |
@@ -370,6 +374,10 @@ multiple skills and agents.
 | 8 | `checkpoint-protocol.md` deleted, `decisions-template.md` added | Checkpoint logic inlined into SKILL.md; decisions template needed for auto-mode logging |
 | 9 | `spec-gate-prompt.md` added decision consistency check section | Auto-mode: structurally verifies decisions' Affects fields match modified files |
 | 10 | DIFF_EXCLUDE pattern added to all git diffs | Excludes `.planning/`, lock files, `.next/`, source maps — reduces noise in diffs |
+| 11 | Absorbed GSD v1.30.0: false-failure detection heuristic | Distinguishes transient test failures from regressions before aborting a wave |
+| 12 | Absorbed GSD v1.30.0: pre-wave dependency check | Verifies prerequisite tasks are complete before starting a wave |
+| 13 | Absorbed GSD v1.30.0: regression gate after each wave | Runs baseline tests after each wave to catch regressions early |
+| 14 | Absorbed GSD v1.30.0: PROJECT.md evolution step | Prompts updating PROJECT.md scope section when plan introduces new components |
 
 ### review (`/fh:review`)
 | # | Change | Rationale |
@@ -382,6 +390,8 @@ multiple skills and agents.
 | 6 | `spec-gate-prompt.md` added to review references | Reused from build — same prompt drives review Step 1.8 spec verification |
 | 7 | Added Step 1.7: Static Analysis (Fallow integration) | Deterministic findings from Fallow augment review agents when available |
 | 8 | Added Context-Mode Acceleration for must_haves verification | Uses `ctx_search` for faster plan lookups when context-mode plugin is installed |
+| 9 | Absorbed GSD v1.30.0: three-level artifact verification | Verifies implementation at source, wiring, and integration levels |
+| 10 | Absorbed GSD v1.30.0: anti-pattern scan step | Checks for common anti-patterns from GSD's quality gate catalog |
 
 ### simplify (`/fh:simplify` and `skills/simplify/PROMPT.md`)
 | # | Change | Rationale |
@@ -414,6 +424,9 @@ multiple skills and agents.
 | 3 | Added AUTO_MODE branch in Step 3 (auto-decides gray areas) | Autonomous execution path — auto-decides gray areas using heuristics from decisions-template.md |
 | 4 | Plan limits from `.planning/config.json` instead of hardcoded defaults | Per-project tuning; defaults: 4-6 tasks, 8-15 files, 2500 words, 60% context |
 | 5 | Added crash reconciliation in AUTO_MODE Step 3 | Detects prior plan-work decisions in DECISIONS.md when CONTEXT.md is incomplete, reuses them instead of re-deciding |
+| 6 | Absorbed GSD v1.30.0: anti-shallow execution rules | Tasks must reference specific files/functions — vague "update X" tasks blocked at planning |
+| 7 | Absorbed GSD v1.30.0: requirements coverage gate | All REQUIREMENTS.md items for the phase must map to at least one task before plan is finalized |
+| 8 | Absorbed GSD v1.30.0: `--reviews` flag | Triggers additional review agent pass after plan generation |
 
 ### plan-review (`/fh:plan-review`)
 | # | Change | Rationale |
@@ -426,7 +439,7 @@ multiple skills and agents.
 ### fix (`/fh:fix`)
 | # | Change | Rationale |
 |---|--------|-----------|
-| 1 | Added Step 0½: Fallow static analysis integration | Deterministic findings (unused exports, complexity metrics) augment triage |
+| 1 | Added Step 0.5: Fallow static analysis integration (implemented during v1.30.0 sync) | Deterministic findings (unused exports, complexity metrics) augment triage before deep debugging |
 | 2 | Added DECISIONS.md Correction logging in Step 4 | If root cause relates to an active decision, logs `[CORRECTED]` entry to DECISIONS.md |
 | 3 | Added Codebase Freshness Check | Advisory warning when codebase mapping is stale |
 | 4 | Added Context-Mode Acceleration in Step 3 | Uses `ctx_search` for faster DECISIONS.md and DESIGN.md lookups |
@@ -448,6 +461,21 @@ multiple skills and agents.
 | 4 | Added Better Auth + Resend email integration options | Auth and email integration offered during stack confirmation |
 | 5 | Added organization support (opt-in multi-tenant) | `wants_organizations` flag for teams/roles support when auth is selected |
 | 6 | Conductor setup: `cp` → `ln -sf` for env files in conductor.json templates | Symlinks for gitignored files across all framework templates (Next.js, Rails, Django, Phoenix, Vite) |
+| 7 | Absorbed GSD v1.30.0: sub-repo detection | Detects monorepo sub-packages and adds them to PROJECT.md scope |
+| 8 | Absorbed GSD v1.30.0: structured researcher prompts | `gsd-project-researcher` and `gsd-research-synthesizer` receive structured prompts with explicit output format requirements |
+
+### progress (`/fh:progress`)
+| # | Change | Rationale |
+|---|--------|-----------|
+| 1 | Absorbed GSD v1.30.0: discuss-mode | `--discuss` flag opens strategic discussion about the current phase before resuming work |
+| 2 | Absorbed GSD v1.30.0: UAT tracking | Surfaces UAT items from `.planning/` when resuming after a milestone |
+| 3 | Absorbed GSD v1.30.0: verification debt check | Warns when tasks are marked complete but SUMMARY.md is missing or verification section is empty |
+
+### implementer-prompt (reference)
+| # | Change | Rationale |
+|---|--------|-----------|
+| 1 | Added stub check section (GSD v1.30.0 sync) | Subagents must flag any stubs, TODOs, or placeholder implementations in their output |
+| 2 | Added self-check section (GSD v1.30.0 sync) | Subagents run a final self-check before reporting done: files exist, imports resolve, tests pass |
 
 ### verification-before-completion (internal skill)
 | # | Change | Rationale |

@@ -2,7 +2,7 @@
 
 This plugin incorporates skills and commands forked from these upstream projects. The original source is preserved in `upstream/` for reference.
 
-## Superpowers — v4.3.1 — [repo](https://github.com/obra/superpowers)
+## Superpowers — v5.0.7 — [repo](https://github.com/obra/superpowers)
 
 Forked skills (now at `skills/`):
 
@@ -116,9 +116,28 @@ Forked skills:
 
 Upstream snapshot: `upstream/gstack-0.3.3/`
 
-## GSD (Get Shit Done) — v1.22.4 — [repo](https://github.com/gsd-build/get-shit-done)
+## GSD (Get Shit Done) — v1.30.0 — [repo](https://github.com/gsd-build/get-shit-done)
 
 GSD commands and agents are forked into `commands/` and `skills/` respectively. GSD CLI (`gsd-tools.cjs`) is bundled in `bin/` and symlinked to `$HOME/.claude/get-shit-done/bin/` during `/setup`.
+
+Note: `gsd-executor` and `gsd-planner` agents are NOT forked — removed in d47e70d2 cleanup. `gsd-executor` dispatch was replaced by the build skill's direct task orchestration; `gsd-planner` was replaced by the lean plan-work orchestrator.
+
+Note: The `tracker` skill (`.claude/skills/tracker/`) is fhhs-original — it is NOT GSD-sourced.
+
+## Skill Dependency Graph
+
+Key skills and their runtime dependencies on internal skills, agents, and references:
+
+| Skill | Internal skills | Agents | References |
+|-------|----------------|--------|------------|
+| `/fh:build` | `executing-plans` | `gsd-plan-checker` (spec gate) | `implementer-prompt.md`, `spec-gate-prompt.md` |
+| `/fh:plan-work` | `brainstorming`, `writing-plans` | `gsd-phase-researcher` (research) | `brainstorming-prompt.md` |
+| `/fh:fix` | `systematic-debugging` (MODERATE) | `gsd-debugger` (PARALLEL/COMPLEX) | — |
+| `/fh:review` | `verification-before-completion` | `code-reviewer` (quality + gap + spec) | `spec-gate-prompt.md`, `production-safety-checklist.md` |
+| `/fh:map-codebase` | — | `gsd-codebase-mapper` (×4 parallel) | — |
+| `/fh:new-project` | — | `gsd-roadmapper`, `gsd-project-researcher`, `gsd-research-synthesizer` | — |
+
+Removed from graph (no longer active): `gsd-executor`, `gsd-planner`, `todos` (use `.planning/todos/` directly).
 
 ## External Dependencies
 
