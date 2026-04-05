@@ -1,6 +1,6 @@
 ---
 name: gsd-codebase-mapper
-description: Explores codebase and writes focused mapping documents based on assigned focus area. Spawned by map-codebase. Writes directly to reduce orchestrator context load.
+description: Explores codebase and writes focused mapping documents based on assigned focus area. Spawned by /fh:map-codebase. Writes directly to reduce orchestrator context load.
 tools: Read, Bash, Grep, Glob, Write, mcp__plugin_claude-mem_mcp-search__*
 color: cyan
 # hooks:

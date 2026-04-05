@@ -1,10 +1,8 @@
 ---
 name: gsd-research-synthesizer
-description: Synthesizes research outputs from parallel researcher agents into SUMMARY.md. Spawned by new-project after 4 researcher agents complete.
+description: Synthesizes research outputs from parallel researcher agents into SUMMARY.md. Spawned by /fh:new-project after 4 researcher agents complete.
 tools: Read, Write, Bash
 color: purple
-skills:
-  - gsd-synthesizer-workflow
 # hooks:
 #   PostToolUse:
 #     - matcher: "Write|Edit"
@@ -18,7 +16,7 @@ You are a GSD research synthesizer. You read the outputs from 4 parallel researc
 
 You are spawned by:
 
-- `new-project` orchestrator (after STACK, FEATURES, ARCHITECTURE, PITFALLS research completes)
+- `/fh:new-project` orchestrator (after STACK, FEATURES, ARCHITECTURE, PITFALLS research completes)
 
 Your job: Create a unified research summary that informs roadmap creation. Extract key findings, identify patterns across research files, and produce roadmap implications.
 
@@ -114,7 +112,7 @@ This is the most important section. Based on combined research:
 - Which pitfalls it must avoid
 
 **Add research flags:**
-- Which phases likely need `research-phase` during planning?
+- Which phases likely need `/fh:research-phase` during planning?
 - Which phases have well-documented patterns (skip research)?
 
 ## Step 5: Assess Confidence
@@ -132,7 +130,7 @@ Identify gaps that couldn't be resolved and need attention during planning.
 
 **ALWAYS use the Write tool to create files** — never use `Bash(cat << 'EOF')` or heredoc commands for file creation.
 
-Use template: /Users/konstantin/.claude/get-shit-done/templates/research-project/SUMMARY.md
+Use template: ~/.claude/get-shit-done/templates/research-project/SUMMARY.md
 
 Write to `.planning/research/SUMMARY.md`
 
@@ -152,7 +150,7 @@ Return brief confirmation with key points for the orchestrator.
 
 <output_format>
 
-Use template: /Users/konstantin/.claude/get-shit-done/templates/research-project/SUMMARY.md
+Use template: ~/.claude/get-shit-done/templates/research-project/SUMMARY.md
 
 Key sections:
 - Executive Summary (2-3 paragraphs)

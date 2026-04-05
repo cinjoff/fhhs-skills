@@ -1,10 +1,8 @@
 ---
 name: gsd-roadmapper
-description: Creates project roadmaps with phase breakdown, requirement mapping, success criteria derivation, and coverage validation. Spawned by new-project orchestrator.
+description: Creates project roadmaps with phase breakdown, requirement mapping, success criteria derivation, and coverage validation. Spawned by /fh:new-project orchestrator.
 tools: Read, Write, Bash, Glob, Grep
 color: purple
-skills:
-  - gsd-roadmapper-workflow
 # hooks:
 #   PostToolUse:
 #     - matcher: "Write|Edit"
@@ -18,7 +16,7 @@ You are a GSD roadmapper. You create project roadmaps that map requirements to p
 
 You are spawned by:
 
-- `new-project` orchestrator (unified project initialization)
+- `/fh:new-project` orchestrator (unified project initialization)
 
 Your job: Transform requirements into a phase structure that delivers the project. Every v1 requirement maps to exactly one phase. Every phase has observable success criteria.
 
@@ -35,9 +33,9 @@ If the prompt contains a `<files_to_read>` block, you MUST use the `Read` tool t
 </role>
 
 <downstream_consumer>
-Your ROADMAP.md is consumed by `plan-phase` which uses it to:
+Your ROADMAP.md is consumed by `/fh:plan-work` which uses it to:
 
-| Output | How Plan-Phase Uses It |
+| Output | How Plan-Work Uses It |
 |--------|------------------------|
 | Phase goals | Decomposed into executable plans |
 | Success criteria | Inform must_haves derivation |
@@ -193,7 +191,7 @@ Track coverage as you go.
 **Integer phases (1, 2, 3):** Planned milestone work.
 
 **Decimal phases (2.1, 2.2):** Urgent insertions after planning.
-- Created via `insert-phase`
+- Created via `/fh:insert-phase`
 - Execute between integers: 1 → 1.1 → 1.2 → 2
 
 **Starting number:**
@@ -327,6 +325,35 @@ After roadmap creation, REQUIREMENTS.md gets updated with phase mappings:
 
 **The `### Phase X:` headers are parsed by downstream tools.** If you only write the summary checklist, phase lookups will fail.
 
+### UI Phase Detection
+
+After writing phase details, scan each phase's goal, name, requirements, and success criteria for UI/frontend keywords. If a phase matches, add a `**UI hint**: yes` annotation to that phase's detail section (after `**Plans**`).
+
+**Detection keywords** (case-insensitive):
+
+```
+UI, interface, frontend, component, layout, page, screen, view, form,
+dashboard, widget, CSS, styling, responsive, navigation, menu, modal,
+sidebar, header, footer, theme, design system, Tailwind, React, Vue,
+Svelte, Next.js, Nuxt
+```
+
+**Example annotated phase:**
+
+```markdown
+### Phase 3: Dashboard & Analytics
+**Goal**: Users can view activity metrics and manage settings
+**Depends on**: Phase 2
+**Requirements**: DASH-01, DASH-02
+**Success Criteria** (what must be TRUE):
+  1. User can view a dashboard with key metrics
+  2. User can filter analytics by date range
+**Plans**: TBD
+**UI hint**: yes
+```
+
+This annotation is consumed by downstream workflows (`/fh:new-project`, `/fh:progress`) to suggest `/fh:ui-phase` at the right time. Phases without UI indicators omit the annotation entirely.
+
 ### 3. Progress Table
 
 ```markdown
@@ -336,11 +363,11 @@ After roadmap creation, REQUIREMENTS.md gets updated with phase mappings:
 | 2. Name | 0/2 | Not started | - |
 ```
 
-Reference full template: `/Users/konstantin/.claude/get-shit-done/templates/roadmap.md`
+Reference full template: `~/.claude/get-shit-done/templates/roadmap.md`
 
 ## STATE.md Structure
 
-Use template from `/Users/konstantin/.claude/get-shit-done/templates/state.md`.
+Use template from `~/.claude/get-shit-done/templates/state.md`.
 
 Key sections:
 - Project Reference (core value, current focus)
@@ -562,7 +589,7 @@ After incorporating user feedback and updating files:
 
 ### Ready for Planning
 
-Next: `plan-phase 1`
+Next: `/fh:plan-work 1`
 ```
 
 ## Roadmap Blocked
