@@ -16771,6 +16771,105 @@
         "project-name"
       ],
       "tier": "smoke"
+    },
+    {
+      "id": 457,
+      "command": "auto",
+      "prompt": "Verify the shared orchestrator library at .claude/skills/auto/lib/ exports the expected functions: dispatchTask (from task-dispatch.cjs), buildTaskPrompt (from context-injection.cjs), parseWaves (from wave-analysis.cjs), runVerification (from verification.cjs), generateSummary (from summary-generation.cjs)",
+      "expected_output": "Should verify each module exists and exports the correct function. The barrel export (index.cjs) re-exports all 5 functions from task-dispatch.cjs, context-injection.cjs, wave-analysis.cjs, verification.cjs, and summary-generation.cjs.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Checks module exports",
+          "type": "behavioral"
+        },
+        {
+          "text": "Verifies barrel re-export",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "dispatchTask|buildTaskPrompt"
+        },
+        {
+          "type": "regex",
+          "pattern": "parseWaves|runVerification|generateSummary"
+        }
+      ],
+      "tags": [
+        "auto",
+        "orchestrator",
+        "shared-lib"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 458,
+      "command": "auto",
+      "prompt": "Verify that context-injection.cjs buildTaskPrompt includes instructions to use smart_outline and smart_unfold for code discovery, per Decision D3 (task sessions discover code-level context themselves)",
+      "expected_output": "Should confirm the prompt template includes smart tool instructions: smart_outline, smart_unfold, smart_search. Should NOT include pre-loaded file outlines (D3: task discovers its own code context).",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Includes smart tool instructions",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT pre-load file outlines",
+          "type": "guard"
+        }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "smart_outline|smart_unfold"
+        },
+        {
+          "type": "regex",
+          "pattern": "smart_search|code.*discovery"
+        }
+      ],
+      "tags": [
+        "auto",
+        "orchestrator",
+        "context-injection"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 459,
+      "command": "auto",
+      "prompt": "Verify that wave-analysis.cjs parseWaves correctly parses XML task blocks from a PLAN.md file, extracting name, files, action, verify, done fields and grouping by wave number",
+      "expected_output": "Should parse task XML blocks, extract all fields, group into waves. Default wave is 1 if not specified. Should handle multi-line action text.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Parses XML task blocks",
+          "type": "behavioral"
+        },
+        {
+          "text": "Groups tasks by wave",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "parseWaves|wave.*analysis"
+        },
+        {
+          "type": "regex",
+          "pattern": "task.*block|XML|frontmatter"
+        }
+      ],
+      "tags": [
+        "auto",
+        "orchestrator",
+        "wave-analysis"
+      ],
+      "tier": "smoke"
     }
   ]
 }
