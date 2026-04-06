@@ -1,6 +1,6 @@
 # fhhs-skills
 
-An all-in-one workflow plugin for [Claude Code](https://claude.com/claude-code) — 28 skills and 32 specialized agents covering planning, spec-driven development, building, reviewing, debugging, design quality, security, web research, startup validation, and autonomous execution. One install, no other plugins required.
+An all-in-one workflow plugin for [Claude Code](https://claude.com/claude-code) — 33 skills and 31 specialized agents covering planning, spec-driven development, building, reviewing, debugging, design quality, security, web research, startup validation, and autonomous execution. One install, no other plugins required.
 
 ## What You Get
 

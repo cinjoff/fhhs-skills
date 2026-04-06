@@ -1,7 +1,7 @@
 {
   "name": "fhhs-skills",
   "metadata": {
-    "description": "All-in-one workflow plugin for Claude Code. 28 skills and 32 specialized agents for spec-driven development, TDD, design quality, web research, startup validation, and autonomous execution in a single install."
+    "description": "All-in-one workflow plugin for Claude Code. 33 skills and 31 specialized agents for spec-driven development, TDD, design quality, web research, startup validation, and autonomous execution in a single install."
   },
   "owner": {
     "name": "Konstantin",
@@ -10,8 +10,8 @@
   "plugins": [
     {
       "name": "fh",
-      "description": "fhhs-skills: 28 skills and 32 agents — plan, spec, build, review, fix, research, design, and ship autonomously. Includes /fh:plan-work, /fh:build, /fh:fix, /fh:review, /fh:research, /fh:auto, and more.",
-      "version": "1.62.4",
+      "description": "fhhs-skills: 33 skills and 31 agents — plan, spec, build, review, fix, research, design, and ship autonomously. Includes /fh:plan-work, /fh:build, /fh:fix, /fh:review, /fh:research, /fh:auto, and more.",
+      "version": "1.63.0",
       "author": {
         "name": "Konstantin"
       },
