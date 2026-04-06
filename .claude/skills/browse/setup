@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# browse setup — build binary + ensure Playwright Chromium
+set -e
+
+BROWSE_DIR="$(cd "$(dirname "$0")" && pwd)"
+BROWSE_BIN="$BROWSE_DIR/dist/browse"
+
+# 1. Check bun
+if ! command -v bun >/dev/null 2>&1; then
+  echo "ERROR: bun is required to build the browse binary." >&2
+  echo "Install: curl -fsSL https://bun.sh/install | bash" >&2
+  exit 1
+fi
+
+# 2. Smart rebuild — skip if binary is fresh
+NEEDS_BUILD=0
+if [ ! -x "$BROWSE_BIN" ]; then
+  NEEDS_BUILD=1
+elif [ -n "$(find "$BROWSE_DIR/src" -type f -newer "$BROWSE_BIN" -print -quit 2>/dev/null)" ]; then
+  NEEDS_BUILD=1
+elif [ "$BROWSE_DIR/package.json" -nt "$BROWSE_BIN" ]; then
+  NEEDS_BUILD=1
+fi
+
+if [ "$NEEDS_BUILD" -eq 1 ]; then
+  echo "Building browse binary..."
+  ( cd "$BROWSE_DIR" && bun install && bun run build )
+fi
+
+if [ ! -x "$BROWSE_BIN" ]; then
+  echo "ERROR: browse binary not found at $BROWSE_BIN" >&2
+  exit 1
+fi
+
+# Write version hash for auto-restart detection
+git rev-parse HEAD > "$BROWSE_DIR/dist/.version" 2>/dev/null || echo "vendored" > "$BROWSE_DIR/dist/.version"
+
+# 3. Ensure Playwright Chromium
+ensure_playwright() {
+  ( cd "$BROWSE_DIR" && bun --eval 'import { chromium } from "playwright"; const b = await chromium.launch(); await b.close();' ) >/dev/null 2>&1
+}
+
+if ! ensure_playwright; then
+  echo "Installing Playwright Chromium (~250MB on first run)..."
+  ( cd "$BROWSE_DIR" && bunx playwright install chromium )
+fi
+
+if ! ensure_playwright; then
+  echo "ERROR: Playwright Chromium could not be launched" >&2
+  exit 1
+fi
+
+echo "browse ready: $BROWSE_BIN"
