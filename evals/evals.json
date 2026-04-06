@@ -16870,6 +16870,407 @@
         "wave-analysis"
       ],
       "tier": "smoke"
+    },
+    {
+      "id": 460,
+      "command": "auto",
+      "prompt": "When auto-orchestrator runs a build step on a plan with XML tasks, it should use direct dispatch (dispatchTask) instead of invoking /fh:build",
+      "expected_output": "Should confirm the orchestrator's build step uses parseWaves to parse the plan, then calls buildTaskPrompt and dispatchTask for each task rather than spawning a /fh:build session. Direct dispatch eliminates the middle layer in auto mode.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Uses direct dispatch via dispatchTask",
+          "type": "behavioral"
+        },
+        {
+          "text": "Calls parseWaves and buildTaskPrompt",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT invoke /fh:build as the primary path for parseable plans",
+          "type": "guard"
+        }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "Direct dispatch|dispatchTask"
+        },
+        {
+          "type": "regex",
+          "pattern": "parseWaves|buildTaskPrompt"
+        },
+        {
+          "type": "regex",
+          "pattern": "wave|task.*dispatch|parallel"
+        }
+      ],
+      "tags": [
+        "auto",
+        "orchestrator",
+        "direct-dispatch"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 461,
+      "command": "auto",
+      "prompt": "When auto-orchestrator encounters a plan it cannot parse for direct dispatch, it falls back to invoking /fh:build via runClaudeSession",
+      "expected_output": "Should confirm the orchestrator catches parseWaves errors and logs a fallback message, then calls runClaudeSession with /fh:build. The fallback also triggers when no task waves are found in the plan.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Falls back to runClaudeSession on parse failure",
+          "type": "behavioral"
+        },
+        {
+          "text": "Logs a fallback message",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "falling back|fallback"
+        },
+        {
+          "type": "regex",
+          "pattern": "fh:build|runClaudeSession"
+        },
+        {
+          "type": "regex",
+          "pattern": "parseWaves|parseable"
+        }
+      ],
+      "tags": [
+        "auto",
+        "orchestrator",
+        "fallback"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 462,
+      "command": "auto",
+      "prompt": "After each task dispatch, the orchestrator writes a sidecar result JSON file to .planning/build/",
+      "expected_output": "Should confirm the orchestrator creates .planning/build/ with recursive mkdir, writes task-{planNum}-{taskId}-result.json after each task containing taskName, success, stdout (first 500 chars), stderr (first 200 chars), metrics, and error. Stale result files for the plan are cleaned up at build start.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Writes sidecar result JSON to .planning/build/",
+          "type": "behavioral"
+        },
+        {
+          "text": "Cleans stale result files at build start",
+          "type": "behavioral"
+        },
+        {
+          "text": "Creates .planning/build/ directory if missing",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "result\\.json|sidecar"
+        },
+        {
+          "type": "regex",
+          "pattern": "writeFileSync|task-"
+        },
+        {
+          "type": "regex",
+          "pattern": "planning/build|buildDir"
+        }
+      ],
+      "tags": [
+        "auto",
+        "orchestrator",
+        "sidecar"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 463,
+      "name": "auto-process-group-kill",
+      "command": "auto",
+      "prompt": "Task dispatch uses detached process groups and kills via process.kill(-pid) for reliable termination",
+      "expected_output": "Should confirm that task-dispatch.cjs spawns claude with detached: true and kills processes via process.kill(-child.pid, signal) to target the entire process group, ensuring subprocesses are terminated and not orphaned.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Spawns with detached: true for process group isolation",
+          "type": "behavioral"
+        },
+        {
+          "text": "Kills via process.kill(-pid) to target process group",
+          "type": "behavioral"
+        },
+        {
+          "text": "Uses SIGTERM then SIGKILL with grace period",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "detached.*true|process\\.kill\\(-"
+        },
+        {
+          "type": "regex",
+          "pattern": "SIGKILL|SIGTERM"
+        },
+        {
+          "type": "regex",
+          "pattern": "process group|orphan|detached"
+        }
+      ],
+      "tags": [
+        "auto",
+        "orchestrator",
+        "process-kill"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 464,
+      "name": "auto-checkpoint-before-spawn",
+      "command": "auto",
+      "prompt": "Orchestrator writes intent checkpoint before dispatching each task, enabling crash recovery",
+      "expected_output": "Should confirm that before calling dispatchTask, the orchestrator writes a checkpoint JSON file with status 'dispatched' to .planning/build/{taskId}-checkpoint.json, then updates it with final status and metrics after completion.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Writes checkpoint file before dispatch with status 'dispatched'",
+          "type": "behavioral"
+        },
+        {
+          "text": "Updates checkpoint after completion with final status and metrics",
+          "type": "behavioral"
+        },
+        {
+          "text": "Checkpoint file named {taskId}-checkpoint.json in .planning/build/",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "checkpoint|dispatched"
+        },
+        {
+          "type": "regex",
+          "pattern": "writeFileSync|checkpoint\\.json"
+        },
+        {
+          "type": "regex",
+          "pattern": "dispatchedAt|completedAt"
+        }
+      ],
+      "tags": [
+        "auto",
+        "orchestrator",
+        "checkpoint"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 465,
+      "name": "auto-task-resume",
+      "command": "auto",
+      "prompt": "On resume, orchestrator skips tasks already marked completed in checkpoint files",
+      "expected_output": "Should confirm that at build step start the orchestrator scans .planning/build/ for existing *-checkpoint.json files, and before dispatching each task checks if it is already completed, skipping it with a log message if so.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Scans .planning/build/ for existing checkpoint files at build start",
+          "type": "behavioral"
+        },
+        {
+          "text": "Skips tasks with status 'completed' in checkpoint, logging a resume message",
+          "type": "behavioral"
+        },
+        {
+          "text": "Returns success:true with skipped:true for resumed tasks",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "already completed|skipped"
+        },
+        {
+          "type": "regex",
+          "pattern": "checkpoint|resume"
+        },
+        {
+          "type": "regex",
+          "pattern": "existingCheckpoints|checkpoint\\.json"
+        }
+      ],
+      "tags": [
+        "auto",
+        "orchestrator",
+        "resume"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 466,
+      "name": "auto-phase-state-machine",
+      "command": "auto",
+      "prompt": "Phase lifecycle follows formal state machine with validated transitions",
+      "expected_output": "Should confirm that auto-orchestrator.cjs defines PHASE_TRANSITIONS with all phase states and uses transitionPhase() to validate each state change, including failure states like plan-failed and build-failed.",
+      "files": [],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "PHASE_TRANSITIONS|transitionPhase"
+        },
+        {
+          "type": "regex",
+          "pattern": "plan-failed|build-failed"
+        },
+        {
+          "type": "regex",
+          "pattern": "Invalid phase transition|Unknown phase state"
+        }
+      ],
+      "tags": [
+        "auto",
+        "orchestrator",
+        "state-machine"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 467,
+      "name": "auto-task-state-machine",
+      "command": "auto",
+      "prompt": "Task lifecycle follows formal state machine with retry transitions",
+      "expected_output": "Should confirm that auto-orchestrator.cjs defines TASK_TRANSITIONS with all task states and uses transitionTask() to validate each state change, including timed-out and queued retry states.",
+      "files": [],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "TASK_TRANSITIONS|transitionTask"
+        },
+        {
+          "type": "regex",
+          "pattern": "timed-out|queued"
+        },
+        {
+          "type": "regex",
+          "pattern": "Invalid task transition|Unknown task state"
+        }
+      ],
+      "tags": [
+        "auto",
+        "orchestrator",
+        "state-machine"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 468,
+      "name": "auto-state-driven-loop",
+      "command": "auto",
+      "prompt": "Main loop is driven by state machine transitions, not a fixed step array",
+      "expected_output": "Should confirm that the sequential phase loop in auto-orchestrator.cjs uses STATE_TO_STEP and MAX_PHASE_TRANSITIONS to drive execution, and that migratePhaseState and updatePhaseState are used for legacy state compatibility and persistence.",
+      "files": [],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "STATE_TO_STEP|MAX_PHASE_TRANSITIONS"
+        },
+        {
+          "type": "regex",
+          "pattern": "migratePhaseState|updatePhaseState"
+        },
+        {
+          "type": "regex",
+          "pattern": "phase_states|transitionCount"
+        }
+      ],
+      "tags": [
+        "auto",
+        "orchestrator",
+        "state-machine"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 469,
+      "name": "build-interactive-only",
+      "command": "build",
+      "prompt": "Build skill focuses on interactive use, no auto-mode conditionals",
+      "expected_output": "Should confirm that the build skill is focused on interactive use and dispatches via Agent tool, without auto-mode workflow conditionals.",
+      "files": [],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "interactive build|interactive use"
+        },
+        {
+          "type": "regex",
+          "pattern": "Agent tool|subagent"
+        }
+      ],
+      "tags": [
+        "build",
+        "orchestrator",
+        "interactive"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 470,
+      "name": "auto-2layer-documented",
+      "command": "auto",
+      "prompt": "Auto skill documents the 2-layer direct dispatch architecture",
+      "expected_output": "Should confirm that the auto skill SKILL.md describes the 2-layer architecture with orchestrator and task session layers, and direct dispatch via claude -p.",
+      "files": [],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "2-[Ll]ayer|2 layer"
+        },
+        {
+          "type": "regex",
+          "pattern": "direct dispatch|Direct [Dd]ispatch"
+        }
+      ],
+      "tags": [
+        "auto",
+        "orchestrator",
+        "documentation"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 471,
+      "name": "implementer-prompt-smart-tools",
+      "command": "build",
+      "prompt": "Implementer prompt includes smart tool discovery instructions",
+      "expected_output": "Should confirm that the implementer-prompt.md reference file includes smart tool discovery instructions with smart_outline, smart_unfold, and smart_search.",
+      "files": [],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "smart_outline|smart_unfold"
+        },
+        {
+          "type": "regex",
+          "pattern": "smart_search|code.*discovery"
+        }
+      ],
+      "tags": [
+        "build",
+        "orchestrator",
+        "smart-tools"
+      ],
+      "tier": "smoke"
     }
   ]
 }

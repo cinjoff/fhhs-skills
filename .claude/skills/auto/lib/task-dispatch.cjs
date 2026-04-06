@@ -166,7 +166,7 @@ function dispatchTask(taskConfig, opts) {
     const child = spawn('claude', args, {
       stdio: ['ignore', 'pipe', 'pipe'],
       cwd: cwd,
-      detached: false,
+      detached: true,
       env: Object.assign({}, process.env, {
         CLAUDE_SESSION_ID: taskId,
         CLAUDE_MEM_PROJECT: projectName,
@@ -246,9 +246,9 @@ function dispatchTask(taskConfig, opts) {
             Math.round(silenceElapsed / 1000) + 's — sending SIGTERM\n'
           );
         }
-        child.kill('SIGTERM');
+        try { process.kill(-child.pid, 'SIGTERM'); } catch { /* already dead */ }
         setTimeout(function() {
-          try { child.kill('SIGKILL'); } catch { /* already dead */ }
+          try { process.kill(-child.pid, 'SIGKILL'); } catch { /* already dead */ }
         }, SIGKILL_GRACE_MS);
       }
     }, 30000); // check every 30s
@@ -259,9 +259,9 @@ function dispatchTask(taskConfig, opts) {
       process.stderr.write(
         '[task-dispatch] HARD TIMEOUT: task ' + taskId + ' killed after ' + elapsedMin + 'min\n'
       );
-      child.kill('SIGTERM');
+      try { process.kill(-child.pid, 'SIGTERM'); } catch { /* already dead */ }
       setTimeout(function() {
-        try { child.kill('SIGKILL'); } catch { /* already dead */ }
+        try { process.kill(-child.pid, 'SIGKILL'); } catch { /* already dead */ }
       }, SIGKILL_GRACE_MS);
     }, timeoutMs);
 
@@ -331,7 +331,7 @@ function dispatchTask(taskConfig, opts) {
 function handleShutdown() {
   for (const pid of _activeTaskChildren) {
     try {
-      process.kill(pid, 'SIGTERM');
+      process.kill(-pid, 'SIGTERM');
     } catch { /* already dead */ }
   }
   _activeTaskChildren.clear();

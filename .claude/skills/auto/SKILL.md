@@ -10,6 +10,38 @@ What to run autonomously: $ARGUMENTS
 
 ---
 
+## Architecture: 2-Layer Direct Dispatch
+
+The auto-orchestrator uses a 2-layer architecture:
+- **Layer 1: Orchestrator** (`auto-orchestrator.cjs`) — state machine managing phase lifecycle, spawning task sessions, handling retries and checkpoints
+- **Layer 2: Task sessions** (`claude -p` per task) — individual task execution with injected plan context
+
+For the build step, the orchestrator dispatches tasks directly via `claude -p` instead of invoking `/fh:build`. This eliminates the 3rd nesting layer.
+
+Interactive builds still use `/fh:build` with Agent tool dispatch.
+
+### Fallback
+
+Plans that can't be parsed for direct dispatch (missing XML tasks) fall back to `/fh:build` invocation.
+
+### State Machine
+
+Phase lifecycle: `pending → planning → planned → reviewing → reviewed → building → verifying → complete`
+Task lifecycle: `queued → dispatched → running → completed|failed|timed-out`
+
+Failed phases retry automatically (max 2 attempts). Timed-out tasks retry with extended timeout.
+
+### Shared Library
+
+Reusable modules at `.claude/skills/auto/lib/`:
+- `task-dispatch.cjs` — per-task `claude -p` spawning with process group kill
+- `context-injection.cjs` — build task prompts from plan context
+- `wave-analysis.cjs` — parse PLAN.md into ordered wave groups
+- `verification.cjs` — run verification commands
+- `summary-generation.cjs` — generate SUMMARY.md content
+
+---
+
 ## Walk-Away Guide
 
 `/fh:auto` plans, reviews, builds, and reviews each phase without human intervention.

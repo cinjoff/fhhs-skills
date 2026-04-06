@@ -7,3 +7,5 @@ __pycache__/
 fhhs-skills-workspace/full-run-*/
 fhhs-skills-workspace/auto-improve/iteration-*/
 .claude/skills/*/CLAUDE.md
+.planning/build/
+.planning/.auto-state.json

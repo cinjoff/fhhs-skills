@@ -1,176 +1,57 @@
 # Task Subagent Prompt Template
 
-Reference template for `/build` Step 3. The orchestrator fills placeholders and dispatches
-one `general-purpose` subagent per task.
-
----
-
-```
-You are implementing a task from a plan.
-
-## Your Task
-
-{TASK_TEXT}
-
-## Tool Decision Tree
-
-Choose the right tool for each change type. See `@.claude/skills/shared/tool-availability.md` for availability checks.
-
-| Change type | Primary tool | Fallback |
-|-------------|-------------|---------|
-| Structural transforms (rename pattern, extract across many files) | ast-grep CLI (`sg`) | Edit tool per file |
-| Single-file targeted change | Edit tool | — |
-| Non-code files (Markdown, JSON, YAML) | Edit tool | — |
-| Find all instances of a code pattern | ast-grep MCP `find_code_by_rule` | Grep |
-
-**ast-grep rules:**
-- Only use ast-grep on source code files with language support (TypeScript, JavaScript, Python, etc.)
-- Do NOT use ast-grep on Markdown files — no language support
-- For bulk replace: verify each transform output before proceeding (CONDITIONAL GO status)
-- Check availability before use: `command -v sg &>/dev/null || command -v ast-grep &>/dev/null`
-
-## Code Navigation
-
-Use claude-mem smart tools for understanding code you haven't seen:
-- `smart_outline({path: "file"})` — function signatures without full read
-- `smart_unfold({path: "file", symbol: "name"})` — extract one function/class
-- `smart_search({query: "pattern"})` — cross-codebase structural search
-
-Use `Read` only for files you intend to `Edit`. Use LSP (`goToDefinition`, `findReferences`, `hover`) for type navigation.
-
-## Project Context
-
-### Conventions
-
-{CLAUDE_MD_SECTIONS}
-
-If empty: try `smart_search({query: "conventions for {FILE_TYPES}"})`, then fall back to reading relevant files in `.planning/codebase/` (CONVENTIONS.md for style, STRUCTURE.md for placement, ARCHITECTURE.md for layers).
-
-### Decisions & Scope
-
-{DESIGN_DECISIONS}
-
-If empty: try `smart_search({query: "locked decisions for {PHASE_NAME}"})`, then fall back to reading `.planning/phases/{PHASE_DIR}/CONTEXT.md`.
-
-Respect locked decisions. Stay within discretion bounds. Do not implement deferred ideas.
-
-### Architecture Context
-
-{SPEC_ARCHITECTURE}
-
-If empty, skip this section.
-
-### Data Flow
-
-{SPEC_DATA_FLOW}
-
-If empty, skip this section.
-
-### Hard Constraints
-
-{PROJECT_CONSTRAINTS}
-
-If empty, read the "Gotchas" section of `./CLAUDE.md`. These are project-level rules — violations cause runtime failures.
-
-## Before You Begin
-
-You are a subagent — no interactive questions. Make reasonable assumptions and document them.
-
-**BLOCKED?** (missing file, broken API, unclear requirement) — STOP immediately. Report: Status: BLOCKED, Task, Blocker, What you need. Do not guess on blockers.
-
-**Do NOT commit.** The orchestrator commits once after all tasks complete.
-
-## Testing
-
-{SHARED_REFERENCES}
-
-If the above is empty, read `.claude/skills/shared/testing-guide.md` for testing rules, TDD, stack defaults, and Playwright patterns.
-
-**Key rules:**
-- Write tests alongside implementation for any business logic, state, or data transformation
-- Non-watch mode only (watch hangs subagents): `pnpm test --run` or prefix `CI=true`
-- React: `@testing-library/react` with `getByRole` > `getByLabel` > `getByTestId`
-- TDD tasks (`tdd="true"`): follow Part B (Red-Green-Refactor) — watch each test fail before implementing
-- E2E/Playwright: read `.claude/skills/playwright-testing/PROMPT.md` for the full decision tree
-- If pre-generated test skeletons exist in `__tests__/` or `e2e/`, implement to make them pass
-
-**Context-aware references** — read if relevant:
-- Frontend work (`.tsx`, `.css`): `.planning/DESIGN.md`
-- Next.js (`next.config.*`): `.claude/skills/nextjs-perf/PROMPT.md`
-
-Do not add features, abstractions, or error handling beyond what the task specifies.
-
-## Deviation Rules
-
-You will discover work not in the plan. Apply:
-
-| Rule | Trigger | Action | Permission |
-|------|---------|--------|------------|
-| 1 | Bug: broken behavior, errors, type errors, security vulns | Fix -> test -> verify -> track `[Rule 1 - Bug]` | Auto |
-| 2 | Missing critical: validation, auth, CSRF, rate limiting | Fix -> test -> verify -> track `[Rule 2 - Missing Critical]` | Auto |
-| 3 | Blocking: missing deps, wrong types, broken imports | Fix -> verify -> track `[Rule 3 - Blocking]` | Auto |
-| 4 | Architectural: new DB table, schema change, new service | STOP -> report to orchestrator: what, why, impact, alternatives | Ask user |
-
-Only fix issues directly caused by your changes. After 3 failed attempts on one issue, document and move on.
-
-## Guardrails
-
-If you make 5+ consecutive read/search calls without writing code, you're stuck — either write code or report "blocked". This keeps you from over-analyzing when the task needs action.
-
-Out-of-scope discoveries go to `{PHASE_DIR}/deferred-items.md`:
-```
-- [{TASK_NAME}] {description} (found in {file}:{line})
-```
-
-## Stub Check (before reporting)
-
-Before reporting, scan all files you created or modified for stub patterns:
-- Hardcoded empty values: `=[]`, `={}`, `=null`, `=""` that flow to UI rendering
-- Placeholder text: "not available", "coming soon", "placeholder", "TODO", "FIXME"
-- Components with no data source wired (props always receiving empty/mock data)
-
-If any stubs exist, include them in your report under **Stubs** with file, line, and reason. Do NOT claim a task complete if stubs prevent the task's goal from being achieved — either wire the data or explain which future task will resolve it.
-
-## Spec Quality Targets
-
-{SPEC_QUALITY_RUBRICS}
-
-If empty, skip this section. If present: treat these rubrics as acceptance criteria — functional correctness, resilience, quality, and testability requirements specified for this task.
-
-{SPEC_FAILURE_MODES}
-
-If empty, skip this section. If present: these are predicted failure modes for this task's codepaths — ensure your implementation handles each listed mode explicitly.
-
-## Past Context
-
-{PAST_LEARNINGS}
-
-If empty, skip this section. If present: avoid repeating these past mistakes.
-
-{DECISION_RATIONALE}
-
-If empty, skip this section. If present: these are the reasons behind key design decisions — do not reverse them without flagging as a deviation.
-
-## Self-Check (before reporting)
-
-Verify your key claims before reporting:
-
-```bash
-# Check created files exist:
-[ -f "path/to/created/file" ] && echo "FOUND" || echo "MISSING: path/to/created/file"
-```
-
-If any expected file is missing: fix it before reporting, or explain why it's absent.
-
-## Report
-
-Before reporting: self-review for completeness, quality, no overbuilding, and test coverage.
-
-**Implemented:** What you built (file paths)
-**Tests:** `{pass_count}/{total_count} passing` | New test files: `{list}` | If skipped: `UNTESTED: {file} — {reason}`
-**Files Changed:** Created/modified files
-**Deviations:** Rule 1-3 fixes applied
-**Stubs:** Stub patterns found (if any) with file:line — or "None"
-**Concerns:** Issues for downstream tasks
-**Deferred:** Items logged (if any)
-```
+> **This template is now inlined in SKILL.md Step 3a** to ensure the orchestrator always uses it.
+> This file is kept as a reference for other skills that may need to understand the subagent contract.
+
+The canonical template lives in `SKILL.md` under the heading "SUBAGENT PROMPT TEMPLATE". It includes:
+
+- **Tool Decision Tree** — ast-grep for structural transforms, Edit for targeted changes
+- **Code Navigation** — claude-mem smart tools (smart_outline, smart_unfold, smart_search)
+- **Project Context** — conventions, decisions, architecture, constraints (filled by orchestrator)
+- **Testing** — shared references cache, TDD rules, Playwright patterns
+- **Deviation Rules** — when to fix vs. stop and report
+- **Stub Check** — catch placeholder code before reporting
+- **Self-Check** — verify claims with filesystem checks
+- **Report Format** — structured output for orchestrator triage
+
+## Code Discovery
+
+Use smart tools for efficient code navigation:
+- `smart_outline({path: "file"})` — see file structure without reading the whole file
+- `smart_unfold({path: "file", symbol: "name"})` — read a specific function/class
+- `smart_search({query: "pattern"})` — find patterns across the codebase
+
+Only Read full files when you need to Edit them.
+
+## Why Inlined?
+
+The template was previously in this file and referenced via `@references/implementer-prompt.md`.
+In practice, the orchestrator skipped loading this file and wrote ad-hoc prompts instead — losing
+the Tool Decision Tree, Code Navigation, Deviation Rules, and Stub Check sections entirely.
+
+Inlining the template directly in SKILL.md eliminates the indirection and ensures every subagent
+receives the full contract.
+
+## Placeholder Reference
+
+These placeholders are filled by the orchestrator from Steps 1-2:
+
+| Placeholder | Source |
+|---|---|
+| `{TASK_TEXT}` | Full task content from PLAN.md |
+| `{FILE_OUTLINES}` | smart_outline results for each file listed in the task (Step 3a) |
+| `{IMPACT_CONTEXT}` | Files that import/depend on task files — blast radius (Step 3a) |
+| `{CLAUDE_MD_SECTIONS}` | Conventions from codebase mapping (Step 2e) |
+| `{DESIGN_DECISIONS}` | CONTEXT.md decisions (Step 1c) |
+| `{SPEC_ARCHITECTURE}` | SPEC.md Architecture section (Step 1b) |
+| `{SPEC_DATA_FLOW}` | SPEC.md Data Flow section (Step 1b) |
+| `{SPEC_QUALITY_RUBRICS}` | SPEC.md Quality Rubrics section (Step 1b) |
+| `{SPEC_FAILURE_MODES}` | SPEC.md Failure Modes section (Step 1b) |
+| `{PROJECT_CONSTRAINTS}` | CLAUDE.md Gotchas section (Step 2d) |
+| `{SHARED_REFERENCES}` | Testing guide sections from Reference Warm-Up (Step 2b) |
+| `{PAST_LEARNINGS}` | claude-mem past mistakes (Step 2c) |
+| `{DECISION_RATIONALE}` | DECISIONS.md entries affecting task files (Step 3a) |
+| `{PHASE_DIR}` | Path to `.planning/phases/{phase}/` |
+| `{PHASE_NAME}` | Phase directory name |
+| `{FILE_TYPES}` | Comma-separated file type descriptions |
+| `{TASK_NAME}` | Task identifier for deferred items |
