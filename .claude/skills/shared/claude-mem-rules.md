@@ -32,15 +32,17 @@ Smart tools are 11-27x cheaper than Read. Use `smart_outline` before reading any
 
 ## Tool Expectations
 
-claude-mem, ast-grep, and bun are **manifest-required** tools — they are declared in `plugin.json` and expected to be present in every session. Skills do not guard for their absence.
+claude-mem, ast-grep, and bun are **manifest-required** tools — they are declared in `plugin.json` and expected to be present in every session.
+
+**Important:** claude-mem MCP tools are **deferred** — their schemas must be fetched via `ToolSearch` before they can be called. Every skill that uses claude-mem must include a Step 0: Tool Readiness block:
 
 ```
-claude-mem tools (mcp__plugin_claude-mem_*): expected, not guarded
-ast-grep: expected, not guarded
-bun: expected, not guarded
+ToolSearch("select:mcp__plugin_claude-mem_mcp-search__smart_search,mcp__plugin_claude-mem_mcp-search__smart_outline,mcp__plugin_claude-mem_mcp-search__smart_unfold,mcp__plugin_claude-mem_mcp-search__search,mcp__plugin_claude-mem_mcp-search__get_observations")
 ```
 
-Use these tools directly. Do not add `if available` checks, `try/catch` guards, or fallback paths for manifest-required tools. They are part of the contract, not optional enhancements.
+If ToolSearch returns empty, fall back to Read-based approach. Do not add `if available` guards for these tools — they are part of the contract. The ToolSearch step is the guard.
+
+ast-grep and bun are directly available (not deferred) — no ToolSearch needed.
 
 ## Patterns
 
@@ -62,7 +64,7 @@ Run at the start of any skill that investigates, plans, or builds. Surfaces prio
 7. Feed into the skill's next step as input context
 ```
 
-Budget: <2% context. Skip silently if no relevant results.
+Max 3 items. Skip silently if no relevant results.
 
 ---
 
@@ -103,7 +105,7 @@ Before dispatching a new researcher agent, check if prior research exists:
 2. If relevant research found from recent session (within 7 days): present findings, ask "Prior research found — reuse or re-research?"
 3. If reused: skip researcher dispatch, feed existing findings into brainstorm/spec
 4. New research findings are auto-indexed by PostToolUse hook — tagged with [research-finding]
-Budget: <1% context for the check. Skip silently if no results.
+Skip silently if no results.
 ```
 
 ---
@@ -129,7 +131,7 @@ Query by **intent** (what you need), not by file path (where it lives). Resolves
 4. If relevant observations found (within 7 days): use as primary input
    If observations are stale or absent: fall back to artifact-resolution.md chain
 
-5. Budget: <2% context. Skip silently if no results.
+5. Skip silently if no results.
 ```
 
 **Tag priority hierarchy** (highest → lowest value per token):
@@ -173,7 +175,28 @@ Load SPEC.md sections on demand via `smart_unfold` instead of reading the full f
    Never fail — the implementer-prompt guards empty placeholders.
 ```
 
-Budget: 1-3 sections per task dispatch. Never load the whole SPEC.md at once unless the task explicitly requires full spec review.
+Load 1-3 sections per task dispatch. Never load the whole SPEC.md at once unless the task explicitly requires full spec review.
+
+---
+
+### Pattern H: Cross-Session Pipeline Cache
+
+When a skill completes, it emits a structured observation (Pattern D) with a skill-specific tag. The next skill in the pipeline queries for this tag before re-reading planning files.
+
+```
+1. At skill exit, emit: **[{skill}-output]** {structured summary of outputs}
+   Tags: [plan-work-output], [plan-review-output], [build-output], [review-output], [fix-output], [auto-output]
+
+2. At skill entry (after Step 0), query for prior skill output:
+   search({query: "[prior-skill-output] {phase-name}", project, limit: 3})
+
+3. If fresh result found (< 2 hours old): use as primary input, skip redundant file reads
+   If stale or absent: fall back to normal file reading
+
+4. Budget: 1 search call. Skip silently if no results.
+```
+
+This eliminates redundant STATE.md / ROADMAP.md / CONTEXT.md reads in auto flows where plan-work → plan-review → build → review execute sequentially.
 
 ---
 

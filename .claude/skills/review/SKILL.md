@@ -10,7 +10,7 @@ Comprehensive code review — quality, architecture, spec verification, goal ver
 
 Context or flags: $ARGUMENTS
 
-You are a **lean orchestrator**. Stay under 15% context usage. Delegate all analysis to subagents.
+You are the **code review orchestrator**. Follow every step below — each one exists because skipping it caused real failures in past sessions. Delegate all analysis to subagents.
 
 **IMPORTANT:** This skill does NOT touch GSD state (STATE.md, ROADMAP.md). State updates are the caller's responsibility.
 
@@ -22,6 +22,23 @@ You are a **lean orchestrator**. Stay under 15% context usage. Delegate all anal
 |------|-----------|-------------|
 | *(default — full)* | All steps including Step 2.5 (Quality Refinement) | Deep scrutiny before promoting |
 | `--quick` | Steps 1, 1.5, 1.7, 1.8, 2, 3, 4, 5, 6, 7 — **skips Step 2.5** | Fast pre-commit sanity check |
+
+---
+
+## Step 0: Tool Readiness
+
+claude-mem tools are **deferred** — they must be fetched before they can be called. Do this first, before any other work.
+
+```
+ToolSearch("select:mcp__plugin_claude-mem_mcp-search__smart_search,mcp__plugin_claude-mem_mcp-search__smart_outline,mcp__plugin_claude-mem_mcp-search__smart_unfold,mcp__plugin_claude-mem_mcp-search__search,mcp__plugin_claude-mem_mcp-search__get_observations")
+```
+
+Also verify ast-grep CLI is available:
+```bash
+command -v sg &>/dev/null || command -v ast-grep &>/dev/null || echo "WARN: ast-grep not found"
+```
+
+**If ToolSearch returns empty for claude-mem:** Fall back to Read-based approach for this session.
 
 ---
 
@@ -70,7 +87,7 @@ node lib/sentry-local-query.mjs recent --minutes 120
 
 4. If `NO_STORE`: skip this step silently. Do not mention observability in the report.
 
-Budget: less than 2% context. Don't deep-dive errors — just surface file matches for the gap analysis agent.
+Don't deep-dive errors — just surface file matches for the gap analysis agent.
 
 ---
 
@@ -99,8 +116,6 @@ If non-empty, extract: affected modules, fan-out count, and any hub files in the
 
 If Codemap is NOT installed or command fails: fall back to grep-based blast radius estimation in Step 1. Skip silently.
 
-Budget: less than 1% context.
-
 ---
 
 ## Step 1.7: Static Analysis (if available)
@@ -123,7 +138,7 @@ If Fallow ran successfully and produced non-empty output, include it in the agen
 
 If fallow is NOT installed or all commands fail: skip silently. Do not mention Fallow in the report.
 
-Budget: less than 1% context. Fallow runs in <1 second.
+Fallow runs in <1 second.
 
 ---
 
@@ -175,11 +190,42 @@ Based on mode, dispatch parallel subagents. Each agent receives ONLY the diff + 
 - If Next.js: include `.claude/skills/nextjs-perf/PROMPT.md` criteria
 - **Note:** The production safety checklist has an explicit suppressions section — the subagent must honor it to reduce noise.
 
+**Tool instructions (include in agent prompt):**
+```
+## Code Navigation (claude-mem)
+- `smart_outline({path})` — file structure without full read (11-27x cheaper than Read)
+- `smart_unfold({path, symbol})` — extract one function (never truncates)
+- `smart_search({query})` — cross-codebase structural search by intent
+- `search({query, project})` + `get_observations({ids})` — prior decisions, gotchas
+
+## Structural Analysis (ast-grep)
+- `sg --pattern '<pattern>' --lang typescript src/` — structural code search
+- Prefer over Grep for code-aware matching (ignores comments, strings)
+
+Use `Read` only for files you need detailed analysis of.
+```
+
 **Agent 2 — Gap Analysis** (`subagent_type: "fh:code-reviewer"`)
 - Prompt: gap analysis section of `skills/review/references/review-prompt.md`
 - Input: full diff
 - If Fallow data is available from Step 1.7, include the `FALLOW_CHECK` unused-exports findings in the agent prompt
 - Covers: untested code paths, unhandled error states, incomplete features (TODO/FIXME/PLACEHOLDER), missing edge cases, API contract gaps
+- Project name for claude-mem queries: {project_name} (derived from git rev-parse --show-toplevel | xargs basename)
+
+**Tool instructions (include in agent prompt):**
+```
+## Code Navigation (claude-mem)
+- `smart_outline({path})` — file structure without full read (11-27x cheaper than Read)
+- `smart_unfold({path, symbol})` — extract one function (never truncates)
+- `smart_search({query})` — cross-codebase structural search by intent
+- `search({query, project})` + `get_observations({ids})` — prior decisions, gotchas
+
+## Structural Analysis (ast-grep)
+- `sg --pattern '<pattern>' --lang typescript src/` — structural code search
+- Prefer over Grep for code-aware matching (ignores comments, strings)
+
+Use `Read` only for files you need detailed analysis of.
+```
 
 For security vulnerability detection, dispatch the `fh:design-secure` agent or configure a pre-PR hook (see `/fh:setup`).
 
@@ -191,54 +237,39 @@ For security vulnerability detection, dispatch the `fh:design-secure` agent or c
 
 ---
 
-## Step 2.5: Quality Refinement (full mode only)
+## Step 2.5: Quality Refinement (direct dispatch)
 
-**Triage findings from Steps 2 and dispatch sub-skills as needed.**
+**Full mode only.** Skip entirely in `--quick` mode.
 
-This step runs only in full mode (not `--quick`). Skip entirely in `--quick` mode.
+After Agent 1 and Agent 2 findings are collected, check the trigger table. Dispatch sub-skills **directly** — no intermediate intermediary agent.
 
-### a. Evaluate findings against the trigger table
-
-After Agent 1 (Code Quality) and Agent 2 (Gap Analysis) return, evaluate each finding category:
-
-| Finding pattern | Agent | Trigger condition |
-|---|---|---|
-| DRY violations, code duplication, redundant patterns | `fh:design-simplify` | 2+ DRY/duplication findings |
-| Unhandled error paths, missing edge cases, brittle patterns | `fh:design-harden` | Any unhandled error path in changed code |
-| Cross-device/responsive issues, accessibility gaps | `fh:design-adapt` | Frontend files changed + accessibility/responsive findings |
-| Design system drift, inconsistent tokens/spacing | `fh:design-normalize` | Frontend files + design system defined in DESIGN.md |
-| Visual quality issues, layout problems, AI slop | `/fh:ui-critique` | Visual file ratio > 30% OR explicit UI concerns in findings |
+| Finding Pattern | Sub-skill to dispatch | Trigger threshold |
+|----------------|----------------------|-------------------|
+| DRY violations, code duplication | `fh:design-simplify` | 2+ duplication findings |
+| Unhandled error paths, missing edge cases | `fh:design-harden` | 2+ unhandled error findings |
+| Inconsistent patterns, non-standard code | `fh:design-normalize` | 3+ consistency findings |
+| Cross-device/responsive issues | `fh:design-adapt` | Any responsive finding |
+| Visual quality, AI slop, layout problems | `/fh:ui-critique` | Visual file ratio > 30% OR explicit UI concerns |
 | Final polish pass | `fh:design-polish` | Only after other agents ran AND findings remain |
 
-If **no findings trigger any sub-skill**: skip to Step 3 entirely. Most reviews won't need this step.
+**Dispatch each triggered sub-skill directly:**
 
-### b. Dispatch a single "quality-refine" subagent
+```
+Agent({
+  subagent_type: "fh:design-simplify",  // or whichever sub-skill triggered
+  prompt: "Review and fix the following issues in the changed files:\n\n{filtered_findings}\n\nChanged files:\n{file_list}\n\n## Tools\nUse smart_outline to understand file structure before editing.\nUse smart_unfold to read specific functions.\nUse ast-grep (sg) for structural transforms across files.\n\nScope: only touch files in the changed set. Do not commit."
+})
+```
 
-If any trigger condition is met, dispatch **one** `quality-refine` subagent (general-purpose). Do NOT dispatch N sequential inline agent calls.
+- Dispatch triggered sub-skills **sequentially** (each may modify files the next needs to read)
+- If no findings trigger any sub-skill: skip Step 2.5 entirely
+- Each sub-skill reports: files changed, what was improved, any new concerns
+- Timeout: 3 minutes per sub-skill. If exceeded, log warning and continue
 
-The subagent receives:
-- Findings from Agent 1 and Agent 2 (verbatim)
-- The trigger table above
-- The changed file list (from Step 1)
-- Project name (so subagent can call `mcp__plugin_claude-mem_mcp-search__smart_search` for cross-session pattern detection)
+### Performance checks (conditional)
 
-The subagent:
-1. Decides which agents to apply based on findings and the trigger table
-2. Dispatches triggered agents (`subagent_type: "fh:design-{name}"`) **in sequence**, scoped to changed files only — not the whole codebase
-3. Reports back with: which agents ran, what was changed, any remaining issues
-
-### c. Performance checks (conditional)
-
-- If Next.js project detected (Step 1) AND performance-related findings: reference `.claude/skills/nextjs-perf/PROMPT.md` criteria
-- If frontend changes AND significant bundle/render concerns: suggest `/fh:ui-test` for visual verification
-
-### d. Cross-session pattern detection
-
-Use **Pattern A** from `shared/claude-mem-rules.md` to check if the same quality issues were flagged in prior reviews. Keywords: each triggered sub-skill category + primary module name. If a pattern recurs 3+ times: escalate severity (Minor → Important, Important → Critical) and annotate "⚠ Recurring pattern (seen N times)". Pass recurring-pattern context to the quality-refine subagent.
-
-### e. Failure handling
-
-If the quality-refine subagent times out or fails: log a warning ("Quality refinement skipped: subagent timeout/error") and continue to Step 3. Do NOT block the review.
+- If Next.js project detected AND performance-related findings: reference `.claude/skills/nextjs-perf/PROMPT.md`
+- If frontend changes AND significant bundle/render concerns: suggest `/fh:ui-test`
 
 ---
 
@@ -434,6 +465,12 @@ Derive the type and scope from the diff analysis. Present options:
 ### Persist Findings
 
 Follow **Pattern D** (Persist Findings) from `shared/claude-mem-rules.md`. Use tag `[review-learning]`.
+
+---
+
+### Cross-Session Output
+
+**[review-output]** Phase {N}: Gate={PASS/WARN/BLOCK}. Findings: {critical_count} critical, {important_count} important. Files reviewed: {count}. Test results: {pass/fail}.
 
 ---
 

@@ -864,6 +864,7 @@ function aggregatePhaseMetrics(stepHistory, phaseId) {
 // ─── Project Name Resolution ──────────────────────────────────────────────────
 
 function resolveProjectName(cwd) {
+  // Project name: git-based resolution (aligned with SKILL.md — D-261)
   try {
     const { execFileSync } = require('child_process');
 
@@ -922,6 +923,11 @@ function createJsonLineParser(onLine) {
   };
 }
 
+// ─── Tool Readiness Hint (injected into every downstream session) ────────────
+
+// ToolSearch preamble for downstream skills (D-265)
+const TOOL_READINESS_HINT = `\n## Tool Readiness (auto-injected)\n\nclaude-mem MCP tools are deferred. At session start, fetch them:\nToolSearch("select:mcp__plugin_claude-mem_mcp-search__smart_search,mcp__plugin_claude-mem_mcp-search__smart_outline,mcp__plugin_claude-mem_mcp-search__smart_unfold,mcp__plugin_claude-mem_mcp-search__search,mcp__plugin_claude-mem_mcp-search__get_observations")\n\nIf ToolSearch returns empty, fall back to Read-based approach.\n`;
+
 // ─── Claude Session Runner (with stuck detection + activity monitoring) ───────
 
 // INVARIANT: spawn('claude', ...) must appear ONLY inside runClaudeSession.
@@ -962,7 +968,9 @@ function runClaudeSession(prompt, opts) {
     const claudeMdPath = path.join(opts.cwd, 'CLAUDE.md');
     if (fs.existsSync(claudeMdPath)) {
       const claudeMd = fs.readFileSync(claudeMdPath, 'utf-8').slice(0, 4000);
-      args.push('--append-system-prompt', `Project conventions:\n${claudeMd}`);
+      args.push('--append-system-prompt', `Project conventions:\n${claudeMd}${TOOL_READINESS_HINT}`);
+    } else {
+      args.push('--append-system-prompt', TOOL_READINESS_HINT);
     }
     const projectName = resolveProjectName(opts.cwd);
     log(`  Running: claude -p "${prompt.slice(0, 80)}..." (plugin-dir=${pluginDir})`);
@@ -977,7 +985,7 @@ function runClaudeSession(prompt, opts) {
         ...(opts.sessionId ? { CLAUDE_SESSION_ID: opts.sessionId } : {}),
         CLAUDE_MEM_PROJECT: projectName,
         CLAUDE_MEM_CONTEXT_OBSERVATIONS: '0',
-        CLAUDE_MEM_SKIP_TOOLS: 'ListMcpResourcesTool,ReadMcpResourceTool,SlashCommand,Skill,TodoWrite,AskUserQuestion,ToolSearch,TaskCreate,TaskUpdate,TaskGet,TaskList,TaskOutput,TaskStop,SendMessage,EnterPlanMode,ExitPlanMode,EnterWorktree,ExitWorktree,LSP,CronCreate,CronDelete,CronList,TeamCreate,TeamDelete,NotebookEdit,mcp__plugin_claude-mem_mcp-search____IMPORTANT,mcp__plugin_claude-mem_mcp-search__search,mcp__plugin_claude-mem_mcp-search__get_observations,mcp__plugin_claude-mem_mcp-search__timeline,mcp__plugin_claude-mem_mcp-search__smart_search,mcp__plugin_claude-mem_mcp-search__smart_unfold,mcp__plugin_claude-mem_mcp-search__smart_outline',
+        CLAUDE_MEM_SKIP_TOOLS: 'ListMcpResourcesTool,ReadMcpResourceTool,SlashCommand,Skill,TodoWrite,AskUserQuestion,ToolSearch,TaskCreate,TaskUpdate,TaskGet,TaskList,TaskOutput,TaskStop,SendMessage,EnterPlanMode,ExitPlanMode,EnterWorktree,ExitWorktree,LSP,CronCreate,CronDelete,CronList,TeamCreate,TeamDelete,NotebookEdit',
       },
     });
 
