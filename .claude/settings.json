@@ -2,7 +2,7 @@
   "env": {
     "CLAUDE_MEM_PROJECT": "fhhs-skills",
     "CLAUDE_CODE_ENABLE_TASKS": "0",
-    "CLAUDE_CODE_TASK_LIST_ID": "copenhagen"
+    "CLAUDE_CODE_TASK_LIST_ID": "seville-v2"
   },
   "hooks": {
     "PostToolUse": [

@@ -308,13 +308,28 @@ skill registration on future updates.
 ```bash
 REPO_ROOT=$(git rev-parse --show-toplevel)
 cd "$REPO_ROOT"
-# Merge via PR (preferred) or locally
+
+# Create and merge PR
 gh pr create --title "release: vA.B.C" --body "Version bump and changelog for vA.B.C" --base main
 gh pr merge --merge
-# Now tag the merge commit on main
+
+# Wait for merge to propagate, then fetch
+sleep 2
 git fetch origin main
+
+# Tag the merge commit on main
 git tag vA.B.C origin/main
-git push --tags
+
+# Verify tag points to a commit on main (not a feature branch commit)
+TAG_SHA=$(git rev-parse vA.B.C)
+MAIN_SHA=$(git rev-parse origin/main)
+if ! git merge-base --is-ancestor "$TAG_SHA" "$MAIN_SHA" 2>/dev/null; then
+  echo "ERROR: Tag vA.B.C ($TAG_SHA) is not on main ($MAIN_SHA). Fix before pushing."
+  exit 1
+fi
+echo "Tag vA.B.C → $(git log -1 --format='%h %s' vA.B.C)"
+
+git push origin tag vA.B.C
 ```
 
 ---
@@ -323,11 +338,19 @@ git push --tags
 
 Extract the changelog entry for this version and enhance with highlight and install sections.
 
+First, verify the tag exists on the remote:
+
 ```bash
-REPO_ROOT=$(git rev-parse --show-toplevel)
-cd "$REPO_ROOT"
-gh release create vA.B.C --title "vA.B.C" --notes "$(cat <<'RELEASE_EOF'
-## Highlight
+if ! git ls-remote --tags origin refs/tags/vA.B.C | grep -q vA.B.C; then
+  echo "ERROR: Tag vA.B.C not found on remote. Run Step 5 again."
+  exit 1
+fi
+```
+
+Then create the release. Build the release body as a shell variable to avoid heredoc/code-fence nesting issues:
+
+```bash
+BODY="## Highlight
 
 [1-2 sentence summary of the most impactful change in this release]
 
@@ -341,10 +364,18 @@ claude plugin install fhhs-skills
 
 # Update existing
 /fh:update
-\`\`\`
-RELEASE_EOF
-)"
+\`\`\`"
+
+gh release create vA.B.C --title "vA.B.C" --notes "$BODY"
 ```
+
+**Verify the release was created:**
+
+```bash
+gh release view vA.B.C --json tagName,url --jq '.url'
+```
+
+If the release URL is not returned, the creation failed — retry or debug.
 
 ---
 
