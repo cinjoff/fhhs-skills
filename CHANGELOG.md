@@ -10,6 +10,19 @@ Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliat
 
 ## [Unreleased]
 
+## [1.62.4] - 2026-04-06
+
+### Changed
+- **ast-grep promoted to required** — now a required dependency for review, build, fix, and refactor structural code search [setup:tool:ast-grep]
+- **bun added as required dependency** — required for gstack browse build and fast script execution [setup:tool:bun]
+- **Codemap CLI migrated to MCP** — tool-availability now uses MCP-based codemap server instead of CLI binary
+- **Multi-strategy tool remediation** — manifest remediation dispatches via brew, npm, or shell based on declared install commands
+- **Install command validation gate** — remediation now validates install commands against safe patterns before execution
+
+### Added
+- **MCP check type in manifest** — manifest system can verify MCP server registrations via `~/.claude/mcp_config.json`
+- **Safe installer patterns** — `brew install` and `curl -fsSL https | bash` recognized as safe install commands
+
 ## [1.62.3] - 2026-04-02
 
 ### Fixed

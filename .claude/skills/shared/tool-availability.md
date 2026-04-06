@@ -2,27 +2,18 @@
 
 Canonical availability checks for optional tools. Skills reference this file instead of inlining checks.
 
-## Codemap CLI
+## Codemap MCP
 
-**Check:**
-```bash
-CODEMAP_AVAILABLE=false
-command -v codemap &>/dev/null && CODEMAP_AVAILABLE=true
-```
+**Source:** `@jordancoin/codemap` — registered via `claude mcp add codemap -- npx -y @jordancoin/codemap`
+
+**Check:** Inspect available tool list for `mcp__codemap__` prefixed tools at session start.
+
+If codemap MCP tools are in the tool list:
+- `CODEMAP_AVAILABLE = true`
+- Use `mcp__codemap__get_codebase_structure` for tree views
+- Use `mcp__codemap__search_code` for semantic code search
 
 **Fallback:** Skip enrichment. Proceed with grep/glob-based analysis.
-
-**ANSI note:** Codemap output contains ANSI escape codes — strip before injecting into LLM context:
-```bash
-codemap tree 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g'
-```
-
-**Reference pattern:**
-```
-if [ "$CODEMAP_AVAILABLE" = "true" ]; then
-  TREE=$(codemap tree 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g')
-fi
-```
 
 ---
 
@@ -112,7 +103,7 @@ command -v fallow &>/dev/null && FALLOW_AVAILABLE=true
 
 | Tool | Check method | Fallback |
 |------|-------------|---------|
-| Codemap CLI | `which codemap` | Skip enrichment |
+| Codemap MCP | Tool list inspection (`mcp__codemap__`) | Skip enrichment |
 | ast-grep MCP | Tool list inspection | Grep tool |
 | ast-grep CLI | `which ast-grep \|\| which sg` | Edit tool |
 | LSP | Tool list inspection | Grep + Read |

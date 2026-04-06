@@ -35,8 +35,10 @@ as a single status table:
 | CLAUDE.md Code Exploration | ✓ present / ✗ missing         |
 | Native task tracking       | ✓ disabled / ✗ enabled        |
 | SKIP_TOOLS (Read/Glob/Grep)| ✓ not skipped / ✗ skipped    |
+| bun                        | ✓ {version} / ✗ missing       |
+| ast-grep                   | ✓ installed / ✗ missing       |
+| gstack browse              | ✓ built / ✗ missing           |
 | Fallow                     | ✓ installed / ○ not installed |
-| ast-grep                   | ✓ installed / ○ not installed |
 | shadcn skills              | ✓ installed / ○ not installed |
 ```
 
@@ -152,7 +154,7 @@ else
 fi
 
 # Check each tool
-for cmd in node npm git gh vercel typescript-language-server bun docker supabase; do
+for cmd in node npm git gh vercel typescript-language-server bun ast-grep docker supabase; do
   if command -v "$cmd" >/dev/null 2>&1; then
     VERSION=$("$cmd" --version 2>/dev/null | head -1)
     echo "OK $cmd $VERSION"
@@ -212,6 +214,18 @@ If everything is `✓`, skip to Step 3.
 brew install node       # provides node + npm
 brew install gh         # GitHub CLI
 brew install vercel-cli # Vercel CLI (or: npm i -g vercel)
+brew install ast-grep   # structural code search (required for review/build/fix/refactor)
+```
+
+**bun** (required — for gstack browse build and fast script execution):
+
+```bash
+command -v bun >/dev/null 2>&1 && echo "OK bun $(bun --version 2>/dev/null)" || echo "MISSING bun"
+```
+
+If `MISSING`: install bun:
+```bash
+curl -fsSL https://bun.sh/install | bash
 ```
 
 **gstack browse** (required — for `/fh:ui-test` visual testing):
@@ -957,16 +971,32 @@ If `INSTALLED`:
 If `NOT_INSTALLED`:
 
 ```
-○ ast-grep not installed (optional — improves smart_search accuracy)
+✗ ast-grep not installed (required — used by review, build, fix, and refactor for structural code search)
 
-  Install: brew install ast-grep    # macOS/Linux
-           cargo install ast-grep   # via Rust
-
-  Without ast-grep, smart_search still works but falls back to
-  regex-based search. Install only if you use claude-mem regularly.
+  Installing...
 ```
 
-Do NOT auto-install ast-grep. Always prompt the user — this is an optional enhancement.
+```bash
+brew install ast-grep
+```
+
+Verify:
+
+```bash
+command -v ast-grep >/dev/null 2>&1 && echo "✓ ast-grep installed" || echo "✗ STILL MISSING: ast-grep"
+```
+
+If the install fails, show a warning but don't block setup:
+
+```
+⚠ Could not install ast-grep automatically.
+  You can install it manually:
+
+    brew install ast-grep    # macOS/Linux
+    cargo install ast-grep   # via Rust
+
+  Without ast-grep, review/build/fix/refactor fall back to Grep-based search.
+```
 
 ---
 
@@ -1078,8 +1108,11 @@ Then present the status table and next steps as regular markdown text:
 | CLAUDE.md Code Exploration | ✓ present / ✗ missing                    |
 | Native task tracking       | ✓ disabled / ⚠ still enabled             |
 | SKIP_TOOLS                 | ✓ correct / ⚠ Read/Glob/Grep being skipped |
+| bun                        | ✓ {version} / ✗ missing                  |
+| Codemap                    | ✓ installed / ✗ missing                  |
+| ast-grep                   | ✓ installed / ✗ missing                  |
+| gstack browse              | ✓ built / ✗ missing                      |
 | Fallow                     | ✓ installed / ⚠ manual install needed    |
-| ast-grep                   | ✓ installed / ○ not installed (optional) |
 | shadcn skills              | ✓ installed / ⚠ manual install needed    |
 | Conductor                  | ✓ detected / ○ not installed (optional) |
 

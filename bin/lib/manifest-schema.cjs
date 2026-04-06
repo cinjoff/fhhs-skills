@@ -73,6 +73,18 @@ function defaultGlobalManifest() {
         reason: 'TypeScript LSP for IDE language features',
       }),
       item({
+        required: true, status: 'active', check: 'tool', id: 'bun',
+        install: 'curl -fsSL https://bun.sh/install | bash',
+        since: '1.62.4',
+        reason: 'Bun runtime required for gstack browse build and fast script execution',
+      }),
+      item({
+        required: true, status: 'active', check: 'tool', id: 'ast-grep',
+        install: 'brew install ast-grep',
+        since: '1.62.4',
+        reason: 'ast-grep CLI for structural code search used by review, build, fix, and refactor',
+      }),
+      item({
         required: false, status: 'optional', check: 'tool', id: 'sqlite3',
         install: null,
         since: '1.0',
@@ -248,7 +260,18 @@ const SAFE_INSTALL_PREFIXES = [
   /^yarn\s+(add|install)\b/,
   /^bun\s+(add|install)\b/,
   /^npx\s+-y\s+/,
+  /^brew\s+install\b/,
+  /^curl\s+-fsSL\s+https:\/\//,
   /^claude\s+plugin\s+(install|marketplace)\b/,
+  /^claude\s+mcp\s+add\b/,
+];
+
+/**
+ * Exact safe patterns that contain shell metacharacters (like pipes)
+ * but are known-good installer commands. Checked before UNSAFE_PATTERNS.
+ */
+const SAFE_EXACT_PATTERNS = [
+  /^curl\s+-fsSL\s+https:\/\/[^\s]+\s+\|\s*bash$/,
 ];
 
 /**
@@ -277,6 +300,11 @@ function validateInstallCommand(cmd) {
 
   const trimmed = cmd.trim();
   if (trimmed.length === 0) return false;
+
+  // Allow known-good patterns that contain shell metacharacters (e.g. curl | bash)
+  for (const pattern of SAFE_EXACT_PATTERNS) {
+    if (pattern.test(trimmed)) return true;
+  }
 
   // Reject if any unsafe pattern matches
   for (const pattern of UNSAFE_PATTERNS) {

@@ -31,7 +31,7 @@ for (const item of global.items) {
   assert.ok('check' in item, `item ${item.id} missing check`);
   assert.ok('id' in item, `item ${item.id} missing id`);
   assert.ok(['active', 'deprecated', 'optional'].includes(item.status), `item ${item.id} has invalid status: ${item.status}`);
-  assert.ok(['tool', 'plugin', 'hook', 'env', 'dir', 'file'].includes(item.check), `item ${item.id} has invalid check: ${item.check}`);
+  assert.ok(['tool', 'plugin', 'hook', 'env', 'dir', 'file', 'mcp'].includes(item.check), `item ${item.id} has invalid check: ${item.check}`);
 }
 
 // context-mode is deprecated with action: "remove"
@@ -117,9 +117,13 @@ assert.strictEqual(validateInstallCommand('claude plugin install claude-mem'), t
 assert.strictEqual(validateInstallCommand('pnpm install -g typescript-language-server typescript'), true, 'pnpm multi-package is valid');
 assert.strictEqual(validateInstallCommand('npm install -g @scope/package'), true, 'scoped npm package is valid');
 
+// Safe curl | bash patterns (known installers)
+assert.strictEqual(validateInstallCommand('curl -fsSL https://bun.sh/install | bash'), true, 'curl -fsSL https pipe bash is valid');
+assert.strictEqual(validateInstallCommand('curl -fsSL https://example.com/install.sh | bash'), true, 'curl -fsSL any https pipe bash is valid');
+
 // Unsafe commands (arbitrary shell)
 assert.strictEqual(validateInstallCommand('rm -rf /'), false, 'rm command is invalid');
-assert.strictEqual(validateInstallCommand('curl https://example.com | bash'), false, 'curl pipe bash is invalid');
+assert.strictEqual(validateInstallCommand('curl https://example.com | bash'), false, 'curl pipe bash without -fsSL is invalid');
 assert.strictEqual(validateInstallCommand('echo "evil" > /etc/hosts'), false, 'echo redirect is invalid');
 assert.strictEqual(validateInstallCommand('; malicious'), false, 'semicolon injection is invalid');
 assert.strictEqual(validateInstallCommand('`cmd`'), false, 'backtick execution is invalid');
