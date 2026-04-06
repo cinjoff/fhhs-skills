@@ -178,6 +178,12 @@ function checkManifest(merged, projectRoot) {
             : expandHome(id);
           const exists = fs.existsSync(expandedPath);
           return { passed: exists, details: exists ? 'Exists' : 'Not found', hint: exists ? undefined : `Create directory: ${expandedPath}` };
+        } else if (check === 'mcp') {
+          const mcpConfigPath = path.join(os.homedir(), '.claude', 'mcp_config.json');
+          const { data } = safeReadJson(mcpConfigPath);
+          const servers = (data && data.mcpServers) || {};
+          const found = servers[id] !== undefined;
+          return { passed: found, details: found ? 'MCP server registered' : 'Not registered', hint: found ? undefined : (hint || `Run: ${item.install || `claude mcp add ${id}`}`) };
         } else if (check === 'file') {
           const filePath = type === 'project' && projectRoot
             ? path.join(projectRoot, id)
@@ -259,12 +265,50 @@ function remediate(checkResults, projectRoot) {
 
       if (category === 'tool') {
         try {
-          const pkg = id === 'typescript-language-server' ? ['typescript-language-server', 'typescript'] : [id];
-          const mgr = id === 'typescript-language-server' ? 'npm' : 'pnpm';
-          execFileSync(mgr, ['install', '-g', ...pkg], { timeout: 60000, stdio: ['pipe', 'pipe', 'pipe'] });
-          remediated.push({ id, category, action: `installed via ${mgr}` });
+          const installCmd = item.install;
+          if (installCmd && !schema.validateInstallCommand(installCmd)) {
+            failed.push({ id, category, error: `Blocked unsafe install command: ${installCmd}` });
+          } else if (installCmd) {
+            // Use the manifest-declared install command
+            if (installCmd.startsWith('brew ')) {
+              const args = installCmd.split(/\s+/).slice(1);
+              execFileSync('brew', args, { timeout: 120000, stdio: ['pipe', 'pipe', 'pipe'] });
+              remediated.push({ id, category, action: `installed via brew` });
+            } else if (installCmd.startsWith('npm install')) {
+              const args = installCmd.split(/\s+/).slice(1);
+              execFileSync('npm', args, { timeout: 60000, stdio: ['pipe', 'pipe', 'pipe'] });
+              remediated.push({ id, category, action: `installed via npm` });
+            } else if (installCmd.startsWith('curl ')) {
+              // Shell-based installers (e.g. bun) — run via /bin/sh
+              execFileSync('/bin/sh', ['-c', installCmd], { timeout: 120000, stdio: ['pipe', 'pipe', 'pipe'] });
+              remediated.push({ id, category, action: `installed via shell script` });
+            } else {
+              // Unknown install format — surface to user
+              failed.push({ id, category, error: `Manual install required: ${installCmd}` });
+            }
+          } else {
+            // Fallback: npm/pnpm global install
+            const pkg = id === 'typescript-language-server' ? ['typescript-language-server', 'typescript'] : [id];
+            const mgr = id === 'typescript-language-server' ? 'npm' : 'pnpm';
+            execFileSync(mgr, ['install', '-g', ...pkg], { timeout: 60000, stdio: ['pipe', 'pipe', 'pipe'] });
+            remediated.push({ id, category, action: `installed via ${mgr}` });
+          }
         } catch (e) {
           failed.push({ id, category, error: `Tool install failed: ${e.message}` });
+        }
+
+      } else if (category === 'mcp') {
+        try {
+          const installCmd = item.install;
+          if (installCmd && installCmd.startsWith('claude mcp add')) {
+            const args = installCmd.split(/\s+/).slice(1); // ['mcp', 'add', 'name', '--', 'npx', ...]
+            execFileSync('claude', args, { timeout: 30000, stdio: ['pipe', 'pipe', 'pipe'] });
+            remediated.push({ id, category, action: 'MCP server registered' });
+          } else {
+            failed.push({ id, category, error: `Manual MCP setup required: ${installCmd || 'claude mcp add ' + id}` });
+          }
+        } catch (e) {
+          failed.push({ id, category, error: `MCP registration failed: ${e.message}` });
         }
 
       } else if (category === 'plugin') {
