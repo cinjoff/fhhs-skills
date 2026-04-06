@@ -10,6 +10,14 @@ Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliat
 
 ## [Unreleased]
 
+## [1.64.0] - 2026-04-06
+
+### Added
+- **Todos skill** — restores /fh:todos for capturing and reviewing todos during work sessions
+
+### Fixed
+- **Release command** — fixes nested code fence that broke GitHub release creation, adds tag verification and post-creation checks
+
 ## [1.63.0] - 2026-04-06
 
 ### Added
