@@ -753,14 +753,14 @@ If the section is **missing**, insert the following block as the **first `##` se
 ```markdown
 ## Code Exploration
 
-When claude-mem MCP tools are available (`mcp__plugin_claude-mem_*` in tool list), use them as the primary tools for understanding code. They save 8-19x tokens compared to Read/Grep and provide cross-session memory that prevents re-discovering what was already learned:
+Use claude-mem smart tools as the primary tools for understanding code. They save 8-19x tokens compared to Read/Grep and provide cross-session memory that prevents re-discovering what was already learned:
 - `smart_outline` over `Read` — see file structure without loading the full file (~1,500 tokens vs ~12,000)
 - `smart_unfold` over `Read` with offset/limit — read a specific function by name
 - `smart_search` over `Grep` and `Glob` — AST-aware symbol search across the codebase
 - `search` / `get_observations` — recall decisions, gotchas, and patterns from prior sessions
 - `timeline` — understand recent work in a specific area before starting new tasks
 
-Fall back to `Read` only when you need the full file for editing. Fall back to `Grep`/`Glob` only when claude-mem is unavailable or returns no results.
+Fall back to `Read` only when you need the full file for editing. Fall back to `Grep`/`Glob` only when smart tools return no results.
 ```
 
 If the section **already exists**, leave it unchanged.

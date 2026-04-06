@@ -2,7 +2,7 @@
 name: design-clarify
 description: Improves unclear UX copy, error messages, microcopy, labels, and instructions. Makes interfaces easier to understand and use.
 model: sonnet
-tools: Read, Edit, Bash, Grep, Glob
+tools: Read, Edit, Bash, Grep, Glob, mcp__plugin_claude-mem_mcp-search__*
 ---
 
 See @agents/shared/claude-mem-preamble.md (Lite Variant) for codebase navigation.

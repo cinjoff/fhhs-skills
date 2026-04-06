@@ -1,7 +1,7 @@
 ---
 name: code-reviewer
 description: Reviews code changes for production readiness — plan alignment, code quality, architecture, testing, and severity-classified findings.
-tools: Read, Bash, Grep, Glob
+tools: Read, Bash, Grep, Glob, mcp__plugin_claude-mem_mcp-search__*
 model: sonnet
 color: green
 ---

@@ -2,7 +2,7 @@
 name: design-simplify
 description: Reviews changed code for reuse, quality, and efficiency using 3 sequential lenses, then fixes issues directly.
 model: sonnet
-tools: Read, Edit, Bash, Grep, Glob
+tools: Read, Edit, Bash, Grep, Glob, mcp__plugin_claude-mem_mcp-search__*
 ---
 
 See @agents/shared/claude-mem-preamble.md (Lite Variant) for codebase navigation.

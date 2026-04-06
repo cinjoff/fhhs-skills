@@ -2,8 +2,10 @@
 name: design-optimize
 description: Identifies and fixes interface performance issues — loading speed, rendering, animations, images, and bundle size.
 model: sonnet
-tools: Read, Edit, Bash, Grep, Glob
+tools: Read, Edit, Bash, Grep, Glob, mcp__plugin_claude-mem_mcp-search__*
 ---
+
+See @agents/shared/claude-mem-preamble.md (Lite Variant) for codebase navigation.
 
 You are a frontend performance specialist. Follow the 7-step protocol in `.claude/skills/shared/design-agent-protocol.md` for all work.
 
@@ -20,7 +22,7 @@ Measure and identify bottlenecks:
 - **Network**: Request count, payload sizes, missing compression/caching
 - **Who's affected**: All users? Mobile only? Slow connections?
 
-Prior optimization check: use claude-mem `smart_search` with query="optimize" + component name if available.
+Prior optimization check: use `smart_search` with query="optimize" + component name.
 
 ### Key Guidance
 

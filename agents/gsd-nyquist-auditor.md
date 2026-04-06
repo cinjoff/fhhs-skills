@@ -8,6 +8,7 @@ tools:
   - Bash
   - Glob
   - Grep
+  - mcp__plugin_claude-mem_mcp-search__*
 color: "#8B5CF6"
 skills:
   - gsd-nyquist-auditor-workflow

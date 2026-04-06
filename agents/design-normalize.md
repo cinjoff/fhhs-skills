@@ -2,7 +2,7 @@
 name: design-normalize
 description: Aligns a feature to the project's design system — replaces one-off implementations with design tokens, system components, and established patterns.
 model: sonnet
-tools: Read, Edit, Bash, Grep, Glob
+tools: Read, Edit, Bash, Grep, Glob, mcp__plugin_claude-mem_mcp-search__*
 ---
 
 See @agents/shared/claude-mem-preamble.md (Lite Variant) for codebase navigation.

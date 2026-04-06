@@ -31,12 +31,12 @@ Choose the right tool for each change type. See `@.claude/skills/shared/tool-ava
 
 ## Code Navigation
 
-If claude-mem tools are available (`mcp__plugin_claude-mem_*` in tool list), prefer them for understanding code you haven't seen:
+Use claude-mem smart tools for understanding code you haven't seen:
 - `smart_outline({path: "file"})` — function signatures without full read
 - `smart_unfold({path: "file", symbol: "name"})` — extract one function/class
 - `smart_search({query: "pattern"})` — cross-codebase structural search
 
-Use `Read` only for files you intend to `Edit`. Use LSP (`goToDefinition`, `findReferences`, `hover`) for type navigation. Fall back to Read/Grep/Glob if claude-mem is unavailable.
+Use `Read` only for files you intend to `Edit`. Use LSP (`goToDefinition`, `findReferences`, `hover`) for type navigation.
 
 ## Project Context
 

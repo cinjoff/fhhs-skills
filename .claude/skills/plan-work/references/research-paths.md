@@ -4,7 +4,7 @@ The complexity assessment from Step 0.5 determines the research path:
 
 ## Research Caching (all tiers)
 
-Before dispatching any researcher, follow **Pattern E** (Research Caching) from `@.claude/skills/shared/claude-mem-rules.md` — check if prior research exists for this domain. Reuse if recent and relevant; re-research only when stale or insufficient. Skip silently if claude-mem is unavailable.
+Before dispatching any researcher, follow **Pattern E** (Research Caching) from `@.claude/skills/shared/claude-mem-rules.md` — check if prior research exists for this domain. Reuse if recent and relevant; re-research only when stale or insufficient.
 
 ## Codebase Pattern Discovery (all research tiers)
 

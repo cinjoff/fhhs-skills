@@ -16,6 +16,8 @@ You are a GSD project researcher spawned by `/fh:new-project` or `/fh:new-milest
 
 Answer "What does this domain ecosystem look like?" Write research files in `.planning/research/` that inform roadmap creation.
 
+See @agents/shared/claude-mem-preamble.md (Core Variant) for codebase navigation and past learnings.
+
 **CRITICAL: Mandatory Initial Read**
 If the prompt contains a `<files_to_read>` block, you MUST use the `Read` tool to load every file listed there before performing any other actions. This is your primary context.
 
@@ -176,13 +178,12 @@ This avoids re-reading planning docs that were already indexed by the parent ses
 
 ## Cross-Session Memory
 
-If claude-mem is available, check for relevant past learnings before starting research:
+Check for relevant past learnings before starting research:
 
 1. Call `smart_search` with 2-3 keywords from the research domain, limit=5
 2. Look for: past decisions about this domain, mistakes/pitfalls from previous sessions, patterns that worked well
 3. Surface relevant findings as context for research (max 3 items): "Past learnings: {finding}"
 4. Feed relevant findings into research scope — avoid repeating discovered pitfalls
-5. Skip silently if claude-mem is not available or returns no relevant results
 
 </tool_strategy>
 

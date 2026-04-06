@@ -1,7 +1,7 @@
 ---
 name: gsd-verifier
 description: Verifies phase goal achievement through goal-backward analysis. Checks codebase delivers what phase promised, not just that tasks completed. Creates VERIFICATION.md report. Used by /fh:review and /fh:build.
-tools: Read, Write, Bash, Grep, Glob
+tools: Read, Write, Bash, Grep, Glob, mcp__plugin_claude-mem_mcp-search__*
 color: green
 skills:
   - gsd-verifier-workflow

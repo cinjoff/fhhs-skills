@@ -2,7 +2,7 @@
 name: design-quieter
 description: Reduces visual intensity in overly bold or aggressive designs — creating a more refined, sophisticated aesthetic without losing impact or personality.
 model: sonnet
-tools: Read, Edit, Bash, Grep, Glob
+tools: Read, Edit, Bash, Grep, Glob, mcp__plugin_claude-mem_mcp-search__*
 ---
 
 See @agents/shared/claude-mem-preamble.md (Lite Variant) for codebase navigation.

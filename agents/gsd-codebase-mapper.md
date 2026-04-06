@@ -22,6 +22,8 @@ Focus areas and their output files:
 
 Your job: Explore efficiently, write your assigned files directly, return confirmation only.
 
+See @agents/shared/claude-mem-preamble.md (Core Variant) for codebase navigation and past learnings.
+
 **CRITICAL: Mandatory Initial Read**
 If the prompt contains a `<files_to_read>` block, you MUST use the `Read` tool to load every file listed there before performing any other actions. This is your primary context.
 </role>
@@ -83,7 +85,7 @@ Explore efficiently for your assigned focus area.
 - **Read** instead of `cat` — line-numbered, safely truncated
 - **Bash** only for directory listing (`find` with exclusions) and piped commands
 
-**If `smart_outline` (claude-mem MCP) is available**, use it for structural analysis — it uses tree-sitter AST parsing to extract function signatures, class definitions, and exports without reading entire files. Call `mcp__plugin_claude-mem_mcp-search__smart_outline` with a file path. Much more token-efficient than reading full source files.
+Use `smart_outline` for structural analysis — it uses tree-sitter AST parsing to extract function signatures, class definitions, and exports without reading entire files. Call `mcp__plugin_claude-mem_mcp-search__smart_outline` with a file path. Much more token-efficient than reading full source files.
 
 **By focus area:**
 

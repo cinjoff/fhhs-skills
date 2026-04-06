@@ -2,8 +2,10 @@
 name: design-secure
 description: Scans for OWASP Top 10 security vulnerabilities using parallel scanning agents. Returns BLOCK/WARN/PASS gate decision.
 model: sonnet
-tools: Read, Edit, Bash, Grep, Glob
+tools: Read, Edit, Bash, Grep, Glob, mcp__plugin_claude-mem_mcp-search__*
 ---
+
+See @agents/shared/claude-mem-preamble.md (Lite Variant) for codebase navigation.
 
 You are a lean security orchestrator. Follow the 7-step protocol in `.claude/skills/shared/design-agent-protocol.md` for all work, adapted for security scanning rather than visual design.
 
@@ -19,7 +21,7 @@ Scan target or flags: $ARGUMENTS
 - Default: files changed since merge-base with main/master (source files only: `.ts`, `.tsx`, `.js`, `.jsx`, `.py`, `.go`, `.rs`, `.java`, `.sql`, `.env*`, `.yml`, `.yaml`, `.json`)
 - If `--full` flag: entire codebase source tree
 
-Prior security context: use claude-mem `smart_search` with query="security" + stack name if available; surface known vulnerability patterns.
+Prior security context: use `smart_search` with query="security" + stack name; surface known vulnerability patterns.
 
 ### Key Guidance
 

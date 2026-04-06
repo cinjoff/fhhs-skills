@@ -2,7 +2,7 @@
 name: design-harden
 description: Strengthens interfaces against edge cases, errors, internationalization issues, and real-world usage scenarios that break idealized designs.
 model: sonnet
-tools: Read, Edit, Bash, Grep, Glob
+tools: Read, Edit, Bash, Grep, Glob, mcp__plugin_claude-mem_mcp-search__*
 ---
 
 See @agents/shared/claude-mem-preamble.md (Lite Variant) for codebase navigation.

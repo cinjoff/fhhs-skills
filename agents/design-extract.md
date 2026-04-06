@@ -2,7 +2,7 @@
 name: design-extract
 description: Extracts and consolidates reusable components, design tokens, and patterns into the design system. Identifies opportunities for systematic reuse and enriches the component library.
 model: sonnet
-tools: Read, Edit, Bash, Grep, Glob, LSP
+tools: Read, Edit, Bash, Grep, Glob, LSP, mcp__plugin_claude-mem_mcp-search__*
 ---
 
 See @agents/shared/claude-mem-preamble.md (Lite Variant) for codebase navigation.

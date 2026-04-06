@@ -1,7 +1,7 @@
 ---
 name: code-explorer
 description: Traces feature implementations across codebases — entry points through all abstraction layers. Uses LSP for precise navigation.
-tools: Read, Bash, Grep, Glob, LSP
+tools: Read, Bash, Grep, Glob, LSP, mcp__plugin_claude-mem_mcp-search__*
 model: sonnet
 color: cyan
 ---
