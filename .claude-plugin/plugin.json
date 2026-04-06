@@ -1,6 +1,6 @@
 {
   "name": "fh",
-  "description": "fhhs-skills: All-in-one workflow plugin — engineering discipline (TDD, verification, code review), design quality (critique, polish, normalize), and project tracking (phases, milestones, roadmaps). No other plugins required.",
+  "description": "fhhs-skills: All-in-one workflow plugin — 28 skills and 32 agents for spec-driven development, TDD, design quality, web research, startup validation, and autonomous execution. No other plugins required.",
   "version": "1.62.4",
   "author": {
     "name": "Konstantin"

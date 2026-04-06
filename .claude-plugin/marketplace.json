@@ -1,7 +1,7 @@
 {
   "name": "fhhs-skills",
   "metadata": {
-    "description": "All-in-one workflow plugin for Claude Code. Engineering discipline (TDD, verification, code review), design quality (critique, polish, normalize), and project tracking (phases, milestones, roadmaps) in a single install."
+    "description": "All-in-one workflow plugin for Claude Code. 28 skills and 32 specialized agents for spec-driven development, TDD, design quality, web research, startup validation, and autonomous execution in a single install."
   },
   "owner": {
     "name": "Konstantin",
@@ -10,7 +10,7 @@
   "plugins": [
     {
       "name": "fh",
-      "description": "fhhs-skills: Composite workflow skills unifying engineering discipline, design quality, and project tracking. Includes /fh:plan-work, /fh:build, /fh:fix, /fh:review, /fh:ui-critique, /fh:polish, and 30+ more commands.",
+      "description": "fhhs-skills: 28 skills and 32 agents — plan, spec, build, review, fix, research, design, and ship autonomously. Includes /fh:plan-work, /fh:build, /fh:fix, /fh:review, /fh:research, /fh:auto, and more.",
       "version": "1.62.4",
       "author": {
         "name": "Konstantin"
