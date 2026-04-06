@@ -805,19 +805,23 @@
       "id": 19,
       "command": "ui-test",
       "prompt": "verify the dashboard looks right. browse binary is not built on this machine",
-      "expected_output": "Should detect that the browse binary ($B) is not available at ~/.claude/skills/browse/dist/browse, stop, and tell the user to run the vendored setup script after confirmation. Should NOT attempt to proceed without it or use alternative tools.",
+      "expected_output": "Should detect that the browse binary ($B) is not available at ~/.claude/skills/browse/dist/browse (NEEDS_SETUP). Should ask the user: \"browse binary needs a one-time build (~10 seconds). OK to proceed?\" After user confirmation, should locate the vendored setup script via FHHS_SKILLS_ROOT or plugin cache and run bash \"$_FHHS/.claude/skills/browse/setup\" to build the binary. Should NOT take screenshots before the binary is built.",
       "files": [],
       "assertions": [
         {
-          "text": "Detects browse binary not available",
+          "text": "Detects browse binary not available (NEEDS_SETUP)",
           "type": "guard"
         },
         {
-          "text": "Provides setup command for building browse",
-          "type": "output"
+          "text": "Asks user for consent before building browse binary",
+          "type": "behavioral"
         },
         {
-          "text": "Does NOT proceed without browse binary",
+          "text": "Runs vendored setup script after confirmation",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT take screenshots without browse binary",
           "type": "guard"
         }
       ],
@@ -15190,6 +15194,125 @@
         {
           "type": "regex",
           "pattern": "tool.*list|tool.*inspect|available.*tool"
+        }
+      ]
+    },
+    {
+      "id": 421,
+      "command": "setup",
+      "prompt": "Run /fh:setup on a machine where bun is installed but the browse binary at ~/.claude/skills/browse/dist/browse does not exist",
+      "expected_output": "Should detect that the browse binary is missing. Should locate the vendored setup script via FHHS_SKILLS_ROOT or plugin cache (ls -d ~/.claude/plugins/cache/fhhs-skills/fh/*/ | sort -V | tail -1). Should run bash \"$_FHHS/.claude/skills/browse/setup\" to build it from vendored source. Should report browse as successfully built and ready after the script completes.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects browse binary as missing",
+          "type": "guard"
+        },
+        {
+          "text": "Locates vendored setup script via FHHS_SKILLS_ROOT or plugin cache",
+          "type": "behavioral"
+        },
+        {
+          "text": "Invokes bash on the vendored browse/setup script to build the binary",
+          "type": "behavioral"
+        },
+        {
+          "text": "Reports browse as built and ready",
+          "type": "output"
+        }
+      ],
+      "tier": "full",
+      "tags": [
+        "browse",
+        "build",
+        "phase-26"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "browse.*setup|build.*browse|\\.claude/skills/browse/setup"
+        },
+        {
+          "type": "regex",
+          "pattern": "browse.*ready|browse.*built|browse.*success"
+        }
+      ]
+    },
+    {
+      "id": 422,
+      "command": "update",
+      "prompt": "Run /fh:update \u2014 the plugin was just updated and the browse binary source has changed (src/ files are newer than dist/browse)",
+      "expected_output": "After re-linking the GSD CLI, update should run the browse setup script which detects the stale binary (source files newer than dist/browse) and rebuilds it. Should report browse as rebuilt and ready after the setup script completes.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Runs browse setup script as part of update flow",
+          "type": "behavioral"
+        },
+        {
+          "text": "Setup script detects stale binary and rebuilds",
+          "type": "behavioral"
+        },
+        {
+          "text": "Reports browse as rebuilt/ready after update",
+          "type": "output"
+        }
+      ],
+      "tier": "full",
+      "tags": [
+        "browse",
+        "rebuild",
+        "phase-26"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "browse.*setup|rebuild.*browse|\\.claude/skills/browse/setup"
+        },
+        {
+          "type": "regex",
+          "pattern": "browse.*ready|browse.*built|browse.*rebuild"
+        }
+      ]
+    },
+    {
+      "id": 423,
+      "command": "update",
+      "prompt": "Run /fh:update --check. The browse binary at ~/.claude/skills/browse/dist/browse does not exist. All other tools are installed.",
+      "expected_output": "Manifest check should detect the browse binary as missing and report it as a warn/missing status. The check output should list browse as not found or missing. Should NOT attempt to silently skip browse \u2014 it must appear in the manifest report with a warning or missing indicator.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Manifest check runs and includes browse in its output",
+          "type": "behavioral"
+        },
+        {
+          "text": "Reports browse binary as missing or warn status",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT silently skip browse in manifest output",
+          "type": "guard"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "manifest",
+        "browse",
+        "phase-26"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "browse.*missing|browse.*not.found|browse.*warn|MISSING.*browse"
+        },
+        {
+          "type": "regex",
+          "pattern": "manifest|check|\u2717|missing"
+        },
+        {
+          "type": "regex",
+          "pattern": "warn|missing|\u26a0|not.found"
         }
       ]
     }
