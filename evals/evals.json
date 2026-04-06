@@ -761,7 +761,7 @@
       "id": 18,
       "command": "ui-test",
       "prompt": "check the UI on the settings page at localhost:3000/settings",
-      "expected_output": "Should check for dev server on common ports. Should check gstack browse binary ($B) availability. If browse binary not found, should stop and tell user to build it with 'cd ~/.claude/skills/gstack && ./setup'. If available, should capture screenshots at 3 viewports (desktop 1440x900, tablet 768x1024, mobile 375x812), run console health check, read .planning/DESIGN.md for design context, perform design critique with severity ratings, and produce a Visual Verification Report.",
+      "expected_output": "Should check for dev server on common ports. Should check browse binary ($B) availability. If browse binary not found, should stop and tell user to run the vendored setup script. If available, should capture screenshots at 3 viewports (desktop 1440x900, tablet 768x1024, mobile 375x812), run console health check, read .planning/DESIGN.md for design context, perform design critique with severity ratings, and produce a Visual Verification Report.",
       "files": [],
       "assertions": [
         {
@@ -769,7 +769,7 @@
           "type": "behavioral"
         },
         {
-          "text": "Checks gstack browse binary availability",
+          "text": "Checks browse binary availability",
           "type": "guard"
         },
         {
@@ -790,25 +790,38 @@
         "guard",
         "happy-path"
       ],
-      "checks": []
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "browse.*binary|browse.*path|~/.claude/skills/browse"
+        },
+        {
+          "type": "regex",
+          "pattern": "[Vv]isual [Vv]erification [Rr]eport|screenshot|viewport"
+        }
+      ]
     },
     {
       "id": 19,
       "command": "ui-test",
-      "prompt": "verify the dashboard looks right. gstack browse binary is not built on this machine",
-      "expected_output": "Should detect that the gstack browse binary ($B) is not available at ~/.claude/skills/gstack/browse/dist/browse, stop, and tell the user to build it with 'cd ~/.claude/skills/gstack && ./setup'. Should NOT attempt to proceed without it or use alternative tools.",
+      "prompt": "verify the dashboard looks right. browse binary is not built on this machine",
+      "expected_output": "Should detect that the browse binary ($B) is not available at ~/.claude/skills/browse/dist/browse (NEEDS_SETUP). Should ask the user: \"browse binary needs a one-time build (~10 seconds). OK to proceed?\" After user confirmation, should locate the vendored setup script via FHHS_SKILLS_ROOT or plugin cache and run bash \"$_FHHS/.claude/skills/browse/setup\" to build the binary. Should NOT take screenshots before the binary is built.",
       "files": [],
       "assertions": [
         {
-          "text": "Detects gstack browse binary not available",
+          "text": "Detects browse binary not available (NEEDS_SETUP)",
           "type": "guard"
         },
         {
-          "text": "Provides setup command for building browse",
-          "type": "output"
+          "text": "Asks user for consent before building browse binary",
+          "type": "behavioral"
         },
         {
-          "text": "Does NOT proceed without gstack browse",
+          "text": "Runs vendored setup script after confirmation",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT take screenshots without browse binary",
           "type": "guard"
         }
       ],
@@ -817,7 +830,16 @@
         "guard",
         "happy-path"
       ],
-      "checks": []
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "browse.*not.*found|browse.*missing|~/.claude/skills/browse/dist/browse"
+        },
+        {
+          "type": "regex",
+          "pattern": "setup|vendored|build.*browse"
+        }
+      ]
     },
     {
       "id": 20,
@@ -14988,8 +15010,8 @@
     {
       "id": 416,
       "command": "setup",
-      "prompt": "Run /fh:setup --check. I have node, git, and typescript-language-server installed. But bun and ast-grep are NOT installed. gstack browse binary is missing too.",
-      "expected_output": "Should show a status table with bun as missing, ast-grep as missing, gstack browse as missing. These should show as failures (not optional) since they are now required tools. Should suggest running full setup to install them.",
+      "prompt": "Run /fh:setup --check. I have node, git, and typescript-language-server installed. But bun and ast-grep are NOT installed. browse binary is missing too.",
+      "expected_output": "Should show a status table with bun as missing, ast-grep as missing, browse as missing. These should show as failures (not optional) since they are now required tools. Should suggest running full setup to install them.",
       "files": [],
       "assertions": [
         {
@@ -15001,7 +15023,7 @@
           "type": "output"
         },
         {
-          "text": "Shows gstack browse as missing in status table",
+          "text": "Shows browse as missing in status table",
           "type": "output"
         }
       ],
@@ -15023,7 +15045,7 @@
         },
         {
           "type": "regex",
-          "pattern": "gstack.*missing|gstack.*\u2717|MISSING.*gstack"
+          "pattern": "browse.*missing|browse.*\u2717|MISSING.*browse"
         }
       ]
     },
@@ -15072,8 +15094,8 @@
     {
       "id": 418,
       "command": "setup",
-      "prompt": "Run /fh:setup --check. Everything is installed: node, git, bun, ast-grep, gstack browse binary exists, claude-mem plugin, TypeScript LSP, all hooks configured, FHHS_SKILLS_ROOT set.",
-      "expected_output": "Should show all components as configured/installed with check marks. Should report 'All components configured. Ready to use.' at the end. bun, ast-grep, and gstack browse should all show as OK.",
+      "prompt": "Run /fh:setup --check. Everything is installed: node, git, bun, ast-grep, browse binary exists, claude-mem plugin, TypeScript LSP, all hooks configured, FHHS_SKILLS_ROOT set.",
+      "expected_output": "Should show all components as configured/installed with check marks. Should report 'All components configured. Ready to use.' at the end. bun, ast-grep, and browse should all show as OK.",
       "files": [],
       "assertions": [
         {
@@ -15110,7 +15132,7 @@
     {
       "id": 419,
       "command": "update",
-      "prompt": "Run /fh:update. All tools are already installed (bun, ast-grep, gstack browse). The manifest check in Step 5 should pass with no missing items. Verify manifest reports all OK.",
+      "prompt": "Run /fh:update. All tools are already installed (bun, ast-grep, browse). The manifest check in Step 5 should pass with no missing items. Verify manifest reports all OK.",
       "expected_output": "Should run the standard update flow, then manifest check finds all items OK. Step 6 report shows 'Everything is up to date \u2014 no changes needed.' No remediation attempted.",
       "files": [],
       "assertions": [
@@ -15172,6 +15194,201 @@
         {
           "type": "regex",
           "pattern": "tool.*list|tool.*inspect|available.*tool"
+        }
+      ]
+    },
+    {
+      "id": 421,
+      "command": "setup",
+      "prompt": "Run /fh:setup on a machine where bun is installed but the browse binary at ~/.claude/skills/browse/dist/browse does not exist",
+      "expected_output": "Should detect that the browse binary is missing. Should locate the vendored setup script via FHHS_SKILLS_ROOT or plugin cache (ls -d ~/.claude/plugins/cache/fhhs-skills/fh/*/ | sort -V | tail -1). Should run bash \"$_FHHS/.claude/skills/browse/setup\" to build it from vendored source. Should report browse as successfully built and ready after the script completes.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects browse binary as missing",
+          "type": "guard"
+        },
+        {
+          "text": "Locates vendored setup script via FHHS_SKILLS_ROOT or plugin cache",
+          "type": "behavioral"
+        },
+        {
+          "text": "Invokes bash on the vendored browse/setup script to build the binary",
+          "type": "behavioral"
+        },
+        {
+          "text": "Reports browse as built and ready",
+          "type": "output"
+        }
+      ],
+      "tier": "full",
+      "tags": [
+        "browse",
+        "build",
+        "phase-26"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "browse.*setup|build.*browse|\\.claude/skills/browse/setup"
+        },
+        {
+          "type": "regex",
+          "pattern": "browse.*ready|browse.*built|browse.*success"
+        }
+      ]
+    },
+    {
+      "id": 422,
+      "command": "update",
+      "prompt": "Run /fh:update \u2014 the plugin was just updated and the browse binary source has changed (src/ files are newer than dist/browse)",
+      "expected_output": "After re-linking the GSD CLI, update should run the browse setup script which detects the stale binary (source files newer than dist/browse) and rebuilds it. Should report browse as rebuilt and ready after the setup script completes.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Runs browse setup script as part of update flow",
+          "type": "behavioral"
+        },
+        {
+          "text": "Setup script detects stale binary and rebuilds",
+          "type": "behavioral"
+        },
+        {
+          "text": "Reports browse as rebuilt/ready after update",
+          "type": "output"
+        }
+      ],
+      "tier": "full",
+      "tags": [
+        "browse",
+        "rebuild",
+        "phase-26"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "browse.*setup|rebuild.*browse|\\.claude/skills/browse/setup"
+        },
+        {
+          "type": "regex",
+          "pattern": "browse.*ready|browse.*built|browse.*rebuild"
+        }
+      ]
+    },
+    {
+      "id": 424,
+      "name": "brainstorm-engagement",
+      "command": "plan-work",
+      "prompt": "plan adding a simple feature flag system to my app. I just need a config file and a helper function to check flags",
+      "expected_output": "Even though this is a Simple complexity task, plan-work must NOT skip brainstorming. It should present at least one alternative approach (e.g. env vars vs config file, or a third-party library vs hand-rolled), ask the user to confirm the chosen approach, and only then proceed. The brainstorm must surface an alternative and get explicit user approval before moving to Step 3.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Does NOT skip brainstorm for Simple task — presents at least one alternative approach",
+          "type": "guard"
+        },
+        {
+          "text": "Asks user to confirm the chosen approach before proceeding",
+          "type": "behavioral"
+        },
+        {
+          "text": "Presents alternative approach in brainstorm step",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": ["engagement", "brainstorm"],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "alternative|alternatively|another approach|option [A-C]|approach [12]"
+        },
+        {
+          "type": "regex",
+          "pattern": "proceed|confirm|approve|continue|go ahead|ok to"
+        },
+        {
+          "type": "regex",
+          "pattern": "brainstorm|approach|design|option"
+        }
+      ]
+    },
+    {
+      "id": 425,
+      "name": "spec-creation-medium",
+      "command": "plan-work",
+      "prompt": "plan adding email notifications for order status updates. users should get emails when their order ships and when it's delivered. medium complexity, 5-6 tasks",
+      "expected_output": "For Medium complexity, plan-work must create a SPEC.md with Architecture and Failure Modes sections, then present it to the user for approval before proceeding to Step 5 (plan creation). The skill should explicitly ask for spec approval and wait before creating PLAN.md.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Creates SPEC.md for Medium complexity task",
+          "type": "output"
+        },
+        {
+          "text": "SPEC.md includes Architecture and Failure Modes sections",
+          "type": "behavioral"
+        },
+        {
+          "text": "Presents spec for user approval before proceeding to plan creation",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": ["engagement", "spec"],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "SPEC\\.md|spec.*created|spec.*written"
+        },
+        {
+          "type": "regex",
+          "pattern": "Architecture|Failure Mode|failure.*mode|architecture.*section"
+        },
+        {
+          "type": "regex",
+          "pattern": "approve.*spec|spec.*approv|proceed.*plan|approve.*before|confirm.*spec"
+        }
+      ]
+    },
+    {
+      "id": 423,
+      "command": "update",
+      "prompt": "Run /fh:update --check. The browse binary at ~/.claude/skills/browse/dist/browse does not exist. All other tools are installed.",
+      "expected_output": "Manifest check should detect the browse binary as missing and report it as a warn/missing status. The check output should list browse as not found or missing. Should NOT attempt to silently skip browse \u2014 it must appear in the manifest report with a warning or missing indicator.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Manifest check runs and includes browse in its output",
+          "type": "behavioral"
+        },
+        {
+          "text": "Reports browse binary as missing or warn status",
+          "type": "output"
+        },
+        {
+          "text": "Does NOT silently skip browse in manifest output",
+          "type": "guard"
+        }
+      ],
+      "tier": "smoke",
+      "tags": [
+        "manifest",
+        "browse",
+        "phase-26"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "browse.*missing|browse.*not.found|browse.*warn|MISSING.*browse"
+        },
+        {
+          "type": "regex",
+          "pattern": "manifest|check|\u2717|missing"
+        },
+        {
+          "type": "regex",
+          "pattern": "warn|missing|\u26a0|not.found"
         }
       ]
     }

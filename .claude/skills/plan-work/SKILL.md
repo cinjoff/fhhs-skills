@@ -24,16 +24,12 @@ This creates the .planning/ directory that all planning and build skills depend 
 
 ## Step -0.5: Past Context Check
 
-If claude-mem is available (check tool list for `mcp__plugin_claude-mem_*`):
-
 1. Derive project name from `.planning/PROJECT.md` name field (fall back to basename of cwd). Use this as the `project` parameter for all claude-mem calls.
 2. Call `search` with query=2-3 keywords from the phase/project domain, project=<project-name>, limit=10
 3. Scan the returned index for relevant IDs — prioritize types: gotcha, decision, trade-off
 4. For the top 2-3 relevant IDs, call `get_observations` to fetch full details
 5. Present as: "**From prior sessions:** - {observation}" — max 3 items
 6. Feed these into the planning context so past mistakes and decisions inform this session
-
-If claude-mem is not available, skip silently. The rest of plan-work reads planning files directly as fallback.
 
 claude-mem observations from prior steps persist automatically — no explicit pre-indexing needed.
 
@@ -53,6 +49,22 @@ Compare the user's `$ARGUMENTS` against existing phases in ROADMAP.md:
 
 Once the target phase is determined, hold it — it determines the output path for PLAN.md in Step 3.
 
+### Phase Dependency Check
+
+After identifying the target phase, check if it has prerequisites:
+
+1. Read the phase's CONTEXT.md or RESEARCH.md for dependency declarations (look for "depends on Phase", "requires Phase", "prerequisite", "blocked by")
+2. Read ROADMAP.md for phase ordering and any explicit dependency annotations
+3. For each declared dependency, check STATE.md — is the prerequisite phase marked complete?
+
+| Dependency Status | Action |
+|-------------------|--------|
+| All prerequisites complete | Proceed normally |
+| Prerequisites incomplete | **WARN:** "Phase X depends on Phase Y which is incomplete (status: {status}). Proceeding may cause rework. Continue anyway, or work on Phase Y first?" Wait for user choice. |
+| Prerequisites not started | **BLOCK:** "Phase X requires Phase Y which hasn't started. Recommend planning Phase Y first." Wait for user choice. |
+
+This prevents wasted work from building on incomplete foundations.
+
 ---
 
 ## Step 0.5: Complexity & Scope Assessment
@@ -70,7 +82,7 @@ Before diving in, evaluate the task to suggest appropriate depth AND determine w
 
 | Complexity | Research | Discussion | Review |
 |-----------|----------|------------|--------|
-| **Simple** (1-3 tasks, familiar patterns, single file area) | Skip | Skip brainstorm (Step 2). Identify 1-2 gray areas only. | Suggest `/fh:plan-review` (can skip for trivial: rename, typo) |
+| **Simple** (1-3 tasks, familiar patterns, single file area) | Skip | Abbreviated brainstorm (1 alternative approach). Identify 1-2 gray areas only. | Suggest `/fh:plan-review` (can skip for trivial: rename, typo) |
 | **Medium** (4-8 tasks, some unfamiliar patterns) | Inline research | Identify gray areas | Strongly suggest `/fh:plan-review` |
 | **Complex** (9+ tasks, unfamiliar domain, new architecture, multi-session) | Suggest deep research via phase-researcher agent | Full discussion with decision-locking | Strongly suggest `/fh:plan-review` |
 
@@ -120,9 +132,7 @@ See @references/research-paths.md for research path details (deep, codebase expl
 
 ## Step 2: Brainstorm
 
-**Skip if complexity is Simple.** Jump to Step 3 (Discuss Implementation) with abbreviated scope: identify 1-2 gray areas, lock decisions, proceed to plan creation.
-
-**Skip if:** A phase-specific CONTEXT.md already exists AND a design doc for this topic already exists in `.planning/designs/`. The design was already approved — proceed to Step 3.
+**Brainstorm is mandatory for all non-auto plan-work runs.** Even for Simple tasks, present at least one alternative approach and get user confirmation. For tasks where a prior design exists, present a 1-sentence summary of the existing design and ask: 'Existing design found at [path]. Reuse as-is, or revisit?'
 
 ### Past Decisions Check (before brainstorming)
 
@@ -146,7 +156,7 @@ Save approved design to `.planning/designs/YYYY-MM-DD-<topic>.md`.
 
 ### AUTO_MODE branch
 
-Check auto-mode: Ensure GSD CLI symlink per @.claude/skills/shared/gsd-symlink-heal.md, then:
+Check auto-mode:
 
 ```bash
 AUTO_MODE=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" config-get workflow.auto_advance 2>/dev/null || echo "false")
@@ -157,6 +167,8 @@ If `AUTO_MODE` is `"true"`, follow @references/auto-mode-path.md, then continue 
 ---
 
 ### Normal (interactive) mode
+
+Gray area discussion runs for all complexities in non-auto mode. For Simple tasks: identify at least 2 gray areas minimum. There is no complexity-based skip for gray area discussion.
 
 Follow @references/gray-area-discussion.md for codebase scouting, gray area identification, decision locking, and CONTEXT.md format.
 
@@ -199,8 +211,8 @@ Hold these must_haves — they feed directly into the PLAN.md frontmatter and th
 | Complexity | Action |
 |------------|--------|
 | **Simple** | Skip. No SPEC.md. |
-| **Medium** | Create SPEC.md per @references/spec-creation-process.md (streamlined path) |
-| **Complex** | Create SPEC.md per @references/spec-creation-process.md (full 5-step path, dispatches spec-architect agent) |
+| **Medium** | Create SPEC.md per @references/spec-creation-process.md (streamlined path). Present to user for approval before Step 5. |
+| **Complex** | Create SPEC.md per @references/spec-creation-process.md (full 5-step path, dispatches spec-architect agent). Present to user for approval before Step 5. |
 
 Output: `.planning/phases/XX-name/XX-NN-SPEC.md`
 

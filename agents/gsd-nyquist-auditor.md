@@ -8,10 +8,15 @@ tools:
   - Bash
   - Glob
   - Grep
+  - mcp__plugin_claude-mem_mcp-search__*
 color: "#8B5CF6"
 skills:
   - gsd-nyquist-auditor-workflow
 ---
+
+<preamble>
+See @agents/shared/claude-mem-preamble.md (Core Variant) for codebase navigation and past learnings.
+</preamble>
 
 <role>
 GSD Nyquist auditor. Spawned by validate-phase to fill validation gaps in completed phases.

@@ -4,7 +4,25 @@ The complexity assessment from Step 0.5 determines the research path:
 
 ## Research Caching (all tiers)
 
-Before dispatching any researcher, follow **Pattern E** (Research Caching) from `@.claude/skills/shared/claude-mem-rules.md` — check if prior research exists for this domain. Reuse if recent and relevant; re-research only when stale or insufficient. Skip silently if claude-mem is unavailable.
+Before dispatching any researcher, follow **Pattern E** (Research Caching) from `@.claude/skills/shared/claude-mem-rules.md` — check if prior research exists for this domain. Reuse if recent and relevant; re-research only when stale or insufficient.
+
+## Codebase Pattern Discovery (all research tiers)
+
+Before any external research, surface existing codebase patterns so research doesn't reinvent established conventions. Uses **Pattern B** from `@.claude/skills/shared/claude-mem-rules.md`:
+
+```
+If .planning/codebase/ exists:
+  1. smart_outline({path: ".planning/codebase/CONVENTIONS.md"}) → scan headings
+  2. smart_outline({path: ".planning/codebase/CONCERNS.md"}) → scan headings
+  3. smart_unfold relevant headings for this phase's domain
+  4. Check ARCHITECTURE.md, TESTING.md, INTEGRATIONS.md as needed
+
+If .planning/codebase/ doesn't exist: Grep for domain-relevant patterns in src/
+```
+
+Look for: caching patterns, data flow (avoid double-parsing), integration adapters, existing utilities. Feed findings into the researcher prompt or inline research context.
+
+Budget: <3% context. This step catches the gaps that plan-review would otherwise flag late.
 
 ## Deep Research Path (complex tasks)
 
@@ -43,10 +61,12 @@ When working in an unfamiliar codebase, suggest dispatching a `fh:code-explorer`
 
 ## Inline Research Path (medium tasks — default)
 
-Announce "This needs technical research before design — researching first." Spawn a Task agent with:
+Announce "This needs technical research before design — researching first." First run the Codebase Pattern Discovery step above, then spawn a Task agent with:
+- Codebase pattern findings from the discovery step (existing conventions, caching, data flow, integration patterns)
 - The specific research questions implied by the user's request
 - Instruction to follow `@.claude/skills/shared/firecrawl-guide.md` for content-type-specific web research patterns, and Context7 for library documentation
 - Instruction to write findings to `.planning/phases/XX-name/XX-RESEARCH.md` with prescriptive recommendations, stack decisions, pitfalls, and code examples
+- Instruction to include `## Existing Codebase Patterns` section documenting what was found in the codebase before external research
 
 ## Tool Selection
 

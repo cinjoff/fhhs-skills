@@ -14,8 +14,6 @@ Read all files referenced by the invoking prompt's execution_context before star
 <step name="ensure_and_load_config">
 Ensure config exists and load current state:
 
-Ensure GSD CLI symlink per @.claude/skills/shared/gsd-symlink-heal.md, then:
-
 ```bash
 node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" config-ensure-section
 INIT=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" state load)

@@ -30,19 +30,17 @@ Never dump observations into context. Three layers, each cheaper than the next:
 
 Smart tools are 11-27x cheaper than Read. Use `smart_outline` before reading any file. Use `smart_unfold` to read a specific function instead of the full file. Only `Read` a full file when you need to `Edit` it.
 
-## Graceful Degradation
+## Tool Expectations
 
-Every claude-mem call MUST be guarded. Never fail a skill because claude-mem is missing.
+claude-mem, ast-grep, and bun are **manifest-required** tools — they are declared in `plugin.json` and expected to be present in every session. Skills do not guard for their absence.
 
 ```
-If claude-mem is available (check tool list for mcp__plugin_claude-mem_*):
-  → Use the patterns below
-If not available:
-  → Fall back to Read/Grep/Glob
-  → Skills work identically, just without cross-session memory
+claude-mem tools (mcp__plugin_claude-mem_*): expected, not guarded
+ast-grep: expected, not guarded
+bun: expected, not guarded
 ```
 
-Skip silently if claude-mem is unavailable or any MCP call fails.
+Use these tools directly. Do not add `if available` checks, `try/catch` guards, or fallback paths for manifest-required tools. They are part of the contract, not optional enhancements.
 
 ## Patterns
 
@@ -187,3 +185,4 @@ Budget: 1-3 sections per task dispatch. Never load the whole SPEC.md at once unl
 - **Observing claude-mem's own tools** — creates feedback loops (SKIP_TOOLS handles this)
 - **Ignoring observation types** — gotcha/decision/trade-off are highest value; fetch those first
 - **Inlining pattern steps** — reference "Pattern A/B/D from claude-mem-rules.md" instead
+- **Guarding manifest-required tools** — `if claude-mem is available` checks are anti-patterns; claude-mem, ast-grep, and bun are expected in every session per plugin.json manifest

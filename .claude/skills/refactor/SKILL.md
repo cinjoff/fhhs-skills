@@ -61,7 +61,7 @@ Resolve CONTEXT.md and PLAN.md per @.claude/skills/shared/artifact-resolution.md
 
 ### claude-mem Acceleration
 
-If claude-mem is available (check tool list for mcp__plugin_claude-mem_* tools), use `smart_search` to find relevant patterns for coupling, dependency, and abstraction analysis in the target module. If not available, fall back to Read/Grep/Glob directly.
+Use `smart_search` to find relevant patterns for coupling, dependency, and abstraction analysis in the target module.
 
 ---
 
@@ -87,11 +87,10 @@ Follow **Pattern A** (Past Learnings Check) from `@.claude/skills/shared/claude-
 
 ## Step 3: Plan Atomic Steps
 
-**Structural analysis:** If claude-mem smart_explore tools are available:
+**Structural analysis:**
 - Call `mcp__plugin_claude-mem_mcp-search__smart_outline` on each target module to see all functions/classes/interfaces without reading full files
 - Use this structural view to plan extraction boundaries and identify coupling points
 - Call `mcp__plugin_claude-mem_mcp-search__smart_unfold` on specific functions to understand implementation details before planning changes
-- Fall back to Read/LSP `documentSymbol` if smart_explore is not available
 
 Break refactoring into the smallest atomic steps where each:
 - Makes exactly one structural change
@@ -150,7 +149,7 @@ Report: what was restructured, why it's better, test evidence confirming behavio
 ### Persist Findings
 
 After refactoring is complete, output key patterns discovered for future sessions:
-1. If claude-mem is available (check tool list for mcp__plugin_claude-mem_*), use smart_search to find relevant patterns from this session
+1. Use smart_search to find relevant patterns from this session
 2. Only persist structural insights — skip mechanical rename/move details
 3. Output each finding as:
    **[refactor-learning]** {module/area}: {pattern discovered} → {approach that worked}

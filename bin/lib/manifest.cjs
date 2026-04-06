@@ -749,6 +749,27 @@ function generateManifest(projectRoot) {
   profile.hasConductor = fs.existsSync(path.join(projectRoot, 'conductor.json'));
 
   const projectManifest = schema.defaultProjectManifest();
+
+  // Populate schema fields from detected values (guard against minimal schemas)
+  if (projectManifest.stack) {
+    if (profile.framework)      projectManifest.stack.framework      = profile.framework;
+    if (profile.database)        projectManifest.stack.database       = profile.database;
+    if (profile.auth)            projectManifest.stack.auth           = profile.auth;
+    if (profile.testing)         projectManifest.stack.testing        = profile.testing;
+    if (profile.packageManager)  projectManifest.stack.packageManager = profile.packageManager;
+  }
+
+  if (projectManifest.features) {
+    projectManifest.features.planning  = profile.hasPlanning || false;
+    projectManifest.features.conductor = profile.hasConductor || false;
+  }
+
+  if (projectManifest.planning) {
+    projectManifest.planning.hasRoadmap       = fs.existsSync(path.join(projectRoot, '.planning', 'ROADMAP.md'));
+    projectManifest.planning.hasCLAUDE        = profile.hasClaude || false;
+    projectManifest.planning.hasConductorJson = profile.hasConductor || false;
+  }
+
   return Object.assign({}, projectManifest, { profile, generatedAt: new Date().toISOString() });
 }
 

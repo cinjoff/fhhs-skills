@@ -10,6 +10,21 @@ Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliat
 
 ## [Unreleased]
 
+## [1.63.0] - 2026-04-06
+
+### Added
+- **Browse skill** — vendors gstack 0.15.15.0 browse binary under `.claude/skills/browse/`, rewires discovery paths for plugin-local execution
+- **3 browse coverage evals** — consent-gate, cookie import, and snapshot verification
+
+### Changed
+- **claude-mem integration across all agents** — all 31 agents now have `mcp__plugin_claude-mem_mcp-search__*` tools in frontmatter, shared preambles (Core/Core+D/Lite variants), and zero availability guards
+- **Manifest-guaranteed tool tier** — claude-mem, ast-grep, bun declared manifest-required; availability guards removed from 14 skill files and 7 agents
+- **Mandatory engagement in plan-work** — brainstorm, gray-areas, and spec steps now required (no longer skippable)
+- **Symlink healing removed** — per-skill GSD symlink healing deleted; setup/update own the symlink lifecycle
+
+### Fixed
+- **Eval 19 consent-gate flow** — corrected consent-gate eval behavior for browse skill
+
 ## [1.62.4] - 2026-04-06
 
 ### Changed

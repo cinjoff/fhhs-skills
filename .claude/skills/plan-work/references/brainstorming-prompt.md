@@ -19,7 +19,7 @@ Every project goes through this process. A todo list, a single-function utility,
 ## Process Flow
 
 1. **Check for RESEARCH.md** — if exists in the phase directory, start from the hypothesis comparison table rather than blank-slate brainstorming
-2. **Load codebase context** — use `smart_outline`/`smart_search` before generating options (graceful degradation: fall back to Glob/Grep if claude-mem unavailable)
+2. **Load codebase context** — use `smart_outline`/`smart_search` before generating options
 3. **Diversity requirement** — proposals must include at least 1 conservative approach (minimal change, low risk) and 1 alternative approach (different trade-off axis)
 4. **Explore project context** — check files, docs, recent commits
 5. **Ask clarifying questions** — one at a time, understand purpose/constraints/success criteria

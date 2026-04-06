@@ -88,5 +88,5 @@ Keep plan total under **{words_per_plan} words**.
   - Test approach → `.planning/codebase/TESTING.md`
   - Tech stack → `.planning/codebase/STACK.md`
   - Tech debt → `.planning/codebase/CONCERNS.md`
-- For codebase questions: if claude-mem is available, use `smart_search`; otherwise Read the specific file directly
+- For codebase questions: use `smart_search`; Read specific files only when editing
 - If GSD and CONTEXT.md exists: honor locked decisions, exclude deferred ideas

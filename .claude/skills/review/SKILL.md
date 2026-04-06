@@ -133,7 +133,7 @@ Only runs if a `.planning/` directory exists with PLAN.md files in scope.
 
 **SPEC.md enrichment (if available):** Resolve per @.claude/skills/shared/artifact-resolution.md (Pattern F query first, then check `spec:` frontmatter field). Load Quality Rubrics, Failure Modes, Architecture via Pattern G (`smart_unfold` per section). Pass as `SPEC_QUALITY_RUBRICS`, `SPEC_FAILURE_MODES`, `SPEC_ARCHITECTURE`.
 
-Include these in the agent prompt under `## Spec Context`. If no SPEC.md exists or claude-mem is unavailable: skip this enrichment silently — the agent proceeds with task specs only.
+Include these in the agent prompt under `## Spec Context`. If no SPEC.md exists: skip this enrichment silently — the agent proceeds with task specs only.
 
 Dispatch one `fh:code-reviewer` agent using `references/spec-gate-prompt.md` (co-located with this skill).
 
@@ -234,7 +234,7 @@ The subagent:
 
 ### d. Cross-session pattern detection
 
-Use **Pattern A** from `shared/claude-mem-rules.md` to check if the same quality issues were flagged in prior reviews. Keywords: each triggered sub-skill category + primary module name. If a pattern recurs 3+ times: escalate severity (Minor → Important, Important → Critical) and annotate "⚠ Recurring pattern (seen N times)". Pass recurring-pattern context to the quality-refine subagent. Skip silently if claude-mem unavailable.
+Use **Pattern A** from `shared/claude-mem-rules.md` to check if the same quality issues were flagged in prior reviews. Keywords: each triggered sub-skill category + primary module name. If a pattern recurs 3+ times: escalate severity (Minor → Important, Important → Critical) and annotate "⚠ Recurring pattern (seen N times)". Pass recurring-pattern context to the quality-refine subagent.
 
 ### e. Failure handling
 

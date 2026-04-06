@@ -1,20 +1,22 @@
 # fhhs-skills
 
-An all-in-one workflow plugin for [Claude Code](https://claude.com/claude-code) — 49 skills covering planning, building, reviewing, debugging, design quality, security, startup validation, and autonomous execution. One install, no other plugins required.
+An all-in-one workflow plugin for [Claude Code](https://claude.com/claude-code) — 33 skills and 31 specialized agents covering planning, spec-driven development, building, reviewing, debugging, design quality, security, web research, startup validation, and autonomous execution. One install, no other plugins required.
 
 ## What You Get
 
-**Plan before you build.** `/fh:plan-work` researches your problem, brainstorms approaches, locks decisions, and outputs an execution-ready plan. `/fh:plan-review` stress-tests it against business alignment, engineering rigor, and blast radius before a single line of code is written.
+**Plan before you build.** `/fh:plan-work` researches your problem using FPF-lite (hypothesis diversity with epistemic tagging), brainstorms conservative and ambitious approaches, generates a SPEC.md for complex plans (architecture, data flow, failure modes via the spec-architect agent), locks decisions, and outputs an execution-ready plan. `/fh:plan-review` stress-tests it against business alignment, engineering rigor, and blast radius before a single line of code is written.
 
-**Build with quality gates.** `/fh:build` turns plans into code using parallel subagents — each task runs in fresh context with TDD, LSP navigation, and framework-specific best practices. Phase completion triggers integration checks, goal verification, security review, and architecture artifact refresh.
+**Build with quality gates.** `/fh:build` turns plans into code using parallel subagents — each task runs in fresh context with TDD, LSP navigation, SPEC.md awareness, and framework-specific best practices. Task state persists for crash resume. Phase completion triggers integration checks, goal verification, and architecture refresh. Complex builds get a post-build reflection pass — an adversarial critic that catches biases, grades against spec, and surfaces friction before review.
 
-**Review that actually catches things.** `/fh:review` runs static analysis, spec verification, goal verification against must-haves, and conditional quality refinement — dispatching sub-skills (polish, harden, normalize, security) based on what the diff actually touches. Recurring patterns across sessions are surfaced and escalated.
+**Review that actually catches things.** `/fh:review` runs static analysis, spec verification, goal verification against must-haves, and conditional quality refinement — dispatching design agents (polish, harden, normalize, security) based on what the diff actually touches. Recurring patterns across sessions are surfaced and escalated.
+
+**Research anything.** `/fh:research` routes queries through content-type-specific patterns — documentation sites, GitHub repos, news articles, research papers, YouTube transcripts — using Firecrawl for clean markdown extraction. Dispatches subagents for multi-source synthesis.
 
 **Fix bugs systematically.** `/fh:fix` triages by complexity, writes a failing test first, then patches. Complex bugs get parallel debugger subagents or persistent debug sessions.
 
-**Run autonomously.** `/fh:auto` chains plan → review → build → review for every phase without intervention. Decisions are logged with confidence levels. Crashes resume from state. Failed steps retry once, then skip with an audit trail.
+**Run autonomously.** `/fh:auto` chains plan -> review -> build -> review for every phase without intervention. Decisions are logged with confidence levels. Crashes resume from state. Cross-phase reflection findings feed into subsequent planning to avoid repeating mistakes.
 
-**Cross-session memory.** Skills persist findings between sessions — root causes, architectural decisions, vulnerability patterns. Next time, the same skill recalls what it discovered before. Large outputs are indexed in a session-scoped database instead of flooding the context window.
+**Cross-session memory.** Skills persist findings between sessions — root causes, architectural decisions, vulnerability patterns. claude-mem is the primary context access layer: skills query by intent before reading files, and large outputs are indexed instead of flooding the context window.
 
 **Validate startup ideas.** Five dedicated skills cover market research, competitive analysis, positioning, pitch scripts, and strategic advising — all feeding into the build pipeline when you're ready to code.
 
@@ -87,7 +89,7 @@ Then run `/fh:setup` in a Claude Code session. It detects your platform and walk
 | `/fh:audit` | Accessibility, performance, theming, responsive audit |
 | `/fh:secure` | OWASP Top 10 security scan |
 
-Additional design skills invoked by pipelines or directly: `adapt`, `bolder`, `clarify`, `colorize`, `delight`, `distill`, `extract`, `harden`, `normalize`, `onboard`, `optimize`, `polish`, `quieter`.
+Additional design agents dispatched by pipelines: `adapt`, `bolder`, `clarify`, `colorize`, `delight`, `distill`, `extract`, `harden`, `normalize`, `onboard`, `optimize`, `polish`, `quieter`. Each follows a shared 7-step protocol (gather context, load design principles, assess, plan, implement, verify).
 
 ### Startup Validation
 
@@ -122,65 +124,157 @@ Startup artifacts in `.planning/startup/` feed directly into `/fh:new-project` a
 
 ## How It Works
 
-Each skill is an orchestrator — it reads project state, dispatches specialized subagents in fresh context, applies quality gates between steps, and updates state when done. 15 specialized agent personas handle the subagent work (planning, execution, debugging, verification, etc.).
+Each skill is an orchestrator — it reads project state, dispatches specialized subagents in fresh context, applies quality gates between steps, and updates state when done. 32 specialized agent personas handle the subagent work across planning, execution, design, debugging, research, reflection, and verification.
 
-### Pipeline: Build
-
-```
-PLAN.md ──▶ WAVE 1 (parallel tasks) ──▶ WAVE 2 ──▶ ... ──▶ WAVE N
-                 Each task = fresh subagent with TDD + LSP
-                                                          │
-COMMIT + VERIFY ◀─────────────────────────────────────────┘
-     │
-PHASE COMPLETION
-     ├── Gate 0: Integration check (Fallow blast-radius)
-     ├── Gate 1: Goal verification (must_haves truth table)
-     └── Gate 3: Final verification + architecture refresh
-     │
-     ▼
-  /review
-```
-
-### Pipeline: Review
+### Architecture
 
 ```
-SCOPE ──▶ STATIC ANALYSIS ──▶ SPEC VERIFICATION
+ ┌──────────────────────────────────────────────────────────────────┐
+ │                      USER-FACING SKILLS (28)                     │
+ │  plan-work  build  review  fix  refactor  auto  research  ...   │
+ └──────────┬────────────┬──────────────┬──────────────────────────┘
+            │            │              │
+   ┌────────▼────────┐   │    ┌─────────▼─────────┐
+   │  Shared Protocols│   │    │ Per-Skill Refs     │
+   │  (.claude/skills/│   │    │ (./references/*.md) │
+   │   shared/*.md)   │   │    └───────────────────┘
+   └─────────────────┘   │
+                          │  dispatch via subagent_type
+            ┌─────────────┼─────────────────────┐
+            ▼             ▼                     ▼
+ ┌──────────────┐ ┌──────────────┐   ┌──────────────────┐
+ │  GSD Agents  │ │  Superpowers │   │  Phase 24 Agents │
+ │  (upstream)  │ │  (upstream)  │   │  (new)           │
+ ├──────────────┤ ├──────────────┤   ├──────────────────┤
+ │ researcher   │ │ code-reviewer│   │ spec-architect   │
+ │ roadmapper   │ │ code-explorer│   │ reflector        │
+ │ debugger     │ │ code-architect│  │ 16 design agents │
+ │ verifier     │ ├──────────────┤   │  (adapt, polish, │
+ │ plan-checker │ │  Impeccable  │   │   harden, etc.)  │
+ │ integration  │ │  (upstream)  │   └──────────────────┘
+ │ auditor      │ ├──────────────┤
+ │ mapper       │ │ Design agent │
+ │ synthesizer  │ │ protocol +   │
+ └──────────────┘ │ 7-step flow  │
+                  └──────────────┘
+```
+
+### Three-Layer Context Model
+
+Skills access project knowledge through a structured 3-layer model with lost-in-the-middle ordering — current task first, background knowledge in the middle, stable identity last:
+
+```
+ Layer 3 — Session State (read first, changes every session)
+ ┌─────────────────────────────────────────────────┐
+ │  STATE.md  CONTEXT.md  SPEC.md  PLAN.md         │
+ └─────────────────────────────────────────────────┘
+
+ Layer 2 — Codebase Knowledge (middle, semi-stable)
+ ┌─────────────────────────────────────────────────┐
+ │  STACK.md  ARCHITECTURE.md  CONVENTIONS.md      │
+ │  STRUCTURE.md  TESTING.md  INTEGRATIONS.md      │
+ └─────────────────────────────────────────────────┘
+
+ Layer 1 — Project Identity (read last, rarely changes)
+ ┌─────────────────────────────────────────────────┐
+ │  PROJECT.md  REQUIREMENTS.md  ROADMAP.md        │
+ │  DESIGN.md                                      │
+ └─────────────────────────────────────────────────┘
+```
+
+All skills resolve artifacts through one canonical chain: claude-mem query -> STATE.md -> phase directory -> fallback search. No ad-hoc file-finding logic.
+
+### Pipeline: Plan -> Spec -> Build -> Reflect -> Review
+
+```
+ /plan-work
   │
-  ├── Code Quality Agent
-  ├── Gap Analysis Agent
+  ├─ Research (FPF-lite: hypothesis diversity, epistemic tags)
+  │   └─ Firecrawl (content-type routing: docs, GitHub, news, papers, YouTube)
   │
-GOAL VERIFICATION ──▶ QUALITY REFINEMENT (conditional sub-skills)
+  ├─ Brainstorm (conservative + ambitious approaches)
   │
-EVIDENCE (tests, build, lint) ──▶ BLOCK / WARN / PASS
+  ├─ SPEC.md (per-plan, complexity-gated)
+  │   ├─ Simple: skip
+  │   ├─ Medium: inline
+  │   └─ Complex: dispatch spec-architect agent
+  │       └─ Produces: Architecture, Data Flow, Failure Modes
+  │
+  └─ PLAN.md (execution-ready, with locked decisions in CONTEXT.md)
+
+ /build
+  │
+  ├─ WAVE 1 (parallel tasks) ──▶ WAVE 2 ──▶ ... ──▶ WAVE N
+  │       Each task = fresh subagent with TDD + LSP + SPEC.md context
+  │       Task state persisted for crash resume
+  │
+  ├─ Post-Wave Quality Gates
+  │
+  ├─ Phase Completion Gates
+  │   ├─ Gate 0: Integration check
+  │   ├─ Gate 1: Goal verification (must_haves truth table)
+  │   └─ Gate 2: Final verification + architecture refresh
+  │
+  └─ Post-Build Reflection (complex plans only)
+      └─ Reflector agent: bias checks, spec self-grading,
+         friction analysis, recurring patterns
+         Findings persist to cross-session memory
+
+ /review
+  │
+  ├─ Static analysis + spec verification
+  ├─ Code quality agent + gap analysis agent
+  ├─ Goal verification
+  ├─ Quality refinement (conditional: polish, harden, normalize, secure)
+  └─ BLOCK / WARN / PASS
 ```
 
 ### Autonomous Execution
 
-Each `/fh:auto` step runs as a separate `claude -p` session with fresh context. State persists to `.planning/.auto-state.json` so crashes can resume. Decisions are logged with confidence levels — LOW confidence gets flagged for human audit.
+Each `/fh:auto` step runs as a separate `claude -p` session with fresh context. State persists to `.planning/.auto-state.json` so crashes can resume. Decisions are logged with confidence levels — LOW confidence gets flagged for human audit. Cross-phase reflection findings feed into subsequent planning prompts to avoid repeating mistakes.
+
+### Shared Protocol Layer
+
+Skills stay lean by referencing shared protocols instead of inlining instructions:
+
+| Protocol | Purpose |
+|----------|---------|
+| `artifact-resolution.md` | Canonical chain for finding PLAN.md, SPEC.md, CONTEXT.md |
+| `context-api-contract.md` | 3-layer model with read/write matrix |
+| `claude-mem-rules.md` | 7 patterns for cross-session memory access |
+| `design-agent-protocol.md` | 7-step mandatory pattern for all design agents |
+| `firecrawl-guide.md` | Content-type-specific research (docs, GitHub, news, papers, YouTube) |
+| `epistemic-tags.md` | Confidence tagging: `[conjecture]`, `[reasoned]`, `[tested]` |
+| `tool-availability.md` | Graceful degradation guards for optional tools |
 
 ## Built On
 
-The underlying skills are composed from seven open-source projects:
+Skills are composed from seven open-source projects, synced from upstream with patches reapplied:
 
-| Source | Contribution |
-|--------|-------------|
-| [Superpowers](https://github.com/obra/superpowers) | TDD, verification, debugging, brainstorming |
-| [Impeccable](https://github.com/pbakaus/impeccable) | Design critique, polish, normalize, harden, animate |
-| [GSD](https://github.com/gsd-build/get-shit-done) | Planning, execution, verification, integration |
-| [gstack](https://github.com/garrytan/gstack) | Plan review, QA, production safety |
-| [feature-dev](https://github.com/anthropics/claude-code-plugin-examples) | Code exploration, architecture, review |
-| [Next.js Best Practices](https://github.com/anthropics/claude-code-plugin-examples) | React/Next.js performance (Vercel Engineering) |
-| [Playwright Best Practices](https://github.com/anthropics/claude-code-plugin-examples) | E2E testing patterns |
+| Source | Contribution | Agents |
+|--------|-------------|--------|
+| [Superpowers](https://github.com/obra/superpowers) | TDD, verification, debugging, brainstorming | code-reviewer, code-explorer, code-architect |
+| [Impeccable](https://github.com/pbakaus/impeccable) | Design critique, polish, normalize, harden, animate | 16 design agents via 7-step protocol |
+| [GSD](https://github.com/gsd-build/get-shit-done) | Planning, execution, verification, integration | researcher, roadmapper, debugger, verifier, plan-checker, integration-checker, auditor, mapper, synthesizer |
+| [gstack](https://github.com/garrytan/gstack) | Plan review, QA (absorbed into ui-test), production safety | — |
+| [feature-dev](https://github.com/anthropics/claude-code-plugin-examples) | Code exploration, architecture, review | — |
+| [Next.js Best Practices](https://github.com/anthropics/claude-code-plugin-examples) | React/Next.js performance (Vercel Engineering) | — |
+| [Playwright Best Practices](https://github.com/anthropics/claude-code-plugin-examples) | E2E testing patterns | — |
+
+Additionally, two agents were created for this plugin: **spec-architect** (SPEC.md architecture sections) and **reflector** (post-build adversarial critique with bias detection).
 
 All upstreams are forked and bundled. See [PATCHES.md](PATCHES.md) for modifications.
 
 ## Optional Integrations
 
-| Tool | What it adds |
-|------|-------------|
-| [claude-mem](https://github.com/thedotmack/claude-mem) | Persistent cross-session memory — learnings, patterns, decisions |
-| [Fallow](https://docs.fallow.tools/) | Deterministic static analysis — dead code, circular deps, duplication |
-| TypeScript LSP | Code navigation — go-to-definition, find-references, rename |
+| Tool | What it adds | Used by |
+|------|-------------|---------|
+| [claude-mem](https://github.com/thedotmack/claude-mem) | Persistent cross-session memory — learnings, patterns, decisions | All skills (primary context layer) |
+| [Firecrawl](https://www.firecrawl.dev/) | Web research with content-type routing (docs, GitHub, news, papers, YouTube) | research, plan-work, auto, startup-advisor, new-project |
+| [Context7](https://context7.com/) | Library documentation lookup | research, plan-work |
+| [Codemap](https://github.com/nicobailon/codemap-mcp) | Macro architecture views | map-codebase, review, build, fix, refactor |
+| [ast-grep](https://ast-grep.github.io/) | Structural code search and replace | review, build, fix, refactor |
+| TypeScript LSP | Code navigation — go-to-definition, find-references, rename | build, fix, refactor |
 
 All optional. Every skill includes graceful degradation — the pipeline works identically without them.
 

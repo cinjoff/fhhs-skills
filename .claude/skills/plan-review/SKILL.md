@@ -68,6 +68,12 @@ Never skip Step 0, the system audit, the error/rescue map, or the failure modes 
 
 ---
 
+## Past Learnings Check (Pattern A)
+
+Run at the start of this review. Derive project name from `.planning/PROJECT.md` name field (fall back to basename of cwd). Call `mcp__plugin_claude-mem_mcp-search__search` with query=2-3 keywords from the plan's domain, project=<project-name>, limit=10. Scan for relevant IDs — prioritize types: gotcha, decision, trade-off. For the top 2-3 IDs, call `mcp__plugin_claude-mem_mcp-search__get_observations` with ids=[ID1, ID2, ID3]. Present as: "**Prior context:** - {observation}" — max 3 items. Feed into review as input context. Budget: <2% context. Skip silently if no relevant results.
+
+---
+
 ## Plan + Context Loading
 
 Resolve the plan to review per @.claude/skills/shared/artifact-resolution.md — use the resolution chain to find PLAN.md and CONTEXT.md before proceeding.
@@ -259,11 +265,11 @@ If any AskUserQuestion goes unanswered, note it here. Never silently default.
 
 ---
 
-### Persist Findings
+### Persist Findings (Pattern D)
 
-After the review is complete, output key architectural decisions and concerns for future sessions:
-1. If claude-mem is available, persist significant findings as observations for cross-session recall
-2. Only persist decisions and concerns with cross-session value — skip ephemeral scope discussions
+After the review is complete, run Pattern D from @.claude/skills/shared/claude-mem-rules.md to persist significant findings for cross-session recall:
+1. Skip if findings are trivial (scope adjustments, no real architectural patterns)
+2. Only persist decisions and concerns with cross-session value
 3. Output each finding as:
    **[plan-review-learning]** {area}: {decision or concern} — {rationale}
 4. Max 3 findings per review

@@ -81,7 +81,7 @@ Quickly assess bug depth before choosing strategy. Spend <5% context.
 **SPEC.md failure mode check (if applicable):** Resolve artifacts per @.claude/skills/shared/artifact-resolution.md. Check for SPEC.md via the resolution chain. If found, use **Pattern G** (`smart_unfold` Failure Modes section) from `shared/claude-mem-rules.md`. Cross-reference the reported bug against listed failure modes:
 - If the bug matches a listed failure mode: annotate triage as **"Predicted failure"** — the spec anticipated this. This often reveals the intended fix strategy.
 - If no match: annotate as **"Unpredicted failure"** — may indicate a spec gap or an unanticipated edge case.
-- If no SPEC.md or claude-mem unavailable: skip silently, proceed with standard triage.
+- If no SPEC.md: skip silently, proceed with standard triage.
 
 If Fallow findings were collected in Step 0.5, cross-reference them here first — matching entries may immediately classify depth and point to root cause.
 
@@ -115,7 +115,7 @@ Execute the chosen path:
 
 ## Step 2: TDD Fix
 
-If claude-mem is available, try `smart_search({query: "TDD red-green-refactor testing discipline"})` first — shared testing rules are often cached from prior sessions. If no results or claude-mem unavailable, read `.claude/skills/shared/testing-guide.md`. Follow Part B (TDD Discipline) completely:
+Try `smart_search({query: "TDD red-green-refactor testing discipline"})` first — shared testing rules are often cached from prior sessions. If no relevant results found, read `.claude/skills/shared/testing-guide.md`. Follow Part B (TDD Discipline) completely:
 - **RED:** Write failing test proving the bug
 - **GREEN:** Minimal fix
 - **REFACTOR:** Cleanup
@@ -172,7 +172,7 @@ After the fix is verified, search the codebase for similar vulnerable patterns:
 
 1. Identify the root cause pattern (e.g., missing null check, unvalidated input, race condition)
 2. **If ast-grep MCP tools are in the tool list** (see `@.claude/skills/shared/tool-availability.md`), use `find_code_by_rule` to structurally find all instances of the bug pattern across source files. This is more precise than text search for structural patterns. Do NOT use ast-grep on Markdown files.
-3. If ast-grep MCP is unavailable: use `mcp__plugin_claude-mem_mcp-search__smart_search` if claude-mem available (check tool list for `mcp__plugin_claude-mem_*`), then fall back to Grep/Glob directly.
+3. If ast-grep MCP is unavailable: use `mcp__plugin_claude-mem_mcp-search__smart_search`, then fall back to Grep/Glob directly.
 4. If similar vulnerabilities found: fix them now if trivial (<5 lines each), or note them in the summary as "Related patterns found in: {files}" for follow-up
 
 This step prevents the same class of bug from recurring elsewhere. Skip only if the root cause is truly unique to this one location.

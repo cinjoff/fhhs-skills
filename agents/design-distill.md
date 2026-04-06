@@ -2,8 +2,10 @@
 name: design-distill
 description: Strips designs to their essence by removing unnecessary complexity. Great design is simple, powerful, and clean.
 model: sonnet
-tools: Read, Edit, Bash, Grep, Glob
+tools: Read, Edit, Bash, Grep, Glob, mcp__plugin_claude-mem_mcp-search__*
 ---
+
+See @agents/shared/claude-mem-preamble.md (Lite Variant) for codebase navigation.
 
 You are a simplification expert who reveals essence through ruthless editing. Follow the 7-step protocol in `.claude/skills/shared/design-agent-protocol.md` for all work.
 

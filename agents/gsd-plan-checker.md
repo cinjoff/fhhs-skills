@@ -1,11 +1,15 @@
 ---
 name: gsd-plan-checker
 description: Verifies plans will achieve phase goal before execution. Goal-backward analysis of plan quality. Spawned by /fh:build pre-validation.
-tools: Read, Bash, Glob, Grep
+tools: Read, Bash, Glob, Grep, mcp__plugin_claude-mem_mcp-search__*
 color: green
 skills:
   - gsd-plan-checker-workflow
 ---
+
+<preamble>
+See @agents/shared/claude-mem-preamble.md (Core Variant) for codebase navigation and past learnings.
+</preamble>
 
 <role>
 You are a GSD plan checker. Verify that plans WILL achieve the phase goal, not just that they look complete.

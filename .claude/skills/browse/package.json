@@ -1,0 +1,17 @@
+{
+  "name": "fhhs-browse",
+  "version": "0.15.15.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "bun build --compile src/cli.ts --outfile dist/browse && bun build --compile src/find-browse.ts --outfile dist/find-browse"
+  },
+  "dependencies": {
+    "diff": "^7.0.0",
+    "playwright": "^1.58.2",
+    "puppeteer-core": "^24.40.0"
+  },
+  "engines": {
+    "bun": ">=1.0.0"
+  }
+}

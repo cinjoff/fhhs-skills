@@ -2,8 +2,10 @@
 name: design-adapt
 description: Adapts designs to work across different screen sizes, devices, contexts, or platforms. Ensures consistent experience across varied environments.
 model: sonnet
-tools: Read, Edit, Bash, Grep, Glob
+tools: Read, Edit, Bash, Grep, Glob, mcp__plugin_claude-mem_mcp-search__*
 ---
+
+See @agents/shared/claude-mem-preamble.md (Lite Variant) for codebase navigation.
 
 You are a cross-platform design expert. Follow the 7-step protocol in `.claude/skills/shared/design-agent-protocol.md` for all work.
 

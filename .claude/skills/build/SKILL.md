@@ -44,9 +44,23 @@ Resolve artifacts per @.claude/skills/shared/artifact-resolution.md
 
 Read only the plan frontmatter and task list — don't load all context files yet.
 
+### Load Planning Context (Pattern F)
+1. `search({query: "current plan active tasks {phase-name}", project: "<project>", limit: 5})`
+2. For relevant observations: `get_observations({ids: [top 2-3]})` — may contain PLAN.md content from prior sessions
+3. If observations are fresh (within current session): use as primary input, skip file reads
+4. If observations are stale or absent: Read PLAN.md and CONTEXT.md directly
+
+### Load Spec Context (Pattern G)
+If plan frontmatter has `spec:` field:
+1. `smart_unfold({path: "<spec-path>", symbol: "Architecture"})` — load only relevant sections
+2. Map to implementer-prompt placeholders: {SPEC_ARCHITECTURE}, {SPEC_FAILURE_MODES}, etc.
+3. Never load the whole SPEC.md at once
+
 **Resume detection:** If multiple plans exist with partial SUMMARY.md coverage, report: "Found N plans, M already completed. Continuing from plan X." Skip completed plans.
 
 **Task-level resume:** After identifying the plan, check `.planning/build/` for `task-{plan}-*-state.md` files per @references/task-state-protocol.md (Resume Protocol). `completed` tasks are skipped; `in-progress` tasks revert to `pending`; `failed` tasks with 2+ attempts surface to user before proceeding.
+
+**Phase dependency check:** Before executing, check if the current phase has declared prerequisites (in CONTEXT.md, RESEARCH.md, or ROADMAP.md — look for "depends on Phase", "requires Phase", "prerequisite"). For each declared dependency, verify the prerequisite phase is complete in STATE.md. If incomplete: **WARN** "Phase X depends on Phase Y (status: {status}). Building on incomplete prerequisites risks rework. Proceed anyway?" Wait for user confirmation before executing.
 
 **Previous phase check (GSD only):** If a previous SUMMARY exists, scan for unresolved "Issues Encountered". If found, ask user: "Previous plan had unresolved issues — proceed anyway, address first, or review?"
 
@@ -61,8 +75,6 @@ Group tasks by their `wave` number (or dependency order if no waves specified):
 Test tasks marked `wave: same` as their implementation task run in the same wave when they test independent interfaces.
 
 Report the execution plan to the user: "N tasks in M waves. Wave 1 has X parallel tasks."
-
-Ensure GSD CLI symlink per @.claude/skills/shared/gsd-symlink-heal.md, then:
 
 ```bash
 PLAN_START_EPOCH=$(date +%s)
@@ -107,10 +119,10 @@ Use the structured template at `references/implementer-prompt.md`. Fill placehol
 **SPEC.md enrichment (before dispatching each task):**
 
 1. Check if the plan frontmatter has a `spec:` field pointing to a SPEC.md path.
-2. If SPEC.md exists: use `smart_unfold` (if claude-mem available) to extract sections relevant to the task domain — Architecture, Failure Modes, Quality Rubrics, Data Flow. Map to placeholders: `{SPEC_ARCHITECTURE}`, `{SPEC_FAILURE_MODES}`, `{SPEC_QUALITY_RUBRICS}`, `{SPEC_DATA_FLOW}`.
+2. If SPEC.md exists: use `smart_unfold` to extract sections relevant to the task domain — Architecture, Failure Modes, Quality Rubrics, Data Flow. Map to placeholders: `{SPEC_ARCHITECTURE}`, `{SPEC_FAILURE_MODES}`, `{SPEC_QUALITY_RUBRICS}`, `{SPEC_DATA_FLOW}`.
 3. Query claude-mem for past mistakes in the task domain: `smart_search({query: "past mistakes {task_domain} build-learning"})`. Populate `{PAST_LEARNINGS}`.
 4. If `.planning/DECISIONS.md` exists, extract entries affecting this task's files. Populate `{DECISION_RATIONALE}`.
-5. If no SPEC.md exists or claude-mem is unavailable: leave these placeholders empty — the implementer-prompt guards ("If empty, skip this section") ensure graceful degradation.
+5. If no SPEC.md exists: leave spec placeholders empty — the implementer-prompt guards ("If empty, skip this section") ensure graceful degradation.
 
 ### Checkpoint protocol
 
@@ -193,7 +205,7 @@ This is advisory only — never block completion. Budget: <1% context.
 
 ### Post-build drift check (advisory)
 
-If claude-mem is available and `.planning/codebase/` exists:
+If `.planning/codebase/` exists:
 1. `smart_search({query: "new pattern convention not documented"})` across recent observations
 2. If 3+ drift signals found since last mapping:
    - Log: "⚠️ Codebase mapping may be stale — {N} convention changes detected since last map. Consider `/fh:map-codebase --refresh-stale`"
@@ -241,7 +253,7 @@ Route based on phase status:
 | Phase complete, more phases | "Phase complete." Suggest `/fh:plan-work {next}` or `/fh:review`. Also suggest `/fh:learnings`. |
 | Last phase in milestone | "Milestone complete." Run `gsd-tools.cjs milestone complete`. Suggest `/fh:learnings`. |
 
-Run `/fh:review` for quality refinement. If claude-mem available and phase/milestone just completed, suggest `/fh:learnings`.
+Run `/fh:review` for quality refinement. If phase/milestone just completed, suggest `/fh:learnings`.
 
 ---
 

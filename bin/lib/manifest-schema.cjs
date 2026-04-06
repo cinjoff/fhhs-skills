@@ -174,6 +174,12 @@ function defaultGlobalManifest() {
         since: '1.0',
         reason: 'GSD tools installation directory',
       }),
+      item({
+        required: false, status: 'active', check: 'file', id: '~/.claude/skills/browse/dist/browse',
+        install: null, // built by /fh:setup
+        since: '1.63.0',
+        reason: 'Headless browser binary required by /fh:ui-test for visual testing and QA',
+      }),
     ],
   };
 }

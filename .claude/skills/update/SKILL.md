@@ -70,12 +70,20 @@ claude plugin update fh@fhhs-skills
 Re-link the GSD CLI symlink to pick up the new version:
 
 ```bash
-_FHHS="$(ls -d "$HOME/.claude/plugins/cache/fhhs-skills/fh"/*/ 2>/dev/null | sort | tail -1)"
+_FHHS="$(ls -d "$HOME/.claude/plugins/cache/fhhs-skills/fh"/*/ 2>/dev/null | sort -V | tail -1)"
 _FHHS="${_FHHS%/}"
 if [ -n "$_FHHS" ] && [ -d "$_FHHS/bin" ]; then
   mkdir -p "$HOME/.claude/get-shit-done"
   ln -sfn "$_FHHS/bin" "$HOME/.claude/get-shit-done/bin"
   [ -d "$_FHHS/hooks" ] && ln -sfn "$_FHHS/hooks" "$HOME/.claude/get-shit-done/hooks"
+fi
+```
+
+```bash
+# Rebuild browse binary if source changed
+_FHHS="${FHHS_SKILLS_ROOT:-$(ls -d "$HOME/.claude/plugins/cache/fhhs-skills/fh"/*/ 2>/dev/null | sort -V | tail -1)}"
+if [ -n "$_FHHS" ] && [ -f "$_FHHS/.claude/skills/browse/setup" ]; then
+  bash "$_FHHS/.claude/skills/browse/setup"
 fi
 ```
 

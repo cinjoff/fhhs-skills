@@ -776,14 +776,14 @@ Generate a CLAUDE.md directly using the context gathered in Steps 1-4.
 ```markdown
 ## Code Exploration
 
-When claude-mem is available (`mcp__plugin_claude-mem_*` in tool list), use it as the primary tool for understanding code:
+Use claude-mem smart tools as the primary tools for understanding code:
 - `smart_outline` — see file structure (functions, classes, exports) without reading the full file (~1,500 tokens vs ~12,000)
 - `smart_unfold` — read a specific function by name instead of loading the full file (8-19x cheaper)
 - `smart_search` — find symbols, patterns, and definitions across the codebase (AST-aware, better than grep for structural queries)
 - `search` / `get_observations` — recall decisions, gotchas, and patterns from prior sessions
 - `timeline` — understand what happened recently in a specific area
 
-Fall back to Read only when you need the full file for editing. Fall back to Grep when smart_search is unavailable.
+Fall back to Read only when you need the full file for editing.
 ```
 
 Then include (in this order, matching the lost-in-the-middle guideline from `shared/context-api-contract.md`):

@@ -23,17 +23,6 @@ Full mapping runs at project bootstrap. After that, use `--refresh-stale` to reg
 Load codebase mapping context:
 
 ```bash
-# Ensure GSD CLI symlink exists (self-heals if /fh:setup wasn't run)
-if [ ! -f "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" ]; then
-  _FHHS="$(ls -d "$HOME/.claude/plugins/cache/fhhs-skills/fh"/*/ 2>/dev/null | sort | tail -1)"
-  _FHHS="${_FHHS%/}"
-  if [ -n "$_FHHS" ] && [ -d "$_FHHS/bin" ]; then
-    mkdir -p "$HOME/.claude/get-shit-done"
-    ln -sfn "$_FHHS/bin" "$HOME/.claude/get-shit-done/bin"
-    [ -d "$_FHHS/hooks" ] && ln -sfn "$_FHHS/hooks" "$HOME/.claude/get-shit-done/hooks"
-  fi
-fi
-
 INIT=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" init map-codebase)
 if [[ "$INIT" == @file:* ]]; then INIT=$(cat "${INIT#@file:}"); fi
 ```
@@ -82,19 +71,16 @@ fi
 - <50 commits AND 3+ drift signals → Suggest `--refresh-stale`
 - 50+ commits → Suggest full refresh
 
-If claude-mem is available, check drift signals via smart_search:
+Check drift signals via smart_search:
 ```
 mcp__plugin_claude-mem_mcp-search__smart_search(query="codebase structure changed new module refactor")
 ```
 Count results that post-date the mapped SHA. Each recent result = 1 drift signal.
 
-If claude-mem unavailable, use commit count only.
-
 **If `--refresh-stale` flag:**
 - Query claude-mem for drift signals per document type
 - Proceed to spawn only targeted agents for documents with drift
 - If no drift found: print "Mapping appears current based on session history." and exit.
-- If claude-mem unavailable: fall back to full refresh
 
 **If exists without flags — present staleness context and options:**
 
@@ -857,7 +843,7 @@ Codebase mapping available. Load only what your task needs:
 - @.planning/codebase/CONCERNS.md — known issues, fragile areas, tech debt
 ```
 
-**Post-mapping claude-mem indexing:** If claude-mem is available, Read each of the 7 files to trigger PostToolUse observation hooks. This makes the documents available in subsequent sessions via `smart_search`.
+**Post-mapping claude-mem indexing:** Read each of the 7 files to trigger PostToolUse observation hooks. This makes the documents available in subsequent sessions via `smart_search`.
 
 ```
 Read(".planning/codebase/STACK.md")

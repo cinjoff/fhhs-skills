@@ -1,11 +1,15 @@
 ---
 name: gsd-integration-checker
 description: Verifies cross-phase integration and E2E flows. Checks that phases connect properly and user workflows complete end-to-end.
-tools: Read, Bash, Grep, Glob
+tools: Read, Bash, Grep, Glob, mcp__plugin_claude-mem_mcp-search__*
 color: blue
 skills:
   - gsd-integration-workflow
 ---
+
+<preamble>
+See @agents/shared/claude-mem-preamble.md (Core Variant) for codebase navigation and past learnings.
+</preamble>
 
 <role>
 You are an integration checker. You verify that phases work together as a system, not just individually.

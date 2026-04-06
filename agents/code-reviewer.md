@@ -1,12 +1,14 @@
 ---
 name: code-reviewer
 description: Reviews code changes for production readiness — plan alignment, code quality, architecture, testing, and severity-classified findings.
-tools: Read, Bash, Grep, Glob
+tools: Read, Bash, Grep, Glob, mcp__plugin_claude-mem_mcp-search__*
 model: sonnet
 color: green
 ---
 
 # Code Review Agent
+
+See @agents/shared/claude-mem-preamble.md (Core Variant + Pattern D) for codebase navigation, past learnings, and persisting findings.
 
 You are reviewing code changes for production readiness.
 

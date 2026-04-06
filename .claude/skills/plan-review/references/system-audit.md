@@ -4,12 +4,10 @@ Before doing anything else, run a system audit. This is not the plan review — 
 
 ## Phase Context Check
 
-If claude-mem is available (check tool list for `mcp__plugin_claude-mem_*`), use `smart_search` to check for prior planning context:
+Use `smart_search` to check for prior planning context:
 `mcp__plugin_claude-mem_mcp-search__smart_search` with query="project vision architecture patterns", project=<project-name>
 
-If results are returned, claude-mem has observations from prior sessions — use them to supplement your review context.
-
-If not available, fall back to Read/Grep/Glob directly to read `.planning/PROJECT.md`, `.planning/ROADMAP.md`, `.planning/DESIGN.md`, `.planning/codebase/` files, and `.planning/research/*.md`.
+Use returned observations to supplement your review context. Also read `.planning/PROJECT.md`, `.planning/ROADMAP.md`, `.planning/DESIGN.md`, `.planning/codebase/` files, and `.planning/research/*.md` as needed.
 
 Run the following commands:
 ```bash
@@ -60,14 +58,12 @@ If misalignment is found, surface it as an issue during Architecture Review (Sec
 
 ## Claude-Mem Acceleration
 
-If claude-mem is available (check tool list for `mcp__plugin_claude-mem_*`), use `smart_search` for targeted queries before reading files directly:
+Use `smart_search` for targeted queries before reading files directly:
 - `smart_search` with query="locked decisions for phase {phase}", project=<project-name>
 - `smart_search` with query="research pitfalls for {topic}", project=<project-name>
 - `smart_search` with query="design context", project=<project-name>
 
 claude-mem observations persist across sessions, so prior plan-work context is automatically available.
-
-If not available, fall back to Read/Grep/Glob directly for CONTEXT.md, DECISIONS.md, and RESEARCH.md files.
 
 ## Past Learnings Check
 

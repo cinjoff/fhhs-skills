@@ -60,8 +60,8 @@ DEV_URL="http://localhost:${DEV_PORT}"
 ```bash
 _ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
 B=""
-[ -n "$_ROOT" ] && [ -x "$_ROOT/.claude/skills/gstack/browse/dist/browse" ] && B="$_ROOT/.claude/skills/gstack/browse/dist/browse"
-[ -z "$B" ] && B=~/.claude/skills/gstack/browse/dist/browse
+[ -n "$_ROOT" ] && [ -x "$_ROOT/.claude/skills/browse/dist/browse" ] && B="$_ROOT/.claude/skills/browse/dist/browse"
+[ -z "$B" ] && [ -x "$HOME/.claude/skills/browse/dist/browse" ] && B="$HOME/.claude/skills/browse/dist/browse"
 if [ -x "$B" ]; then
   echo "READY: $B"
 else
@@ -70,8 +70,12 @@ fi
 ```
 
 If `NEEDS_SETUP`:
-1. Tell the user: "gstack browse needs a one-time build (~10 seconds). OK to proceed?"
-2. Run: `cd ~/.claude/skills/gstack && ./setup`
+1. Tell the user: "browse binary needs a one-time build (~10 seconds). OK to proceed?"
+2. Run:
+```bash
+_FHHS="${FHHS_SKILLS_ROOT:-$(ls -d "$HOME/.claude/plugins/cache/fhhs-skills/fh"/*/ 2>/dev/null | sort -V | tail -1)}"
+[ -n "$_FHHS" ] && bash "$_FHHS/.claude/skills/browse/setup"
+```
 
 Capture desktop, tablet, and mobile viewports:
 
@@ -191,8 +195,8 @@ This skill requires **gstack browse** binary (`$B`). Check availability before p
 ```bash
 _ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
 B=""
-[ -n "$_ROOT" ] && [ -x "$_ROOT/.claude/skills/gstack/browse/dist/browse" ] && B="$_ROOT/.claude/skills/gstack/browse/dist/browse"
-[ -z "$B" ] && B=~/.claude/skills/gstack/browse/dist/browse
+[ -n "$_ROOT" ] && [ -x "$_ROOT/.claude/skills/browse/dist/browse" ] && B="$_ROOT/.claude/skills/browse/dist/browse"
+[ -z "$B" ] && [ -x "$HOME/.claude/skills/browse/dist/browse" ] && B="$HOME/.claude/skills/browse/dist/browse"
 if [ -x "$B" ]; then
   echo "READY: $B"
 else
@@ -201,8 +205,12 @@ fi
 ```
 
 If `NEEDS_SETUP`:
-1. Tell the user: "gstack browse needs a one-time build (~10 seconds). OK to proceed?"
-2. Run: `cd ~/.claude/skills/gstack && ./setup`
+1. Tell the user: "browse binary needs a one-time build (~10 seconds). OK to proceed?"
+2. Run:
+```bash
+_FHHS="${FHHS_SKILLS_ROOT:-$(ls -d "$HOME/.claude/plugins/cache/fhhs-skills/fh"/*/ 2>/dev/null | sort -V | tail -1)}"
+[ -n "$_FHHS" ] && bash "$_FHHS/.claude/skills/browse/setup"
+```
 
 **Create output directories:**
 

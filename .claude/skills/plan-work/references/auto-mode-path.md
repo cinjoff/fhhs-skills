@@ -16,3 +16,20 @@ e) **Still produce** the mandatory ASCII diagram and lightweight Error/Rescue Ma
 f) **Write** the same locked/discretion/deferred categories to CONTEXT.md as the normal path (Step 3 item 6 below). For product/architecture decisions in CONTEXT.md, append `(alternatives: X, Y)` to capture what was considered.
 
 Then continue to Step 4.
+
+---
+
+### Decision Presentation (mandatory even in AUTO_MODE)
+
+After completing steps a–f above, present all auto-decided gray areas to the user before proceeding:
+
+> "**AUTO_MODE decisions for this phase:**
+> - [gray area 1]: [decision] _(alternatives considered: X, Y)_
+> - [gray area 2]: [decision] _(alternatives considered: X, Y)_
+> - ...
+>
+> Proceed with these decisions, or override any?"
+
+Wait for user confirmation (or silence/approval) before continuing to Step 4.
+
+**Exception:** headless `/fh:auto` pipeline — skip the presentation gate, log all decisions to `DECISIONS.md`, and proceed automatically.

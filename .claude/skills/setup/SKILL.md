@@ -37,7 +37,7 @@ as a single status table:
 | SKIP_TOOLS (Read/Glob/Grep)| ✓ not skipped / ✗ skipped    |
 | bun                        | ✓ {version} / ✗ missing       |
 | ast-grep                   | ✓ installed / ✗ missing       |
-| gstack browse              | ✓ built / ✗ missing           |
+| browse                     | ✓ built / ✗ missing           |
 | Fallow                     | ✓ installed / ○ not installed |
 | shadcn skills              | ✓ installed / ○ not installed |
 ```
@@ -163,12 +163,12 @@ for cmd in node npm git gh vercel typescript-language-server bun ast-grep docker
   fi
 done
 
-# Check gstack browse binary (used by /fh:ui-test)
+# Check browse binary (used by /fh:ui-test)
 B=""
 _ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
-[ -n "$_ROOT" ] && [ -x "$_ROOT/.claude/skills/gstack/browse/dist/browse" ] && B="$_ROOT/.claude/skills/gstack/browse/dist/browse"
-[ -z "$B" ] && [ -x "$HOME/.claude/skills/gstack/browse/dist/browse" ] && B="$HOME/.claude/skills/gstack/browse/dist/browse"
-[ -n "$B" ] && echo "OK gstack-browse $($B --version 2>/dev/null || echo 'installed')" || echo "MISSING gstack-browse"
+[ -n "$_ROOT" ] && [ -x "$_ROOT/.claude/skills/browse/dist/browse" ] && B="$_ROOT/.claude/skills/browse/dist/browse"
+[ -z "$B" ] && [ -x "$HOME/.claude/skills/browse/dist/browse" ] && B="$HOME/.claude/skills/browse/dist/browse"
+[ -n "$B" ] && echo "OK browse $($B --version 2>/dev/null || echo 'installed')" || echo "MISSING browse"
 ```
 
 Present results using status symbols. Mark tools as `(optional)` or `(required)` based on the manifest:
@@ -182,7 +182,7 @@ Present results using status symbols. Mark tools as `(optional)` or `(required)`
 | gh                         | ✗ MISSING (optional) |
 | vercel                     | ✗ MISSING (optional) |
 | typescript-language-server  | ✗ MISSING            |
-| gstack browse              | ✗ MISSING (required — needed by /fh:ui-test) |
+| browse                     | ✗ MISSING (required — needed by /fh:ui-test) |
 | docker                     | ✓ v27.1.0 (OrbStack) |
 | supabase                   | ✓ v2.1.0             |
 ```
@@ -217,7 +217,7 @@ brew install vercel-cli # Vercel CLI (or: npm i -g vercel)
 brew install ast-grep   # structural code search (required for review/build/fix/refactor)
 ```
 
-**bun** (required — for gstack browse build and fast script execution):
+**bun** (required — for browse build and fast script execution):
 
 ```bash
 command -v bun >/dev/null 2>&1 && echo "OK bun $(bun --version 2>/dev/null)" || echo "MISSING bun"
@@ -228,32 +228,20 @@ If `MISSING`: install bun:
 curl -fsSL https://bun.sh/install | bash
 ```
 
-**gstack browse** (required — for `/fh:ui-test` visual testing):
+**browse binary** (required — for `/fh:ui-test` visual testing):
 
-If gstack browse is MISSING, check if the gstack plugin is installed:
-
-```bash
-[ -d "$HOME/.claude/skills/gstack" ] && echo "GSTACK_INSTALLED" || echo "GSTACK_NOT_INSTALLED"
-```
-
-If `GSTACK_INSTALLED`: check for `bun` (required to build the browse binary):
+If browse is MISSING, build it from the vendored source:
 
 ```bash
-command -v bun >/dev/null 2>&1 && echo "BUN_OK" || echo "BUN_MISSING"
+# Build browse binary from vendored source
+_FHHS="${FHHS_SKILLS_ROOT:-$(ls -d "$HOME/.claude/plugins/cache/fhhs-skills/fh"/*/ 2>/dev/null | sort -V | tail -1)}"
+if [ -n "$_FHHS" ] && [ -f "$_FHHS/.claude/skills/browse/setup" ]; then
+  echo "Building browse binary (~10 seconds, Playwright Chromium ~250MB on first run)..."
+  bash "$_FHHS/.claude/skills/browse/setup"
+else
+  echo "ERROR: browse source not found in plugin cache"
+fi
 ```
-
-If `BUN_MISSING`: install bun first:
-```bash
-curl -fsSL https://bun.sh/install | bash
-```
-
-Then build the browse binary:
-```bash
-cd ~/.claude/skills/gstack && ./setup
-```
-
-If `GSTACK_NOT_INSTALLED`: tell the user:
-> "gstack browse is needed for `/fh:ui-test` visual testing. Install the gstack plugin (`claude plugin add garrytan/gstack`), ensure `bun` is installed (`curl -fsSL https://bun.sh/install | bash`), then run `cd ~/.claude/skills/gstack && ./setup`."
 
 **Windows:**
 
@@ -286,7 +274,7 @@ for cmd in node npm git; do
 done
 ```
 
-`node`, `npm`, `bun`, and `gstack browse` are required. `gh` and `vercel` are optional — the plugin works without them.
+`node`, `npm`, `bun`, and the `browse` binary are required. `gh` and `vercel` are optional — the plugin works without them.
 
 If `node` is still missing, show error and stop:
 
@@ -443,7 +431,7 @@ fi
 
 # 2. Latest version from plugin cache (sort picks newest)
 if [ -z "$PLUGIN_ROOT" ]; then
-  LATEST="$(ls -d "$HOME/.claude/plugins/cache/fhhs-skills/fh"/*/ 2>/dev/null | sort | tail -1)"
+  LATEST="$(ls -d "$HOME/.claude/plugins/cache/fhhs-skills/fh"/*/ 2>/dev/null | sort -V | tail -1)"
   LATEST="${LATEST%/}"
   if [ -n "$LATEST" ] && [ -f "$LATEST/bin/gsd-tools.cjs" ]; then
     PLUGIN_ROOT="$LATEST"
@@ -765,14 +753,14 @@ If the section is **missing**, insert the following block as the **first `##` se
 ```markdown
 ## Code Exploration
 
-When claude-mem MCP tools are available (`mcp__plugin_claude-mem_*` in tool list), use them as the primary tools for understanding code. They save 8-19x tokens compared to Read/Grep and provide cross-session memory that prevents re-discovering what was already learned:
+Use claude-mem smart tools as the primary tools for understanding code. They save 8-19x tokens compared to Read/Grep and provide cross-session memory that prevents re-discovering what was already learned:
 - `smart_outline` over `Read` — see file structure without loading the full file (~1,500 tokens vs ~12,000)
 - `smart_unfold` over `Read` with offset/limit — read a specific function by name
 - `smart_search` over `Grep` and `Glob` — AST-aware symbol search across the codebase
 - `search` / `get_observations` — recall decisions, gotchas, and patterns from prior sessions
 - `timeline` — understand recent work in a specific area before starting new tasks
 
-Fall back to `Read` only when you need the full file for editing. Fall back to `Grep`/`Glob` only when claude-mem is unavailable or returns no results.
+Fall back to `Read` only when you need the full file for editing. Fall back to `Grep`/`Glob` only when smart tools return no results.
 ```
 
 If the section **already exists**, leave it unchanged.
@@ -1111,7 +1099,7 @@ Then present the status table and next steps as regular markdown text:
 | bun                        | ✓ {version} / ✗ missing                  |
 | Codemap                    | ✓ installed / ✗ missing                  |
 | ast-grep                   | ✓ installed / ✗ missing                  |
-| gstack browse              | ✓ built / ✗ missing                      |
+| browse                     | ✓ built / ✗ missing                      |
 | Fallow                     | ✓ installed / ⚠ manual install needed    |
 | shadcn skills              | ✓ installed / ⚠ manual install needed    |
 | Conductor                  | ✓ detected / ○ not installed (optional) |

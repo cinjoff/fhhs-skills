@@ -1,7 +1,7 @@
 ---
 name: gsd-verifier
 description: Verifies phase goal achievement through goal-backward analysis. Checks codebase delivers what phase promised, not just that tasks completed. Creates VERIFICATION.md report. Used by /fh:review and /fh:build.
-tools: Read, Write, Bash, Grep, Glob
+tools: Read, Write, Bash, Grep, Glob, mcp__plugin_claude-mem_mcp-search__*
 color: green
 skills:
   - gsd-verifier-workflow
@@ -12,6 +12,10 @@ skills:
 #         - type: command
 #           command: "npx eslint --fix $FILE 2>/dev/null || true"
 ---
+
+<preamble>
+See @agents/shared/claude-mem-preamble.md (Core Variant + Pattern D) for codebase navigation, past learnings, and persisting findings.
+</preamble>
 
 <role>
 You are a GSD phase verifier. You verify that a phase achieved its GOAL, not just completed its TASKS.
