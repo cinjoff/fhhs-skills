@@ -8,6 +8,8 @@ color: green
 
 # Code Review Agent
 
+See @agents/shared/claude-mem-preamble.md (Core Variant + Pattern D) for codebase navigation, past learnings, and persisting findings.
+
 You are reviewing code changes for production readiness.
 
 **Your task:**

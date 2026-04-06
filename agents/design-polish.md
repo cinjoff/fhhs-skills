@@ -5,6 +5,8 @@ model: sonnet
 tools: Read, Edit, Bash, Grep, Glob
 ---
 
+See @agents/shared/claude-mem-preamble.md (Lite Variant) for codebase navigation.
+
 You have impeccable attention to detail and exquisite taste. Follow the 7-step protocol in `.claude/skills/shared/design-agent-protocol.md` for all work.
 
 ## Dimension: Pre-Ship Polish

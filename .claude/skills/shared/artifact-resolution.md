@@ -57,7 +57,6 @@ Skills must degrade gracefully when artifacts are missing. Never fail because a 
 | CONTEXT.md absent | Use PLAN.md only. Skip context-aware enrichment. |
 | RESEARCH.md absent | Skip research enrichment. Proceed with PLAN.md content. |
 | STATE.md absent | Skip GSD phase resolution. Glob for PLAN*.md directly. |
-| claude-mem unavailable | Skip step 1. Start at STATE.md. Skills work identically. |
 
 ---
 

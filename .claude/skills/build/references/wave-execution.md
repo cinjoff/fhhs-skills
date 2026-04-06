@@ -2,20 +2,17 @@
 
 ## Smart Context Loading
 
-If claude-mem is available (check tool list for `mcp__plugin_claude-mem_*`), use smart_search to find relevant patterns before reading files. Use smart_outline to understand file structure before editing. Don't read full files to find one function — use smart_outline then smart_unfold, then Read only when you need to Edit.
+Use smart_search to find relevant patterns before reading files. Use smart_outline to understand file structure before editing. Don't read full files to find one function — use smart_outline then smart_unfold, then Read only when you need to Edit.
 
 Specifically before wave execution:
 1. `smart_search({query: "patterns in <primary module>"})` to find existing conventions
 2. `smart_outline({path: "<plan target files>"})` to understand structure without full reads
 3. `smart_search({query: "locked decisions for <phase>"})` to retrieve phase context compactly
 
-If claude-mem is not available, fall back to Read/Grep/Glob directly — read the planning docs and source files as needed. Zero behavioral change for systems without claude-mem.
-
 ## Reference Warm-Up (once per build)
 
 Shared references (`testing-guide.md`, `claude-mem-rules.md`) are static between plugin updates. Extract task-relevant sections once here and inject into all subagent prompts — eliminates N redundant full-file reads per build.
 
-**If claude-mem is available** (smart_outline/smart_unfold tools):
 1. `smart_outline({path: ".claude/skills/shared/testing-guide.md"})` — get heading structure
 2. For each task type, `smart_unfold` the relevant section:
    - Tasks with `tdd="true"`: `smart_unfold({path: "...", symbol: "Part B"})` + `smart_unfold({..., symbol: "Part C"})`
@@ -27,12 +24,12 @@ Shared references (`testing-guide.md`, `claude-mem-rules.md`) are static between
 **Project-specific testing context:**
 For test runner commands, mocking patterns, fixture locations, and coverage targets: inject from `.planning/codebase/TESTING.md` (project-specific).
 For TDD discipline and philosophy: inject from `testing-guide.md` (universal).
-If claude-mem available: `smart_search({query: "test patterns for {task type}"})` to find the right source.
+Use `smart_search({query: "test patterns for {task type}"})` to find the right source.
 Never read both full docs when only one is needed.
 
-**If claude-mem is not available**: Read `testing-guide.md` once via the Read tool. Store full content as `SHARED_REFERENCES_CACHE`.
+**If smart tools return no relevant results**: Read `testing-guide.md` once via the Read tool. Store full content as `SHARED_REFERENCES_CACHE`.
 
-**If both fail**: Leave `SHARED_REFERENCES_CACHE` empty — subagents will read files directly (graceful degradation).
+**If all lookups fail**: Leave `SHARED_REFERENCES_CACHE` empty — subagents will read files directly.
 
 Inject `SHARED_REFERENCES_CACHE` into each subagent prompt via the `{SHARED_REFERENCES}` placeholder in the implementer-prompt.
 
@@ -49,8 +46,7 @@ Use the structured template at `references/implementer-prompt.md`. Fill its plac
   - Infrastructure/config tasks → inject STACK.md + INTEGRATIONS.md
   - General tasks → inject STRUCTURE.md + CONVENTIONS.md
 
-  If claude-mem available: use smart_search for task-relevant conventions instead of reading full files.
-  If not available: Read the specific granular file directly.
+  Use smart_search for task-relevant conventions instead of reading full files.
 - `{DESIGN_DECISIONS}` — If `.planning/phases/{phase}/{phase}-CONTEXT.md` exists, include the "Decisions", "Discretion Areas", and "Deferred Ideas" sections.
 - `{PHASE_DIR}` — Path to `.planning/phases/{phase}/` for deferred items logging.
 - `{PHASE_NAME}` — Phase directory name for smart_search queries (e.g. "13-pending-payments-invoicing").
@@ -69,9 +65,9 @@ If no Gotchas section exists, leave {PROJECT_CONSTRAINTS} empty (do not error).
 
 ## claude-mem Context Acceleration
 
-Before reading CONTEXT.md and DECISIONS.md files directly, check if claude-mem is available (tool list contains `mcp__plugin_claude-mem_*`):
-- If available: use `smart_search({query: "locked decisions for phase {phase}"})` and `smart_search({query: "decisions affecting {files}"})` to find relevant entries. Use `smart_outline` to understand file structure before editing. Don't read full files to find one function — use `smart_outline` → `smart_unfold`, then Read only when you need to Edit.
-- If not available: fall back to Read/Grep/Glob directly — skills work identically without claude-mem.
+Before reading CONTEXT.md and DECISIONS.md files directly:
+- Use `smart_search({query: "locked decisions for phase {phase}"})` and `smart_search({query: "decisions affecting {files}"})` to find relevant entries.
+- Use `smart_outline` to understand file structure before editing. Don't read full files to find one function — use `smart_outline` → `smart_unfold`, then Read only when you need to Edit.
 
 The template tells subagents to self-discover relevant skill context (Playwright, Next.js, frontend design) by reading skill files when their task involves those domains. No orchestrator pre-processing needed.
 

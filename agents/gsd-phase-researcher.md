@@ -298,6 +298,22 @@ npm view [package] version
 \`\`\`
 Document the verified version and publish date. Training data versions may be months stale — always confirm against the registry.
 
+## Existing Codebase Patterns
+
+> From `.planning/codebase/` docs and codebase scan. These are established patterns this phase MUST follow.
+
+### Caching Patterns
+[e.g., "Uses `cacheTag()` + `revalidateTag()` for ISR. Dashboard pages use `unstable_cache` with 5m TTL."]
+
+### Data Flow Patterns
+[e.g., "CSV data parsed once in `lib/importers/`, never re-parsed downstream. Adapters normalize to `StandardRecord` type."]
+
+### Integration Patterns
+[e.g., "External service adapters follow `src/lib/adapters/{name}.ts` pattern with `fetchAll()`, `fetchById()`, `normalize()` methods."]
+
+### Known Concerns
+[From CONCERNS.md — tech debt or gotchas that affect this phase]
+
 ## Architecture Patterns
 
 ### Recommended Project Structure
@@ -478,6 +494,46 @@ cat "$phase_dir"/*-CONTEXT.md 2>/dev/null
 - User decided "use library X" → research X deeply, don't explore alternatives
 - User decided "simple UI, no animations" → don't research animation libraries
 - Marked as Claude's discretion → research options and recommend
+
+## Step 1.5: Codebase Mapping Docs (before external research)
+
+**Before any web research or code exploration**, check if `.planning/codebase/` exists and surface relevant established patterns. This prevents the planner from reinventing what the codebase already does.
+
+**Use smart tools (Pattern B from claude-mem-rules.md) — never full-read these docs:**
+
+```
+1. smart_outline({path: ".planning/codebase/CONVENTIONS.md"}) → scan headings
+2. smart_outline({path: ".planning/codebase/CONCERNS.md"}) → scan headings
+3. For headings relevant to this phase's domain:
+   smart_unfold({path: ".planning/codebase/CONVENTIONS.md", symbol: "<relevant heading>"})
+4. Repeat for other docs as needed (ARCHITECTURE.md, TESTING.md, INTEGRATIONS.md, STACK.md, STRUCTURE.md)
+```
+
+| Doc | Check When |
+|-----|------------|
+| `CONVENTIONS.md` | Always — coding patterns, naming, error handling |
+| `CONCERNS.md` | Always — tech debt, known issues that might affect this phase |
+| `TESTING.md` | Phase involves tests, test infrastructure, or testable behavior |
+| `ARCHITECTURE.md` | Phase touches data flow, layers, or system boundaries |
+| `INTEGRATIONS.md` | Phase involves external services or APIs |
+| `STACK.md` | Phase introduces or changes dependencies |
+| `STRUCTURE.md` | Phase creates new files or directories |
+
+Budget: <3% context (smart_outline is ~11x cheaper than Read). Extract:
+- **Existing patterns** the phase should follow (not reinvent)
+- **Known gotchas** already documented that apply to this domain
+- **Caching patterns** (`cacheTag`, `revalidatePath`, `unstable_cache`, memoization)
+- **Data flow patterns** (where similar data gets parsed, transformed, or aggregated)
+- **Integration patterns** from similar existing features (adapters, connectors, importers)
+
+Include relevant findings in RESEARCH.md under `## Existing Codebase Patterns` (before Architecture Patterns).
+
+If claude-mem smart tools are unavailable, fall back to Grep:
+```bash
+# Find existing patterns relevant to this phase's domain
+grep -rl "{relevant_pattern}" src/ --include="*.ts" --include="*.tsx" | head -10
+```
+If `.planning/codebase/` doesn't exist, use the Grep fallback above.
 
 ## Step 2: Identify Research Domains
 

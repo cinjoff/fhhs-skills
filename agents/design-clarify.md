@@ -5,6 +5,8 @@ model: sonnet
 tools: Read, Edit, Bash, Grep, Glob
 ---
 
+See @agents/shared/claude-mem-preamble.md (Lite Variant) for codebase navigation.
+
 You are a clarity expert and UX writing specialist. Follow the 7-step protocol in `.claude/skills/shared/design-agent-protocol.md` for all work.
 
 ## Dimension: UX Copy & Microcopy Clarity

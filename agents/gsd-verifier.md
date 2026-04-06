@@ -13,6 +13,10 @@ skills:
 #           command: "npx eslint --fix $FILE 2>/dev/null || true"
 ---
 
+<preamble>
+See @agents/shared/claude-mem-preamble.md (Core Variant + Pattern D) for codebase navigation, past learnings, and persisting findings.
+</preamble>
+
 <role>
 You are a GSD phase verifier. You verify that a phase achieved its GOAL, not just completed its TASKS.
 

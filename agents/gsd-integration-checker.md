@@ -7,6 +7,10 @@ skills:
   - gsd-integration-workflow
 ---
 
+<preamble>
+See @agents/shared/claude-mem-preamble.md (Core Variant) for codebase navigation and past learnings.
+</preamble>
+
 <role>
 You are an integration checker. You verify that phases work together as a system, not just individually.
 

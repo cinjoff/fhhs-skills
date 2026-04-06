@@ -15276,6 +15276,82 @@
       ]
     },
     {
+      "id": 424,
+      "name": "brainstorm-engagement",
+      "command": "plan-work",
+      "prompt": "plan adding a simple feature flag system to my app. I just need a config file and a helper function to check flags",
+      "expected_output": "Even though this is a Simple complexity task, plan-work must NOT skip brainstorming. It should present at least one alternative approach (e.g. env vars vs config file, or a third-party library vs hand-rolled), ask the user to confirm the chosen approach, and only then proceed. The brainstorm must surface an alternative and get explicit user approval before moving to Step 3.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Does NOT skip brainstorm for Simple task — presents at least one alternative approach",
+          "type": "guard"
+        },
+        {
+          "text": "Asks user to confirm the chosen approach before proceeding",
+          "type": "behavioral"
+        },
+        {
+          "text": "Presents alternative approach in brainstorm step",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": ["engagement", "brainstorm"],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "alternative|alternatively|another approach|option [A-C]|approach [12]"
+        },
+        {
+          "type": "regex",
+          "pattern": "proceed|confirm|approve|continue|go ahead|ok to"
+        },
+        {
+          "type": "regex",
+          "pattern": "brainstorm|approach|design|option"
+        }
+      ]
+    },
+    {
+      "id": 425,
+      "name": "spec-creation-medium",
+      "command": "plan-work",
+      "prompt": "plan adding email notifications for order status updates. users should get emails when their order ships and when it's delivered. medium complexity, 5-6 tasks",
+      "expected_output": "For Medium complexity, plan-work must create a SPEC.md with Architecture and Failure Modes sections, then present it to the user for approval before proceeding to Step 5 (plan creation). The skill should explicitly ask for spec approval and wait before creating PLAN.md.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Creates SPEC.md for Medium complexity task",
+          "type": "output"
+        },
+        {
+          "text": "SPEC.md includes Architecture and Failure Modes sections",
+          "type": "behavioral"
+        },
+        {
+          "text": "Presents spec for user approval before proceeding to plan creation",
+          "type": "behavioral"
+        }
+      ],
+      "tier": "smoke",
+      "tags": ["engagement", "spec"],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "SPEC\\.md|spec.*created|spec.*written"
+        },
+        {
+          "type": "regex",
+          "pattern": "Architecture|Failure Mode|failure.*mode|architecture.*section"
+        },
+        {
+          "type": "regex",
+          "pattern": "approve.*spec|spec.*approv|proceed.*plan|approve.*before|confirm.*spec"
+        }
+      ]
+    },
+    {
       "id": 423,
       "command": "update",
       "prompt": "Run /fh:update --check. The browse binary at ~/.claude/skills/browse/dist/browse does not exist. All other tools are installed.",

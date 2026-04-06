@@ -2,6 +2,22 @@
 
 Canonical availability checks for optional tools. Skills reference this file instead of inlining checks.
 
+## Manifest-Guaranteed Tools
+
+These tools are `required: true` in `manifest-schema.cjs`. They are expected to be available — no availability check or fallback needed. If missing, fail fast with: `"[tool] not found. Run /fh:setup to configure your environment."`
+
+| Tool | Manifest ID | What it provides |
+|------|-------------|-----------------|
+| node | `node` | JavaScript runtime for gsd-tools.cjs |
+| git | `git` | Version control |
+| bun | `bun` | Fast package management and script running |
+| ast-grep | `ast-grep` | Structural code search and replace |
+| claude-mem | `claude-mem` (plugin) | Cross-session memory, smart code navigation |
+
+**Do not guard these tools.** Use them directly. The manifest check in `/fh:setup` and `/fh:update` guarantees their presence.
+
+---
+
 ## Codemap MCP
 
 **Source:** `@jordancoin/codemap` — registered via `claude mcp add codemap -- npx -y @jordancoin/codemap`
@@ -19,44 +35,17 @@ If codemap MCP tools are in the tool list:
 
 ## ast-grep MCP
 
-**Check:** Inspect available tool list for ast-grep tools at session start.
+> **Note:** ast-grep is manifest-guaranteed. The MCP and CLI sections below document usage patterns, not availability checks.
 
-```
-AST_GREP_MCP_AVAILABLE=false
-If tool list contains tools matching "ast_grep" or "sg_*" → AST_GREP_MCP_AVAILABLE=true
-```
-
-**Fallback:** Use Grep tool for pattern search. Use Edit tool for targeted replacements.
+Use `find_code_by_rule` / `sg_search` for structural pattern matching.
 
 **Hard ceiling:** ast-grep has no language support for Markdown — do not attempt structural queries on `.md` files. Fall back to Grep for Markdown always.
 
-**Reference pattern:**
-```
-If ast-grep MCP tools are in the tool list:
-  → Use find_code_by_rule / sg_search for structural pattern matching
-Else:
-  → Use Grep with regex patterns
-```
-
----
-
-## ast-grep CLI
-
-**Check:**
-```bash
-AST_GREP_CLI_AVAILABLE=false
-command -v ast-grep &>/dev/null || command -v sg &>/dev/null && AST_GREP_CLI_AVAILABLE=true
-```
-
-**Fallback:** Use Edit tool for single-file changes. Use Grep + manual Edit for bulk changes.
-
 **Conditional GO status:** Structural search (4.1/5) is reliable. Bulk replace (3.2/5) requires verification pass after each transform.
 
-**Reference pattern:**
+**CLI usage:**
 ```bash
-if command -v sg &>/dev/null; then
-  sg --pattern '$PATTERN' --lang typescript src/
-fi
+sg --pattern '$PATTERN' --lang typescript src/
 ```
 
 ---
@@ -77,11 +66,9 @@ Else → grep for symbol name across codebase
 
 ## claude-mem
 
-**Check:** Inspect tool list for `mcp__plugin_claude-mem_*` tools.
+> **Note:** claude-mem is manifest-guaranteed. No availability check needed.
 
-**Fallback:** Use Read/Grep/Glob directly. Skills work identically without cross-session memory.
-
-**Reference pattern:** See `@.claude/skills/shared/claude-mem-rules.md` for full patterns (A, B, D).
+Use claude-mem smart tools directly. See `@.claude/skills/shared/claude-mem-rules.md` for full patterns (A through G).
 
 ---
 
@@ -101,11 +88,11 @@ command -v fallow &>/dev/null && FALLOW_AVAILABLE=true
 
 ## Summary Table
 
-| Tool | Check method | Fallback |
-|------|-------------|---------|
-| Codemap MCP | Tool list inspection (`mcp__codemap__`) | Skip enrichment |
-| ast-grep MCP | Tool list inspection | Grep tool |
-| ast-grep CLI | `which ast-grep \|\| which sg` | Edit tool |
-| LSP | Tool list inspection | Grep + Read |
-| claude-mem | Tool list inspection (`mcp__plugin_claude-mem_*`) | Read/Grep/Glob |
-| Fallow | `which fallow` | Skip static analysis |
+| Tool | Status | Fallback |
+|------|--------|---------|
+| node, git, bun | Manifest-guaranteed | Fail fast |
+| ast-grep (MCP + CLI) | Manifest-guaranteed | Fail fast |
+| claude-mem | Manifest-guaranteed | Fail fast |
+| Codemap MCP | Optional — tool list inspection (`mcp__codemap__`) | Skip enrichment |
+| LSP | Optional — tool list inspection | Grep + Read |
+| Fallow | Optional — `which fallow` | Skip static analysis |

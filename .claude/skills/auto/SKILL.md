@@ -160,7 +160,7 @@ If DESIGN.md exists, use it throughout to ground UX/UI guidance in the project's
 
 claude-mem observations persist across sequential `claude -p` sessions. No explicit pre-indexing needed.
 
-If claude-mem is available, derive project name from `.planning/PROJECT.md` name field (fall back to basename of cwd). Use this as the `project` parameter for all claude-mem calls. Call `mcp__plugin_claude-mem_mcp-search__search` with query=2-3 keywords from the project domain, project=<project-name>, limit=10 to get a lightweight index of past observations. Scan the returned index for relevant IDs — prioritize types: gotcha, decision, trade-off. For the top 2-3 relevant IDs, call `mcp__plugin_claude-mem_mcp-search__get_observations` with ids=[ID1, ID2, ID3] to fetch full details. If temporal context would help, call `mcp__plugin_claude-mem_mcp-search__timeline` with query=project domain keywords, depth_before=3. Present as: "**From prior sessions:** - {full observation detail}" — max 3 items.
+**Pattern A (Past Learnings Check):** Derive project name from `.planning/PROJECT.md` name field (fall back to basename of cwd). Call `mcp__plugin_claude-mem_mcp-search__search` with query=2-3 keywords from the project domain, project=<project-name>, limit=10. Scan the returned index for relevant IDs — prioritize types: gotcha, decision, trade-off. For the top 2-3 relevant IDs, call `mcp__plugin_claude-mem_mcp-search__get_observations` with ids=[ID1, ID2, ID3] to fetch full details. If temporal context would help, call `mcp__plugin_claude-mem_mcp-search__timeline` with query=project domain keywords, depth_before=3. Present as: "**From prior sessions:** - {full observation detail}" — max 3 items. Budget: <2% context. Skip silently if no relevant results.
 
 Identify what's well-defined vs what has gaps: missing vision, vague success criteria, no differentiation story, unclear scope ambition, missing UX/domain research, missing design context.
 
@@ -170,7 +170,7 @@ This step runs even when the full workshop is skipped. It takes <30 seconds and 
 
 1. **Read PROJECT.md, REQUIREMENTS.md, ROADMAP.md** — confirm they exist and are non-trivial (>3 lines each)
 2. **Flag critical gaps silently** — if any of these are missing or empty, warn the user: "I'm skipping the workshop as requested, but I noticed [gap]. The pipeline may produce suboptimal results."
-3. **Quick domain check** — if claude-mem is available, call `mcp__plugin_claude-mem_mcp-search__search` with query=2-3 project keywords, project=<project-name>, limit=10. Scan the returned index for relevant IDs — prioritize types: gotcha, decision. For the top 2-3 relevant IDs, call `mcp__plugin_claude-mem_mcp-search__get_observations` with ids=[ID1, ID2, ID3] to fetch full details. Surface any relevant prior learnings that might affect the build.
+3. **Quick domain check (Pattern A)** — call `mcp__plugin_claude-mem_mcp-search__search` with query=2-3 project keywords, project=<project-name>, limit=10. Scan the returned index for relevant IDs — prioritize types: gotcha, decision. For the top 2-3 relevant IDs, call `mcp__plugin_claude-mem_mcp-search__get_observations` with ids=[ID1, ID2, ID3] to fetch full details. Surface any relevant prior learnings that might affect the build. Skip silently if no relevant results.
 4. **Validate phase readiness** — check that at least the first incomplete phase has a clear goal in ROADMAP.md. If the goal is vague (e.g., "improve things"), warn: "Phase N goal is vague — the planning step may struggle. Consider clarifying before proceeding."
 
 This step NEVER blocks execution. It only warns. The user already said "go" — respect that while providing visibility.
@@ -303,8 +303,6 @@ If `--dry-run` is set:
 ## Step 5: Set AUTO_MODE
 
 Enable autonomous advance so downstream skills (build, plan-work) make decisions without stopping:
-
-Ensure GSD CLI symlink per @.claude/skills/shared/gsd-symlink-heal.md, then:
 
 ```bash
 node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" config-set workflow.auto_advance true

@@ -134,3 +134,22 @@ No agent dispatch. Execute inline.
 **File path:** `.planning/phases/XX-name/XX-NN-SPEC.md`
 
 See @references/spec-format.md for full section format, YAML frontmatter schema, and examples.
+
+---
+
+### Spec Approval Gate
+
+For Medium and Complex plans, after completing SPEC.md, present it to the user for approval before proceeding to Step 5 (Create Plan):
+
+> "**SPEC.md created at [path].**
+>
+> Key sections:
+> - **Architecture:** [1-sentence summary]
+> - **Failure Modes:** [top risk]
+> - **Requirements:** [N acceptance criteria]
+>
+> Approve this spec and proceed to plan creation, or revise?"
+
+**Wait for user approval before continuing to Step 5.** Do not auto-proceed. The user may request revisions to any section; incorporate changes and re-present before moving forward.
+
+This gate ensures the spec — which shapes task scoping, rubrics, and done criteria — is validated before the plan is locked.

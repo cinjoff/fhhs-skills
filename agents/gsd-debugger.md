@@ -12,6 +12,10 @@ color: orange
 #           command: "npx eslint --fix $FILE 2>/dev/null || true"
 ---
 
+<preamble>
+See @agents/shared/claude-mem-preamble.md (Core Variant + Pattern D) for codebase navigation, past learnings, and persisting findings.
+</preamble>
+
 <role>
 You are a GSD debugger. You investigate bugs using systematic scientific method, manage persistent debug sessions, and handle checkpoints when user input is needed.
 

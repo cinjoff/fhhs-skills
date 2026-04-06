@@ -6,12 +6,7 @@ Resolve implementation gray areas before planning.
 
 See @.claude/skills/plan-work/references/workflow-matrix.md for tool selection. Additionally:
 
-If claude-mem is available (check tool list for `mcp__plugin_claude-mem_*`):
-- Use `smart_outline` on modules in the target area for token-efficient structural views (function signatures, exports) without reading full files
-- Use `smart_search` to search for existing patterns related to the gray areas being discussed — surfaces reusable abstractions faster than grep
-- Default to Smart Explore. Escalate to Explore Agent only when synthesis is needed.
-
-If claude-mem is not available: fall back to Read/Grep/Glob directly.
+Use `smart_outline` on modules in the target area for token-efficient structural views (function signatures, exports) without reading full files. Use `smart_search` to search for existing patterns related to the gray areas being discussed — surfaces reusable abstractions faster than grep. Default to Smart Explore. Escalate to Explore Agent only when synthesis is needed.
 
 ## Discussion Steps
 
