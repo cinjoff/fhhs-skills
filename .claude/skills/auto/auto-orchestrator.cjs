@@ -927,7 +927,7 @@ function createJsonLineParser(onLine) {
 // ─── Tool Readiness Hint (injected into every downstream session) ────────────
 
 // ToolSearch preamble for downstream skills (D-265)
-const TOOL_READINESS_HINT = `\n## Tool Readiness (auto-injected)\n\nclaude-mem MCP tools are deferred. At session start, fetch them:\nToolSearch("select:mcp__plugin_claude-mem_mcp-search__smart_search,mcp__plugin_claude-mem_mcp-search__smart_outline,mcp__plugin_claude-mem_mcp-search__smart_unfold,mcp__plugin_claude-mem_mcp-search__search,mcp__plugin_claude-mem_mcp-search__get_observations")\n\nIf ToolSearch returns empty, fall back to Read-based approach.\n`;
+const TOOL_READINESS_HINT = `\n## Tool Readiness (auto-injected)\n\nclaude-mem MCP tools are deferred. At session start, fetch them:\nToolSearch("+mcp-search", max_results: 10)\n\nIf ToolSearch returns empty, fall back to Read-based approach.\n`;
 
 // ─── Claude Session Runner (with stuck detection + activity monitoring) ───────
 

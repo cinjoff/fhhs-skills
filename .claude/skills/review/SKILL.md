@@ -30,7 +30,7 @@ You are the **code review orchestrator**. Follow every step below — each one e
 claude-mem tools are **deferred** — they must be fetched before they can be called. Do this first, before any other work.
 
 ```
-ToolSearch("select:mcp__plugin_claude-mem_mcp-search__smart_search,mcp__plugin_claude-mem_mcp-search__smart_outline,mcp__plugin_claude-mem_mcp-search__smart_unfold,mcp__plugin_claude-mem_mcp-search__search,mcp__plugin_claude-mem_mcp-search__get_observations")
+ToolSearch("+mcp-search", max_results: 10)
 ```
 
 Also verify ast-grep CLI is available:

@@ -37,7 +37,7 @@ claude-mem, ast-grep, and bun are **manifest-required** tools — they are decla
 **Important:** claude-mem MCP tools are **deferred** — their schemas must be fetched via `ToolSearch` before they can be called. Every skill that uses claude-mem must include a Step 0: Tool Readiness block:
 
 ```
-ToolSearch("select:mcp__plugin_claude-mem_mcp-search__smart_search,mcp__plugin_claude-mem_mcp-search__smart_outline,mcp__plugin_claude-mem_mcp-search__smart_unfold,mcp__plugin_claude-mem_mcp-search__search,mcp__plugin_claude-mem_mcp-search__get_observations")
+ToolSearch("+mcp-search", max_results: 10)
 ```
 
 If ToolSearch returns empty, fall back to Read-based approach. Do not add `if available` guards for these tools — they are part of the contract. The ToolSearch step is the guard.
