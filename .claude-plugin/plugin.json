@@ -1,7 +1,7 @@
 {
   "name": "fh",
   "description": "fhhs-skills: All-in-one workflow plugin — 33 skills and 31 agents for spec-driven development, TDD, design quality, web research, startup validation, and autonomous execution. No other plugins required.",
-  "version": "1.65.0",
+  "version": "1.65.1",
   "author": {
     "name": "Konstantin"
   },

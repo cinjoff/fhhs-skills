@@ -60,7 +60,9 @@ const child = spawn(process.execPath, ['-e', `
       const installedPlugins = path.join(${JSON.stringify(path.join(homeDir, '.claude'))}, 'plugins', 'installed_plugins.json');
       if (fs.existsSync(installedPlugins)) {
         const data = JSON.parse(fs.readFileSync(installedPlugins, 'utf8'));
-        const fhPlugin = data.plugins && data.plugins['fh@fhhs-skills'];
+        let fhPlugin = data.plugins && data.plugins['fh@fhhs-skills'];
+        // Handle both dict and array formats
+        if (Array.isArray(fhPlugin)) fhPlugin = fhPlugin[0];
         if (fhPlugin && fhPlugin.version) {
           installed = fhPlugin.version;
         }
