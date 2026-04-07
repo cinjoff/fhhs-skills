@@ -10,6 +10,24 @@ Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliat
 
 ## [Unreleased]
 
+## [1.65.0] - 2026-04-07
+
+### Added
+- **Auto-orchestrator shared library** — 6 reusable CJS modules in `.claude/skills/auto/lib/` for task dispatch, context injection, wave analysis, verification, and summary generation
+- **2-layer direct dispatch** — auto-orchestrator build step dispatches per-task `claude -p` sessions directly instead of invoking `/fh:build`, eliminating 3rd nesting layer that caused the Prague incident
+- **Process group kill** — `detached: true` with `process.kill(-pid)` for reliable termination of task sessions and all subprocesses
+- **Checkpoint-before-spawn** — intent checkpoints before each task dispatch enable crash recovery and task-level resume on restart
+- **Phase & task state machines** — formal lifecycle states (12 phase states, 6 task states) with validated transitions, retry logic, and legacy state migration
+- **15 new evals** — orchestrator evals covering shared lib, direct dispatch, process resilience, state machine, and documentation compliance
+
+### Changed
+- **ToolSearch preamble simplified** — `ToolSearch("+mcp-search", max_results: 10)` replaces verbose 300-char `select:` string across all skills
+- **Build skill interactive-only** — removed auto-mode code paths (`auto_advance` checks, auto-approve checkpoints), added shared lib cross-references
+- **Auto skill documentation** — documents 2-layer architecture, state machine lifecycles, and shared library modules
+- **Implementer prompt** — adds smart tool discovery instructions (smart_outline, smart_unfold, smart_search)
+- **Plan-review parallel agents** — scope and engineering review run as parallel subagents
+- **Review Step 2.5 flattened** — direct sub-skill dispatch instead of intermediary agent
+
 ## [1.64.0] - 2026-04-06
 
 ### Added
