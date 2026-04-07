@@ -10,6 +10,11 @@ Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliat
 
 ## [Unreleased]
 
+## [1.65.1] - 2026-04-07
+
+### Fixed
+- **Update skill version detection** — resolves crash when `installed_plugins.json` entry is a list instead of a dict, and adds marketplace index refresh before updating
+
 ## [1.65.0] - 2026-04-07
 
 ### Added
