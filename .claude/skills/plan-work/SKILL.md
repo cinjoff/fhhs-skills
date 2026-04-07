@@ -8,7 +8,7 @@ Plan a feature before building it. Brainstorm, research, and produce an executio
 
 The user wants to plan: $ARGUMENTS
 
-You are a **lean orchestrator**. Your job is to coordinate, not to do heavy work yourself. Delegate research and analysis to subagents to keep your context clean.
+You are the **planning orchestrator**. Follow every step below — each one exists because skipping it caused real failures in past sessions. Delegate research and analysis to subagents to keep your context clean.
 
 > **CRITICAL — GSD project required:**
 > Check if `.planning/PROJECT.md` exists.
@@ -22,9 +22,43 @@ This creates the .planning/ directory that all planning and build skills depend 
 
 ---
 
+## Step 0: Tool Readiness
+
+claude-mem tools are **deferred** — they must be fetched before they can be called. Do this first, before any other work.
+
+```
+ToolSearch("+mcp-search", max_results: 10)
+```
+
+Also verify ast-grep CLI is available:
+```bash
+command -v sg &>/dev/null || command -v ast-grep &>/dev/null || echo "WARN: ast-grep not found"
+```
+
+**If ToolSearch returns empty for claude-mem:** Fall back to Read-based approach for this session.
+
+---
+
+### Cross-Session Cache Check
+
+Before reading planning files, check if a prior skill already loaded this context:
+
+```
+search({query: "[plan-work-output] {phase-name}", project: "<project>", limit: 3})
+search({query: "[auto-output] {phase-name}", project: "<project>", limit: 3})
+```
+
+If fresh results found (< 2 hours): use the observation's summary as primary context. Skip redundant STATE.md / ROADMAP.md reads. If stale or absent: proceed with normal file reading.
+
+---
+
 ## Step -0.5: Past Context Check
 
-1. Derive project name from `.planning/PROJECT.md` name field (fall back to basename of cwd). Use this as the `project` parameter for all claude-mem calls.
+1. Derive project name consistently:
+```bash
+PROJECT_NAME=$(basename "$(git rev-parse --show-toplevel 2>/dev/null)" 2>/dev/null || basename "$(pwd)")
+```
+Use `$PROJECT_NAME` as the `project` parameter for all claude-mem calls in this session.
 2. Call `search` with query=2-3 keywords from the phase/project domain, project=<project-name>, limit=10
 3. Scan the returned index for relevant IDs — prioritize types: gotcha, decision, trade-off
 4. For the top 2-3 relevant IDs, call `get_observations` to fetch full details
@@ -214,6 +248,21 @@ Hold these must_haves — they feed directly into the PLAN.md frontmatter and th
 | **Medium** | Create SPEC.md per @references/spec-creation-process.md (streamlined path). Present to user for approval before Step 5. |
 | **Complex** | Create SPEC.md per @references/spec-creation-process.md (full 5-step path, dispatches spec-architect agent). Present to user for approval before Step 5. |
 
+When dispatching the spec-architect agent, include tool instructions in the prompt:
+```
+## Tools Available
+Use claude-mem smart tools for codebase understanding:
+- `smart_outline({path})` — file structure without full read
+- `smart_unfold({path, symbol})` — extract one function
+- `smart_search({query})` — cross-codebase structural search
+
+Use ast-grep for structural code analysis:
+- `sg --pattern '<pattern>' --lang typescript src/`
+
+Use `smart_outline` on files in the bounded context before reading them fully.
+Use `smart_search` to find existing patterns when designing architecture sections.
+```
+
 Output: `.planning/phases/XX-name/XX-NN-SPEC.md`
 
 ---
@@ -234,6 +283,16 @@ Run plan-check protocol per @references/plan-check-protocol.md
 
 ---
 
+### Cross-Session Output
+
+Emit a structured observation for downstream skills:
+
+**[plan-work-output]** Phase {N}: Plan created at `{plan_path}`. Must-haves: {count} truths, {count} artifacts. Spec: {yes/no}. Decisions locked: {count}. Key files: {top 3 files_modified}.
+
+This observation is queryable by plan-review and build via `search({query: "[plan-work-output] phase {N}"})`, avoiding redundant file re-reads in auto flows.
+
+---
+
 ## Step 7: Handoff
 
 After plan approval:
@@ -249,7 +308,7 @@ After plan approval:
 
 ## Priority Hierarchy
 
-If context pressure is high: **Step 0** (phase matching) > **Step 3** (diagrams + failure modes) > **Step 5** (plan creation) > **Step 4** (must_haves) > **Step 2** (brainstorm) > **Step 1** (research). Never skip Step 0 or Step 5.
+Follow all steps. If a step produces no findings, move on quickly. Priority: **Step 0** (phase matching) > **Step 5** (plan creation) > **Step 3** (diagrams + failure modes) > **Step 4** (must_haves) > **Step 2** (brainstorm) > **Step 1** (research). Never skip Step 0 or Step 5.
 
 ---
 

@@ -21,6 +21,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { spawn } = require('child_process');
+const { parseWaves, buildTaskPrompt, dispatchTask, runVerification, generateSummary } = require('./lib/index.cjs');
 
 // ─── Enriched Auto-Status ─────────────────────────────────────────────────────
 
@@ -864,6 +865,7 @@ function aggregatePhaseMetrics(stepHistory, phaseId) {
 // ─── Project Name Resolution ──────────────────────────────────────────────────
 
 function resolveProjectName(cwd) {
+  // Project name: git-based resolution (aligned with SKILL.md — D-261)
   try {
     const { execFileSync } = require('child_process');
 
@@ -922,6 +924,11 @@ function createJsonLineParser(onLine) {
   };
 }
 
+// ─── Tool Readiness Hint (injected into every downstream session) ────────────
+
+// ToolSearch preamble for downstream skills (D-265)
+const TOOL_READINESS_HINT = `\n## Tool Readiness (auto-injected)\n\nclaude-mem MCP tools are deferred. At session start, fetch them:\nToolSearch("+mcp-search", max_results: 10)\n\nIf ToolSearch returns empty, fall back to Read-based approach.\n`;
+
 // ─── Claude Session Runner (with stuck detection + activity monitoring) ───────
 
 // INVARIANT: spawn('claude', ...) must appear ONLY inside runClaudeSession.
@@ -962,7 +969,9 @@ function runClaudeSession(prompt, opts) {
     const claudeMdPath = path.join(opts.cwd, 'CLAUDE.md');
     if (fs.existsSync(claudeMdPath)) {
       const claudeMd = fs.readFileSync(claudeMdPath, 'utf-8').slice(0, 4000);
-      args.push('--append-system-prompt', `Project conventions:\n${claudeMd}`);
+      args.push('--append-system-prompt', `Project conventions:\n${claudeMd}${TOOL_READINESS_HINT}`);
+    } else {
+      args.push('--append-system-prompt', TOOL_READINESS_HINT);
     }
     const projectName = resolveProjectName(opts.cwd);
     log(`  Running: claude -p "${prompt.slice(0, 80)}..." (plugin-dir=${pluginDir})`);
@@ -971,13 +980,13 @@ function runClaudeSession(prompt, opts) {
     const child = spawn('claude', args, {
       stdio: ['ignore', 'pipe', 'pipe'],
       cwd: opts.cwd,
-      detached: false,
+      detached: true,
       env: {
         ...process.env,
         ...(opts.sessionId ? { CLAUDE_SESSION_ID: opts.sessionId } : {}),
         CLAUDE_MEM_PROJECT: projectName,
         CLAUDE_MEM_CONTEXT_OBSERVATIONS: '0',
-        CLAUDE_MEM_SKIP_TOOLS: 'ListMcpResourcesTool,ReadMcpResourceTool,SlashCommand,Skill,TodoWrite,AskUserQuestion,ToolSearch,TaskCreate,TaskUpdate,TaskGet,TaskList,TaskOutput,TaskStop,SendMessage,EnterPlanMode,ExitPlanMode,EnterWorktree,ExitWorktree,LSP,CronCreate,CronDelete,CronList,TeamCreate,TeamDelete,NotebookEdit,mcp__plugin_claude-mem_mcp-search____IMPORTANT,mcp__plugin_claude-mem_mcp-search__search,mcp__plugin_claude-mem_mcp-search__get_observations,mcp__plugin_claude-mem_mcp-search__timeline,mcp__plugin_claude-mem_mcp-search__smart_search,mcp__plugin_claude-mem_mcp-search__smart_unfold,mcp__plugin_claude-mem_mcp-search__smart_outline',
+        CLAUDE_MEM_SKIP_TOOLS: 'ListMcpResourcesTool,ReadMcpResourceTool,SlashCommand,Skill,TodoWrite,AskUserQuestion,ToolSearch,TaskCreate,TaskUpdate,TaskGet,TaskList,TaskOutput,TaskStop,SendMessage,EnterPlanMode,ExitPlanMode,EnterWorktree,ExitWorktree,LSP,CronCreate,CronDelete,CronList,TeamCreate,TeamDelete,NotebookEdit',
       },
     });
 
@@ -1102,7 +1111,7 @@ function runClaudeSession(prompt, opts) {
         if (fs.existsSync(killFile)) {
           log('  Kill requested via .auto-kill sentinel — stopping gracefully');
           try { fs.unlinkSync(killFile); } catch {}
-          child.kill('SIGTERM');
+          try { process.kill(-child.pid, 'SIGTERM'); } catch { /* already dead */ }
           return;
         }
       }
@@ -1120,9 +1129,9 @@ function runClaudeSession(prompt, opts) {
           step: opts.stepName || null,
           extra: { reason: `stuck (no output for ${silenceMin}min)`, silence_s: Math.round(silenceMs / 1000), last_tool: lastToolName, elapsed_s: Math.round((Date.now() - sessionStart) / 1000), session: opts.sessionId }
         });
-        child.kill('SIGTERM');
+        try { process.kill(-child.pid, 'SIGTERM'); } catch { /* already dead */ }
         setTimeout(() => {
-          try { child.kill('SIGKILL'); } catch { /* already dead */ }
+          try { process.kill(-child.pid, 'SIGKILL'); } catch { /* already dead */ }
         }, 5000);
       } else if (silenceMs >= STUCK_SILENCE_MS && !stuckWarned) {
         stuckWarned = true;
@@ -1140,10 +1149,10 @@ function runClaudeSession(prompt, opts) {
     const hardTimer = setTimeout(() => {
       const elapsedMin = Math.round((Date.now() - sessionStart) / 60000);
       log(`  ✗ HARD TIMEOUT: killing session after ${elapsedMin}min`);
-      child.kill('SIGTERM');
+      try { process.kill(-child.pid, 'SIGTERM'); } catch { /* already dead */ }
       // Give SIGTERM 5s to take effect, then SIGKILL
       setTimeout(() => {
-        try { child.kill('SIGKILL'); } catch { /* already dead */ }
+        try { process.kill(-child.pid, 'SIGKILL'); } catch { /* already dead */ }
       }, 5000);
     }, HARD_TIMEOUT_MS);
 
@@ -1229,7 +1238,84 @@ function updateStateViaGsd(projectDir, phaseId) {
 
 // ─── Phase Steps ──────────────────────────────────────────────────────────────
 
+// PHASE_STEPS retained for speculative pipeline — state machine used in sequential mode
 const PHASE_STEPS = ['plan-work', 'plan-review', 'build', 'review'];
+
+// ─── Phase & Task State Machines ────────────────────────────────────────────
+// PHASE_STEPS retained for speculative pipeline — will be migrated in a future plan
+const PHASE_TRANSITIONS = {
+  pending:          ['planning'],
+  planning:         ['planned', 'plan-failed'],
+  'plan-failed':    ['planning'],        // retry
+  planned:          ['reviewing'],
+  reviewing:        ['reviewed', 'review-failed'],
+  'review-failed':  ['planned'],         // retry from planned
+  reviewed:         ['building'],
+  building:         ['verifying', 'build-failed'],
+  'build-failed':   ['reviewed'],        // retry from reviewed
+  verifying:        ['complete', 'verify-failed'],
+  'verify-failed':  ['reviewed'],        // re-build
+  complete:         [],                  // terminal
+};
+
+const TASK_TRANSITIONS = {
+  queued:      ['dispatched'],
+  dispatched:  ['running'],
+  running:     ['completed', 'failed', 'timed-out'],
+  failed:      ['queued'],              // retry
+  'timed-out': ['queued'],              // retry with extended timeout
+  completed:   [],                      // terminal
+};
+
+function transitionPhase(currentState, nextState) {
+  const allowed = PHASE_TRANSITIONS[currentState];
+  if (!allowed) throw new Error(`Unknown phase state: ${currentState}`);
+  if (!allowed.includes(nextState)) {
+    throw new Error(`Invalid phase transition: ${currentState} → ${nextState} (allowed: ${allowed.join(', ')})`);
+  }
+  return nextState;
+}
+
+function transitionTask(currentState, nextState) {
+  const allowed = TASK_TRANSITIONS[currentState];
+  if (!allowed) throw new Error(`Unknown task state: ${currentState}`);
+  if (!allowed.includes(nextState)) {
+    throw new Error(`Invalid task transition: ${currentState} → ${nextState} (allowed: ${allowed.join(', ')})`);
+  }
+  return nextState;
+}
+
+// Map phase states to the step they need to execute
+const STATE_TO_STEP = {
+  pending:          'plan-work',
+  'plan-failed':    'plan-work',    // retry
+  planned:          'plan-review',
+  'review-failed':  'plan-review',  // retry
+  reviewed:         'build',
+  'build-failed':   'build',        // retry
+  verifying:        'review',
+  'verify-failed':  'review',       // retry
+  planning:         null,           // in progress
+  reviewing:        null,           // in progress
+  building:         null,           // in progress
+  complete:         null,           // done
+};
+
+// Legacy state migration (D9)
+const LEGACY_STATE_MAP = {
+  'built': 'complete',
+  'rescheduled-sequential': 'pending',
+  'blocked': 'pending',
+};
+
+function migratePhaseState(state) {
+  return LEGACY_STATE_MAP[state] || state;
+}
+
+function updatePhaseState(autoState, phaseId, state) {
+  if (!autoState.phase_states) autoState.phase_states = {};
+  autoState.phase_states[phaseId] = state;
+}
 
 async function executeStep(projectDir, phaseId, step, planPath) {
   // Read phase goal from ROADMAP.md for richer autonomous prompts
@@ -1330,69 +1416,378 @@ async function executeStep(projectDir, phaseId, step, planPath) {
       }
       const relPlan = path.relative(projectDir, latestPlan);
 
-      // SPEC.md awareness: check for a sibling spec file and frontmatter spec: field
-      let specHint = '';
-      let taskStateHint = '';
+      // ── Attempt direct dispatch (D2: shared functions) ──────────────────────
+      let parsedPlan;
       try {
-        const planBase = path.basename(latestPlan);
-        const planDir = path.dirname(latestPlan);
-        // Derive spec path: XX-NN-PLAN.md → XX-NN-SPEC.md
-        const specBase = planBase.replace(/-PLAN\.md$/, '-SPEC.md').replace(/^PLAN\.md$/, 'SPEC.md');
-        const specPath = path.join(planDir, specBase);
-        const relSpecPath = path.relative(projectDir, specPath);
+        parsedPlan = parseWaves(latestPlan);
+      } catch (parseErr) {
+        log(`  Plan format not parseable for direct dispatch — falling back to /fh:build invocation: ${parseErr.message}`);
+        parsedPlan = null;
+      }
 
-        if (fs.existsSync(specPath)) {
-          specHint = ` SPEC.md exists at ${relSpecPath}. Build skill will inject relevant sections per task.`;
-        } else {
-          // Check if PLAN.md frontmatter has a spec: field referencing a missing file
+      // Fallback: old behavior if plan not parseable for direct dispatch
+      if (!parsedPlan || parsedPlan.waves.length === 0) {
+        if (parsedPlan && parsedPlan.waves.length === 0) {
+          log('  Plan format not parseable for direct dispatch — falling back to /fh:build invocation (no task waves found)');
+        }
+        const relPlanFallback = path.relative(projectDir, latestPlan);
+        return await runClaudeSession(
+          `You are in auto mode. Execute the plan at ${relPlanFallback} using /fh:build. ` +
+          `Phase goal: "${phaseGoal}". Build all tasks, run tests, commit changes. Do not ask questions.`,
+          { cwd: projectDir, sessionId, stepName: 'build' }
+        );
+      }
+
+      log(`  Direct dispatch: ${parsedPlan.waves.length} wave(s) found in ${relPlan}`);
+
+      // ── Derive plan number from filename (e.g. "23-02-PLAN.md" → "02") ──
+      const planBase = path.basename(latestPlan);
+      const planNumMatch = planBase.match(/^(?:\d+-)?(\d+)-PLAN\.md$/) || planBase.match(/^(\d+)-PLAN\.md$/);
+      const planNum = planNumMatch ? planNumMatch[1] : '01';
+
+      // ── Ensure .planning/build/ exists ───────────────────────────────────────
+      const buildDir = path.join(projectDir, '.planning', 'build');
+      fs.mkdirSync(buildDir, { recursive: true });
+
+      // ── Scan for existing checkpoints (crash resume) ─────────────────────────
+      const existingCheckpoints = {};
+      try {
+        const checkpointFiles = fs.readdirSync(buildDir).filter(function(f) {
+          return f.endsWith('-checkpoint.json');
+        });
+        for (const cf of checkpointFiles) {
           try {
-            const planContent = fs.readFileSync(latestPlan, 'utf-8');
-            const specFieldMatch = planContent.match(/^spec:\s*(.+)/m);
-            if (specFieldMatch) {
-              const referencedSpec = specFieldMatch[1].trim();
-              const referencedSpecPath = path.isAbsolute(referencedSpec)
-                ? referencedSpec
-                : path.join(planDir, referencedSpec);
-              if (!fs.existsSync(referencedSpecPath)) {
-                log(`  Warning: PLAN.md references spec: ${referencedSpec} but file not found at ${referencedSpecPath}`);
-              }
-            }
-          } catch { /* ignore */ }
+            const cp = JSON.parse(fs.readFileSync(path.join(buildDir, cf), 'utf-8'));
+            if (cp.taskId) existingCheckpoints[cp.taskId] = cp;
+          } catch { /* ignore malformed */ }
+        }
+        if (Object.keys(existingCheckpoints).length > 0) {
+          log('  Resume: found ' + Object.keys(existingCheckpoints).length + ' checkpoint(s) in ' + buildDir);
         }
       } catch { /* ignore */ }
 
-      // Task state resume awareness
+      // ── Clean up stale result files for this plan ────────────────────────────
       try {
-        const buildStateDir = path.join(projectDir, '.planning', 'build');
-        if (fs.existsSync(buildStateDir)) {
-          const stateFiles = fs.readdirSync(buildStateDir).filter(f => f.startsWith('task-') && f.endsWith('-state.md'));
-          if (stateFiles.length > 0) {
-            let completedCount = 0;
-            let pendingCount = 0;
-            for (const sf of stateFiles) {
-              try {
-                const sfContent = fs.readFileSync(path.join(buildStateDir, sf), 'utf-8');
-                if (/status:\s*(completed|done)/i.test(sfContent)) {
-                  completedCount++;
-                } else if (/status:\s*(in-progress|pending)/i.test(sfContent)) {
-                  pendingCount++;
-                }
-              } catch { /* ignore */ }
+        const staleFiles = fs.readdirSync(buildDir).filter(function(f) {
+          return f.startsWith('task-' + planNum + '-') && f.endsWith('-result.json');
+        });
+        for (const sf of staleFiles) {
+          try { fs.unlinkSync(path.join(buildDir, sf)); } catch { /* ignore */ }
+        }
+      } catch { /* ignore */ }
+
+      // ── Read CONTEXT.md decisions (try multiple naming patterns) ─────────────
+      let contextDecisions = '';
+      const phaseDir = findPhaseDir(projectDir, phaseId);
+      if (phaseDir) {
+        const contextCandidates = [
+          path.join(phaseDir, 'CONTEXT.md'),
+          path.join(phaseDir, `${normalizePhaseName(phaseId)}-CONTEXT.md`),
+        ];
+        for (const candidate of contextCandidates) {
+          try {
+            if (fs.existsSync(candidate)) {
+              const ctxContent = fs.readFileSync(candidate, 'utf-8');
+              // Extract the Decisions section
+              const decisionsMatch = ctxContent.match(/^##\s+Decisions[\s\S]*?(?=^##\s|$)/m);
+              contextDecisions = decisionsMatch ? decisionsMatch[0].trim() : ctxContent.slice(0, 3000);
+              break;
             }
-            if (pendingCount > 0 || completedCount > 0) {
-              log(`  Partial build detected for phase ${phaseId} — ${completedCount} tasks completed, ${pendingCount} remaining. Build will resume from exact task.`);
-              taskStateHint = ` Resume detected. Task state files at .planning/build/. Resume from incomplete tasks.`;
+          } catch { /* ignore */ }
+        }
+      }
+
+      // ── Read CLAUDE.md first 4000 chars for project constraints ─────────────
+      let projectConstraints = '';
+      try {
+        const claudeMdPath = path.join(projectDir, 'CLAUDE.md');
+        if (fs.existsSync(claudeMdPath)) {
+          projectConstraints = fs.readFileSync(claudeMdPath, 'utf-8').slice(0, 4000);
+        }
+      } catch { /* ignore */ }
+
+      // ── Read optional SPEC sections if frontmatter has spec: field ───────────
+      let specSections = null;
+      try {
+        const fm = parsedPlan.frontmatter || {};
+        if (fm.spec) {
+          const planDir = path.dirname(latestPlan);
+          const specRef = fm.spec;
+          const specPath = path.isAbsolute(specRef) ? specRef : path.join(planDir, specRef);
+          if (fs.existsSync(specPath)) {
+            const specContent = fs.readFileSync(specPath, 'utf-8');
+            // Extract named sections
+            function extractSpecSection(tag) {
+              const re = new RegExp('<' + tag + '[^>]*>([\\s\\S]*?)<\\/' + tag + '>', 's');
+              const m = specContent.match(re);
+              return m ? m[1].trim() : '';
             }
+            specSections = {
+              architecture: extractSpecSection('architecture'),
+              dataFlow: extractSpecSection('dataFlow') || extractSpecSection('data_flow'),
+              failureModes: extractSpecSection('failureModes') || extractSpecSection('failure_modes'),
+              qualityRubrics: extractSpecSection('qualityRubrics') || extractSpecSection('quality_rubrics'),
+            };
           }
         }
       } catch { /* ignore */ }
 
-      return await runClaudeSession(
-        `You are in auto mode. Execute the plan at ${relPlan} using /fh:build. ` +
-        `Phase goal: "${phaseGoal}". Build all tasks, run tests, commit changes. Do not ask questions.` +
-        specHint + taskStateHint,
-        { cwd: projectDir, sessionId, stepName: 'build' }
-      );
+      // ── Build plan-level context object ─────────────────────────────────────
+      const planContext = {
+        phaseId: String(phaseId),
+        phaseName: phaseDir ? path.basename(phaseDir).replace(/^\d+-/, '') : '',
+        phaseGoal: phaseGoal,
+        contextDecisions: contextDecisions,
+        projectConstraints: projectConstraints,
+        specSections: specSections,
+        planPath: relPlan,
+      };
+
+      // ── Iterate waves sequentially, dispatch tasks in parallel ───────────────
+      const buildStartTime = new Date();
+      const allTaskResults = [];
+      const pool = new ConcurrencyPool(2);
+
+      for (let waveIdx = 0; waveIdx < parsedPlan.waves.length; waveIdx++) {
+        const wave = parsedPlan.waves[waveIdx];
+        log(`  Wave ${waveIdx + 1}/${parsedPlan.waves.length}: dispatching ${wave.length} task(s)`);
+
+        // Build dispatch promises for this wave (D4: true process isolation)
+        const wavePromises = wave.map(function(taskDef) {
+          const taskSlug = taskDef.name
+            ? taskDef.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40)
+            : 'task';
+          const taskId = 'task-' + planNum + '-' + taskSlug;
+          const prompt = buildTaskPrompt(taskDef, planContext);
+
+          return pool.run(function() {
+            // Skip if already completed in a previous run (crash resume)
+            if (existingCheckpoints[taskId] && existingCheckpoints[taskId].status === 'completed') {
+              log('  Skipping task "' + taskDef.name + '" — already completed (resume)');
+              return { taskName: taskDef.name, success: true, skipped: true };
+            }
+
+            // Task state machine: initialize as queued
+            let taskState = 'queued';
+            const checkpointPath = path.join(buildDir, taskId + '-checkpoint.json');
+
+            // Write intent checkpoint BEFORE dispatch (crash resilience)
+            // queued → dispatched
+            taskState = transitionTask(taskState, 'dispatched');
+            const checkpoint = {
+              taskId: taskId,
+              phaseId: String(phaseId),
+              planNumber: planNum,
+              taskState: taskState,
+              status: 'dispatched',
+              dispatchedAt: new Date().toISOString(),
+              pid: null,
+            };
+            try { fs.writeFileSync(checkpointPath, JSON.stringify(checkpoint, null, 2)); } catch { /* ignore */ }
+
+            // dispatched → running
+            taskState = transitionTask(taskState, 'running');
+            try {
+              fs.writeFileSync(checkpointPath, JSON.stringify(Object.assign({}, checkpoint, { taskState: taskState, status: 'running', startedAt: new Date().toISOString() }), null, 2));
+            } catch { /* ignore */ }
+
+            log('    Direct dispatch: ' + taskDef.name + ' (' + taskId + ')');
+            return dispatchTask(
+              { prompt: prompt, taskId: taskId, phaseId: String(phaseId), planPath: latestPlan, cwd: projectDir },
+              {
+                onToolCall: function(toolName, ts) {
+                  pushActivityEvent('tool_call', taskId + ' used ' + toolName);
+                },
+              }
+            ).then(function(result) {
+              // running → completed or failed or timed-out
+              const isTimeout = result.error && (result.error.includes('timeout') || result.error.includes('stuck'));
+              if (result.success) {
+                taskState = transitionTask(taskState, 'completed');
+              } else if (isTimeout) {
+                taskState = transitionTask(taskState, 'timed-out');
+              } else {
+                taskState = transitionTask(taskState, 'failed');
+              }
+              // Update checkpoint with final status
+              try {
+                const finalCheckpoint = Object.assign({}, checkpoint, {
+                  taskState: taskState,
+                  status: result.success ? 'completed' : 'failed',
+                  completedAt: new Date().toISOString(),
+                  metrics: result.metrics || {},
+                  error: result.error || null,
+                });
+                fs.writeFileSync(checkpointPath, JSON.stringify(finalCheckpoint, null, 2));
+              } catch { /* ignore */ }
+              return Object.assign({}, result, { taskState: taskState });
+            });
+          });
+        });
+
+        // D6: Promise.allSettled for wave dispatch
+        const waveSettled = await Promise.allSettled(wavePromises);
+
+        // Collect results and write sidecar files; retry failed tasks once
+        for (let ti = 0; ti < wave.length; ti++) {
+          const taskDef = wave[ti];
+          const taskSlug = taskDef.name
+            ? taskDef.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40)
+            : 'task';
+          const taskId = 'task-' + planNum + '-' + taskSlug;
+          const settled = waveSettled[ti];
+
+          let taskResult;
+          if (settled.status === 'fulfilled') {
+            taskResult = settled.value;
+          } else {
+            // Pool or spawn error — treat as failure
+            taskResult = {
+              success: false,
+              stdout: '',
+              stderr: '',
+              metrics: { tokens_in: 0, tokens_out: 0, elapsed_ms: 0 },
+              error: settled.reason ? String(settled.reason.message || settled.reason) : 'Unknown error',
+            };
+          }
+
+          // Retry once on failure using task state machine (failed/timed-out → queued → dispatched → running)
+          if (!taskResult.success) {
+            const retryTaskState = taskResult.taskState || 'failed';
+            const isTimedOut = retryTaskState === 'timed-out';
+            log('    Retrying ' + (isTimedOut ? 'timed-out' : 'failed') + ' task: ' + taskDef.name);
+            try {
+              // failed/timed-out → queued (retry transition)
+              let retryState = transitionTask(retryTaskState, 'queued');
+              // queued → dispatched → running
+              retryState = transitionTask(retryState, 'dispatched');
+              retryState = transitionTask(retryState, 'running');
+              const retryCheckpointPath = path.join(buildDir, taskId + '-retry-checkpoint.json');
+              try {
+                fs.writeFileSync(retryCheckpointPath, JSON.stringify({
+                  taskId: taskId + '-retry', phaseId: String(phaseId), planNumber: planNum,
+                  taskState: retryState, status: 'running', isTimedOut: isTimedOut,
+                  startedAt: new Date().toISOString(),
+                }, null, 2));
+              } catch { /* ignore */ }
+              const prompt = buildTaskPrompt(taskDef, planContext);
+              // On timed-out retry, extend timeout by 50% (pass hint via taskId suffix)
+              const retryTaskId = isTimedOut ? taskId + '-retry-extended' : taskId + '-retry';
+              taskResult = await dispatchTask(
+                { prompt: prompt, taskId: retryTaskId, phaseId: String(phaseId), planPath: latestPlan, cwd: projectDir },
+                {
+                  onToolCall: function(toolName, ts) {
+                    pushActivityEvent('tool_call', retryTaskId + ' used ' + toolName);
+                  },
+                  timeoutMultiplier: isTimedOut ? 1.5 : 1,
+                }
+              );
+              // Update retry checkpoint with final state
+              const retryFinalState = taskResult.success ? 'completed' : (
+                (taskResult.error && (taskResult.error.includes('timeout') || taskResult.error.includes('stuck'))) ? 'timed-out' : 'failed'
+              );
+              try {
+                fs.writeFileSync(retryCheckpointPath, JSON.stringify({
+                  taskId: taskId + '-retry', phaseId: String(phaseId), planNumber: planNum,
+                  taskState: retryFinalState, status: taskResult.success ? 'completed' : 'failed',
+                  completedAt: new Date().toISOString(), error: taskResult.error || null,
+                }, null, 2));
+              } catch { /* ignore */ }
+            } catch (retryErr) {
+              taskResult = {
+                success: false,
+                stdout: '',
+                stderr: '',
+                metrics: { tokens_in: 0, tokens_out: 0, elapsed_ms: 0 },
+                error: 'Retry failed: ' + String(retryErr.message || retryErr),
+              };
+            }
+          }
+
+          // Write sidecar result file (Task 3)
+          const resultFile = path.join(buildDir, taskId + '-result.json');
+          const sidecarPayload = {
+            taskName: taskDef.name,
+            success: taskResult.success,
+            stdout: (taskResult.stdout || '').slice(0, 500),
+            stderr: (taskResult.stderr || '').slice(0, 200),
+            metrics: taskResult.metrics || {},
+            error: taskResult.error || null,
+          };
+          try {
+            fs.writeFileSync(resultFile, JSON.stringify(sidecarPayload, null, 2), 'utf-8');
+          } catch { /* ignore */ }
+
+          allTaskResults.push({ taskName: taskDef.name, success: taskResult.success, filesModified: [], error: taskResult.error });
+
+          if (taskResult.success) {
+            log('    [PASS] ' + taskDef.name);
+          } else {
+            log('    [FAIL] ' + taskDef.name + (taskResult.error ? ': ' + taskResult.error.slice(0, 120) : ''));
+          }
+        }
+      }
+
+      // ── Run verification from frontmatter ────────────────────────────────────
+      let verificationResult = { passed: true, results: [] };
+      const fm = parsedPlan.frontmatter || {};
+      if (Array.isArray(fm.verify) && fm.verify.length > 0) {
+        log('  Running verification commands...');
+        const verifyCommands = fm.verify.map(function(v) {
+          return typeof v === 'string' ? { command: v, expect: 'exit_0' } : v;
+        });
+        verificationResult = runVerification(verifyCommands, projectDir);
+        log('  Verification: ' + (verificationResult.passed ? 'PASSED' : 'FAILED'));
+      }
+
+      // ── Generate SUMMARY.md ──────────────────────────────────────────────────
+      // Derive commit hash after git commit below; placeholder for now
+      const buildEndTime = new Date();
+
+      // ── Git commit ───────────────────────────────────────────────────────────
+      let commitHash = '';
+      try {
+        const { execFileSync } = require('child_process');
+        execFileSync('git', ['add', '-u'], { cwd: projectDir, stdio: 'pipe' });
+        const commitMsg = `build(phase-${phaseId}): complete plan ${planNum} via direct dispatch`;
+        execFileSync('git', ['commit', '-m', commitMsg], { cwd: projectDir, stdio: 'pipe' });
+        try {
+          commitHash = execFileSync('git', ['rev-parse', '--short', 'HEAD'], {
+            cwd: projectDir, stdio: 'pipe', encoding: 'utf-8',
+          }).trim();
+        } catch { /* ignore */ }
+        log('  Git commit: ' + (commitHash || 'done'));
+      } catch (commitErr) {
+        log('  Git commit skipped: ' + String(commitErr.message || commitErr).slice(0, 120));
+      }
+
+      const summaryContent = generateSummary({
+        phaseId: String(phaseId),
+        planNumber: planNum,
+        planPath: latestPlan,
+        taskResults: allTaskResults,
+        verificationResult: verificationResult,
+        commitHash: commitHash,
+        startTime: buildStartTime,
+        endTime: buildEndTime,
+      });
+
+      // Write SUMMARY.md next to PLAN.md
+      const summaryBase = planBase.replace(/-PLAN\.md$/, '-SUMMARY.md').replace(/^PLAN\.md$/, 'SUMMARY.md');
+      const summaryPath = path.join(path.dirname(latestPlan), summaryBase);
+      try {
+        fs.writeFileSync(summaryPath, summaryContent, 'utf-8');
+        log('  SUMMARY.md written: ' + path.relative(projectDir, summaryPath));
+      } catch (writeErr) {
+        log('  Warning: could not write SUMMARY.md: ' + String(writeErr.message || writeErr).slice(0, 120));
+      }
+
+      const allSucceeded = allTaskResults.every(function(r) { return r.success; });
+      const buildStdout = allTaskResults.map(function(r) {
+        return (r.success ? '[PASS] ' : '[FAIL] ') + r.taskName;
+      }).join('\n');
+
+      return { success: allSucceeded, stdout: buildStdout };
     }
 
     case 'review':
@@ -2334,6 +2729,10 @@ async function main() {
     // ─── SEQUENTIAL FALLBACK (--no-speculative) ───────────────────────────────
     log('Mode: sequential (--no-speculative)');
 
+  // Load or initialize auto-state for phase_states tracking
+  let autoState = loadAutoState(projectDir) || {};
+  if (!autoState.phase_states) autoState.phase_states = {};
+
   for (const phase of phasesToRun) {
     // If resuming, skip phases before the saved phase
     if (resumeState && comparePhaseNum(phase.id, resumeState.phase) < 0) {
@@ -2384,20 +2783,40 @@ async function main() {
     pushActivityEvent('auto', `Phase ${phase.id}: ${phase.name} started`);
     logEvent('phase-start', { phase: phase.id, msg: phase.name });
 
-    // Determine which steps to run for this phase
-    let stepsToRun = [...PHASE_STEPS];
+    // ── State-machine-driven sequential execution ────────────────────────────
+    // Initialize phase state from auto-state or default to 'pending'
+    // Apply resume-state mapping for the first resuming phase
+    let initialPhaseState = 'pending';
     if (resumeState && phase.id === resumeState.phase) {
-      const completedSteps = resumeState.steps_completed || [];
-      stepsToRun = PHASE_STEPS.filter(s => !completedSteps.includes(s));
+      // Map resume step back to a retryable state so state machine can re-run it
+      const stepToState = { 'plan-work': 'pending', 'plan-review': 'planned', 'build': 'reviewed', 'review': 'verifying' };
+      initialPhaseState = stepToState[resumeState.step] || 'pending';
       resumeState = null; // Only apply resume logic to the first matching phase
+    } else if (autoState && autoState.phase_states && autoState.phase_states[phase.id]) {
+      initialPhaseState = migratePhaseState(autoState.phase_states[phase.id]);
     }
 
+    // Skip completed phases
+    if (initialPhaseState === 'complete') {
+      log(`  Phase ${phase.id} already complete — skipping`);
+      _autoStatus.phasesSkipped++;
+      continue;
+    }
+
+    let phaseState = initialPhaseState;
     const completedSteps = [];
     let currentPlanPath = null;
 
-    for (const step of stepsToRun) {
+    // Safety: prevent infinite loops
+    const MAX_PHASE_TRANSITIONS = 12;
+    let transitionCount = 0;
+
+    while (phaseState !== 'complete' && transitionCount < MAX_PHASE_TRANSITIONS) {
+      transitionCount++;
+
       // Budget check (with cost estimate)
       if (opts.budget && totalCostEstimate >= opts.budget) {
+        const step = STATE_TO_STEP[phaseState] || phaseState;
         log(`Budget ceiling reached ($${totalCostEstimate.toFixed(2)} >= $${opts.budget})`);
 
         // Log budget decision
@@ -2412,6 +2831,7 @@ async function main() {
           affects: phasesToRun.filter(p => comparePhaseNum(p.id, phase.id) >= 0).map(p => `Phase ${p.id}`).join(', '),
         });
 
+        updatePhaseState(autoState, phase.id, phaseState);
         writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
           active: false,
           phase: phase.id,
@@ -2427,6 +2847,28 @@ async function main() {
         log('State saved for resume. Exiting.');
         process.exit(0);
       }
+
+      const step = STATE_TO_STEP[phaseState];
+      if (!step) {
+        log(`  Phase ${phase.id} in state "${phaseState}" — no step to execute`);
+        break;
+      }
+
+      // Map step to in-progress state
+      const IN_PROGRESS_MAP = { 'plan-work': 'planning', 'plan-review': 'reviewing', 'build': 'building', 'review': 'verifying' };
+      const inProgressState = IN_PROGRESS_MAP[step];
+      phaseState = transitionPhase(phaseState, inProgressState);
+      updatePhaseState(autoState, phase.id, phaseState);
+      saveAutoState(projectDir, {
+        phase: phase.id,
+        active: true,
+        step,
+        steps_completed: completedSteps,
+        total_cost_estimate: totalCostEstimate,
+        retry_count: retryCount,
+        phase_plan_paths: currentPlanPath ? { [phase.id]: path.relative(projectDir, currentPlanPath) } : {},
+        phase_states: autoState.phase_states,
+      });
 
       // Write enriched status before each step starts
       _autoStatus.stepStartedAt = new Date().toISOString();
@@ -2461,6 +2903,7 @@ async function main() {
           decision: `Saved state for --resume. Re-run after API recovery.`,
           affects: `Phase ${phase.id}, step ${step}`,
         });
+        updatePhaseState(autoState, phase.id, phaseState);
         writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
           active: false,
           phase: phase.id,
@@ -2479,6 +2922,47 @@ async function main() {
 
       let stepSucceeded = !outcome.skipped;
       const sessionCost = outcome.cost || 0;
+
+      // Post-step artifact verification — treat missing artifacts as step failure, not fatal
+      if (step === 'plan-work' && stepSucceeded) {
+        currentPlanPath = findLatestPlan(projectDir, phase.id);
+        if (!currentPlanPath) {
+          log(`  ✗ plan-work succeeded but no PLAN.md found — treating as failure`);
+          stepSucceeded = false;
+          const decId = nextDecisionId(projectDir);
+          appendDecision(projectDir, {
+            id: decId,
+            title: `plan-work produced no PLAN.md for phase ${phase.id}`,
+            status: 'ACTIVE ⚠ NEEDS REVIEW',
+            confidence: 'LOW',
+            context: `plan-work exited 0 but no PLAN.md was created in the phase directory`,
+            decision: `Phase ${phase.id} cannot continue without a plan. Stopping phase.`,
+            affects: `Phase ${phase.id}`,
+          });
+        } else {
+          log(`    Plan created: ${path.relative(projectDir, currentPlanPath)}`);
+        }
+      }
+
+      if (step === 'build' && stepSucceeded) {
+        if (!summaryExists(currentPlanPath)) {
+          log(`  ✗ build succeeded but no SUMMARY.md found — treating as failure`);
+          stepSucceeded = false;
+          const decId = nextDecisionId(projectDir);
+          appendDecision(projectDir, {
+            id: decId,
+            title: `build produced no SUMMARY.md for phase ${phase.id}`,
+            status: 'ACTIVE ⚠ NEEDS REVIEW',
+            confidence: 'LOW',
+            context: `build exited 0 but no SUMMARY.md was created`,
+            decision: `Phase ${phase.id} build incomplete. Stopping phase.`,
+            affects: `Phase ${phase.id}`,
+          });
+        } else {
+          plansExecuted++;
+          log('    SUMMARY.md verified');
+        }
+      }
 
       if (stepSucceeded) {
         completedSteps.push(step);
@@ -2511,6 +2995,17 @@ async function main() {
           metrics,
         });
 
+        // Success: transition to next phase state
+        const SUCCESS_MAP = { planning: 'planned', reviewing: 'reviewed', building: 'verifying', verifying: 'complete' };
+        phaseState = transitionPhase(phaseState, SUCCESS_MAP[phaseState]);
+
+        const stepType = step === 'plan-work' ? 'plan' : step === 'plan-review' ? 'review' : step;
+        const elapsed = _autoStatus.stepStartedAt
+          ? Math.round((Date.now() - new Date(_autoStatus.stepStartedAt).getTime()) / 1000) + 's'
+          : '';
+        pushActivityEvent(stepType, `${step} completed for Phase ${phase.id}${elapsed ? ` (${elapsed})` : ''}`);
+        log(`  ✓ ${step} complete`);
+
         // Write enriched status after step completes
         writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
           phase: phase.id,
@@ -2523,92 +3018,59 @@ async function main() {
           budget: opts.budget || null,
           last_log_line: `${step} complete`,
         }));
-      }
+      } else {
+        // Failure: transition to failed state
+        const FAIL_MAP = { planning: 'plan-failed', reviewing: 'review-failed', building: 'build-failed', verifying: 'verify-failed' };
+        phaseState = transitionPhase(phaseState, FAIL_MAP[phaseState]);
 
-      // Post-step verification — treat missing artifacts as step failure, not fatal
-      if (step === 'plan-work' && stepSucceeded) {
-        currentPlanPath = findLatestPlan(projectDir, phase.id);
-        if (!currentPlanPath) {
-          log(`  ✗ plan-work succeeded but no PLAN.md found — treating as failure`);
-          stepSucceeded = false;
-          completedSteps.pop(); // remove plan-work from completed
-          const decId = nextDecisionId(projectDir);
-          appendDecision(projectDir, {
-            id: decId,
-            title: `plan-work produced no PLAN.md for phase ${phase.id}`,
-            status: 'ACTIVE ⚠ NEEDS REVIEW',
-            confidence: 'LOW',
-            context: `plan-work exited 0 but no PLAN.md was created in the phase directory`,
-            decision: `Phase ${phase.id} cannot continue without a plan. Stopping phase.`,
-            affects: `Phase ${phase.id}`,
-          });
-          break; // exit steps loop — phase is incomplete
+        if (outcome.skipped) {
+          pushActivityEvent('error', `${step} failed for Phase ${phase.id}: ${outcome.reason || 'unknown'}`);
         }
-        log(`    Plan created: ${path.relative(projectDir, currentPlanPath)}`);
-      }
 
-      if (step === 'build' && stepSucceeded) {
-        if (!summaryExists(currentPlanPath)) {
-          log(`  ✗ build succeeded but no SUMMARY.md found — treating as failure`);
-          stepSucceeded = false;
-          completedSteps.pop(); // remove build from completed
-          const decId = nextDecisionId(projectDir);
-          appendDecision(projectDir, {
-            id: decId,
-            title: `build produced no SUMMARY.md for phase ${phase.id}`,
-            status: 'ACTIVE ⚠ NEEDS REVIEW',
-            confidence: 'LOW',
-            context: `build exited 0 but no SUMMARY.md was created`,
-            decision: `Phase ${phase.id} build incomplete. Stopping phase.`,
-            affects: `Phase ${phase.id}`,
-          });
-          break; // exit steps loop — phase is incomplete
+        // Check retry budget
+        const retryKey = `${phase.id}:${step}`;
+        const retries = retryCount[retryKey] || 0;
+        if (retries < 2) {
+          retryCount[retryKey] = retries + 1;
+          log(`  ${step} failed — retrying (attempt ${retries + 2})`);
+          // Transition back to retryable state
+          const retryTarget = PHASE_TRANSITIONS[phaseState][0];
+          phaseState = transitionPhase(phaseState, retryTarget);
+        } else {
+          log(`  ${step} failed after ${retries + 1} attempts — giving up on phase ${phase.id}`);
+          break;
         }
-        plansExecuted++;
-        log('    SUMMARY.md verified');
       }
 
-      if (stepSucceeded) {
-        const stepType = step === 'plan-work' ? 'plan' : step === 'plan-review' ? 'review' : step;
-        const elapsed = _autoStatus.stepStartedAt
-          ? Math.round((Date.now() - new Date(_autoStatus.stepStartedAt).getTime()) / 1000) + 's'
-          : '';
-        pushActivityEvent(stepType, `${step} completed for Phase ${phase.id}${elapsed ? ` (${elapsed})` : ''}`);
-        log(`  ✓ ${step} complete`);
-      } else if (outcome.skipped) {
-        pushActivityEvent('error', `${step} failed for Phase ${phase.id}: ${outcome.reason || 'unknown'}`);
-      }
-    }
-
-    // Only mark phase complete if critical steps succeeded
-    const criticalSteps = ['plan-work', 'plan-review', 'build'];
-    const criticalsMissing = criticalSteps.filter(s => !completedSteps.includes(s));
-    if (criticalsMissing.length > 0) {
-      log(`Phase ${phase.id} INCOMPLETE — missing critical steps: ${criticalsMissing.join(', ')}`);
-      log(`  Saving state for --resume. Run again to retry.`);
-      _autoStatus.phasesFailed++;
-      // Persist for --resume in sequential mode
+      updatePhaseState(autoState, phase.id, phaseState);
       saveAutoState(projectDir, {
         phase: phase.id,
         active: true,
-        step: criticalsMissing[0],
+        step: STATE_TO_STEP[phaseState] || step,
         steps_completed: completedSteps,
         total_cost_estimate: totalCostEstimate,
         retry_count: retryCount,
         phase_plan_paths: currentPlanPath ? { [phase.id]: path.relative(projectDir, currentPlanPath) } : {},
-        step_history: _autoStatus.stepHistory,
+        phase_states: autoState.phase_states,
       });
+    }
+
+    // Only mark phase complete if it reached the 'complete' state
+    if (phaseState !== 'complete') {
+      log(`Phase ${phase.id} INCOMPLETE — state: ${phaseState}`);
+      log(`  Saving state for --resume. Run again to retry.`);
+      _autoStatus.phasesFailed++;
       writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
         active: false,
         phase: phase.id,
         phase_name: phase.name,
-        step: criticalsMissing[0],
-        step_index: PHASE_STEPS.indexOf(criticalsMissing[0]),
+        step: STATE_TO_STEP[phaseState] || phaseState,
+        step_index: PHASE_STEPS.indexOf(STATE_TO_STEP[phaseState] || ''),
         steps_completed: completedSteps,
         current_plan_path: currentPlanPath ? path.relative(projectDir, currentPlanPath) : null,
         total_cost_estimate: totalCostEstimate,
         budget: opts.budget || null,
-        last_log_line: `Phase ${phase.id} INCOMPLETE — missing: ${criticalsMissing.join(', ')}`,
+        last_log_line: `Phase ${phase.id} INCOMPLETE — state: ${phaseState}`,
       }));
       break; // exit phases loop — don't continue to next phase
     }
@@ -2620,6 +3082,7 @@ async function main() {
     });
     updateStateViaGsd(projectDir, phase.id);
     phase_costs[phase.id] = aggregatePhaseMetrics(_autoStatus.stepHistory, phase.id);
+    updatePhaseState(autoState, phase.id, 'complete');
     saveAutoState(projectDir, {
       phase: phase.id,
       active: true,
@@ -2628,6 +3091,7 @@ async function main() {
       retry_count: retryCount,
       phase_plan_paths: currentPlanPath ? { [phase.id]: path.relative(projectDir, currentPlanPath) } : {},
       phase_costs,
+      phase_states: autoState.phase_states,
     });
     _autoStatus.phasesCompleted++;
     writeAutoStatus(projectDir, buildAutoStatus(projectDir, {
@@ -3557,11 +4021,19 @@ function handleShutdown(signal) {
   const stateDir = _autoStatus.projectDir;
   try { process.stderr.write(`\nAuto-orchestrator received ${signal} — shutting down gracefully\n`); } catch { /* */ }
 
-  // Kill active child process
-  if (_activeChild) {
-    try { _activeChild.kill('SIGTERM'); } catch { /* already dead */ }
+  // Kill active child process (process group kill for reliable termination)
+  if (_activeChild && _activeChild.pid) {
+    try { process.kill(-_activeChild.pid, 'SIGTERM'); } catch { /* already dead */ }
     _activeChild = null;
   }
+
+  // Kill all active task children from direct dispatch (D11)
+  try {
+    const { _activeTaskChildren } = require('./lib/index.cjs');
+    for (const pid of _activeTaskChildren) {
+      try { process.kill(-pid, 'SIGTERM'); } catch { /* already dead */ }
+    }
+  } catch { /* ignore if module unavailable */ }
 
   // Write interrupted status to .auto-state.json
   if (stateDir) {

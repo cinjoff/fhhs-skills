@@ -10,6 +10,38 @@ What to run autonomously: $ARGUMENTS
 
 ---
 
+## Architecture: 2-Layer Direct Dispatch
+
+The auto-orchestrator uses a 2-layer architecture:
+- **Layer 1: Orchestrator** (`auto-orchestrator.cjs`) — state machine managing phase lifecycle, spawning task sessions, handling retries and checkpoints
+- **Layer 2: Task sessions** (`claude -p` per task) — individual task execution with injected plan context
+
+For the build step, the orchestrator dispatches tasks directly via `claude -p` instead of invoking `/fh:build`. This eliminates the 3rd nesting layer.
+
+Interactive builds still use `/fh:build` with Agent tool dispatch.
+
+### Fallback
+
+Plans that can't be parsed for direct dispatch (missing XML tasks) fall back to `/fh:build` invocation.
+
+### State Machine
+
+Phase lifecycle: `pending → planning → planned → reviewing → reviewed → building → verifying → complete`
+Task lifecycle: `queued → dispatched → running → completed|failed|timed-out`
+
+Failed phases retry automatically (max 2 attempts). Timed-out tasks retry with extended timeout.
+
+### Shared Library
+
+Reusable modules at `.claude/skills/auto/lib/`:
+- `task-dispatch.cjs` — per-task `claude -p` spawning with process group kill
+- `context-injection.cjs` — build task prompts from plan context
+- `wave-analysis.cjs` — parse PLAN.md into ordered wave groups
+- `verification.cjs` — run verification commands
+- `summary-generation.cjs` — generate SUMMARY.md content
+
+---
+
 ## Walk-Away Guide
 
 `/fh:auto` plans, reviews, builds, and reviews each phase without human intervention.
@@ -33,6 +65,25 @@ What to run autonomously: $ARGUMENTS
 - `.planning/DECISIONS.md` — check entries marked `LOW` confidence or `⚠ NEEDS REVIEW`
 - `.planning/phases/*/SUMMARY.md` — per-phase execution reports
 - Run `/fh:auto --check-corrections` after correcting any decisions
+
+---
+
+## Step 0: Tool Readiness
+
+claude-mem tools are **deferred** — they must be fetched before they can be called. Do this first, before any other work.
+
+```
+ToolSearch("+mcp-search", max_results: 10)
+```
+
+Also verify ast-grep CLI is available:
+```bash
+command -v sg &>/dev/null || command -v ast-grep &>/dev/null || echo "WARN: ast-grep not found"
+```
+
+These tools are used by downstream skills (plan-work, build, review) in their own sessions — no need to pass them forward.
+
+**If ToolSearch returns empty for claude-mem:** Fall back to Read-based approach for this session.
 
 ---
 
@@ -160,7 +211,13 @@ If DESIGN.md exists, use it throughout to ground UX/UI guidance in the project's
 
 claude-mem observations persist across sequential `claude -p` sessions. No explicit pre-indexing needed.
 
-**Pattern A (Past Learnings Check):** Derive project name from `.planning/PROJECT.md` name field (fall back to basename of cwd). Call `mcp__plugin_claude-mem_mcp-search__search` with query=2-3 keywords from the project domain, project=<project-name>, limit=10. Scan the returned index for relevant IDs — prioritize types: gotcha, decision, trade-off. For the top 2-3 relevant IDs, call `mcp__plugin_claude-mem_mcp-search__get_observations` with ids=[ID1, ID2, ID3] to fetch full details. If temporal context would help, call `mcp__plugin_claude-mem_mcp-search__timeline` with query=project domain keywords, depth_before=3. Present as: "**From prior sessions:** - {full observation detail}" — max 3 items. Budget: <2% context. Skip silently if no relevant results.
+**Pattern A (Past Learnings Check):** Derive project name consistently:
+```bash
+PROJECT_NAME=$(basename "$(git rev-parse --show-toplevel 2>/dev/null)" 2>/dev/null || basename "$(pwd)")
+```
+Use `$PROJECT_NAME` as the `project` parameter for all claude-mem calls.
+
+Call `mcp__plugin_claude-mem_mcp-search__search` with query=2-3 keywords from the project domain, project=<project-name>, limit=10. Scan the returned index for relevant IDs — prioritize types: gotcha, decision, trade-off. For the top 2-3 relevant IDs, call `mcp__plugin_claude-mem_mcp-search__get_observations` with ids=[ID1, ID2, ID3] to fetch full details. If temporal context would help, call `mcp__plugin_claude-mem_mcp-search__timeline` with query=project domain keywords, depth_before=3. Present as: "**From prior sessions:** - {full observation detail}" — max 3 items. Max 3 items. Skip silently if no relevant results.
 
 Identify what's well-defined vs what has gaps: missing vision, vague success criteria, no differentiation story, unclear scope ambition, missing UX/domain research, missing design context.
 
@@ -170,7 +227,11 @@ This step runs even when the full workshop is skipped. It takes <30 seconds and 
 
 1. **Read PROJECT.md, REQUIREMENTS.md, ROADMAP.md** — confirm they exist and are non-trivial (>3 lines each)
 2. **Flag critical gaps silently** — if any of these are missing or empty, warn the user: "I'm skipping the workshop as requested, but I noticed [gap]. The pipeline may produce suboptimal results."
-3. **Quick domain check (Pattern A)** — call `mcp__plugin_claude-mem_mcp-search__search` with query=2-3 project keywords, project=<project-name>, limit=10. Scan the returned index for relevant IDs — prioritize types: gotcha, decision. For the top 2-3 relevant IDs, call `mcp__plugin_claude-mem_mcp-search__get_observations` with ids=[ID1, ID2, ID3] to fetch full details. Surface any relevant prior learnings that might affect the build. Skip silently if no relevant results.
+3. **Quick domain check (Pattern A)** — derive project name consistently:
+   ```bash
+   PROJECT_NAME=$(basename "$(git rev-parse --show-toplevel 2>/dev/null)" 2>/dev/null || basename "$(pwd)")
+   ```
+   Use `$PROJECT_NAME` as the `project` parameter for all claude-mem calls. Call `mcp__plugin_claude-mem_mcp-search__search` with query=2-3 project keywords, project=<project-name>, limit=10. Scan the returned index for relevant IDs — prioritize types: gotcha, decision. For the top 2-3 relevant IDs, call `mcp__plugin_claude-mem_mcp-search__get_observations` with ids=[ID1, ID2, ID3] to fetch full details. Surface any relevant prior learnings that might affect the build. Skip silently if no relevant results.
 4. **Validate phase readiness** — check that at least the first incomplete phase has a clear goal in ROADMAP.md. If the goal is vague (e.g., "improve things"), warn: "Phase N goal is vague — the planning step may struggle. Consider clarifying before proceeding."
 
 This step NEVER blocks execution. It only warns. The user already said "go" — respect that while providing visibility.
@@ -508,3 +569,9 @@ node "$ORCHESTRATOR" --project-dir "$(pwd)" --check-corrections
 ```
 
 This mode is useful after a human reviews DECISIONS.md and marks entries as CORRECTED — the cascade propagates those corrections to affected artifacts automatically where possible.
+
+---
+
+### Cross-Session Output
+
+**[auto-output]** Milestone: {name}. Phases completed: {count}/{total}. Total plans: {executed}. Decisions logged: {count}. Issues: {unresolved_count}.

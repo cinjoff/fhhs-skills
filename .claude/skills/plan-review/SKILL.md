@@ -10,6 +10,23 @@ allowed-tools:
   - mcp__conductor__AskUserQuestion
 ---
 
+## Step 0: Tool Readiness
+
+claude-mem tools are **deferred** — they must be fetched before they can be called. Do this first, before any other work.
+
+```
+ToolSearch("+mcp-search", max_results: 10)
+```
+
+Also verify ast-grep CLI is available:
+```bash
+command -v sg &>/dev/null || command -v ast-grep &>/dev/null || echo "WARN: ast-grep not found"
+```
+
+**If ToolSearch returns empty for claude-mem:** Fall back to Read-based approach for this session.
+
+---
+
 > **Dependency check:** Verify `.planning/PROJECT.md` exists (required — if missing, tell user: "No project found.\n\n→ Run `/fh:new-project` — set up project tracking before reviewing plans"). If no plan exists in the current phase, tell user: "No plan to review.\n\n→ Run `/fh:plan-work` — create a plan first".
 
 > Forked from gstack plan-ceo-review (v0.3.3)
@@ -18,7 +35,7 @@ allowed-tools:
 
 The user wants reviewed: $ARGUMENTS
 
-You are a **lean orchestrator**. Stay under 20% context usage. This skill is interactive — preserve context for the back-and-forth with the user.
+You are the **review orchestrator**. Follow every step below — each one exists because skipping it caused real failures in past sessions. This skill is interactive — preserve context for the back-and-forth with the user.
 
 Do NOT make any code changes. Do NOT start implementation. Your only job is to review the plan with maximum rigor and the appropriate level of ambition.
 
@@ -70,7 +87,7 @@ Never skip Step 0, the system audit, the error/rescue map, or the failure modes 
 
 ## Past Learnings Check (Pattern A)
 
-Run at the start of this review. Derive project name from `.planning/PROJECT.md` name field (fall back to basename of cwd). Call `mcp__plugin_claude-mem_mcp-search__search` with query=2-3 keywords from the plan's domain, project=<project-name>, limit=10. Scan for relevant IDs — prioritize types: gotcha, decision, trade-off. For the top 2-3 IDs, call `mcp__plugin_claude-mem_mcp-search__get_observations` with ids=[ID1, ID2, ID3]. Present as: "**Prior context:** - {observation}" — max 3 items. Feed into review as input context. Budget: <2% context. Skip silently if no relevant results.
+Run at the start of this review. Derive project name from `.planning/PROJECT.md` name field (fall back to basename of cwd). Call `mcp__plugin_claude-mem_mcp-search__search` with query=2-3 keywords from the plan's domain, project=<project-name>, limit=10. Scan for relevant IDs — prioritize types: gotcha, decision, trade-off. For the top 2-3 IDs, call `mcp__plugin_claude-mem_mcp-search__get_observations` with ids=[ID1, ID2, ID3]. Present as: "**Prior context:** - {observation}" — max 3 items. Feed into review as input context. Max 3 items. Skip silently if no relevant results.
 
 ---
 
@@ -103,15 +120,90 @@ Run scope challenge per @references/scope-challenge.md
 
 ---
 
-## Review Sections (6 sections, after scope and mode are agreed)
+## Step 2: Parallel Review Dispatch
 
-Run business review sections per @references/review-sections.md
+Dispatch 2 agents in parallel via the Agent tool. Each receives the plan, CONTEXT.md, mode selection, and system audit findings.
+
+### Agent 1: Business Review (Sections 1-6)
+
+```
+Agent({
+  subagent_type: "fh:code-reviewer",
+  prompt: "<business review prompt>"
+})
+```
+
+**Business review prompt includes:**
+- PLAN.md content (full)
+- CONTEXT.md locked decisions
+- Mode: {EXPANSION|HOLD|REDUCTION}
+- System audit findings from PRE-REVIEW SYSTEM AUDIT
+- Review criteria from @references/review-sections.md
+- Review sections to cover:
+  1. Scope & Requirements Alignment
+  2. User Stories & Acceptance Criteria
+  3. UX & Design Consistency
+  4. Risk Assessment & Mitigation
+  5. Dependencies & Integration Points
+  6. Correctness & Completeness
+
+**Tool instructions:**
+```
+Use claude-mem smart tools for codebase context:
+- smart_search({query}) — find code patterns across codebase
+- smart_outline({path}) — see file structure without full read
+- smart_unfold({path, symbol}) — extract specific functions
+- search({query, project}) + get_observations({ids}) — find prior decisions
+
+Use ast-grep for structural code analysis:
+- sg --pattern '<pattern>' --lang typescript src/
+```
+
+**Output format:** Each finding: Section number, Severity (CRITICAL/WARNING/OK), Description, Recommendation, Evidence (file:line or code snippet).
+
+### Agent 2: Engineering Review (Sections 7-10)
+
+```
+Agent({
+  subagent_type: "fh:code-reviewer",
+  prompt: "<engineering review prompt>"
+})
+```
+
+**Engineering review prompt includes:**
+- PLAN.md content (full)
+- CONTEXT.md locked decisions
+- Engineering review criteria from @references/engineering-review.md
+- Architecture artifacts (FLOWS.md, ERD.md if exist)
+- Review sections to cover:
+  7. Architecture & Code Quality
+  8. Testing Strategy & Coverage
+  9. Performance & Scalability
+  10. Security & Error Handling
+
+**Same tool instructions block as Agent 1.**
+
+**Output format:** Same as Agent 1.
+
+### Agent Failure Handling
+
+- Timeout: 5 minutes per agent. If one times out, proceed with the other agent's findings only.
+- If one agent fails entirely: log WARNING "Business/Engineering review incomplete — {agent} failed: {error}". Continue with other agent's findings.
+- If both fail: fall back to inline review (run sections manually) as degraded mode.
 
 ---
 
-## Engineering Review Sections (4 sections, after business review)
+## Step 3: Merge & Gate
 
-Run engineering review per @references/engineering-review.md
+After both agents complete (or one completes + other failed/timed out):
+
+1. Collect findings from both agents (or single agent if one failed)
+2. Deduplicate (same issue found by both → keep higher severity)
+3. Classify: CRITICAL GAP / WARNING / OK per section
+4. If mode is EXPANSION: identify delight opportunities from Agent 1 findings
+5. Present merged findings to user via AskUserQuestion (one per CRITICAL, batched for WARNING)
+6. Update PLAN.md: add new must_haves.truths with [review] prefix
+7. Update CONTEXT.md: append review decisions
 
 ---
 
@@ -274,6 +366,12 @@ After the review is complete, run Pattern D from @.claude/skills/shared/claude-m
    **[plan-review-learning]** {area}: {decision or concern} — {rationale}
 4. Max 3 findings per review
 5. Skip silently if no significant architectural decisions were made
+
+---
+
+### Cross-Session Output
+
+**[plan-review-output]** Phase {N} Plan {NN}: Mode={mode}. New truths: {count}. Decisions added: {count}. Gate: {PASS/WARN/BLOCK}. Critical findings: {summary}.
 
 ---
 

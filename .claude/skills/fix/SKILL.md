@@ -28,7 +28,24 @@ Follow **Pattern A** (Past Learnings Check) from `shared/claude-mem-rules.md`. K
 
 ---
 
-## Step 0: Check Runtime Errors
+## Step 0: Tool Readiness
+
+claude-mem tools are **deferred** — they must be fetched before they can be called. Do this first, before any other work.
+
+```
+ToolSearch("+mcp-search", max_results: 10)
+```
+
+Also verify ast-grep CLI is available:
+```bash
+command -v sg &>/dev/null || command -v ast-grep &>/dev/null || echo "WARN: ast-grep not found"
+```
+
+**If ToolSearch returns empty for claude-mem:** Fall back to Read-based approach for this session.
+
+---
+
+## Step 0.5: Check Runtime Errors
 
 Before triaging from code alone, check if the local error store has runtime context.
 
@@ -49,7 +66,7 @@ node lib/sentry-local-query.mjs recent --minutes 60
 
 4. If `NO_STORE`: skip this step silently. The project may not have observability set up.
 
-This step should consume <2% context. Don't deep-dive the errors yet — just surface them as input to triage.
+Don't deep-dive the errors yet — just surface them as input to triage.
 
 ---
 
@@ -68,13 +85,11 @@ If Fallow ran and produced non-empty output, scan results for entries related to
 
 If fallow is NOT installed: skip this step silently. Do not mention Fallow.
 
-Budget: less than 1% context.
-
 ---
 
 ## Step 1: Triage
 
-Quickly assess bug depth before choosing strategy. Spend <5% context.
+Quickly assess bug depth before choosing strategy.
 
 **Token-efficient code navigation:** Use **Pattern B** (Code Structure Exploration) from `shared/claude-mem-rules.md` — smart_outline/smart_unfold before full Read.
 
@@ -105,9 +120,57 @@ If Fallow findings were collected in Step 0.5, cross-reference them here first �
 
 Execute the chosen path:
 - **SIMPLE:** Skip to Step 2 — cause is clear from triage.
-- **MODERATE:** Read `skills/systematic-debugging/PROMPT.md` and follow it completely. Then Step 2.
-- **PARALLEL:** Dispatch one **`fh:gsd-debugger`** agent per subsystem (specialized — scientific debugging with hypothesis tracking). Each agent gets: the specific failure, relevant files, and instruction to produce root cause + proposed fix. Collect results. Then Step 2 for each fix.
-- **COMPLEX:** Write triage findings to `.planning/debug/{issue-slug}.md` with: error message, files investigated, hypotheses formed, test results observed. Slug convention: `YYYY-MM-DD-{first-3-words-kebab}` (e.g., `2026-03-06-payment-timeout-error`). If slug exists, append `-2`. Then dispatch a `fh:gsd-debugger` agent with the session file for sustained scientific investigation. If user says try anyway → MODERATE path.
+- **MODERATE:** Follow the debugging methodology in @references/debugging-protocol.md. Then Step 2.
+- **PARALLEL:** Dispatch one **`fh:gsd-debugger`** agent per subsystem via:
+  ```
+  Agent({
+    subagent_type: "fh:gsd-debugger",
+    prompt: "<structured prompt below>"
+  })
+  ```
+  Each agent prompt includes:
+  1. The specific failure description and reproduction steps
+  2. Relevant files and error messages from triage
+  3. Tool instructions:
+     ```
+     ## Tools Available
+     Use claude-mem smart tools for code navigation:
+     - `smart_outline({path})` — see file structure without full read
+     - `smart_unfold({path, symbol})` — extract one function
+     - `smart_search({query})` — cross-codebase structural search
+
+     Use ast-grep for structural code search:
+     - `sg --pattern '<pattern>' --lang typescript src/` — find code patterns structurally
+     - Prefer over grep for code-aware matching (ignores comments/strings)
+
+     Use `Read` only for files you intend to `Edit`.
+     ```
+  4. Debugging methodology: "Follow hypothesis-driven debugging per @references/debugging-protocol.md"
+  5. Output format: "Report: Root Cause, Evidence, Proposed Fix, Files to Change, Confidence Level"
+
+  Collect results. Then Step 2 for each fix.
+- **COMPLEX:** Write triage findings to `.planning/debug/{issue-slug}.md` with: error message, files investigated, hypotheses formed, test results observed. Slug convention: `YYYY-MM-DD-{first-3-words-kebab}` (e.g., `2026-03-06-payment-timeout-error`). If slug exists, append `-2`. Then dispatch a `fh:gsd-debugger` agent with the session file for sustained scientific investigation via:
+  ```
+  Agent({
+    subagent_type: "fh:gsd-debugger",
+    prompt: "<session file path + structured prompt>"
+  })
+  ```
+  Include tool instructions in the agent prompt:
+  ```
+  ## Tools Available
+  Use claude-mem smart tools for code navigation:
+  - `smart_outline({path})` — see file structure without full read
+  - `smart_unfold({path, symbol})` — extract one function
+  - `smart_search({query})` — cross-codebase structural search
+
+  Use ast-grep for structural code search:
+  - `sg --pattern '<pattern>' --lang typescript src/` — find code patterns structurally
+  - Prefer over grep for code-aware matching (ignores comments/strings)
+
+  Use `Read` only for files you intend to `Edit`.
+  ```
+  Follow hypothesis-driven debugging per @references/debugging-protocol.md. If user says try anyway → MODERATE path.
 
 **Todo integration:** After triage, scan `.planning/todos/` for items matching the bug (same file, same subsystem, or same error). If a todo matches, note its ID — mark it resolved after the fix lands in Step 2.
 
@@ -143,7 +206,7 @@ If the fix touches `.tsx`, `.css`, components, or styles:
 - Read `.planning/DESIGN.md` for design context
 - Quick check: does the fix maintain visual consistency?
 
-Use **Pattern B** from `shared/claude-mem-rules.md` for reading DECISIONS.md and DESIGN.md context. Check against `skills/frontend-design/PROMPT.md` anti-patterns — no generic cards, cyan-on-dark, purple gradients, or other AI slop introduced by the fix.
+Use **Pattern B** from `shared/claude-mem-rules.md` for reading DECISIONS.md and DESIGN.md context. Check against @references/frontend-review.md anti-patterns — no generic cards, cyan-on-dark, purple gradients, or other AI slop introduced by the fix.
 - If significant UI change, suggest `/fh:ui-test`
 
 ---
@@ -152,8 +215,7 @@ Use **Pattern B** from `shared/claude-mem-rules.md` for reading DECISIONS.md and
 
 ### Verification gate
 
-Before claiming the fix is complete, read `skills/verification-before-completion/PROMPT.md`
-and follow its gate function:
+Before claiming the fix is complete, follow the verification gate in @references/verification-checklist.md:
 
 1. **IDENTIFY** the verification command that proves the fix works:
    - The test written in Step 2 must pass
@@ -213,6 +275,12 @@ If `.planning/DECISIONS.md` exists, scan active decisions for entries whose Affe
 ### Persist Findings
 
 Follow **Pattern D** (Persist Findings) from `shared/claude-mem-rules.md`. Use tag `[fix-learning]`. Skip trivial fixes (typo, missing import, config change).
+
+---
+
+### Cross-Session Output
+
+**[fix-output]** Bug: {description}. Root cause: {summary}. Files fixed: {list}. Tests: {pass_count}/{total}. Pattern search: {similar_count} similar instances.
 
 ---
 

@@ -15284,7 +15284,7 @@
       "files": [],
       "assertions": [
         {
-          "text": "Does NOT skip brainstorm for Simple task — presents at least one alternative approach",
+          "text": "Does NOT skip brainstorm for Simple task \u2014 presents at least one alternative approach",
           "type": "guard"
         },
         {
@@ -15297,7 +15297,10 @@
         }
       ],
       "tier": "smoke",
-      "tags": ["engagement", "brainstorm"],
+      "tags": [
+        "engagement",
+        "brainstorm"
+      ],
       "checks": [
         {
           "type": "regex",
@@ -15335,7 +15338,10 @@
         }
       ],
       "tier": "smoke",
-      "tags": ["engagement", "spec"],
+      "tags": [
+        "engagement",
+        "spec"
+      ],
       "checks": [
         {
           "type": "regex",
@@ -15391,6 +15397,1880 @@
           "pattern": "warn|missing|\u26a0|not.found"
         }
       ]
+    },
+    {
+      "id": 426,
+      "command": "build",
+      "prompt": "Build the dashboard plan at .planning/phases/02-dashboard/02-01-PLAN.md. It has 3 tasks in 2 waves.",
+      "expected_output": "Should start with Step 0 (Tool Readiness) by fetching claude-mem deferred tools via ToolSearch. Then use claude-mem search/smart_search to find planning context before reading files. Reference Warm-Up should use smart_outline on testing-guide. Subagent prompts must use the inlined template with Tool Decision Tree (ast-grep), Code Navigation (smart_outline, smart_unfold, smart_search), and Deviation Rules. After waves complete, read finalize-build.md for post-build steps.",
+      "files": [
+        "evals/fixtures/nextjs-app-deep/.planning/PROJECT.md",
+        "evals/fixtures/nextjs-app-deep/.planning/STATE.md",
+        "evals/fixtures/nextjs-app-deep/.planning/ROADMAP.md",
+        "evals/fixtures/nextjs-app-deep/.planning/phases/02-dashboard/02-01-PLAN.md",
+        "evals/fixtures/nextjs-app-deep/.planning/codebase/CONVENTIONS.md",
+        "evals/fixtures/nextjs-app-deep/.planning/codebase/STRUCTURE.md"
+      ],
+      "assertions": [
+        {
+          "text": "Step 0: Fetches claude-mem deferred tools via ToolSearch before any other work",
+          "type": "behavioral"
+        },
+        {
+          "text": "Uses claude-mem search or smart_search for context loading before file reads",
+          "type": "behavioral"
+        },
+        {
+          "text": "Reference Warm-Up uses smart_outline on testing guide",
+          "type": "behavioral"
+        },
+        {
+          "text": "Subagent prompts contain Tool Decision Tree with ast-grep",
+          "type": "behavioral"
+        },
+        {
+          "text": "Subagent prompts contain Code Navigation section with smart_outline/smart_unfold/smart_search",
+          "type": "behavioral"
+        },
+        {
+          "text": "Subagent prompts contain Deviation Rules table",
+          "type": "behavioral"
+        },
+        {
+          "text": "References finalize-build.md for post-build steps",
+          "type": "behavioral"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ],
+      "tier": "smoke",
+      "tags": [
+        "fixture-required",
+        "happy-path",
+        "claude-mem",
+        "tool-compliance"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "ToolSearch|tool.?readiness|fetch.*deferred|deferred.*tool"
+        },
+        {
+          "type": "regex",
+          "pattern": "smart_search|smart_outline|smart_unfold|claude.?mem"
+        },
+        {
+          "type": "regex",
+          "pattern": "Tool Decision Tree|ast.?grep|\bsg\b.*structural"
+        },
+        {
+          "type": "regex",
+          "pattern": "Code Navigation|smart_outline|smart_unfold"
+        },
+        {
+          "type": "regex",
+          "pattern": "Deviation|deviation|Rule 1|Rule 4|template.*verbatim|Subagent Prompt Template"
+        },
+        {
+          "type": "regex",
+          "pattern": "finalize.?build"
+        }
+      ]
+    },
+    {
+      "id": 427,
+      "command": "build",
+      "prompt": "build the plan. it has 5 tasks: task 1 renames getUserById to findUserById across 8 files, task 2 extracts a shared validation module from 4 duplicated files, task 3 adds a new API endpoint, task 4 writes tests, task 5 updates docs",
+      "expected_output": "Should detect that tasks 1 and 2 involve multi-file structural changes (rename across 8 files, extract from 4 files) and add ast-grep tool hints to those task prompts. Tasks 3-5 are single-file or non-structural and should NOT get the ast-grep hint. All subagent prompts should use the inlined template with Tool Decision Tree, not ad-hoc prompts.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects task 1 (rename across 8 files) as ast-grep candidate and adds tool hint",
+          "type": "behavioral"
+        },
+        {
+          "text": "Detects task 2 (extract from 4 files) as ast-grep candidate and adds tool hint",
+          "type": "behavioral"
+        },
+        {
+          "text": "All subagent prompts use the template (contain Tool Decision Tree)",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does not write ad-hoc code-snippet prompts without template structure",
+          "type": "guard"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ],
+      "tier": "smoke",
+      "tags": [
+        "happy-path",
+        "ast-grep",
+        "tool-compliance"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "ast.?grep|\bsg\b|structural.?transform"
+        },
+        {
+          "type": "regex",
+          "pattern": "Tool.?hint|multi.?file.?structural|rename.*ast.?grep|extract.*ast.?grep"
+        },
+        {
+          "type": "regex",
+          "pattern": "Tool Decision Tree|template.*verbatim|Subagent Prompt Template|ast.?grep.*hint"
+        }
+      ]
+    },
+    {
+      "id": 428,
+      "command": "build",
+      "prompt": "Build the dashboard plan at .planning/phases/02-dashboard/02-01-PLAN.md",
+      "expected_output": "Should NOT read source files directly as orchestrator. Should use smart_search/smart_outline for context gathering, not raw Read/Grep/Glob on source code. Context loading uses claude-mem patterns (search by intent, not file path). Subagent prompts are filled from the inlined template, not written from scratch.",
+      "files": [
+        "evals/fixtures/nextjs-app-deep/.planning/PROJECT.md",
+        "evals/fixtures/nextjs-app-deep/.planning/STATE.md",
+        "evals/fixtures/nextjs-app-deep/.planning/phases/02-dashboard/02-01-PLAN.md"
+      ],
+      "assertions": [
+        {
+          "text": "Uses smart tools (smart_search, smart_outline, smart_unfold) for context gathering",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does not read source .ts/.tsx files directly as orchestrator",
+          "type": "guard"
+        },
+        {
+          "text": "Subagent prompts use template placeholders ({TASK_TEXT}, {CLAUDE_MD_SECTIONS}, etc)",
+          "type": "behavioral"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ],
+      "tier": "smoke",
+      "tags": [
+        "fixture-required",
+        "happy-path",
+        "claude-mem",
+        "context-efficiency"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "smart_search|smart_outline|smart_unfold"
+        },
+        {
+          "type": "regex",
+          "pattern": "TASK_TEXT|CLAUDE_MD_SECTIONS|DESIGN_DECISIONS|PROJECT_CONSTRAINTS|SHARED_REFERENCES"
+        },
+        {
+          "type": "forbidden_terms",
+          "terms": [
+            "Read src/",
+            "reading src/",
+            "cat src/"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 429,
+      "command": "build",
+      "prompt": "build the plan at .planning/phases/02-dashboard/02-01-PLAN.md. The plan has a spec: field pointing to a SPEC.md with Architecture and Failure Modes sections.",
+      "expected_output": "Should use smart_unfold to load SPEC.md sections (Architecture, Failure Modes, Quality Rubrics, Data Flow) instead of reading the whole file. Should map to placeholders SPEC_ARCHITECTURE, SPEC_FAILURE_MODES etc. Should query claude-mem for past mistakes via smart_search before dispatching.",
+      "files": [
+        "evals/fixtures/nextjs-app-deep/.planning/PROJECT.md",
+        "evals/fixtures/nextjs-app-deep/.planning/STATE.md",
+        "evals/fixtures/nextjs-app-deep/.planning/phases/02-dashboard/02-01-PLAN.md"
+      ],
+      "assertions": [
+        {
+          "text": "Uses smart_unfold to load SPEC.md sections, not full Read",
+          "type": "behavioral"
+        },
+        {
+          "text": "Maps SPEC sections to placeholders (SPEC_ARCHITECTURE, SPEC_FAILURE_MODES)",
+          "type": "behavioral"
+        },
+        {
+          "text": "Queries claude-mem for past mistakes before dispatching",
+          "type": "behavioral"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ],
+      "tier": "smoke",
+      "tags": [
+        "fixture-required",
+        "happy-path",
+        "claude-mem",
+        "spec-loading"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "smart_unfold.*Architecture|smart_unfold.*Failure"
+        },
+        {
+          "type": "regex",
+          "pattern": "SPEC_ARCHITECTURE|SPEC_FAILURE_MODES"
+        },
+        {
+          "type": "regex",
+          "pattern": "past.?mistakes|build.?learning|smart_search.*mistakes"
+        }
+      ]
+    },
+    {
+      "id": 430,
+      "command": "build",
+      "prompt": "build the plan. It has 2 tasks: task 1 adds a new component, task 2 adds an API route. Both are single-file changes.",
+      "expected_output": "Should populate conventions context (Step 2e) by routing task types: UI task gets CONVENTIONS.md + STRUCTURE.md, API task gets ARCHITECTURE.md + CONVENTIONS.md. Should do Reference Warm-Up (Step 2b) with smart_outline on testing-guide.md once, then reuse across both subagent prompts. Should populate {PROJECT_CONSTRAINTS} from CLAUDE.md Gotchas section (Step 2d).",
+      "files": [
+        "evals/fixtures/nextjs-app-deep/.planning/PROJECT.md",
+        "evals/fixtures/nextjs-app-deep/.planning/STATE.md",
+        "evals/fixtures/nextjs-app-deep/.planning/codebase/CONVENTIONS.md",
+        "evals/fixtures/nextjs-app-deep/.planning/codebase/STRUCTURE.md",
+        "evals/fixtures/nextjs-app-deep/.planning/codebase/ARCHITECTURE.md"
+      ],
+      "assertions": [
+        {
+          "text": "Routes UI task to CONVENTIONS + STRUCTURE, API task to ARCHITECTURE + CONVENTIONS",
+          "type": "behavioral"
+        },
+        {
+          "text": "Reference Warm-Up uses smart_outline on testing-guide once and reuses",
+          "type": "behavioral"
+        },
+        {
+          "text": "Populates PROJECT_CONSTRAINTS from CLAUDE.md Gotchas",
+          "type": "behavioral"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ],
+      "tier": "smoke",
+      "tags": [
+        "happy-path",
+        "context-routing",
+        "tool-compliance"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "CONVENTIONS|STRUCTURE|ARCHITECTURE"
+        },
+        {
+          "type": "regex",
+          "pattern": "smart_outline.*testing|Reference Warm|warm.?up"
+        },
+        {
+          "type": "regex",
+          "pattern": "PROJECT_CONSTRAINTS|Gotchas|constraints"
+        }
+      ]
+    },
+    {
+      "id": 431,
+      "command": "build",
+      "prompt": "Build the dashboard plan at .planning/phases/02-dashboard/02-01-PLAN.md. Task 1 modifies src/components/sidebar.tsx, src/app/page.tsx, src/app/layout.tsx. Task 2 modifies src/components/metric-card.tsx, src/components/chart-widget.tsx, src/app/page.tsx. Task 3 creates src/app/api/sse/route.ts and src/hooks/use-sse.ts.",
+      "expected_output": "Should pre-load file outlines using smart_outline for each task file before dispatching. For existing files (sidebar.tsx, page.tsx, layout.tsx, metric-card.tsx, chart-widget.tsx), run smart_outline to get function/export signatures. For new files (sse/route.ts, use-sse.ts), skip outline (file does not exist). Should trace imports/references for modified files to build impact context \u2014 e.g., find what imports sidebar.tsx or page.tsx. Inject FILE_OUTLINES and IMPACT_CONTEXT into subagent prompts.",
+      "files": [
+        "evals/fixtures/nextjs-app-deep/.planning/PROJECT.md",
+        "evals/fixtures/nextjs-app-deep/.planning/STATE.md",
+        "evals/fixtures/nextjs-app-deep/.planning/phases/02-dashboard/02-01-PLAN.md",
+        "evals/fixtures/nextjs-app-deep/src/components/sidebar.tsx",
+        "evals/fixtures/nextjs-app-deep/src/app/page.tsx",
+        "evals/fixtures/nextjs-app-deep/src/app/layout.tsx",
+        "evals/fixtures/nextjs-app-deep/src/components/metric-card.tsx",
+        "evals/fixtures/nextjs-app-deep/src/components/chart-widget.tsx"
+      ],
+      "assertions": [
+        {
+          "text": "Runs smart_outline on task files before dispatching subagents",
+          "type": "behavioral"
+        },
+        {
+          "text": "Traces imports/references using ast-grep or LSP to find dependent files",
+          "type": "behavioral"
+        },
+        {
+          "text": "Injects FILE_OUTLINES into subagent prompts",
+          "type": "behavioral"
+        },
+        {
+          "text": "Injects IMPACT_CONTEXT with dependent file info into subagent prompts",
+          "type": "behavioral"
+        },
+        {
+          "text": "Skips smart_outline for files being created (not yet existing)",
+          "type": "behavioral"
+        }
+      ],
+      "scenario_requires": [
+        "gsd_project"
+      ],
+      "tier": "smoke",
+      "tags": [
+        "fixture-required",
+        "happy-path",
+        "claude-mem",
+        "file-preloading",
+        "tool-compliance"
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "smart_outline.*sidebar|smart_outline.*page|smart_outline.*layout|outline.*task.?file"
+        },
+        {
+          "type": "regex",
+          "pattern": "ast.?grep.*import|sg.*import|findReferences|IMPACT_CONTEXT|impact.?context|blast.?radius|depend|import.*trac"
+        },
+        {
+          "type": "regex",
+          "pattern": "FILE_OUTLINES|file.?outline|pre.?load|smart_outline.*each file|outline.*file.*list|outline.*task"
+        }
+      ]
+    },
+    {
+      "id": 432,
+      "command": "plan-work",
+      "prompt": "Plan a simple feature: add a health check endpoint to the API",
+      "expected_output": "Should show Tool Readiness step, reference claude-mem tools, and emit cross-session output",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Acknowledges Tool Readiness step with ToolSearch",
+          "type": "behavioral"
+        },
+        {
+          "text": "References claude-mem smart tools",
+          "type": "behavioral"
+        },
+        {
+          "text": "Emits cross-session output observation",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "Tool Readiness",
+            "ToolSearch"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "smart_search",
+            "smart_outline"
+          ]
+        },
+        {
+          "type": "regex",
+          "pattern": "Cross-Session Output|\\[plan-work-output\\]"
+        }
+      ],
+      "tags": [
+        "compliance",
+        "claude-mem",
+        "tool-readiness"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 433,
+      "command": "plan-review",
+      "prompt": "Review the plan at .planning/phases/01-auth/01-01-PLAN.md",
+      "expected_output": "Should show Tool Readiness step, reference claude-mem tools, and emit cross-session output",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Acknowledges Tool Readiness step with ToolSearch",
+          "type": "behavioral"
+        },
+        {
+          "text": "References claude-mem smart tools",
+          "type": "behavioral"
+        },
+        {
+          "text": "Emits cross-session output observation",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "Tool Readiness",
+            "ToolSearch"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "smart_search",
+            "smart_outline"
+          ]
+        },
+        {
+          "type": "regex",
+          "pattern": "Cross-Session Output|\\[plan-review-output\\]"
+        }
+      ],
+      "tags": [
+        "compliance",
+        "claude-mem",
+        "tool-readiness"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 434,
+      "command": "review",
+      "prompt": "Review the recent changes on this branch",
+      "expected_output": "Should show Tool Readiness step, reference claude-mem tools, and emit cross-session output",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Acknowledges Tool Readiness step with ToolSearch",
+          "type": "behavioral"
+        },
+        {
+          "text": "References claude-mem smart tools",
+          "type": "behavioral"
+        },
+        {
+          "text": "Emits cross-session output observation",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "Tool Readiness",
+            "ToolSearch"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "smart_search",
+            "smart_outline"
+          ]
+        },
+        {
+          "type": "regex",
+          "pattern": "Cross-Session Output|\\[review-output\\]"
+        }
+      ],
+      "tags": [
+        "compliance",
+        "claude-mem",
+        "tool-readiness"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 435,
+      "command": "fix",
+      "prompt": "Fix a bug where the dashboard shows stale data after refresh",
+      "expected_output": "Should show Tool Readiness step, reference claude-mem tools, and emit cross-session output",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Acknowledges Tool Readiness step with ToolSearch",
+          "type": "behavioral"
+        },
+        {
+          "text": "References claude-mem smart tools",
+          "type": "behavioral"
+        },
+        {
+          "text": "Emits cross-session output observation",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "Tool Readiness",
+            "ToolSearch"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "smart_search",
+            "smart_outline"
+          ]
+        },
+        {
+          "type": "regex",
+          "pattern": "Cross-Session Output|\\[fix-output\\]"
+        }
+      ],
+      "tags": [
+        "compliance",
+        "claude-mem",
+        "tool-readiness"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 436,
+      "command": "auto",
+      "prompt": "Run autonomous execution for the current project",
+      "expected_output": "Should show Tool Readiness step, reference claude-mem tools, and emit cross-session output",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Acknowledges Tool Readiness step with ToolSearch",
+          "type": "behavioral"
+        },
+        {
+          "text": "References claude-mem smart tools",
+          "type": "behavioral"
+        },
+        {
+          "text": "Emits cross-session output observation",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "required_terms",
+          "terms": [
+            "Tool Readiness",
+            "ToolSearch"
+          ]
+        },
+        {
+          "type": "required_terms",
+          "terms": [
+            "smart_search",
+            "smart_outline"
+          ]
+        },
+        {
+          "type": "regex",
+          "pattern": "Cross-Session Output|\\[auto-output\\]"
+        }
+      ],
+      "tags": [
+        "compliance",
+        "claude-mem",
+        "tool-readiness"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 437,
+      "command": "fix",
+      "prompt": "Fix a bug where the dashboard shows stale data after refresh",
+      "expected_output": "Should reference shipped debugging protocol, use verification checklist, no broken paths",
+      "files": [],
+      "assertions": [
+        {
+          "text": "References shipped debugging protocol",
+          "type": "behavioral"
+        },
+        {
+          "text": "Uses verification checklist for post-fix verification",
+          "type": "behavioral"
+        },
+        {
+          "text": "No references to repo-root skills/ paths",
+          "type": "guard"
+        }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "debugging-protocol|systematic.debug|hypothesis"
+        },
+        {
+          "type": "regex",
+          "pattern": "verification-checklist|verification|IDENTIFY.*RUN.*VERIFY"
+        },
+        {
+          "type": "regex",
+          "pattern": "references/|@references"
+        }
+      ],
+      "tags": [
+        "fix",
+        "compliance",
+        "reference-resolution"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 438,
+      "command": "fix",
+      "prompt": "Fix a complex authentication bug affecting multiple services \u2014 users can't log in after password reset",
+      "expected_output": "Should dispatch gsd-debugger with tool instructions for complex/parallel bugs",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Dispatches gsd-debugger agent for complex bugs",
+          "type": "behavioral"
+        },
+        {
+          "text": "Includes claude-mem tool instructions",
+          "type": "behavioral"
+        },
+        {
+          "text": "Uses hypothesis-driven debugging",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "gsd-debugger|debugger.*agent"
+        },
+        {
+          "type": "regex",
+          "pattern": "smart_outline|smart_search|claude-mem"
+        },
+        {
+          "type": "regex",
+          "pattern": "hypothesis|root.cause|Root.Cause"
+        }
+      ],
+      "tags": [
+        "fix",
+        "compliance",
+        "agent-dispatch"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 439,
+      "command": "fix",
+      "prompt": "Fix a CSS layout issue where the sidebar overlaps the main content on mobile",
+      "expected_output": "Should reference frontend review criteria from shipped path",
+      "files": [],
+      "assertions": [
+        {
+          "text": "References frontend review criteria",
+          "type": "behavioral"
+        },
+        {
+          "text": "Uses shipped reference paths",
+          "type": "behavioral"
+        },
+        {
+          "text": "Checks accessibility basics",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "frontend-review|frontend.*design|accessibility"
+        },
+        {
+          "type": "regex",
+          "pattern": "references/|@references"
+        },
+        {
+          "type": "regex",
+          "pattern": "responsive|mobile|layout|viewport"
+        }
+      ],
+      "tags": [
+        "fix",
+        "compliance",
+        "shipping-boundary"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 440,
+      "command": "fix",
+      "prompt": "Fix a failing test in the user registration flow",
+      "expected_output": "Should emit cross-session output and verify root cause",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Emits cross-session fix output",
+          "type": "behavioral"
+        },
+        {
+          "text": "Identifies and reports root cause",
+          "type": "behavioral"
+        },
+        {
+          "text": "Runs verification before claiming fix",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "fix-output|Cross-Session"
+        },
+        {
+          "type": "regex",
+          "pattern": "root.cause|Root.Cause"
+        },
+        {
+          "type": "regex",
+          "pattern": "verification|verify|IDENTIFY.*RUN"
+        }
+      ],
+      "tags": [
+        "fix",
+        "compliance",
+        "cross-session"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 441,
+      "command": "plan-review",
+      "prompt": "Review this plan in HOLD SCOPE mode",
+      "expected_output": "Should run HOLD SCOPE review with both business and engineering sections",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Selects HOLD SCOPE mode",
+          "type": "behavioral"
+        },
+        {
+          "text": "Reviews both business and engineering sections",
+          "type": "behavioral"
+        },
+        {
+          "text": "Updates CONTEXT.md with decisions",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "HOLD.*SCOPE|hold.scope|Hold"
+        },
+        {
+          "type": "regex",
+          "pattern": "must_haves|truths"
+        },
+        {
+          "type": "regex",
+          "pattern": "CONTEXT\\.md|decisions|Decisions"
+        }
+      ],
+      "tags": [
+        "plan-review",
+        "compliance",
+        "mode-hold"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 442,
+      "command": "plan-review",
+      "prompt": "Review this plan in SCOPE EXPANSION mode",
+      "expected_output": "Should run EXPANSION review identifying delight opportunities",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Selects EXPANSION mode",
+          "type": "behavioral"
+        },
+        {
+          "text": "Identifies delight opportunities",
+          "type": "behavioral"
+        },
+        {
+          "text": "Updates must_haves with review truths",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "EXPANSION|expansion|Expansion"
+        },
+        {
+          "type": "regex",
+          "pattern": "delight|bonus|opportunity"
+        },
+        {
+          "type": "regex",
+          "pattern": "must_haves|truths"
+        }
+      ],
+      "tags": [
+        "plan-review",
+        "compliance",
+        "mode-expansion"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 443,
+      "command": "plan-review",
+      "prompt": "Review this plan in SCOPE REDUCTION mode",
+      "expected_output": "Should strip plan to essentials in REDUCTION mode",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Selects REDUCTION mode",
+          "type": "behavioral"
+        },
+        {
+          "text": "Strips to essentials",
+          "type": "behavioral"
+        },
+        {
+          "text": "Updates must_haves",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "REDUCTION|reduction|Reduction"
+        },
+        {
+          "type": "regex",
+          "pattern": "essential|strip|minimum|minimal"
+        },
+        {
+          "type": "regex",
+          "pattern": "must_haves|truths"
+        }
+      ],
+      "tags": [
+        "plan-review",
+        "compliance",
+        "mode-reduction"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 444,
+      "command": "plan-review",
+      "prompt": "Review this plan focusing on engineering quality \u2014 architecture, testing, performance",
+      "expected_output": "Should cover engineering sections 7-10",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Covers architecture review",
+          "type": "behavioral"
+        },
+        {
+          "text": "Covers testing strategy",
+          "type": "behavioral"
+        },
+        {
+          "text": "Covers performance assessment",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "architecture|Architecture"
+        },
+        {
+          "type": "regex",
+          "pattern": "test.*strategy|testing|Testing"
+        },
+        {
+          "type": "regex",
+          "pattern": "performance|Performance"
+        }
+      ],
+      "tags": [
+        "plan-review",
+        "compliance",
+        "engineering"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 445,
+      "command": "plan-review",
+      "prompt": "Review this plan and update CONTEXT.md with your decisions",
+      "expected_output": "Should update CONTEXT.md with locked decisions from review",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Updates CONTEXT.md Decisions section",
+          "type": "behavioral"
+        },
+        {
+          "text": "Prefixes decisions with [review]",
+          "type": "behavioral"
+        },
+        {
+          "text": "Locks decisions",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "CONTEXT\\.md|Decisions"
+        },
+        {
+          "type": "regex",
+          "pattern": "\\[review\\]|review.*prefix"
+        },
+        {
+          "type": "regex",
+          "pattern": "locked|Locked|decision"
+        }
+      ],
+      "tags": [
+        "plan-review",
+        "compliance",
+        "context-update"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 446,
+      "command": "plan-review",
+      "prompt": "Review this plan and identify all failure modes",
+      "expected_output": "Should produce failure modes registry with critical gaps",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Produces failure modes registry",
+          "type": "behavioral"
+        },
+        {
+          "text": "Identifies critical gaps",
+          "type": "behavioral"
+        },
+        {
+          "text": "Maps error recovery paths",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "failure.*mode|Failure.*Mode"
+        },
+        {
+          "type": "regex",
+          "pattern": "CRITICAL.*GAP|critical|CRITICAL"
+        },
+        {
+          "type": "regex",
+          "pattern": "rescue|Recovery|recovery"
+        }
+      ],
+      "tags": [
+        "plan-review",
+        "compliance",
+        "failure-modes"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 447,
+      "command": "plan-review",
+      "prompt": "Review this plan thoroughly with both business and engineering perspectives",
+      "expected_output": "Should dispatch parallel business and engineering review agents",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Dispatches business review agent",
+          "type": "behavioral"
+        },
+        {
+          "text": "Dispatches engineering review agent",
+          "type": "behavioral"
+        },
+        {
+          "text": "Includes tool instructions in agent prompts",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "Business.*Review|Agent.*1|business"
+        },
+        {
+          "type": "regex",
+          "pattern": "Engineering.*Review|Agent.*2|engineering"
+        },
+        {
+          "type": "regex",
+          "pattern": "smart_search|smart_outline|claude-mem"
+        }
+      ],
+      "tags": [
+        "plan-review",
+        "compliance",
+        "agent-dispatch"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 448,
+      "command": "plan-review",
+      "prompt": "Review this plan and emit cross-session output for downstream skills",
+      "expected_output": "Should emit plan-review-output observation",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Emits cross-session output",
+          "type": "behavioral"
+        },
+        {
+          "text": "Includes gate decision",
+          "type": "behavioral"
+        },
+        {
+          "text": "Summarizes findings",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "plan-review-output|Cross-Session"
+        },
+        {
+          "type": "regex",
+          "pattern": "Gate.*=|PASS|WARN|BLOCK"
+        },
+        {
+          "type": "regex",
+          "pattern": "findings|Findings"
+        }
+      ],
+      "tags": [
+        "plan-review",
+        "compliance",
+        "cross-session"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 449,
+      "command": "review",
+      "prompt": "Review these code changes that have DRY violations and missing error handling",
+      "expected_output": "Should use direct dispatch from trigger table, not quality-refine agent",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Uses trigger table for sub-skill dispatch",
+          "type": "behavioral"
+        },
+        {
+          "text": "Dispatches design-simplify or design-harden directly",
+          "type": "behavioral"
+        },
+        {
+          "text": "Includes tool instructions in dispatch",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "trigger.*table|direct.*dispatch"
+        },
+        {
+          "type": "regex",
+          "pattern": "design-simplify|design-harden"
+        },
+        {
+          "type": "regex",
+          "pattern": "smart_outline|ast-grep"
+        }
+      ],
+      "tags": [
+        "review",
+        "compliance",
+        "step-2-5-flatten"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 450,
+      "command": "review",
+      "prompt": "Review this TypeScript code change thoroughly with full analysis",
+      "expected_output": "Should include tool instructions in all subagent prompts",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Includes smart tools in agent prompts",
+          "type": "behavioral"
+        },
+        {
+          "text": "Includes ast-grep in agent prompts",
+          "type": "behavioral"
+        },
+        {
+          "text": "Covers code quality and architecture",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "smart_outline|smart_search|smart_unfold"
+        },
+        {
+          "type": "regex",
+          "pattern": "ast-grep|sg.*pattern|find_code_by_rule"
+        },
+        {
+          "type": "regex",
+          "pattern": "Code.*Quality|Architecture"
+        }
+      ],
+      "tags": [
+        "review",
+        "compliance",
+        "tool-instructions"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 451,
+      "command": "review",
+      "prompt": "Review these changes and apply quality refinement if needed",
+      "expected_output": "Should use direct dispatch, no quality-refine intermediary",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Uses direct dispatch pattern",
+          "type": "behavioral"
+        },
+        {
+          "text": "References design sub-skills",
+          "type": "behavioral"
+        },
+        {
+          "text": "No quality-refine intermediary",
+          "type": "guard"
+        }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "direct.*dispatch|trigger.*table|sub-skill"
+        },
+        {
+          "type": "regex",
+          "pattern": "design-simplify|design-harden|design-normalize"
+        },
+        {
+          "type": "regex",
+          "pattern": "Quality.*Refinement|Step 2\\.5"
+        }
+      ],
+      "tags": [
+        "review",
+        "compliance",
+        "no-intermediate-agent"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 452,
+      "command": "auto",
+      "prompt": "Run autonomous execution for this project",
+      "expected_output": "Should inject tool guidance into downstream sessions",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Injects Tool Readiness into downstream sessions",
+          "type": "behavioral"
+        },
+        {
+          "text": "Uses consistent project name",
+          "type": "behavioral"
+        },
+        {
+          "text": "References ToolSearch for claude-mem",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "Tool.*Readiness|ToolSearch"
+        },
+        {
+          "type": "regex",
+          "pattern": "CLAUDE_MEM_PROJECT|project.*name"
+        },
+        {
+          "type": "regex",
+          "pattern": "git.*rev-parse|basename"
+        }
+      ],
+      "tags": [
+        "auto",
+        "compliance",
+        "tool-injection"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 453,
+      "command": "auto",
+      "prompt": "Set up autonomous execution and configure project",
+      "expected_output": "Should use git-based project name derivation",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Uses git rev-parse for project name",
+          "type": "behavioral"
+        },
+        {
+          "text": "Sets CLAUDE_MEM_PROJECT",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "git.*rev-parse|basename"
+        },
+        {
+          "type": "regex",
+          "pattern": "CLAUDE_MEM_PROJECT|project.*name"
+        }
+      ],
+      "tags": [
+        "auto",
+        "compliance",
+        "project-name"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 454,
+      "command": "plan-work",
+      "prompt": "Plan a complex feature requiring deep research: implement a real-time notification system with WebSocket support",
+      "expected_output": "Should include tool instructions in researcher agent dispatch",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Includes tool instructions in agent prompts",
+          "type": "behavioral"
+        },
+        {
+          "text": "References smart tools in research dispatch",
+          "type": "behavioral"
+        },
+        {
+          "text": "Uses ast-grep for structural analysis",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "smart_outline|smart_search|smart_unfold"
+        },
+        {
+          "type": "regex",
+          "pattern": "gsd-phase-researcher|researcher.*agent|spec-architect"
+        },
+        {
+          "type": "regex",
+          "pattern": "ast-grep|sg.*pattern"
+        }
+      ],
+      "tags": [
+        "plan-work",
+        "compliance",
+        "researcher-tools"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 455,
+      "command": "plan-work",
+      "prompt": "Plan the next task in the current phase",
+      "expected_output": "Should query cross-session cache before reading planning files",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Queries cross-session cache",
+          "type": "behavioral"
+        },
+        {
+          "text": "Checks for prior skill output",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "Cross-Session.*Cache|plan-work-output|auto-output"
+        },
+        {
+          "type": "regex",
+          "pattern": "search.*query|claude-mem"
+        }
+      ],
+      "tags": [
+        "plan-work",
+        "compliance",
+        "cross-session"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 456,
+      "command": "plan-work",
+      "prompt": "Plan a simple feature: add a health check endpoint to the API",
+      "expected_output": "Should use git-based project name derivation",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Uses git rev-parse for project name",
+          "type": "behavioral"
+        },
+        {
+          "text": "Sets project name for claude-mem calls",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "git.*rev-parse|basename"
+        },
+        {
+          "type": "regex",
+          "pattern": "project.*name|PROJECT_NAME"
+        }
+      ],
+      "tags": [
+        "plan-work",
+        "compliance",
+        "project-name"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 457,
+      "command": "auto",
+      "prompt": "Verify the shared orchestrator library at .claude/skills/auto/lib/ exports the expected functions: dispatchTask (from task-dispatch.cjs), buildTaskPrompt (from context-injection.cjs), parseWaves (from wave-analysis.cjs), runVerification (from verification.cjs), generateSummary (from summary-generation.cjs)",
+      "expected_output": "Should verify each module exists and exports the correct function. The barrel export (index.cjs) re-exports all 5 functions from task-dispatch.cjs, context-injection.cjs, wave-analysis.cjs, verification.cjs, and summary-generation.cjs.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Checks module exports",
+          "type": "behavioral"
+        },
+        {
+          "text": "Verifies barrel re-export",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "dispatchTask|buildTaskPrompt"
+        },
+        {
+          "type": "regex",
+          "pattern": "parseWaves|runVerification|generateSummary"
+        }
+      ],
+      "tags": [
+        "auto",
+        "orchestrator",
+        "shared-lib"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 458,
+      "command": "auto",
+      "prompt": "Verify that context-injection.cjs buildTaskPrompt includes instructions to use smart_outline and smart_unfold for code discovery, per Decision D3 (task sessions discover code-level context themselves)",
+      "expected_output": "Should confirm the prompt template includes smart tool instructions: smart_outline, smart_unfold, smart_search. Should NOT include pre-loaded file outlines (D3: task discovers its own code context).",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Includes smart tool instructions",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT pre-load file outlines",
+          "type": "guard"
+        }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "smart_outline|smart_unfold"
+        },
+        {
+          "type": "regex",
+          "pattern": "smart_search|code.*discovery"
+        }
+      ],
+      "tags": [
+        "auto",
+        "orchestrator",
+        "context-injection"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 459,
+      "command": "auto",
+      "prompt": "Verify that wave-analysis.cjs parseWaves correctly parses XML task blocks from a PLAN.md file, extracting name, files, action, verify, done fields and grouping by wave number",
+      "expected_output": "Should parse task XML blocks, extract all fields, group into waves. Default wave is 1 if not specified. Should handle multi-line action text.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Parses XML task blocks",
+          "type": "behavioral"
+        },
+        {
+          "text": "Groups tasks by wave",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "parseWaves|wave.*analysis"
+        },
+        {
+          "type": "regex",
+          "pattern": "task.*block|XML|frontmatter"
+        }
+      ],
+      "tags": [
+        "auto",
+        "orchestrator",
+        "wave-analysis"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 460,
+      "command": "auto",
+      "prompt": "When auto-orchestrator runs a build step on a plan with XML tasks, it should use direct dispatch (dispatchTask) instead of invoking /fh:build",
+      "expected_output": "Should confirm the orchestrator's build step uses parseWaves to parse the plan, then calls buildTaskPrompt and dispatchTask for each task rather than spawning a /fh:build session. Direct dispatch eliminates the middle layer in auto mode.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Uses direct dispatch via dispatchTask",
+          "type": "behavioral"
+        },
+        {
+          "text": "Calls parseWaves and buildTaskPrompt",
+          "type": "behavioral"
+        },
+        {
+          "text": "Does NOT invoke /fh:build as the primary path for parseable plans",
+          "type": "guard"
+        }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "Direct dispatch|dispatchTask"
+        },
+        {
+          "type": "regex",
+          "pattern": "parseWaves|buildTaskPrompt"
+        },
+        {
+          "type": "regex",
+          "pattern": "wave|task.*dispatch|parallel"
+        }
+      ],
+      "tags": [
+        "auto",
+        "orchestrator",
+        "direct-dispatch"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 461,
+      "command": "auto",
+      "prompt": "When auto-orchestrator encounters a plan it cannot parse for direct dispatch, it falls back to invoking /fh:build via runClaudeSession",
+      "expected_output": "Should confirm the orchestrator catches parseWaves errors and logs a fallback message, then calls runClaudeSession with /fh:build. The fallback also triggers when no task waves are found in the plan.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Falls back to runClaudeSession on parse failure",
+          "type": "behavioral"
+        },
+        {
+          "text": "Logs a fallback message",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "falling back|fallback"
+        },
+        {
+          "type": "regex",
+          "pattern": "fh:build|runClaudeSession"
+        },
+        {
+          "type": "regex",
+          "pattern": "parseWaves|parseable"
+        }
+      ],
+      "tags": [
+        "auto",
+        "orchestrator",
+        "fallback"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 462,
+      "command": "auto",
+      "prompt": "After each task dispatch, the orchestrator writes a sidecar result JSON file to .planning/build/",
+      "expected_output": "Should confirm the orchestrator creates .planning/build/ with recursive mkdir, writes task-{planNum}-{taskId}-result.json after each task containing taskName, success, stdout (first 500 chars), stderr (first 200 chars), metrics, and error. Stale result files for the plan are cleaned up at build start.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Writes sidecar result JSON to .planning/build/",
+          "type": "behavioral"
+        },
+        {
+          "text": "Cleans stale result files at build start",
+          "type": "behavioral"
+        },
+        {
+          "text": "Creates .planning/build/ directory if missing",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "result\\.json|sidecar"
+        },
+        {
+          "type": "regex",
+          "pattern": "writeFileSync|task-"
+        },
+        {
+          "type": "regex",
+          "pattern": "planning/build|buildDir"
+        }
+      ],
+      "tags": [
+        "auto",
+        "orchestrator",
+        "sidecar"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 463,
+      "name": "auto-process-group-kill",
+      "command": "auto",
+      "prompt": "Task dispatch uses detached process groups and kills via process.kill(-pid) for reliable termination",
+      "expected_output": "Should confirm that task-dispatch.cjs spawns claude with detached: true and kills processes via process.kill(-child.pid, signal) to target the entire process group, ensuring subprocesses are terminated and not orphaned.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Spawns with detached: true for process group isolation",
+          "type": "behavioral"
+        },
+        {
+          "text": "Kills via process.kill(-pid) to target process group",
+          "type": "behavioral"
+        },
+        {
+          "text": "Uses SIGTERM then SIGKILL with grace period",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "detached.*true|process\\.kill\\(-"
+        },
+        {
+          "type": "regex",
+          "pattern": "SIGKILL|SIGTERM"
+        },
+        {
+          "type": "regex",
+          "pattern": "process group|orphan|detached"
+        }
+      ],
+      "tags": [
+        "auto",
+        "orchestrator",
+        "process-kill"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 464,
+      "name": "auto-checkpoint-before-spawn",
+      "command": "auto",
+      "prompt": "Orchestrator writes intent checkpoint before dispatching each task, enabling crash recovery",
+      "expected_output": "Should confirm that before calling dispatchTask, the orchestrator writes a checkpoint JSON file with status 'dispatched' to .planning/build/{taskId}-checkpoint.json, then updates it with final status and metrics after completion.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Writes checkpoint file before dispatch with status 'dispatched'",
+          "type": "behavioral"
+        },
+        {
+          "text": "Updates checkpoint after completion with final status and metrics",
+          "type": "behavioral"
+        },
+        {
+          "text": "Checkpoint file named {taskId}-checkpoint.json in .planning/build/",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "checkpoint|dispatched"
+        },
+        {
+          "type": "regex",
+          "pattern": "writeFileSync|checkpoint\\.json"
+        },
+        {
+          "type": "regex",
+          "pattern": "dispatchedAt|completedAt"
+        }
+      ],
+      "tags": [
+        "auto",
+        "orchestrator",
+        "checkpoint"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 465,
+      "name": "auto-task-resume",
+      "command": "auto",
+      "prompt": "On resume, orchestrator skips tasks already marked completed in checkpoint files",
+      "expected_output": "Should confirm that at build step start the orchestrator scans .planning/build/ for existing *-checkpoint.json files, and before dispatching each task checks if it is already completed, skipping it with a log message if so.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Scans .planning/build/ for existing checkpoint files at build start",
+          "type": "behavioral"
+        },
+        {
+          "text": "Skips tasks with status 'completed' in checkpoint, logging a resume message",
+          "type": "behavioral"
+        },
+        {
+          "text": "Returns success:true with skipped:true for resumed tasks",
+          "type": "behavioral"
+        }
+      ],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "already completed|skipped"
+        },
+        {
+          "type": "regex",
+          "pattern": "checkpoint|resume"
+        },
+        {
+          "type": "regex",
+          "pattern": "existingCheckpoints|checkpoint\\.json"
+        }
+      ],
+      "tags": [
+        "auto",
+        "orchestrator",
+        "resume"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 466,
+      "name": "auto-phase-state-machine",
+      "command": "auto",
+      "prompt": "Phase lifecycle follows formal state machine with validated transitions",
+      "expected_output": "Should confirm that auto-orchestrator.cjs defines PHASE_TRANSITIONS with all phase states and uses transitionPhase() to validate each state change, including failure states like plan-failed and build-failed.",
+      "files": [],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "PHASE_TRANSITIONS|transitionPhase"
+        },
+        {
+          "type": "regex",
+          "pattern": "plan-failed|build-failed"
+        },
+        {
+          "type": "regex",
+          "pattern": "Invalid phase transition|Unknown phase state"
+        }
+      ],
+      "tags": [
+        "auto",
+        "orchestrator",
+        "state-machine"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 467,
+      "name": "auto-task-state-machine",
+      "command": "auto",
+      "prompt": "Task lifecycle follows formal state machine with retry transitions",
+      "expected_output": "Should confirm that auto-orchestrator.cjs defines TASK_TRANSITIONS with all task states and uses transitionTask() to validate each state change, including timed-out and queued retry states.",
+      "files": [],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "TASK_TRANSITIONS|transitionTask"
+        },
+        {
+          "type": "regex",
+          "pattern": "timed-out|queued"
+        },
+        {
+          "type": "regex",
+          "pattern": "Invalid task transition|Unknown task state"
+        }
+      ],
+      "tags": [
+        "auto",
+        "orchestrator",
+        "state-machine"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 468,
+      "name": "auto-state-driven-loop",
+      "command": "auto",
+      "prompt": "Main loop is driven by state machine transitions, not a fixed step array",
+      "expected_output": "Should confirm that the sequential phase loop in auto-orchestrator.cjs uses STATE_TO_STEP and MAX_PHASE_TRANSITIONS to drive execution, and that migratePhaseState and updatePhaseState are used for legacy state compatibility and persistence.",
+      "files": [],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "STATE_TO_STEP|MAX_PHASE_TRANSITIONS"
+        },
+        {
+          "type": "regex",
+          "pattern": "migratePhaseState|updatePhaseState"
+        },
+        {
+          "type": "regex",
+          "pattern": "phase_states|transitionCount"
+        }
+      ],
+      "tags": [
+        "auto",
+        "orchestrator",
+        "state-machine"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 469,
+      "name": "build-interactive-only",
+      "command": "build",
+      "prompt": "Build skill focuses on interactive use, no auto-mode conditionals",
+      "expected_output": "Should confirm that the build skill is focused on interactive use and dispatches via Agent tool, without auto-mode workflow conditionals.",
+      "files": [],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "interactive build|interactive use"
+        },
+        {
+          "type": "regex",
+          "pattern": "Agent tool|subagent"
+        }
+      ],
+      "tags": [
+        "build",
+        "orchestrator",
+        "interactive"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 470,
+      "name": "auto-2layer-documented",
+      "command": "auto",
+      "prompt": "Auto skill documents the 2-layer direct dispatch architecture",
+      "expected_output": "Should confirm that the auto skill SKILL.md describes the 2-layer architecture with orchestrator and task session layers, and direct dispatch via claude -p.",
+      "files": [],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "2-[Ll]ayer|2 layer"
+        },
+        {
+          "type": "regex",
+          "pattern": "direct dispatch|Direct [Dd]ispatch"
+        }
+      ],
+      "tags": [
+        "auto",
+        "orchestrator",
+        "documentation"
+      ],
+      "tier": "smoke"
+    },
+    {
+      "id": 471,
+      "name": "implementer-prompt-smart-tools",
+      "command": "build",
+      "prompt": "Implementer prompt includes smart tool discovery instructions",
+      "expected_output": "Should confirm that the implementer-prompt.md reference file includes smart tool discovery instructions with smart_outline, smart_unfold, and smart_search.",
+      "files": [],
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "smart_outline|smart_unfold"
+        },
+        {
+          "type": "regex",
+          "pattern": "smart_search|code.*discovery"
+        }
+      ],
+      "tags": [
+        "build",
+        "orchestrator",
+        "smart-tools"
+      ],
+      "tier": "smoke"
     }
   ]
 }
