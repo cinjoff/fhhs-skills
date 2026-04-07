@@ -20,13 +20,22 @@ $ARGUMENTS
 
 ## Step 1: Get Installed Version
 
+Find the installed version by resolving the GSD symlink to the plugin cache directory:
+
 ```bash
-python3 -c "
-import json, pathlib
-data = json.loads(pathlib.Path(pathlib.Path.home() / '.claude/plugins/installed_plugins.json').read_text())
-entry = data.get('plugins', {}).get('fh@fhhs-skills') or {}
-print(entry.get('version', 'unknown'))
-"
+_FHHS_BIN="$HOME/.claude/get-shit-done/bin"
+if [ -L "$_FHHS_BIN" ]; then
+  _REAL="$(readlink -f "$_FHHS_BIN")"
+  _PLUGIN_ROOT="$(dirname "$_REAL")"
+  _PJ="$_PLUGIN_ROOT/.claude-plugin/plugin.json"
+  if [ -f "$_PJ" ]; then
+    python3 -c "import json; print(json.load(open('$_PJ'))['version'])"
+  else
+    echo "unknown"
+  fi
+else
+  echo "unknown"
+fi
 ```
 
 Save as `INSTALLED_VERSION`.
@@ -61,7 +70,11 @@ Then ask for confirmation before proceeding.
 
 ## Step 4: Install Update
 
-Run the plugin update:
+Refresh the marketplace index first, then run the plugin update:
+
+```bash
+claude skills marketplace update
+```
 
 ```bash
 claude plugin update fh@fhhs-skills
