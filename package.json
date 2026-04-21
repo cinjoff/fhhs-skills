@@ -1,0 +1,22 @@
+{
+  "name": "fhhs-skills-pi",
+  "version": "1.66.0",
+  "description": "fhhs-skills adapters for pi.dev and OpenAI Codex",
+  "private": true,
+  "keywords": [
+    "pi-package",
+    "skills",
+    "workflow",
+    "fhhs",
+    "codex"
+  ],
+  "scripts": {
+    "sync:adapters": "node bin/sync-harness-adapters.cjs",
+    "check:adapters": "node bin/sync-harness-adapters.cjs --check"
+  },
+  "pi": {
+    "skills": [
+      ".pi/skills"
+    ]
+  }
+}

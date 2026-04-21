@@ -1,0 +1,18 @@
+---
+name: startup-positioning
+description: "Use when the user wants to position their product or define market category. Applies April Dunford's framework, Moore's positioning statement, and Neumeier's Onliness Test. Produces positioning doc, category analysis, and messaging hierarchy. Triggers: positioning strategy, market category, differentiate from competitors. Works standalone; uses /fh:startup-design output if available. Does NOT handle code planning or development. (Codex adapter)"
+---
+
+# startup-positioning
+
+This is a Codex compatibility adapter for the original fhhs skill `startup-positioning`.
+
+- Codex skill name: `startup-positioning`
+- Original Claude Code command: `/fh:startup-positioning`
+- Source skill file: `../../../.claude/skills/startup-positioning/SKILL.md`
+
+## Instructions
+
+1. Read and follow `../../../.claude/skills/startup-positioning/SKILL.md`.
+2. Translate command references from `/fh:<name>` to the mapped Codex skill name in `.codex/README.md` (usually `fh-<name>`, while startup skills keep `startup-...`).
+3. If the source skill references Claude-specific tools that are unavailable, use the closest Codex-equivalent tools and continue.
