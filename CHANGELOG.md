@@ -10,6 +10,17 @@ Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliat
 
 ## [Unreleased]
 
+## [1.67.0] - 2026-04-21
+
+### Added
+- **pi subagent adapter surface** — generated `.pi/agents/*.md` adapters map fhhs `agents/*.md` personas to pi-subagents names (`fh:*`) for project-scope dispatch
+- **General-purpose worker alias** — adds generated `.pi/agents/worker.md` so translated `subagent_type: "general-purpose"` dispatches have a deterministic pi target
+
+### Changed
+- **Codex runtime tiers for subagents** — strong planning/review/debug agents default to `openai-codex/gpt-5.3-codex:high`, while lighter exploratory agents default to `openai-codex/gpt-5.4-mini:medium`
+- **Adapter translation guidance** — pi and Codex skill wrappers now document how to translate Claude Agent-tool dispatches (including `general-purpose`) and preserve model-quality intent
+- **Adapter sync generator** — `bin/sync-harness-adapters.cjs` now generates and validates skill wrappers plus pi subagent adapters in one pass
+
 ## [1.66.0] - 2026-04-21
 
 ### Added
