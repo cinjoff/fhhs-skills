@@ -11,7 +11,7 @@
     {
       "name": "fh",
       "description": "fhhs-skills: 33 skills and 31 agents — plan, spec, build, review, fix, research, design, and ship autonomously. Includes /fh:plan-work, /fh:build, /fh:fix, /fh:review, /fh:research, /fh:auto, and more.",
-      "version": "1.66.0",
+      "version": "1.67.0",
       "author": {
         "name": "Konstantin"
       },
