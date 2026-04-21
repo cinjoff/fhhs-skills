@@ -36,3 +36,9 @@ Use the pi command in the left column.
 | `/skill:fh-ui-critique` | `/fh:ui-critique` | `.claude/skills/ui-critique/SKILL.md` |
 | `/skill:fh-ui-test` | `/fh:ui-test` | `.claude/skills/ui-test/SKILL.md` |
 | `/skill:fh-update` | `/fh:update` | `.claude/skills/update/SKILL.md` |
+
+## Subagent adapters (optional)
+
+For pi subagent tooling, this repo also generates adapters in `.pi/agents/*.md` with `fh:*` names.
+Use `agentScope: "project"` or `"both"` so project-local agents are discoverable.
+See `.pi/agents/README.md` for the full mapping.

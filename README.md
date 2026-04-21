@@ -46,7 +46,10 @@ The repository now ships pi-compatible adapters under `.pi/skills/` (declared in
 /skill:fh-build
 ```
 
+If you use a pi subagent extension/tooling, this repo also generates project-local subagent adapters in `.pi/agents/*.md` with `fh:*` names (for example `fh:code-reviewer`, `fh:gsd-debugger`).
+
 Full command mapping: [`.pi/README.md`](.pi/README.md).
+Subagent mapping: [`.pi/agents/README.md`](.pi/agents/README.md).
 
 ### OpenAI Codex
 
@@ -60,7 +63,7 @@ Full command mapping: [`.codex/README.md`](.codex/README.md).
 
 ### Maintainers: adapter sync
 
-`.claude/skills/` is the single source of truth. `.pi/skills/` and `.codex/skills/` are generated adapters.
+`.claude/skills/` is the single source of truth for skills, and `agents/*.md` is the source of truth for subagent personas. `.pi/skills/`, `.codex/skills/`, and `.pi/agents/` are generated adapters.
 
 ```bash
 npm run sync:adapters
