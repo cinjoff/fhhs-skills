@@ -1,6 +1,6 @@
 # fhhs-skills
 
-An all-in-one workflow plugin for [Claude Code](https://claude.com/claude-code) — 33 skills and 31 specialized agents covering planning, spec-driven development, building, reviewing, debugging, design quality, security, web research, startup validation, and autonomous execution. One install, no other plugins required.
+An all-in-one workflow toolkit for [Claude Code](https://claude.com/claude-code) and [pi.dev](https://pi.dev) — 33 skills and 31 specialized agents covering planning, spec-driven development, building, reviewing, debugging, design quality, security, web research, startup validation, and autonomous execution. One install, no other plugins required.
 
 ## What You Get
 
@@ -22,23 +22,63 @@ An all-in-one workflow plugin for [Claude Code](https://claude.com/claude-code) 
 
 ## Install
 
-```
+### Claude Code
+
+```bash
 claude plugin marketplace add cinjoff/fhhs-skills
 claude plugin install fh@fhhs-skills
 ```
 
 Then run `/fh:setup` in a Claude Code session. It detects your platform and walks you through dependencies.
 
+### pi.dev
+
+```bash
+pi install /path/to/fhhs-skills
+# or: pi install git:https://github.com/cinjoff/fhhs-skills
+```
+
+The repository now ships pi-compatible adapters under `.pi/skills/` (declared in `package.json` via the `pi.skills` manifest). In pi, use `/skill:<name>` commands, for example:
+
+```text
+/skill:fh-setup
+/skill:fh-plan-work
+/skill:fh-build
+```
+
+Full command mapping: [`.pi/README.md`](.pi/README.md).
+
+### OpenAI Codex
+
+Codex supports Agent Skills format (`SKILL.md`). This repository ships Codex adapters under `.codex/skills/`.
+
+Use the adapters in-repo (or keep `.codex/` and `.claude/` together in your own distribution). The adapters read canonical skill instructions from `.claude/skills/`.
+
+In Codex, invoke by skill name (for example `fh-setup`, `fh-plan-work`, `fh-build`).
+
+Full command mapping: [`.codex/README.md`](.codex/README.md).
+
+### Maintainers: adapter sync
+
+`.claude/skills/` is the single source of truth. `.pi/skills/` and `.codex/skills/` are generated adapters.
+
+```bash
+npm run sync:adapters
+npm run check:adapters
+```
+
 ## Quick Start
 
 ### New Project
 
-```
+```text
 /fh:new-project          scaffold a project with vision, stack, design language, and roadmap
 /fh:plan-work            design the first feature
 /fh:build                execute the plan
 /fh:review               verify and promote
 ```
+
+(Claude command surface shown above. pi.dev and Codex equivalents are listed in `.pi/README.md` and `.codex/README.md`.)
 
 ### Returning to a Project
 

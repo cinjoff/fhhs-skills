@@ -10,6 +10,17 @@ Entries affecting `/fh:setup` or `/fh:new-project` environment carry reconciliat
 
 ## [Unreleased]
 
+## [1.66.0] - 2026-04-21
+
+### Added
+- **pi.dev adapter surface** — generated wrapper skills under `.pi/skills/` map the Claude `/fh:*` workflows to pi `/skill:*` commands
+- **OpenAI Codex adapter surface** — generated wrapper skills under `.codex/skills/` expose the same workflows as Codex skills
+- **Adapter sync utility** — `bin/sync-harness-adapters.cjs` generates and verifies `.pi/` + `.codex/` wrappers from `.claude/skills/` as the single source of truth
+
+### Changed
+- **Multi-harness documentation** — README and CONTRIBUTING now document Claude Code, pi.dev, and Codex usage plus adapter maintenance workflow
+- **Repository scripts** — adds `npm run sync:adapters` and `npm run check:adapters` for deterministic adapter regeneration and drift checks
+
 ## [1.65.1] - 2026-04-07
 
 ### Fixed

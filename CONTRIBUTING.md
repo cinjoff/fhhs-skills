@@ -5,13 +5,16 @@ Welcome! fhhs-skills is a Claude Code plugin that composes upstream skills into 
 ## Development Setup
 
 1. Clone the repo
-2. Install [Claude Code](https://claude.ai/code)
-3. Run `claude plugin install .` to install from local source
-4. Run `/fh:setup` to configure prerequisites
+2. Install [Claude Code](https://claude.ai/code), [pi](https://pi.dev), and/or OpenAI Codex
+3. Claude path: run `claude plugin install .` and then `/fh:setup`
+4. pi path: run `pi install /absolute/path/to/fhhs-skills` and use `/skill:fh-setup`
+5. Codex path: use this repository (or any distribution that keeps `.codex/` and `.claude/` side-by-side) and invoke skills by name (e.g., `fh-setup`)
 
 ## Project Structure
 
-- `.claude/skills/` — shipped skills (user-facing, invoked as `/fh:{name}`)
+- `.claude/skills/` — primary shipped skills (Claude command surface `/fh:{name}`)
+- `.pi/skills/` — pi.dev adapter skills (pi command surface `/skill:fh-{name}`), generated
+- `.codex/skills/` — Codex adapter skills (Codex skill names like `fh-build`), generated
 - `.claude/commands/` — maintainer commands (not shipped with plugin installs)
 - `upstream/` — verbatim upstream snapshots (never edit directly)
 - `evals/` — eval suite (210+ evals with mock project fixtures)
@@ -24,6 +27,8 @@ Welcome! fhhs-skills is a Claude Code plugin that composes upstream skills into 
 - Skills use `/fh:` prefix in all documentation references
 - Runtime-read files must live inside `.claude/skills/{name}/` — the shipping boundary excludes `references/`, `templates/`, and other repo-root directories; files outside `.claude/skills/` will fail with "File does not exist" at runtime
 - Run evals after changes: `python3 fhhs-skills-workspace/run_all_evals.py --tier smoke`
+- Regenerate cross-harness adapters after skill changes: `npm run sync:adapters`
+- Verify adapters are in sync before commit: `npm run check:adapters`
 - Both `plugin.json` and `marketplace.json` must stay version-synced
 
 ## Adding a New Skill
